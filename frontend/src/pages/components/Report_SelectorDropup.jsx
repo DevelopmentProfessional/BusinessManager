@@ -46,7 +46,15 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
 
   return (
     <div ref={rootRef} className="position-relative reports-selector-dropup w-100" style={{ textAlign: "left" }}>
-      <button type="button" onClick={() => onToggle(!open)} className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1 w-100" style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minHeight: "2rem" }} aria-expanded={open} aria-haspopup="listbox" title={selectedTitle || "Report"}>
+      <button
+        type="button"
+        onClick={() => onToggle(!open)}
+        className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1 w-100"
+        style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minHeight: "2rem" }}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        title={selectedTitle || "Report"}
+      >
         <ChartBarIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
         <ChevronUpDownIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
       </button>

@@ -164,11 +164,7 @@ export default function Dropdown_Custom({
         </button>
       )}
 
-      {multiSelect && showSelectionSummary && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-gray-300">
-          {selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}
-        </div>
-      )}
+      {multiSelect && showSelectionSummary && <div className="mt-1 text-xs text-gray-600 dark:text-gray-300">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
 
       {isOpen && (
         <div className={`absolute z-50 w-full border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
@@ -224,32 +220,19 @@ export default function Dropdown_Custom({
               <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control form-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} />
             </div>
           )}
-          
+
           {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle) && (
             <div className="d-flex gap-2 p-2 border-top border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky bottom-0">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="btn btn-sm btn-outline-secondary flex-grow-1"
-              >
+              <button type="button" onClick={() => setIsOpen(false)} className="btn btn-sm btn-outline-secondary flex-grow-1">
                 OK
               </button>
               {showClearButton && (
-                <button
-                  type="button"
-                  onClick={handleClearMultiSelect}
-                  className="btn btn-sm btn-outline-secondary flex-grow-1"
-                  disabled={multiSelect ? selectedOptions.length === 0 : !value}
-                >
+                <button type="button" onClick={handleClearMultiSelect} className="btn btn-sm btn-outline-secondary flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
                   Clear
                 </button>
               )}
               {allowMultiModeToggle && (
-                <button
-                  type="button"
-                  onClick={() => onToggleMultiMode?.()}
-                  className={`btn btn-sm flex-grow-1 ${isMultiModeActive ? "btn-primary" : "btn-outline-secondary"}`}
-                >
+                <button type="button" onClick={() => onToggleMultiMode?.()} className={`btn btn-sm flex-grow-1 ${isMultiModeActive ? "btn-primary" : "btn-outline-secondary"}`}>
                   Multi
                 </button>
               )}

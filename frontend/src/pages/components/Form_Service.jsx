@@ -51,7 +51,7 @@ const TABS = ["details", "resources", "assets", "employees", "locations"];
 export default function Form_Service({ service, initialName = "", onSubmit, onCancel, onBulkImport = null }) {
   const { openAddInventoryModal, addInventory } = useStore();
   const [createdFromSearchContext, setCreatedFromSearchContext] = useState(null); // "resource", "asset", or "location"
-  
+
   const [activeTab, setActiveTab] = useState("details");
 
   // ── Basic form fields ────────────────────────────────────────────
@@ -612,7 +612,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     {resources.map((r) => (
                       <tr key={r.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"  onClick={() => handleRemoveResource(r.id)}>
+                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" onClick={() => handleRemoveResource(r.id)}>
                             <XMarkIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
@@ -648,7 +648,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 />
                 <input type="number" min="0.01" step="0.01" className="form-control form-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
                 <input type="number" min="0" max="100" step="0.1" className="form-control form-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddResource}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddResource}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -680,7 +680,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     {assets.map((a) => (
                       <tr key={a.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center"  onClick={() => handleRemoveAsset(a.id)}>
+                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" onClick={() => handleRemoveAsset(a.id)}>
                             <XMarkIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
@@ -702,7 +702,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 <Dropdown_Custom
                   name="inventory_id"
                   value={newAsset.inventory_id}
-                  onChange={(e) => setNewAsset({ inventory_id: e.target.value })}
+                  onChange={(e) => setNewAsset((prev) => ({ ...prev, inventory_id: e.target.value }))}
                   options={assetItems.filter((i) => !linkedAssetIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
                   placeholder="Select asset"
                   searchable
@@ -711,7 +711,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   createButtonTitle="Add asset"
                   className="flex-grow-1"
                 />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddAsset}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddAsset}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -734,7 +734,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 <ul className="list-group list-group-flush mb-0">
                   {svcEmployees.map((se) => (
                     <li key={se.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"  onClick={() => handleRemoveEmployee(se.id)}>
+                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" onClick={() => handleRemoveEmployee(se.id)}>
                         <XMarkIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="rounded-circle flex-shrink-0" style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: "inline-block" }} />
@@ -757,7 +757,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       </option>
                     ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddEmployee}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddEmployee}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -780,7 +780,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 <ul className="list-group list-group-flush mb-0">
                   {locations.map((loc) => (
                     <li key={loc.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0"  onClick={() => handleRemoveLocation(loc.id)}>
+                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" onClick={() => handleRemoveLocation(loc.id)}>
                         <XMarkIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
@@ -795,7 +795,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 <Dropdown_Custom
                   name="inventory_id"
                   value={newLocation.inventory_id}
-                  onChange={(e) => setNewLocation({ inventory_id: e.target.value })}
+                  onChange={(e) => setNewLocation((prev) => ({ ...prev, inventory_id: e.target.value }))}
                   options={locationItems.filter((i) => !linkedLocationIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
                   placeholder="Select location"
                   searchable
@@ -804,7 +804,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   createButtonTitle="Add location"
                   className="flex-grow-1"
                 />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center"  onClick={handleAddLocation}>
+                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddLocation}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -846,11 +846,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         {/* Row 2: Actions */}
         <div className="app-footer-padding app-standard-footer">
           <Footer_Actions
-            start={
-              activeTab === "details" ? (
-                <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn-outline-secondary" title={service ? "Save service" : "Create service"} />
-              ) : null
-            }
+            start={activeTab === "details" ? <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn-outline-secondary" title={service ? "Save service" : "Create service"} /> : null}
             center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
           />
         </div>

@@ -842,9 +842,13 @@ export default function Sales() {
     }
     return Math.min(total, cartTotal);
   })();
+
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-  const invoiceTaxAmount = roundCurrency(cartTotal * (taxRatePercent / 100));
-  const invoiceTotal = roundCurrency(cartTotal + invoiceTaxAmount);
+  
+  // Calculate invoice totals with discount applied (used for display AND preview)
+  const subtotalAfterDiscount = roundCurrency(cartTotal - cartDiscount);
+  const invoiceTaxAmount = roundCurrency(subtotalAfterDiscount * (taxRatePercent / 100));
+  const invoiceTotal = roundCurrency(subtotalAfterDiscount + invoiceTaxAmount);
 
   const salesFilterActive = !!selectedClient || !showServices || !showProducts || !showSubscriptions;
 
@@ -890,12 +894,40 @@ export default function Sales() {
 
     for (const item of soldSubscriptionItems) {
       const existing = currentClientRows.find((row) => String(row.membership_id) === String(item.id));
-      const startDateValue = item.subscriptionStartDate ? new Date(`${item.subscriptionStartDate}T00:00:00`) : new Date();
+      
+      // FIX 1: Parse date string as UTC date (at midnight UTC), not local timezone
+      let startDateValue;
+      if (item.subscriptionStartDate) {
+        // Parse YYYY-MM-DD as UTC date at midnight to avoid timezone offset issues
+        const [year, month, day] = item.subscriptionStartDate.split('-').map(Number);
+        startDateValue = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      } else {
+        startDateValue = new Date();
+      }
+      
+      // FIX 2: Calculate end_date based on lock_term_count and lock_term_unit from the membership
+      let endDateValue = null;
+      if (item.lock_term_count && item.lock_term_count > 0 && item.lock_term_unit) {
+        endDateValue = new Date(startDateValue);
+        const unit = String(item.lock_term_unit).toLowerCase();
+        const count = Number(item.lock_term_count);
+        
+        if (unit === 'days') {
+          endDateValue.setUTCDate(endDateValue.getUTCDate() + count);
+        } else if (unit === 'weeks') {
+          endDateValue.setUTCDate(endDateValue.getUTCDate() + count * 7);
+        } else if (unit === 'months') {
+          endDateValue.setUTCMonth(endDateValue.getUTCMonth() + count);
+        } else if (unit === 'years') {
+          endDateValue.setUTCFullYear(endDateValue.getUTCFullYear() + count);
+        }
+      }
+      
       const payload = {
         client_id: clientId,
         membership_id: item.id,
         start_date: startDateValue.toISOString(),
-        end_date: null,
+        end_date: endDateValue ? endDateValue.toISOString() : null,
         status: "active",
       };
 
@@ -924,8 +956,7 @@ export default function Sales() {
   };
 
   const processPayment = async (paymentMethod) => {
-    const tax = roundCurrency(cartTotal * (taxRatePercent / 100));
-    const total = roundCurrency(cartTotal + tax);
+    // Totals already calculated at module level with discount applied (invoiceTaxAmount, invoiceTotal)
 
     const provisionalSaleId = `local-${Date.now()}`;
 
@@ -936,8 +967,9 @@ export default function Sales() {
       client: selectedClient ? { name: selectedClient.name, email: selectedClient.email } : null,
       items: cart.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
       subtotal: cartTotal,
-      tax,
-      total,
+      discount_amount: cartDiscount,
+      tax: invoiceTaxAmount,
+      total: invoiceTotal,
       paymentMethod,
     };
     setSalesHistory((prev) => [sale, ...prev].slice(0, 50));
@@ -949,8 +981,9 @@ export default function Sales() {
         client_id: selectedClient?.id || null,
         employee_id: user?.id || null,
         subtotal: cartTotal,
-        tax_amount: tax,
-        total,
+        discount_amount: cartDiscount,
+        tax_amount: invoiceTaxAmount,
+        total: invoiceTotal,
         payment_method: paymentMethod,
         schedule_id: linkedScheduleId || null,
       };

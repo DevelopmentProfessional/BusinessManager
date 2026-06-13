@@ -27,6 +27,7 @@ from sqlalchemy import or_
 from datetime import datetime
 from uuid import UUID
 import re
+import json
 
 try:
     from backend.database import get_session
@@ -38,6 +39,15 @@ except ModuleNotFoundError:
     from routers.auth import get_current_user
 
 router = APIRouter()
+
+# ─── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
+
+def _safe_parse_pages(accessible_pages_json):
+    """Safely parse accessible_pages JSON field, returning empty list on parse failure."""
+    try:
+        return json.loads(accessible_pages_json or "[]")
+    except (json.JSONDecodeError, TypeError):
+        return []
 
 # ─── 1 STANDARD TEMPLATE DEFINITIONS ───────────────────────────────────────────
 
@@ -300,7 +310,7 @@ def list_templates(
     if page:
         templates = [
             t for t in templates
-            if page in (t.accessible_pages or "[]")
+            if page in _safe_parse_pages(t.accessible_pages)
         ]
     return [DocumentTemplateRead.model_validate(t) for t in templates]
 

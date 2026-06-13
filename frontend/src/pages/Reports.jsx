@@ -564,11 +564,11 @@ export default function Reports() {
     const duration = getPeriodDuration(dateRange);
     const base = new Date();
 
-    // Apply offset first
+    // Calculate the offset distance: positive offset = future, negative = past
     if (offset !== 0) {
-      if (duration.days) base.setDate(base.getDate() - duration.days * offset);
-      else if (duration.months) base.setMonth(base.getMonth() - duration.months * offset);
-      else if (duration.years) base.setFullYear(base.getFullYear() - duration.years * offset);
+      if (duration.days) base.setDate(base.getDate() + duration.days * offset);
+      else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
+      else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
     }
 
     // Then go back one period for the start date
@@ -585,9 +585,9 @@ export default function Reports() {
     const duration = getPeriodDuration(dateRange);
     const base = new Date();
 
-    if (duration.days) base.setDate(base.getDate() - duration.days * offset);
-    else if (duration.months) base.setMonth(base.getMonth() - duration.months * offset);
-    else if (duration.years) base.setFullYear(base.getFullYear() - duration.years * offset);
+    if (duration.days) base.setDate(base.getDate() + duration.days * offset);
+    else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
+    else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
 
     return base.toISOString().split("T")[0];
   };
@@ -1110,118 +1110,119 @@ export default function Reports() {
 
               {showReportControls && (
                 <>
-              <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
-                {DATE_RANGE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                  <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
+                    {DATE_RANGE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
 
-              <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.groupBy} onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}>
-                {GROUP_BY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                  <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.groupBy} onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}>
+                    {GROUP_BY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
 
-              <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.chartType} onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}>
-                {selectedReport.chartTypes.map((chartType) => (
-                  <option key={chartType} value={chartType}>
-                    {chartType === "doughnut" ? "Ring" : chartType}
-                  </option>
-                ))}
-              </select>
+                  <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.chartType} onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}>
+                    {selectedReport.chartTypes.map((chartType) => (
+                      <option key={chartType} value={chartType}>
+                        {chartType === "doughnut" ? "Ring" : chartType}
+                      </option>
+                    ))}
+                  </select>
 
-              {canUseStatus && (
-                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.status} onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}>
-                  {FILTER_CONFIG.status.options.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  {canUseStatus && (
+                    <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.status} onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}>
+                      {FILTER_CONFIG.status.options.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
-              {canUseService && (
-                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.serviceId} onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}>
-                  <option value="all">{FILTER_CONFIG.service.allLabel}</option>
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s[FILTER_CONFIG.service.labelKey]}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  {canUseService && (
+                    <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.serviceId} onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}>
+                      <option value="all">{FILTER_CONFIG.service.allLabel}</option>
+                      {services.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s[FILTER_CONFIG.service.labelKey]}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
-              {canUseEmployee && (
-                <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.employeeId} onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}>
-                  <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {FILTER_CONFIG.employee.labelKey(e)}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  {canUseEmployee && (
+                    <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.employeeId} onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}>
+                      <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
+                      {employees.map((e) => (
+                        <option key={e.id} value={e.id}>
+                          {FILTER_CONFIG.employee.labelKey(e)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
-              {canUseEventType && (
-                <div className="position-relative" ref={eventTypeRef}>
-                  <button
-                    type="button"
-                    onClick={() => setEventTypeMenuOpen((v) => !v)}
-                    onKeyDown={handleEventTypeKeyDown}
-                    aria-haspopup="listbox"
-                    aria-expanded={eventTypeMenuOpen}
-                    className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
-                    style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minWidth: "11rem" }}
-                  >
-                    <CalendarIcon className="h-4 w-4 flex-shrink-0" />
-                    <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
-                  </button>
-                  {eventTypeMenuOpen && (
-                    <div className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
-                      {FILTER_CONFIG.eventType.options.map((o) => {
-                        const OptionIcon = o.icon;
-                        return (
-                        <div
-                          key={o.value}
-                          onClick={() => {
-                            setReportFilters((prev) => ({ ...prev, eventType: o.value }));
-                            setEventTypeMenuOpen(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setReportFilters((prev) => ({ ...prev, eventType: o.value }));
-                              setEventTypeMenuOpen(false);
-                            } else if (e.key === "ArrowDown") {
-                              e.preventDefault();
-                              e.currentTarget.nextElementSibling?.focus();
-                            } else if (e.key === "ArrowUp") {
-                              e.preventDefault();
-                              e.currentTarget.previousElementSibling?.focus();
-                            } else if (e.key === "Escape") {
-                              e.preventDefault();
-                              setEventTypeMenuOpen(false);
-                              eventTypeRef.current?.querySelector("button")?.focus();
-                            }
-                          }}
-                          tabIndex={0}
-                          className={`px-3 py-2 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
-                          style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
-                          role="option"
-                          aria-selected={reportFilters.eventType === o.value}
-                        >
-                          {OptionIcon && <OptionIcon className="h-4 w-4 flex-shrink-0" />}<span className="text-nowrap">{o.label}</span>
+                  {canUseEventType && (
+                    <div className="position-relative" ref={eventTypeRef}>
+                      <button
+                        type="button"
+                        onClick={() => setEventTypeMenuOpen((v) => !v)}
+                        onKeyDown={handleEventTypeKeyDown}
+                        aria-haspopup="listbox"
+                        aria-expanded={eventTypeMenuOpen}
+                        className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                        style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minWidth: "11rem" }}
+                      >
+                        <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                        <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
+                      </button>
+                      {eventTypeMenuOpen && (
+                        <div className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
+                          {FILTER_CONFIG.eventType.options.map((o) => {
+                            const OptionIcon = o.icon;
+                            return (
+                              <div
+                                key={o.value}
+                                onClick={() => {
+                                  setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                                  setEventTypeMenuOpen(false);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                                    setEventTypeMenuOpen(false);
+                                  } else if (e.key === "ArrowDown") {
+                                    e.preventDefault();
+                                    e.currentTarget.nextElementSibling?.focus();
+                                  } else if (e.key === "ArrowUp") {
+                                    e.preventDefault();
+                                    e.currentTarget.previousElementSibling?.focus();
+                                  } else if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    setEventTypeMenuOpen(false);
+                                    eventTypeRef.current?.querySelector("button")?.focus();
+                                  }
+                                }}
+                                tabIndex={0}
+                                className={`px-3 py-2 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                                style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
+                                role="option"
+                                aria-selected={reportFilters.eventType === o.value}
+                              >
+                                {OptionIcon && <OptionIcon className="h-4 w-4 flex-shrink-0" />}
+                                <span className="text-nowrap">{o.label}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        );
-                      })}
+                      )}
                     </div>
                   )}
-                </div>
-              )}
                 </>
               )}
 
@@ -1280,9 +1281,7 @@ export default function Reports() {
       <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen noPadding>
         <div className="component">
           <div className="component-header">
-            <div className="component-header-left">
-              Financial Controls
-            </div>
+            <div className="component-header-left">Financial Controls</div>
             <div className="component-header-center" />
             <div className="component-header-right" />
           </div>
@@ -1293,7 +1292,16 @@ export default function Reports() {
           </div>
           <div className="component-footer">
             <div className="component-footer-left">
-              <Button_Toolbar icon={CalculatorIcon} label="Forecast" onClick={() => { setShowFinancialDashboard(false); setShowForecastCalculator(true); }} className="btn-outline-secondary" title="Open forecast calculator" />
+              <Button_Toolbar
+                icon={CalculatorIcon}
+                label="Forecast"
+                onClick={() => {
+                  setShowFinancialDashboard(false);
+                  setShowForecastCalculator(true);
+                }}
+                className="btn-outline-secondary"
+                title="Open forecast calculator"
+              />
             </div>
             <div className="component-footer-center">
               <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" title="Close" />
