@@ -122,6 +122,8 @@ export default function Schedule() {
     start_of_day: "06:00",
     end_of_day: "21:00",
     attendance_check_in_required: true,
+    reminder_time_minutes: 30,
+    reminder_send_notification: true,
     monday_enabled: true,
     tuesday_enabled: true,
     wednesday_enabled: true,
@@ -233,6 +235,8 @@ export default function Schedule() {
             start_of_day: settingsResponse.data.start_of_day || "06:00",
             end_of_day: settingsResponse.data.end_of_day || "21:00",
             attendance_check_in_required: settingsResponse.data.attendance_check_in_required ?? false,
+            reminder_time_minutes: settingsResponse.data.reminder_time_minutes ?? 30,
+            reminder_send_notification: settingsResponse.data.reminder_send_notification ?? true,
             monday_enabled: settingsResponse.data.monday_enabled ?? true,
             tuesday_enabled: settingsResponse.data.tuesday_enabled ?? true,
             wednesday_enabled: settingsResponse.data.wednesday_enabled ?? true,
@@ -594,6 +598,7 @@ export default function Schedule() {
         recurrence_count: appointmentData.recurrence_count || null,
         is_recurring_master: appointmentData.is_recurring_master ?? false,
         is_paid: appointmentData.is_paid ?? false,
+        send_reminder: appointmentData.send_reminder ?? (scheduleSettings.reminder_send_notification ?? true),
       };
       if (primaryClientId) schedulePayload.client_id = primaryClientId;
       if (appointmentData.service_id) schedulePayload.service_id = appointmentData.service_id;
@@ -617,7 +622,7 @@ export default function Schedule() {
       setEditingAppointment(null);
       setSelectedAttendees([]);
     },
-    [editingAppointment, normalizeIds, refreshSchedules, syncScheduleAttendees]
+    [editingAppointment, normalizeIds, refreshSchedules, scheduleSettings.reminder_send_notification, syncScheduleAttendees]
   );
 
   const handleDeleteAppointment = useCallback(async () => {
@@ -1260,6 +1265,7 @@ export default function Schedule() {
             services={services}
             employees={employees}
             attendees={selectedAttendees}
+            scheduleSettings={scheduleSettings}
           />
         </Modal>
 
@@ -1386,6 +1392,8 @@ export default function Schedule() {
                 start_of_day: updated.start_of_day || "06:00",
                 end_of_day: updated.end_of_day || "21:00",
                 attendance_check_in_required: updated.attendance_check_in_required ?? false,
+                reminder_time_minutes: updated.reminder_time_minutes ?? 30,
+                reminder_send_notification: updated.reminder_send_notification ?? true,
                 monday_enabled: updated.monday_enabled ?? true,
                 tuesday_enabled: updated.tuesday_enabled ?? true,
                 wednesday_enabled: updated.wednesday_enabled ?? true,

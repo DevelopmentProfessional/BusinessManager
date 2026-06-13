@@ -18,6 +18,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-06-13 | GitHub Copilot | Added create-from-search prefill support via store modal state
  * ============================================================
  */
 import React, { useState } from "react";
@@ -28,7 +29,7 @@ import Form_Client from "./Form_Client";
 
 // ─── 1 STORE INTEGRATION ───────────────────────────────────────────────────
 export default function Modal_Client() {
-  const { isAddClientModalOpen, closeAddClientModal, addClientCallback, addClient, setError, clearError } = useStore();
+  const { isAddClientModalOpen, closeAddClientModal, addClientCallback, addClientPrefill, addClient, setError, clearError } = useStore();
 
   const [formError, setFormError] = useState(null);
 
@@ -62,9 +63,11 @@ export default function Modal_Client() {
   };
 
   // ─── 4 RENDER ─────────────────────────────────────────────────────────────
+  const initialName = typeof addClientPrefill === "string" ? addClientPrefill : addClientPrefill?.name || "";
+
   return (
     <Modal isOpen={isAddClientModalOpen} onClose={handleCancel} contentGravity="top">
-      {isAddClientModalOpen && <Form_Client client={null} onSubmit={handleSubmit} onCancel={handleCancel} error={formError} />}
+      {isAddClientModalOpen && <Form_Client client={null} initialName={initialName} onSubmit={handleSubmit} onCancel={handleCancel} error={formError} />}
     </Modal>
   );
 }

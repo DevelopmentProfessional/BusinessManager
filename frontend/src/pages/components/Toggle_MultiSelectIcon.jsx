@@ -25,15 +25,7 @@ export default function Toggle_MultiSelectIcon({ selected = false, onToggle, tit
   const Icon = selected ? CheckCircleSolid : CheckCircleOutline;
 
   return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      aria-pressed={selected}
-      onClick={onToggle}
-      className={className}
-      style={baseStyle}
-    >
+    <button type="button" title={title} aria-label={title} aria-pressed={selected} onClick={onToggle} className={className} style={baseStyle}>
       <Icon style={{ width: 18, height: 18 }} />
     </button>
   );

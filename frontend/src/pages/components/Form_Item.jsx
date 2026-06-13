@@ -48,9 +48,9 @@ import cacheService from "../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../services/api";
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Item({ onSubmit, onCancel, item = null, initialSku = "", showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
+export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
   const [formData, setFormData] = useState({
-    name: "",
+    name: initialName || "",
     sku: initialSku || "",
     price: 0,
     cost: "",
@@ -134,10 +134,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialSku 
         date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
         date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
       });
-    } else if (initialSku) {
-      setFormData((prev) => ({ ...prev, sku: initialSku }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        name: initialName || prev.name,
+        sku: initialSku || prev.sku,
+      }));
     }
-  }, [item, initialSku]);
+  }, [item, initialSku, initialName]);
 
   useEffect(() => {
     const loadAvailableLocations = async () => {

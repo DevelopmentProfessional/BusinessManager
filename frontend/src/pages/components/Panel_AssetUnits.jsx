@@ -60,6 +60,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
   const [units, setUnits] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [availableLocations, setAvailableLocations] = useState([]);
+  const [unitSearchTerm, setUnitSearchTerm] = useState("");
   const [selectedUnitIds, setSelectedUnitIds] = useState(new Set());
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -207,14 +208,45 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
     });
   };
 
+  const employeeNameById = useMemo(() => {
+    const map = new Map();
+    employees.forEach((employee) => {
+      map.set(employee.id, employeeLabel(employee));
+    });
+    return map;
+  }, [employees]);
+
+  const filteredUnits = useMemo(() => {
+    const needle = unitSearchTerm.trim().toLowerCase();
+    if (!needle) return units;
+    return units.filter((unit) => {
+      const assignedLabel = unit.employee_id ? employeeNameById.get(unit.employee_id) || "" : "shared";
+      const stateLabel = STATE_LABELS[unit.state] || unit.state || "";
+      const haystack = [unit.label || "", unit.location || "", assignedLabel, stateLabel]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [employeeNameById, unitSearchTerm, units]);
+
   const pagedUnits = useMemo(() => {
     const start = (page - 1) * perPageSafe;
-    return units.slice(start, start + perPageSafe);
-  }, [units, page, perPageSafe]);
+    return filteredUnits.slice(start, start + perPageSafe);
+  }, [filteredUnits, page, perPageSafe]);
 
-  const totalPages = Math.max(1, Math.ceil(units.length / perPageSafe));
+  const totalPages = Math.max(1, Math.ceil(filteredUnits.length / perPageSafe));
   const allPageSelected = pagedUnits.length > 0 && pagedUnits.every((u) => selectedUnitIds.has(u.id));
   const selectedCount = selectedUnitIds.size;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [unitSearchTerm]);
 
   const handleToggleSelectAllPage = () => {
     setSelectedUnitIds((prev) => {
@@ -271,6 +303,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
         <h6 className="mb-0 fw-semibold">Asset Units</h6>
         {loading && <span className="spinner-border spinner-border-sm" role="status" />}
         <span className="text-muted small">({units.length} total)</span>
+        {unitSearchTerm.trim() && <span className="text-muted small">({filteredUnits.length} shown)</span>}
       </div>
 
       {/* State summary badges */}
@@ -340,48 +373,56 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
               </tr>
             </thead>
             <tbody>
-              {pagedUnits.map((unit) => (
-                <tr key={unit.id} style={{ borderBottom: "1px solid var(--bs-border-color)" }}>
-                  <td className="text-center" style={{ border: "none" }}>
-                    <Toggle_MultiSelectIcon selected={selectedUnitIds.has(unit.id)} onToggle={() => handleToggleSelected(unit.id)} title="Select unit" />
-                  </td>
-                  <td style={{ border: "none" }}>
-                    <button className="btn btn-circle btn-outline-danger" onClick={() => handleRemove(unit.id)} title="Remove unit">
-                      <XMarkIcon className="h-4 w-4" />
-                    </button>
-                  </td>
-                  <td style={{ border: "none" }}>
-                    <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
-                  </td>
-                  <td style={{ border: "none" }}>
-                    <select className="form-select form-select-sm" value={unit.location || "__none__"} onChange={(e) => handleLocationChange(unit.id, e.target.value)}>
-                      <option value="__none__">No location</option>
-                      {availableLocations.map((location) => (
-                        <option key={location} value={location}>{location}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={{ border: "none" }}>
-                    <select className="form-select form-select-sm" value={unit.employee_id || "shared"} onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}>
-                      <option value="shared">Shared</option>
-                      {employees.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employeeLabel(employee)}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={{ border: "none" }}>
-                    <select className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`} value={unit.state} onChange={(e) => handleStateChange(unit.id, e.target.value)}>
-                      {Object.entries(STATE_LABELS).map(([s, l]) => (
-                        <option key={s} value={s}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
+              {pagedUnits.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-muted small py-3">
+                    No asset units match the current search.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                pagedUnits.map((unit) => (
+                  <tr key={unit.id} style={{ borderBottom: "1px solid var(--bs-border-color)" }}>
+                    <td className="text-center" style={{ border: "none" }}>
+                      <Toggle_MultiSelectIcon selected={selectedUnitIds.has(unit.id)} onToggle={() => handleToggleSelected(unit.id)} title="Select unit" />
+                    </td>
+                    <td style={{ border: "none" }}>
+                      <button className="btn btn-circle btn-outline-danger" onClick={() => handleRemove(unit.id)} title="Remove unit">
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </td>
+                    <td style={{ border: "none" }}>
+                      <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
+                    </td>
+                    <td style={{ border: "none" }}>
+                      <select className="form-select form-select-sm" value={unit.location || "__none__"} onChange={(e) => handleLocationChange(unit.id, e.target.value)}>
+                        <option value="__none__">No location</option>
+                        {availableLocations.map((location) => (
+                          <option key={location} value={location}>{location}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td style={{ border: "none" }}>
+                      <select className="form-select form-select-sm" value={unit.employee_id || "shared"} onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}>
+                        <option value="shared">Shared</option>
+                        {employees.map((employee) => (
+                          <option key={employee.id} value={employee.id}>
+                            {employeeLabel(employee)}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td style={{ border: "none" }}>
+                      <select className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`} value={unit.state} onChange={(e) => handleStateChange(unit.id, e.target.value)}>
+                        {Object.entries(STATE_LABELS).map(([s, l]) => (
+                          <option key={s} value={s}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -403,9 +444,19 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
         </div>
       )}
 
-      <button className="btn btn-sm btn-outline-primary" onClick={handleAddUnit} disabled={saving}>
-        {isTrainingMode ? (saving ? "Adding..." : "+ Add") : saving ? "..." : "+"}
-      </button>
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+        <button className="btn btn-sm btn-outline-primary" onClick={handleAddUnit} disabled={saving}>
+          {isTrainingMode ? (saving ? "Adding..." : "+ Add") : saving ? "..." : "+"}
+        </button>
+        <input
+          type="text"
+          className="form-control form-control-sm"
+          style={{ width: "320px", maxWidth: "100%" }}
+          placeholder="Search label, location, assigned, state..."
+          value={unitSearchTerm}
+          onChange={(e) => setUnitSearchTerm(e.target.value)}
+        />
+      </div>
 
       {error && (
         <div className="text-danger small mt-2">

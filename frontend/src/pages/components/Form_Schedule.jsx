@@ -33,6 +33,11 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-01 | Claude  | P5-A — Added status field (APPOINTMENT_STATUS_OPTIONS, formData.status, submitData.status)
  *   2026-03-11 | Claude  | Added is_paid toggle, discount field, Pay-via-Sales button, resource consumption panel
+ *   2026-06-13 | GitHub Copilot | Added schedule client create-from-search flow (+ button) with prefill and auto-select
+ *   2026-06-13 | GitHub Copilot | Added schedule service create-from-search flow (+ button) with prefill and auto-select
+ *   2026-06-13 | GitHub Copilot | Added schedule production item create-from-search flow (+ button) with prefill and auto-select
+ *   2026-06-13 | GitHub Copilot | Switched schedule form to a single datetime input and moved discount handling to Sales checkout
+ *   2026-06-13 | GitHub Copilot | Added per-appointment Reminder toggle and wired schedule-level reminder defaults
  * ============================================================
  */
 
@@ -83,8 +88,8 @@ const APPOINTMENT_STATUS_OPTIONS = [
 ];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [] }) {
-  const { closeModal, hasPermission, user, openAddClientModal } = useStore();
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
+  const { closeModal, hasPermission, user, openAddClientModal, openAddServiceModal, openAddInventoryModal } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
   const [employees, setEmployees] = useState(employeesProp || []);
@@ -92,6 +97,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsLoaded, setClientsLoaded] = useState(false);
   const [durationError, setDurationError] = useState("");
+  const [clientMultiMode, setClientMultiMode] = useState(false);
+  const [employeeMultiMode, setEmployeeMultiMode] = useState(false);
   const [serviceResources, setServiceResources] = useState([]);
   const [inventoryMap, setInventoryMap] = useState({});
   // Production task state
@@ -182,6 +189,70 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
   };
 
+  const handleCreateClientFromSearch = (searchText) => {
+    const prefillName = String(searchText || "").trim();
+    openAddClientModal({
+      prefill: { name: prefillName },
+      onCreated: (newClient) => {
+        if (!newClient?.id) return;
+
+        setClients((prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          if (list.some((client) => client.id === newClient.id)) return list;
+          return [...list, newClient];
+        });
+        setClientsLoaded(true);
+
+        setFormData((prev) => ({
+          ...prev,
+          client_ids: [newClient.id],
+        }));
+      },
+    });
+  };
+
+  const handleCreateServiceFromSearch = (searchText) => {
+    const prefillName = String(searchText || "").trim();
+    openAddServiceModal({
+      prefill: { name: prefillName },
+      onCreated: (newService) => {
+        if (!newService?.id) return;
+
+        setServices((prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          if (list.some((service) => service.id === newService.id)) return list;
+          return [...list, newService];
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          service_id: newService.id,
+        }));
+      },
+    });
+  };
+
+  const handleCreateProductFromSearch = (searchText) => {
+    const prefillName = String(searchText || "").trim();
+    openAddInventoryModal({
+      prefill: { name: prefillName },
+      onCreated: (newItem) => {
+        if (!newItem?.id) return;
+
+        setProductItems((prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          if (list.some((item) => item.id === newItem.id)) return list;
+          return [...list, newItem];
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          production_item_id: newItem.id,
+        }));
+      },
+    });
+  };
+
   // Extract local YYYY-MM-DD and HH:mm from a Date or ISO string reliably (no timezone shifts)
   const extractLocalParts = (value) => {
     const d = value instanceof Date ? value : new Date(value);
@@ -196,15 +267,12 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const getInitialFormData = () => {
     if (appointment && appointment.appointment_date) {
       const { date, time } = extractLocalParts(appointment.appointment_date);
-      const [hour, minute] = time.split(":");
       const recEndDate = appointment.recurrence_end_date ? extractLocalParts(appointment.recurrence_end_date).date : "";
       return {
         client_ids: appointment.client_id ? [appointment.client_id] : [],
         service_id: appointment.service_id || "",
         employee_ids: appointment.employee_id ? [appointment.employee_id] : [],
-        appointment_date: date,
-        appointment_hour: hour,
-        appointment_minute: minute,
+        appointment_datetime: `${date}T${time}`,
         notes: appointment.notes || "",
         appointment_type: appointment.appointment_type || "one_time",
         recurrence_frequency: appointment.recurrence_frequency || "",
@@ -214,6 +282,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         duration_minutes: appointment.duration_minutes || "",
         status: appointment.status || "scheduled",
         is_paid: appointment.is_paid || false,
+        send_reminder: appointment.send_reminder ?? (scheduleSettings?.reminder_send_notification ?? true),
         discount: appointment.discount || 0,
         sale_transaction_id: appointment.sale_transaction_id || null,
         task_type: appointment.task_type || "service",
@@ -225,9 +294,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       client_ids: [],
       service_id: "",
       employee_ids: [],
-      appointment_date: "",
-      appointment_hour: "",
-      appointment_minute: "",
+      appointment_datetime: "",
       notes: "",
       appointment_type: "one_time",
       recurrence_frequency: "",
@@ -237,6 +304,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       duration_minutes: "",
       status: "scheduled",
       is_paid: false,
+      send_reminder: scheduleSettings?.reminder_send_notification ?? true,
       discount: 0,
       sale_transaction_id: null,
       task_type: "service",
@@ -251,7 +319,12 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
   useEffect(() => {
     setFormData(getInitialFormData());
-  }, [appointment]);
+  }, [appointment, scheduleSettings?.reminder_send_notification]);
+
+  useEffect(() => {
+    setClientMultiMode(Boolean((appointment?.client_ids || []).length > 1));
+    setEmployeeMultiMode(Boolean((appointment?.employee_ids || []).length > 1));
+  }, [appointment?.id]);
 
   // Load product inventory items once (for the production task selector)
   useEffect(() => {
@@ -381,15 +454,41 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }));
   };
 
+  const toggleClientMultiMode = () => {
+    setClientMultiMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        setFormData((current) => ({
+          ...current,
+          client_ids: current.client_ids?.length ? [current.client_ids[0]] : [],
+        }));
+      }
+      return next;
+    });
+  };
+
+  const toggleEmployeeMultiMode = () => {
+    setEmployeeMultiMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        setFormData((current) => ({
+          ...current,
+          employee_ids: current.employee_ids?.length ? [current.employee_ids[0]] : [],
+        }));
+      }
+      return next;
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const dateText = formData.appointment_date;
-    const hourText = formData.appointment_hour;
-    const minuteText = formData.appointment_minute;
+    const dateTimeText = formData.appointment_datetime;
+    const [dateText, rawTimeText] = String(dateTimeText || "").split("T");
+    const [hourText, minuteText] = String(rawTimeText || "").split(":");
 
     if (!dateText || !hourText || !minuteText) {
-      setTimeError("Please select a valid date, hour, and minute");
+      setTimeError("Please select a valid date and time");
       return;
     }
 
@@ -408,8 +507,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
 
     // Submit a naive local ISO string (no timezone) to avoid shifts server-side
-    const timeText = `${hourText}:${minuteText}`;
-    const appointmentDateStr = `${dateText}T${timeText}:00`;
+    const appointmentDateStr = `${dateText}T${hourText}:${minuteText}:00`;
 
     // Get config for current type to determine required fields
     const config = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
@@ -431,6 +529,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       duration_minutes: parseInt(formData.duration_minutes),
       status: formData.status,
       is_paid: formData.is_paid,
+      send_reminder: !!formData.send_reminder,
       discount: parseFloat(formData.discount) || 0,
       sale_transaction_id: formData.sale_transaction_id || null,
       task_type: formData.task_type || "service",
@@ -453,6 +552,18 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   // Get config for current appointment type
   const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
+  const appointmentDateOnly = formData.appointment_datetime ? formData.appointment_datetime.split("T")[0] : "";
+
+  const selectedEmployeeColor = employees.find((employee) => employee.id === formData.employee_ids?.[0])?.color || "#64748b";
+  const reminderButtonStyle = formData.send_reminder
+    ? {
+        minWidth: 96,
+        whiteSpace: "nowrap",
+        backgroundColor: `${selectedEmployeeColor}1A`,
+        borderColor: `${selectedEmployeeColor}66`,
+        color: selectedEmployeeColor,
+      }
+    : { minWidth: 96, whiteSpace: "nowrap" };
 
   const formTitle = appointment ? (formData.appointment_type === "meeting" ? "Edit Meeting" : formData.appointment_type === "task" ? "Edit Task" : "Edit Appointment") : formData.appointment_type === "meeting" ? "New Meeting" : formData.appointment_type === "task" ? "New Task" : "New Appointment";
 
@@ -468,30 +579,205 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
         <div className="flex-grow-1" />
         <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 pt-3 pb-2">
-          {/* Notes — shown at top for appointment/series types */}
+
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
-            <div className="form-floating">
-              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
-              <label htmlFor="notes">Notes (optional)</label>
-            </div>
+            <>
+              {/* [Event Type][Event Status] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  <Dropdown_Custom
+                    name="appointment_type"
+                    value={formData.appointment_type}
+                    onChange={handleChange}
+                    options={APPOINTMENT_TYPES.map((type) => ({
+                      value: type.value,
+                      label: type.label,
+                    }))}
+                    placeholder="Select event type"
+                    required
+                    label="Event Type"
+                    openUpward
+                    closeOnSelect
+                  />
+                </div>
+                <div className="col-6">
+                  <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
+                </div>
+              </div>
+
+              {/* [Select Clients][Select Employees] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  {typeConfig.needsClient && (
+                    <Dropdown_Custom
+                      name="client_id"
+                      value={clientMultiMode ? formData.client_ids : formData.client_ids[0] || ""}
+                      onChange={handleClientChange}
+                      options={clients.map((client) => ({
+                        value: client.id,
+                        label: `${client.first_name || ""} ${client.last_name || ""}`.trim() || client.name,
+                      }))}
+                      placeholder={typeConfig.clientMultiple ? "Select clients" : "Select a client"}
+                      required
+                      searchable={true}
+                      onOpen={handleClientDropdownOpen}
+                      loading={clientsLoading}
+                      multiSelect={clientMultiMode}
+                      useCountLabelForMultiSelect={clientMultiMode}
+                      showSelectionSummary={true}
+                      selectionSummaryEmptyLabel="0 selected"
+                      showActionFooter
+                      showClearButton
+                      allowMultiModeToggle
+                      isMultiModeActive={clientMultiMode}
+                      onToggleMultiMode={toggleClientMultiMode}
+                      openUpward
+                      closeOnSelect={!clientMultiMode}
+                    />
+                  )}
+                </div>
+                <div className="col-6">
+                  {typeConfig.needsEmployee && (
+                    <div>
+                      <Dropdown_Custom
+                        name="employee_id"
+                        value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
+                        onChange={handleEmployeeChange}
+                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                          value: employee.id,
+                          label: `${employee.first_name} ${employee.last_name}`.trim(),
+                        }))}
+                        placeholder={typeConfig.employeeMultiple ? "Select employees" : "Select employee"}
+                        required
+                        searchable={true}
+                        disabled={isWriteOnly}
+                        multiSelect={employeeMultiMode}
+                        useCountLabelForMultiSelect={employeeMultiMode}
+                        showSelectionSummary={true}
+                        selectionSummaryEmptyLabel="0 selected"
+                        showActionFooter
+                        showClearButton
+                        allowMultiModeToggle
+                        isMultiModeActive={employeeMultiMode}
+                        onToggleMultiMode={toggleEmployeeMultiMode}
+                        openUpward
+                        closeOnSelect={!employeeMultiMode}
+                      />
+                      {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* [Select Service][Select duration] */}
+              <div className="row g-2">
+                <div className="col-6">
+                  {typeConfig.needsService && (
+                    <Dropdown_Custom
+                      name="service_id"
+                      value={formData.service_id}
+                      onChange={handleServiceChange}
+                      options={services.map((service) => ({
+                        value: service.id,
+                        label: `${service.name} - $${service.price}`,
+                      }))}
+                      placeholder="Select a service"
+                      required
+                      searchable={true}
+                      openUpward
+                      closeOnSelect
+                    />
+                  )}
+                </div>
+                <div className="col-6">
+                  <div>
+                    <Dropdown_Custom
+                      name="duration_minutes"
+                      value={formData.duration_minutes}
+                      onChange={handleChange}
+                      options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
+                        value: mins.toString(),
+                        label: `${mins} min`,
+                      }))}
+                      placeholder="Select duration"
+                      required
+                      label="Duration"
+                      openUpward
+                      closeOnSelect
+                    />
+                    {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* [Unpaid + Reminder][Date/time] */}
+              <div className="row g-2">
+                <div className="col-6 d-flex align-items-end">
+                  {typeConfig.needsService && (
+                    <div className="d-flex gap-2 align-items-end w-100">
+                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_paid: !prev.is_paid }))} className={`btn btn-sm fw-semibold px-3 ${formData.is_paid ? "btn-success" : "btn-outline-secondary"}`} style={{ minWidth: 90, whiteSpace: "nowrap" }}>
+                        {formData.is_paid ? "✓ Paid" : "Unpaid"}
+                      </button>
+
+                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, send_reminder: !prev.send_reminder }))} className="btn btn-sm fw-semibold px-3 btn-outline-secondary" style={reminderButtonStyle}>
+                        Reminder
+                      </button>
+
+                      {appointment?.id && formData.service_id && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const client = clients.find((c) => c.id === (formData.client_ids[0] || appointment?.client_id));
+                            navigate("/sales", {
+                              state: {
+                                scheduleId: appointment.id,
+                                preSelectedClient: client || null,
+                                preloadServiceId: formData.service_id,
+                              },
+                            });
+                          }}
+                          className="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center"
+                          title="Open Sales checkout for paid + discount rules"
+                        >
+                          <CreditCardIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="col-6">
+                  <div className="form-floating">
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                    <label htmlFor="appointment_datetime">Date & Time</label>
+                  </div>
+                  {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Appointment Type */}
-          <Dropdown_Custom
-            name="appointment_type"
-            value={formData.appointment_type}
-            onChange={handleChange}
-            options={APPOINTMENT_TYPES.map((type) => ({
-              value: type.value,
-              label: type.label,
-            }))}
-            placeholder="Select event type"
-            required
-            label="Event Type"
-          />
+          {(formData.appointment_type === "meeting" || formData.appointment_type === "task") && (
+            <>
+              {/* Appointment Type */}
+              <Dropdown_Custom
+                name="appointment_type"
+                value={formData.appointment_type}
+                onChange={handleChange}
+                options={APPOINTMENT_TYPES.map((type) => ({
+                  value: type.value,
+                  label: type.label,
+                }))}
+                placeholder="Select event type"
+                required
+                label="Event Type"
+                openUpward
+                closeOnSelect
+              />
 
-          {/* Status */}
-          <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" />
+              {/* Status */}
+              <Dropdown_Custom name="status" value={formData.status} onChange={handleChange} options={APPOINTMENT_STATUS_OPTIONS} placeholder="Select status" required label="Status" openUpward closeOnSelect />
+            </>
+          )}
 
           {/* Meeting Title */}
           {formData.appointment_type === "meeting" && (
@@ -526,7 +812,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               {/* Product selector + batch count (production tasks only) */}
               {formData.task_type === "production" && (
                 <>
-                  <Dropdown_Custom name="production_item_id" value={formData.production_item_id} onChange={handleChange} options={productItems.map((p) => ({ value: p.id, label: `${p.name}${p.sku ? ` (${p.sku})` : ""}` }))} placeholder="Select product to produce" searchable label="Product" />
+                  <Dropdown_Custom name="production_item_id" value={formData.production_item_id} onChange={handleChange} options={productItems.map((p) => ({ value: p.id, label: `${p.name}${p.sku ? ` (${p.sku})` : ""}` }))} placeholder="Select product to produce" searchable footerSearch onCreateFromSearch={handleCreateProductFromSearch} createButtonTitle="Add product" label="Product" />
                   <div className="form-floating">
                     <input type="number" id="production_quantity" name="production_quantity" min="1" value={formData.production_quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Batches" />
                     <label htmlFor="production_quantity">Number of Batches</label>
@@ -657,78 +943,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </>
           )}
 
-          {/* Client Selection */}
-          {typeConfig.needsClient && (
-            <Dropdown_Custom
-              name="client_id"
-              value={typeConfig.clientMultiple ? formData.client_ids : formData.client_ids[0] || ""}
-              onChange={handleClientChange}
-              options={clients.map((client) => ({
-                value: client.id,
-                label: client.name,
-              }))}
-              placeholder={typeConfig.clientMultiple ? "Select clients" : "Select a client"}
-              required
-              searchable={true}
-              onOpen={handleClientDropdownOpen}
-              loading={clientsLoading}
-              multiSelect={typeConfig.clientMultiple}
-            />
-          )}
-
-          {/* Service Selection */}
-          {typeConfig.needsService && (
-            <Dropdown_Custom
-              name="service_id"
-              value={formData.service_id}
-              onChange={handleServiceChange}
-              options={services.map((service) => ({
-                value: service.id,
-                label: `${service.name} - $${service.price}`,
-              }))}
-              placeholder="Select a service"
-              required
-              searchable={true}
-            />
-          )}
-
-          {/* Payment & Discount — only for appointment types with a service */}
-          {typeConfig.needsService && (
-            <div className="d-flex gap-2 align-items-end">
-              {/* Paid toggle */}
-              <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_paid: !prev.is_paid }))} className={`btn btn-sm fw-semibold px-3 ${formData.is_paid ? "btn-success" : "btn-outline-secondary"}`} style={{ minWidth: 90, whiteSpace: "nowrap" }}>
-                {formData.is_paid ? "✓ Paid" : "Unpaid"}
-              </button>
-
-              {/* Discount */}
-              <div className="form-floating flex-grow-1">
-                <input type="number" id="discount" name="discount" min="0" step="0.01" value={formData.discount} onChange={handleChange} className="form-control form-control-sm" placeholder="Discount" />
-                <label htmlFor="discount">Discount ($)</label>
-              </div>
-
-              {/* Pay via Sales button — only when editing an existing appointment */}
-              {appointment?.id && formData.service_id && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const client = clients.find((c) => c.id === (formData.client_ids[0] || appointment?.client_id));
-                    navigate("/sales", {
-                      state: {
-                        scheduleId: appointment.id,
-                        preSelectedClient: client || null,
-                        preloadServiceId: formData.service_id,
-                      },
-                    });
-                  }}
-                  className="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center"
-                  title="Open Sales checkout for this appointment"
-                >
-                  <CreditCardIcon className="w-4 h-4" style={{ width: 16, height: 16 }} />
-                </button>
-              )}
-            </div>
-          )}
-
           {/* Resource Consumption Panel */}
           {typeConfig.needsService && serviceResources.length > 0 && (
             <div className="border rounded p-2" style={{ fontSize: "0.78rem" }}>
@@ -747,8 +961,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </div>
           )}
 
-          {/* Employee Selection */}
-          {typeConfig.needsEmployee && (
+          {/* Employee Selection (meeting/task layout) */}
+          {(formData.appointment_type === "meeting" || formData.appointment_type === "task") && typeConfig.needsEmployee && (
             <div>
               <Dropdown_Custom
                 name="employee_id"
@@ -758,11 +972,13 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   value: employee.id,
                   label: `${employee.first_name} ${employee.last_name}${employee.role ? ` - ${employee.role}` : ""}`,
                 }))}
-                placeholder={formData.appointment_type === "meeting" ? "Select attendees" : formData.appointment_type === "task" ? "Assign to" : typeConfig.employeeMultiple ? "Select employees" : "Select employee"}
+                placeholder={formData.appointment_type === "meeting" ? "Select attendees" : "Assign to"}
                 required
                 searchable={true}
                 disabled={isWriteOnly}
                 multiSelect={typeConfig.employeeMultiple}
+                openUpward
+                closeOnSelect
               />
               {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
             </div>
@@ -771,7 +987,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {/* Recurrence */}
           {formData.appointment_type === "series" && (
             <>
-              <Dropdown_Custom name="recurrence_frequency" value={formData.recurrence_frequency} onChange={handleChange} options={RECURRENCE_OPTIONS} placeholder="Select frequency" required label="Recurrence" />
+              <Dropdown_Custom name="recurrence_frequency" value={formData.recurrence_frequency} onChange={handleChange} options={RECURRENCE_OPTIONS} placeholder="Select frequency" required label="Recurrence" openUpward closeOnSelect />
 
               {/* End type toggle */}
               <div className="d-flex gap-2">
@@ -785,7 +1001,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
               {formData.recurrence_end_type === "date" && (
                 <div className="form-floating">
-                  <input type="date" id="recurrence_end_date" name="recurrence_end_date" value={formData.recurrence_end_date} onChange={handleChange} className="form-control form-control-sm" placeholder="End Date" min={formData.appointment_date || undefined} />
+                  <input type="date" id="recurrence_end_date" name="recurrence_end_date" value={formData.recurrence_end_date} onChange={handleChange} className="form-control form-control-sm" placeholder="End Date" min={appointmentDateOnly || undefined} />
                   <label htmlFor="recurrence_end_date">Repeat until</label>
                 </div>
               )}
@@ -799,62 +1015,42 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </>
           )}
 
-          {/* Duration */}
-          <div>
-            <Dropdown_Custom
-              name="duration_minutes"
-              value={formData.duration_minutes}
-              onChange={handleChange}
-              options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
-                value: mins.toString(),
-                label: `${mins} min`,
-              }))}
-              placeholder="Select duration"
-              required
-              label="Duration"
-            />
-            {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
-          </div>
+          {/* Duration + Date/Time (meeting/task layout) */}
+          {(formData.appointment_type === "meeting" || formData.appointment_type === "task") && (
+            <>
+              <div>
+                <Dropdown_Custom
+                  name="duration_minutes"
+                  value={formData.duration_minutes}
+                  onChange={handleChange}
+                  options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({
+                    value: mins.toString(),
+                    label: `${mins} min`,
+                  }))}
+                  placeholder="Select duration"
+                  required
+                  label="Duration"
+                  openUpward
+                  closeOnSelect
+                />
+                {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
+              </div>
 
-          {/* Date + Time */}
-          <div className="row g-2">
-            <div className="col-6">
               <div className="form-floating">
-                <input type="date" id="appointment_date" name="appointment_date" required value={formData.appointment_date} onChange={handleChange} className="form-control form-control-sm" placeholder="Date" />
-                <label htmlFor="appointment_date">Date</label>
+                <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                <label htmlFor="appointment_datetime">Date & Time</label>
               </div>
+              {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+            </>
+          )}
+
+          {/* Notes — shown for appointment/series types */}
+          {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
+            <div className="form-floating">
+              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
+              <label htmlFor="notes">Notes (optional)</label>
             </div>
-            <div className="col-6">
-              <div className="input-group">
-                <Dropdown_Custom
-                  name="appointment_hour"
-                  value={formData.appointment_hour || ""}
-                  onChange={handleChange}
-                  options={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((hour) => ({
-                    value: hour.toString().padStart(2, "0"),
-                    label: hour.toString().padStart(2, "0"),
-                  }))}
-                  placeholder="Hr"
-                  required
-                  className={`flex-1 ${timeError ? "border-red-500" : ""}`}
-                />
-                <span className="input-group-text">:</span>
-                <Dropdown_Custom
-                  name="appointment_minute"
-                  value={formData.appointment_minute || ""}
-                  onChange={handleChange}
-                  options={[0, 15, 30, 45].map((minute) => ({
-                    value: minute.toString().padStart(2, "0"),
-                    label: minute.toString().padStart(2, "0"),
-                  }))}
-                  placeholder="Min"
-                  required
-                  className={`flex-1 ${timeError ? "border-red-500" : ""}`}
-                />
-              </div>
-            </div>
-          </div>
-          {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
+          )}
 
           {/* Attendee status panel — only when editing an existing meeting */}
           {appointment?.id && formData.appointment_type === "meeting" && attendees.length > 0 && (

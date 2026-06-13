@@ -54,22 +54,37 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm("");
+    }
+  }, [isOpen]);
+
   const filteredOptions = searchTerm
-    ? options.filter((opt) => opt.label.toLowerCase().includes(searchTerm.toLowerCase()))
+    ? options.filter((opt) => {
+        const haystack = String(opt.searchText || opt.label || "").toLowerCase();
+        return haystack.includes(searchTerm.toLowerCase());
+      })
     : options;
 
   const selectedCount = selectedIds.length;
 
   return (
-    <div ref={dropupRef} className="position-relative">
+    <div ref={dropupRef} className="position-relative w-100" style={{ zIndex: isOpen ? 100 : 1 }}>
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`btn btn-sm d-flex align-items-center justify-content-between gap-2 w-100 ${
-          selectedCount > 0 ? "btn-primary" : "btn-outline-secondary"
-        }`}
-        style={{ fontSize: "var(--app-btn-label-font-size, 0.875rem)" }}
+        className="btn-unstyled d-flex align-items-center justify-content-between gap-2 w-100 rounded-pill"
+        style={{
+          height: "var(--app-input-height, 2rem)",
+          minHeight: "var(--app-input-height, 2rem)",
+          padding: "0 0.75rem",
+          fontSize: "var(--app-btn-label-font-size, 0.875rem)",
+          border: `1px solid ${selectedCount > 0 ? "var(--bs-primary)" : "var(--bs-border-color)"}`,
+          backgroundColor: selectedCount > 0 ? "var(--bs-primary)" : "var(--bs-body-bg)",
+          color: selectedCount > 0 ? "#fff" : "var(--bs-secondary-color)",
+        }}
       >
         <span className="text-truncate">
           {label}
@@ -85,8 +100,14 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
       {/* Dropup Panel */}
       {isOpen && (
         <div
-          className="position-absolute bottom-100 start-0 w-100 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
-          style={{ zIndex: 1000, maxHeight: "300px" }}
+          className="position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+          style={{
+            zIndex: 20050,
+            maxHeight: "300px",
+            minWidth: "max(18rem, 100%)",
+            width: "max-content",
+            maxWidth: "min(30rem, calc(100vw - 2rem))",
+          }}
         >
           {/* Search Input */}
           <div className="p-2 border-bottom border-gray-200 dark:border-gray-700">
@@ -107,8 +128,8 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
               <button
                 type="button"
                 onClick={onClear}
-                className="btn btn-link btn-sm p-0 text-muted mt-1"
-                style={{ fontSize: "0.75rem" }}
+                className="btn-unstyled p-0 text-muted mt-1"
+                style={{ fontSize: "0.75rem", textDecoration: "underline" }}
               >
                 Clear all ({selectedCount})
               </button>
@@ -148,7 +169,13 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="btn btn-sm btn-outline-secondary w-100"
+              className="btn-unstyled w-100 rounded-pill"
+              style={{
+                height: "var(--app-input-height, 2rem)",
+                border: "1px solid var(--bs-border-color)",
+                backgroundColor: "var(--bs-body-bg)",
+                color: "var(--bs-secondary-color)",
+              }}
             >
               Done
             </button>
@@ -216,16 +243,19 @@ export default function Dropup_ScheduleFilter({
   const employeeOptions = employees.map((e) => ({
     id: e.id,
     label: `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
+    searchText: [e.first_name, e.last_name, e.username, e.email, e.role].filter(Boolean).join(" "),
   }));
 
   const clientOptions = clients.map((c) => ({
     id: c.id,
     label: c.name,
+    searchText: [c.name, c.email, c.phone].filter(Boolean).join(" "),
   }));
 
   const serviceOptions = services.map((s) => ({
     id: s.id,
     label: s.name,
+    searchText: [s.name, s.category, s.description].filter(Boolean).join(" "),
   }));
 
   return (

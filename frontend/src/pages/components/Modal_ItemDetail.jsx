@@ -732,7 +732,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   });
   const [itemCategories, setItemCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [showNewLocationInput, setShowNewLocationInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
   const { isTrainingMode } = useViewMode();
@@ -862,7 +861,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         if (!cancelled) setItemCategories([]);
       });
     setShowCategoryManager(false);
-    setShowNewLocationInput(false);
     setNewCategoryName("");
     return () => {
       cancelled = true;
@@ -1556,44 +1554,16 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                   {!isLocation ? (
                     <div className={inventoryRowClass}>
-                      <div className="d-flex align-items-center gap-2" style={equalFieldStyle}>
-                        <div className="form-floating flex-grow-1 mb-0">
-                          <select
-                            id="detail_location"
-                            name="location"
-                            value={showNewLocationInput ? "" : formData.location}
-                            onChange={(e) => {
-                              setShowNewLocationInput(false);
-                              handleChange(e);
-                            }}
-                            className="form-select form-select-sm"
-                          >
-                            <option value="">Select location</option>
-                            {availableLocations.map((location) => (
-                              <option key={location} value={location}>
-                                {location}
-                              </option>
-                            ))}
-                          </select>
-                          <label htmlFor="detail_location">Location</label>
-                        </div>
-                        <button
-                          type="button"
-                          title={showNewLocationInput ? "Close" : "Add location"}
-                          onClick={() => {
-                            setShowNewLocationInput((prev) => {
-                              const next = !prev;
-                              if (next) {
-                                setFormData((current) => ({ ...current, location: "" }));
-                              }
-                              return next;
-                            });
-                          }}
-                          className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                          style={{ fontSize: "1rem" }}
-                        >
-                          {showNewLocationInput ? "×" : "+"}
-                        </button>
+                      <div className="form-floating" style={equalFieldStyle}>
+                        <select id="detail_location" name="location" value={formData.location} onChange={handleChange} className="form-select form-select-sm">
+                          <option value="">Select location</option>
+                          {availableLocations.map((location) => (
+                            <option key={location} value={location}>
+                              {location}
+                            </option>
+                          ))}
+                        </select>
+                        <label htmlFor="detail_location">Location</label>
                       </div>
 
                       <div className="form-floating" style={equalFieldStyle}>
@@ -1651,23 +1621,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   </div>
                 </div>
                 {saleDateError && <div className="alert alert-danger py-1 small mt-1 mb-2">{saleDateError}</div>}
-
-                {showNewLocationInput && (
-                  <div className="form-floating mb-2">
-                    <input
-                      type="text"
-                      id="detail_new_location"
-                      name="location"
-                      value={formData.location}
-                      onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, location: e.target.value }));
-                      }}
-                      className="form-control form-control-sm"
-                      placeholder="Enter new location"
-                    />
-                    <label htmlFor="detail_new_location">New Location</label>
-                  </div>
-                )}
 
                 {/* Category picker disabled for now; re-enable later once the flow is ready. */}
                 {/* {!isLocation && (

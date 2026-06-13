@@ -28,6 +28,7 @@
  *   2026-03-01 | Claude  | P10-A: KPI summary cards; P10-B: collapsible data table; P10-C: CSV export
  *   2026-05-15 | Copilot | Shortened standalone report action labels for compact training-mode layouts
  *   2026-05-26 | GitHub Copilot | Updated Events dropup sizing/icon behavior and refined Financial Controls footer actions
+ *   2026-06-13 | GitHub Copilot | Added report controls visibility toggle and normalized report selector dropup behavior
  * ============================================================
  */
 
@@ -57,6 +58,8 @@ import {
   PhoneIcon,
   BellIcon,
   ListBulletIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
@@ -388,6 +391,7 @@ export default function Reports() {
   const [fullScreenMode, setFullScreenMode] = useState(false);
   const [kpiVisibility, setKpiVisibility] = useState({ Total: true, "Avg / Period": true, Peak: true, Periods: true });
   const [eventTypeMenuOpen, setEventTypeMenuOpen] = useState(false);
+  const [showReportControls, setShowReportControls] = useState(false);
   const eventTypeRef = useRef(null);
 
   // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
@@ -1090,6 +1094,22 @@ export default function Reports() {
           onSearch={() => {}}
           beforeSearch={
             <div className="d-flex flex-wrap align-items-center gap-2 w-100">
+              <Button_Toolbar
+                icon={showReportControls ? EyeSlashIcon : EyeIcon}
+                label={isTrainingMode ? (showReportControls ? "Hide" : "Show") : ""}
+                onClick={() => {
+                  setShowReportControls((prev) => {
+                    const next = !prev;
+                    if (!next) setEventTypeMenuOpen(false);
+                    return next;
+                  });
+                }}
+                className="btn-outline-secondary"
+                title={showReportControls ? "Hide report controls" : "Show report controls"}
+              />
+
+              {showReportControls && (
+                <>
               <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
                 {DATE_RANGE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1147,23 +1167,21 @@ export default function Reports() {
               )}
 
               {canUseEventType && (
-                <div className="position-relative w-100" ref={eventTypeRef}>
+                <div className="position-relative" ref={eventTypeRef}>
                   <button
                     type="button"
                     onClick={() => setEventTypeMenuOpen((v) => !v)}
                     onKeyDown={handleEventTypeKeyDown}
                     aria-haspopup="listbox"
                     aria-expanded={eventTypeMenuOpen}
-                    className="btn btn-outline-secondary btn-sm rounded-pill d-flex align-items-center justify-content-between w-100"
-                    style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
+                    className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                    style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minWidth: "11rem" }}
                   >
-                    <CalendarIcon className="h-4 w-4 flex-shrink-0 me-1" />
-                    {FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}
+                    <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                    <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
                   </button>
                   {eventTypeMenuOpen && (
-                    <div className="position-absolute bottom-100 start-0 
-                    bg-white dark:bg-gray-900 border border-gray-200 
-                    dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, width: "100%", maxHeight: "16rem", margin: 0 }} role="listbox">
+                    <div className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
                       {FILTER_CONFIG.eventType.options.map((o) => {
                         const OptionIcon = o.icon;
                         return (
@@ -1191,7 +1209,7 @@ export default function Reports() {
                             }
                           }}
                           tabIndex={0}
-                          className={`px-2 py-1 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                          className={`px-3 py-2 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
                           style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
                           role="option"
                           aria-selected={reportFilters.eventType === o.value}
@@ -1203,6 +1221,8 @@ export default function Reports() {
                     </div>
                   )}
                 </div>
+              )}
+                </>
               )}
 
               {/* Time Navigation */}

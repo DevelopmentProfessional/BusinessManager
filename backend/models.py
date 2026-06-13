@@ -595,6 +595,7 @@ class Schedule(BaseModel, table=True):
     is_recurring_master: bool = Field(default=False)
     # Payment fields
     is_paid: bool = Field(default=False)
+    send_reminder: bool = Field(default=False)
     discount: float = Field(default=0.0, ge=0)  # flat discount amount
     sale_transaction_id: Optional[UUID] = Field(default=None)  # no FK to avoid circular dependency
     # Production task fields
@@ -652,6 +653,8 @@ class AppSettings(BaseModel, table=True):
     start_of_day: str = Field(default="06:00")  # HH:MM format
     end_of_day: str = Field(default="21:00")  # HH:MM format
     attendance_check_in_required: bool = Field(default=False)
+    reminder_time_minutes: int = Field(default=30)
+    reminder_send_notification: bool = Field(default=True)
     # Days of operation (True = business operates on this day)
     monday_enabled: bool = Field(default=True)
     tuesday_enabled: bool = Field(default=True)
@@ -1386,6 +1389,7 @@ class ScheduleCreate(SQLModel):
     parent_schedule_id: Optional[UUID] = None
     is_recurring_master: bool = False
     is_paid: bool = False
+    send_reminder: bool = False
     discount: float = 0.0
     sale_transaction_id: Optional[UUID] = None
 
@@ -1405,6 +1409,7 @@ class ScheduleUpdate(SQLModel):
     parent_schedule_id: Optional[UUID] = None
     is_recurring_master: Optional[bool] = None
     is_paid: Optional[bool] = None
+    send_reminder: Optional[bool] = None
     discount: Optional[float] = None
     sale_transaction_id: Optional[UUID] = None
 
@@ -1426,6 +1431,7 @@ class ScheduleRead(SQLModel):
     parent_schedule_id: Optional[UUID] = None
     is_recurring_master: bool = False
     is_paid: bool = False
+    send_reminder: bool = False
     discount: float = 0.0
     sale_transaction_id: Optional[UUID] = None
     task_type: str = "service"
@@ -1512,6 +1518,8 @@ class AppSettingsCreate(SQLModel):
     start_of_day: str = "06:00"
     end_of_day: str = "21:00"
     attendance_check_in_required: bool = False
+    reminder_time_minutes: int = 30
+    reminder_send_notification: bool = True
     monday_enabled: bool = True
     tuesday_enabled: bool = True
     wednesday_enabled: bool = True
@@ -1525,6 +1533,8 @@ class AppSettingsUpdate(SQLModel):
     start_of_day: Optional[str] = None
     end_of_day: Optional[str] = None
     attendance_check_in_required: Optional[bool] = None
+    reminder_time_minutes: Optional[int] = None
+    reminder_send_notification: Optional[bool] = None
     monday_enabled: Optional[bool] = None
     tuesday_enabled: Optional[bool] = None
     wednesday_enabled: Optional[bool] = None
@@ -1558,6 +1568,8 @@ class AppSettingsRead(SQLModel):
     start_of_day: str
     end_of_day: str
     attendance_check_in_required: bool
+    reminder_time_minutes: int = 30
+    reminder_send_notification: bool = True
     monday_enabled: bool
     tuesday_enabled: bool
     wednesday_enabled: bool
