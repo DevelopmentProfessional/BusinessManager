@@ -10,13 +10,7 @@ export default function Button_Filter({ options, value, onChange, label, icon: I
 
   return (
     <div className="position-relative">
-      <Button_Toolbar
-        icon={Icon}
-        label={label}
-        onClick={() => setIsOpen((v) => !v)}
-        className={`border-0 transition-all ${isActive ? "bg-gray-600 text-white" : "btn-app-secondary"} ${className}`}
-        data-active={isActive}
-      />
+      <Button_Toolbar icon={Icon} label={label} onClick={() => setIsOpen((v) => !v)} className={`border-0 transition-all ${isActive ? "bg-gray-600 text-white" : "btn-app-secondary"} ${className}`} data-active={isActive} />
       {isOpen && (
         <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50 app-dropdown--min">
           {options.map((option) => (
@@ -26,11 +20,7 @@ export default function Button_Filter({ options, value, onChange, label, icon: I
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${
-                value === option.value
-                  ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
-                  : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
-              }`}
+              className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${value === option.value ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
             >
               {option.label}
             </button>
