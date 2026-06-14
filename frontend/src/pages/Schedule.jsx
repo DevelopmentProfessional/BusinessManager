@@ -581,15 +581,22 @@ export default function Schedule() {
   // ─── 13 CRUD HANDLERS ────────────────────────────────────────────────────────
   const handleSubmitAppointment = useCallback(
     async (appointmentData) => {
+      const effectiveType = appointmentData.appointment_type || editingAppointment?.appointment_type || "one_time";
+      const requiresClientService = effectiveType === "one_time" || effectiveType === "series";
       const employeeIds = normalizeIds(appointmentData.employee_ids ?? appointmentData.employee_id);
       const clientIds = normalizeIds(appointmentData.client_ids ?? appointmentData.client_id);
-      const primaryEmployeeId = employeeIds[0] || appointmentData.employee_id;
-      const primaryClientId = clientIds[0] || appointmentData.client_id;
+      const primaryEmployeeId = employeeIds[0] || appointmentData.employee_id || editingAppointment?.employee_id;
+      const primaryClientId = requiresClientService ? clientIds[0] || appointmentData.client_id || editingAppointment?.client_id : null;
+      const primaryServiceId = requiresClientService ? appointmentData.service_id || editingAppointment?.service_id : null;
+
+      if (!primaryEmployeeId) {
+        throw new Error("Please select an employee before saving.");
+      }
 
       const schedulePayload = {
         employee_id: primaryEmployeeId,
         appointment_date: appointmentData.appointment_date,
-        appointment_type: appointmentData.appointment_type || "one_time",
+        appointment_type: effectiveType,
         duration_minutes: parseInt(appointmentData.duration_minutes) || 60,
         notes: appointmentData.notes || null,
         status: appointmentData.status || "scheduled",
@@ -601,7 +608,7 @@ export default function Schedule() {
         send_reminder: appointmentData.send_reminder ?? scheduleSettings.reminder_send_notification ?? true,
       };
       if (primaryClientId) schedulePayload.client_id = primaryClientId;
-      if (appointmentData.service_id) schedulePayload.service_id = appointmentData.service_id;
+      if (primaryServiceId) schedulePayload.service_id = primaryServiceId;
 
       let savedRecord;
       if (editingAppointment && editingAppointment.id) {
@@ -613,14 +620,14 @@ export default function Schedule() {
       }
 
       // Auto-add service to client cart when appointment has a client + service
-      if (appointmentData.service_id && primaryClientId) {
-        const svc = services.find((s) => s.id === appointmentData.service_id);
+      if (primaryServiceId && primaryClientId) {
+        const svc = services.find((s) => s.id === primaryServiceId);
         if (svc) {
           try {
             await clientCartAPI.upsertItem(primaryClientId, {
-              cart_key: `schedule-${savedRecord?.id || "new"}-${appointmentData.service_id}`,
+              cart_key: `schedule-${savedRecord?.id || "new"}-${primaryServiceId}`,
               item_type: "service",
-              item_id: appointmentData.service_id,
+              item_id: primaryServiceId,
               item_name: svc.name,
               unit_price: svc.price ?? 0,
               quantity: 1,
@@ -672,11 +679,25 @@ export default function Schedule() {
     setDragOverCell(null);
   }, []);
 
+  const _formatLocalDateTime = useCallback((date) => {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+  }, []);
+
+  const _snapMinuteToQuarter = useCallback((e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect.height) return 0;
+    const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 0.001));
+    const minuteInHour = (y / rect.height) * 60;
+    return Math.floor(minuteInHour / 15) * 15;
+  }, []);
+
   const handleDragOver = useCallback((e, targetDate, targetHour = null) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setDragOverCell({ date: targetDate, hour: targetHour });
-  }, []);
+    const snappedMinute = targetHour !== null ? _snapMinuteToQuarter(e) : null;
+    setDragOverCell({ date: targetDate, hour: targetHour, minute: snappedMinute });
+  }, [_snapMinuteToQuarter]);
 
   const handleDragLeave = useCallback((e) => {
     // Only clear if we're leaving the calendar area entirely
@@ -690,6 +711,8 @@ export default function Schedule() {
       e.preventDefault();
 
       if (!draggedAppointment) return;
+
+      const dropMinute = targetHour !== null ? dragOverCell?.minute ?? _snapMinuteToQuarter(e) : null;
 
       if (!isDayEnabled(targetDate)) {
         setPastDateError("This day is disabled in Schedule Settings");
@@ -723,17 +746,17 @@ export default function Schedule() {
 
       const newDate = new Date(targetDate);
       if (targetHour !== null) {
-        newDate.setUTCHours(targetHour, 0, 0, 0);
+        newDate.setHours(targetHour, dropMinute ?? 0, 0, 0);
       } else {
         const originalTime = new Date(draggedAppointment.appointment_date);
-        newDate.setUTCHours(originalTime.getUTCHours(), originalTime.getUTCMinutes(), 0, 0);
+        newDate.setHours(originalTime.getHours(), originalTime.getMinutes(), 0, 0);
       }
 
       const updatedAppointment = {
         client_id: draggedAppointment.client_id,
         service_id: draggedAppointment.service_id,
         employee_id: draggedAppointment.employee_id,
-        appointment_date: newDate.toISOString(),
+        appointment_date: _formatLocalDateTime(newDate),
         status: draggedAppointment.status || "scheduled",
         notes: draggedAppointment.notes || null,
         appointment_type: draggedAppointment.appointment_type || "one_time",
@@ -747,7 +770,18 @@ export default function Schedule() {
       setDraggedAppointment(null);
       setDragOverCell(null);
     },
-    [currentView, draggedAppointment, isDayEnabled, pastDateErrorTimer, refreshSchedules, scheduleSettings.end_of_day, scheduleSettings.start_of_day]
+    [
+      _formatLocalDateTime,
+      _snapMinuteToQuarter,
+      currentView,
+      dragOverCell?.minute,
+      draggedAppointment,
+      isDayEnabled,
+      pastDateErrorTimer,
+      refreshSchedules,
+      scheduleSettings.end_of_day,
+      scheduleSettings.start_of_day,
+    ]
   );
 
   const closeModal = useCallback(() => {
@@ -926,6 +960,22 @@ export default function Schedule() {
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, date, hour)}
                           >
+                            {dragOverCell?.date?.toDateString() === date.toDateString() && dragOverCell?.hour === hour && draggedAppointment && (
+                              <div
+                                aria-hidden="true"
+                                style={{
+                                  position: "absolute",
+                                  top: `${((dragOverCell?.minute ?? 0) / 60) * 100}%`,
+                                  height: `${((draggedAppointment?.duration_minutes || 60) / 60) * 100}%`,
+                                  width: "95%",
+                                  border: "2px dashed rgba(37,99,235,0.9)",
+                                  backgroundColor: "rgba(37,99,235,0.08)",
+                                  borderRadius: "6px",
+                                  pointerEvents: "none",
+                                  zIndex: 12050,
+                                }}
+                              />
+                            )}
                             {appointmentsForTimeSlot.length > 1
                               ? (() => {
                                   const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
@@ -1066,6 +1116,22 @@ export default function Schedule() {
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, days[0], hour)}
                         >
+                          {dragOverCell?.date?.toDateString() === days[0].toDateString() && dragOverCell?.hour === hour && draggedAppointment && (
+                            <div
+                              aria-hidden="true"
+                              style={{
+                                position: "absolute",
+                                top: `${((dragOverCell?.minute ?? 0) / 60) * 100}%`,
+                                height: `${((draggedAppointment?.duration_minutes || 60) / 60) * 100}%`,
+                                width: "95%",
+                                border: "2px dashed rgba(37,99,235,0.9)",
+                                backgroundColor: "rgba(37,99,235,0.08)",
+                                borderRadius: "6px",
+                                pointerEvents: "none",
+                                zIndex: 12050,
+                              }}
+                            />
+                          )}
                           {appointmentsForTimeSlot.length > 1
                             ? (() => {
                                 const earliestEvent = appointmentsForTimeSlot.reduce((earliest, event) => {
@@ -1288,10 +1354,10 @@ export default function Schedule() {
 
         <footer className="app-footer-shell schedule-footer app-footer-padding app-standard-footer border-top">
           <div className="app-footer-toolbar d-flex align-items-center">
-            <Button_Toolbar icon={MonthViewIcon} label="Month" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} title="Month view" />
-            <Button_Toolbar icon={WeekViewIcon} label="Week" onClick={() => setCurrentView("week")} className={currentView === "week" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "week"} title="Week view" />
+            <Button_Toolbar icon={MonthViewIcon} label="Mon" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} title="Month view" />
+            <Button_Toolbar icon={WeekViewIcon} label="Week" onClick={() => setCurrentView("week")} className={`${currentView === "week" ? "btn-primary" : "btn-outline-secondary"} p-0`} data-active={currentView === "week"} title="Week view" />
             <Button_Toolbar icon={DayViewIcon} label="Day" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} title="Day view" />
-            <Button_Toolbar icon={TodayIcon} label="Today" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" title="Go to today" />
+            <Button_Toolbar icon={TodayIcon} label="Now" onClick={() => setCurrentDate(new Date())} className="btn-outline-secondary" title="Go to today" />
             <Button_Toolbar icon={ChevronLeftIcon} label="Prev" onClick={handleNavigatePrevious} className="btn-outline-secondary" title="Previous" />
             <Button_Toolbar icon={ChevronRightIcon} label="Next" onClick={handleNavigateNext} className="btn-outline-secondary" />
             <Button_Toolbar

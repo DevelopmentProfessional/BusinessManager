@@ -43,7 +43,7 @@
 
 import React, { useState, useEffect } from "react";
 import useStore from "../../services/useStore";
-import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI, scheduleAPI } from "../../services/api";
+import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon, CheckIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
@@ -97,6 +97,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsLoaded, setClientsLoaded] = useState(false);
   const [durationError, setDurationError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientMultiMode, setClientMultiMode] = useState(false);
   const [employeeMultiMode, setEmployeeMultiMode] = useState(false);
   const [serviceResources, setServiceResources] = useState([]);
@@ -439,8 +441,11 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setSubmitError("");
 
     const dateTimeText = formData.appointment_datetime;
     const [dateText, rawTimeText] = String(dateTimeText || "").split("T");
@@ -503,7 +508,14 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       submitData.service_id = formData.service_id;
     }
 
-    onSubmit(submitData);
+    try {
+      setIsSubmitting(true);
+      await Promise.resolve(onSubmit(submitData));
+    } catch (error) {
+      setSubmitError(getDetailedApiErrorMessage(error, "Failed to save appointment"));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
@@ -933,6 +945,12 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               </div>
             </div>
           )}
+
+          {submitError && (
+            <div className="alert alert-danger py-2 mb-0" role="alert" style={{ fontSize: "0.8rem" }}>
+              {submitError}
+            </div>
+          )}
         </form>
       </div>
 
@@ -940,7 +958,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       {/* Footer */}
       <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
         <Footer_Actions
-          start={<Button_Toolbar icon={CheckIcon} label={appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} />}
+          start={<Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
           end={null}
         />

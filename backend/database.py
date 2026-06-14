@@ -38,6 +38,8 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-29 | GitHub Copilot | Removed stale SQLite migration paths and aligned runtime helpers with PostgreSQL-only deployment
 #   2026-05-26 | GitHub Copilot | Added asset_unit.employee_id migration/required artifact checks for assigned/shared asset ownership
+#   2026-06-13 | GitHub Copilot | Extended required schema artifact checks with schedule columns to prevent stale version-marker skips
+#   2026-06-13 | GitHub Copilot | Added sale_transaction.discount_amount schema checks/migration to fix schedule delete failures
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -111,6 +113,30 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='descriptive_feature' AND column_name='description'"
             )).fetchone()
+            schedule_appointment_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='appointment_type'"
+            )).fetchone()
+            schedule_duration_minutes_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='duration_minutes'"
+            )).fetchone()
+            schedule_recurrence_frequency_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='recurrence_frequency'"
+            )).fetchone()
+            schedule_parent_schedule_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='parent_schedule_id'"
+            )).fetchone()
+            schedule_send_reminder_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='send_reminder'"
+            )).fetchone()
+            sale_transaction_discount_amount_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='discount_amount'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -121,6 +147,12 @@ def _required_schema_artifacts_present() -> bool:
                 and asset_unit_employee_column is not None
                 and asset_unit_location_column is not None
                 and descriptive_feature_description_column is not None
+                and schedule_appointment_type_column is not None
+                and schedule_duration_minutes_column is not None
+                and schedule_recurrence_frequency_column is not None
+                and schedule_parent_schedule_id_column is not None
+                and schedule_send_reminder_column is not None
+                and sale_transaction_discount_amount_column is not None
             )
     except Exception:
         return False
@@ -245,7 +277,7 @@ def _migrate_document_entity_type_enum_to_varchar():
 # ─── 15b MIGRATION: SCHEDULE PAYMENT + SERVICE RESOURCE RATE ───────────────────
 def _ensure_schedule_payment_columns_if_needed():
     """Add is_paid, discount, sale_transaction_id to schedule;
-    schedule_id to sale_transaction; consumption_rate_pct to service_resource."""
+    schedule_id + financial columns to sale_transaction; consumption_rate_pct to service_resource."""
     tables = {
         "schedule": {
             "is_paid": "BOOLEAN NOT NULL DEFAULT FALSE",
@@ -255,6 +287,7 @@ def _ensure_schedule_payment_columns_if_needed():
         },
         "sale_transaction": {
             "schedule_id": "UUID",
+            "discount_amount": "DOUBLE PRECISION NOT NULL DEFAULT 0.0",
         },
         "service_resource": {
             "consumption_rate_pct": "DOUBLE PRECISION",
