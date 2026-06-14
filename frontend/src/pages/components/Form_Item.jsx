@@ -688,7 +688,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </svg>
                 </button>
                 {isTypeDropdownOpen && (
-                  <div className="position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                  <div className="app-menu-panel position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
                     {typeOptions.map((option, index) => {
                       const isHelpOpen = typeHelpKey === option.value;
                       return (
@@ -700,15 +700,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                               setIsTypeDropdownOpen(false);
                               setTypeHelpKey(null);
                             }}
-                            className="btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
-                            style={{ fontSize: "0.875rem" }}
+                            className="app-menu-item btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
                           >
                             {option.label}
                           </button>
                           <div className="flex-shrink-0">
                             <button
                               type="button"
-                              className="btn btn-link btn-sm p-0 text-primary border-0"
+                              className="app-menu-action btn btn-link btn-sm p-0 text-primary border-0"
                               aria-label={`${option.label} help`}
                               onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();

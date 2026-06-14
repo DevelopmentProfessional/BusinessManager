@@ -47,7 +47,7 @@ export default function Dropdown_Filter({
 
       {isOpen && (
         <div
-          className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min"
+          className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min"
           style={dropdownStyle}
         >
           {options.map((option, index) => {
@@ -63,7 +63,7 @@ export default function Dropdown_Filter({
                     setIsOpen(false);
                     setHelpKey(null);
                   }}
-                  className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${
+                  className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${
                     isSelected
                       ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
                       : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -77,7 +77,7 @@ export default function Dropdown_Filter({
                     <button
                       type="button"
                       aria-label={`${option.label} help`}
-                      className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                      className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
                       
                       onMouseEnter={() => setHelpKey(option.value)}
                       onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
@@ -92,7 +92,7 @@ export default function Dropdown_Filter({
 
                     {isHelpOpen && (
                       <div
-                        className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                        className="app-menu-panel position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
                         style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                         onMouseEnter={() => setHelpKey(option.value)}
                         onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}

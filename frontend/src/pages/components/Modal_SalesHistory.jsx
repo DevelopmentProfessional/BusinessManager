@@ -124,7 +124,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                 )}
               </div>
               {clientDropupOpen && (
-                <div className="position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
+                <div className="app-menu-panel position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
                   {clients
                     .filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()))
                     .slice(0, 8)
@@ -132,16 +132,16 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                       <button
                         key={c.id}
                         type="button"
-                        className="w-100 text-start px-2 py-1 border-0 bg-transparent small"
+                        className="app-menu-item w-100 text-start px-2 py-1 border-0 bg-transparent"
                         style={{ cursor: "pointer" }}
                         onClick={() => { setLocal((p) => ({ ...p, clientQuery: c.name })); setClientSearch(""); setClientDropupOpen(false); }}
                       >
                         <div className="fw-semibold">{c.name}</div>
-                        {c.email && <div className="text-muted" style={{ fontSize: "0.7rem" }}>{c.email}</div>}
+                        {c.email && <div className="text-muted">{c.email}</div>}
                       </button>
                     ))}
                   {clients.filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
-                    <div className="small text-muted px-2 py-1">No matches</div>
+                    <div className="app-menu-empty text-muted px-2 py-1">No matches</div>
                   )}
                 </div>
               )}
@@ -167,7 +167,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                 )}
               </div>
               {employeeDropupOpen && (
-                <div className="position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
+                <div className="app-menu-panel position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
                   {employees
                     .filter((e) => {
                       if (!employeeSearch) return true;

@@ -1257,48 +1257,73 @@ export default function Schedule() {
                             <div className="date-number">{date.getDate()}</div>
                             {!filters.showOutOfOffice && appointmentsForDate.length > 0 && (
                               <div className="appointments">
-                                {appointmentsForDate.map((appointment) => {
-                                  const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
-                                  const appointmentTime = new Date(appointment.appointment_date);
-                                  const timeString = appointmentTime.toLocaleTimeString("en-US", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false,
-                                  });
-
-                                  const employeeColor = employeeColorMap.get(appointment.employee_id) || "#2563eb";
-                                  const isMeeting = appointment.appointment_type === "meeting";
-                                  const isCancelled = appointment.status === "cancelled";
-                                  return (
-                                    <div
-                                      key={appointment.id}
-                                      className="appointment-dot"
-                                      title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
-                                      style={{
-                                        position: "relative",
-                                        backgroundColor: employeeColor,
-                                        opacity: isCancelled ? 0.65 : 1,
-                                        borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
-                                      }}
-                                      draggable={true}
-                                      onDragStart={(e) => handleDragStart(e, appointment)}
-                                      onDragEnd={handleDragEnd}
-                                      onClick={(e) => handleAppointmentClick(e, appointment)}
-                                    >
-                                      {appointment.service_id && <span style={{ position: "absolute", top: 2, right: 2, fontSize: "0.5rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
-                                      <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
-                                        <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                                          {primaryLabel}
-                                        </span>
+                                {appointmentsForDate.length > 1 ? (
+                                  /* Grouped indicator — tapping opens the overlap bottom sheet */
+                                  <div
+                                    className="appointment-dot month-group-bar"
+                                    title={`${appointmentsForDate.length} appointments`}
+                                    style={{ position: "relative", cursor: "pointer" }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOverlapEvents([...appointmentsForDate]);
+                                    }}
+                                  >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+                                      <span className="overlap-count" style={{ minWidth: 16, textAlign: "center" }}>{appointmentsForDate.length}</span>
+                                      <div className="overlap-dots" style={{ display: "flex", gap: 2 }}>
+                                        {appointmentsForDate.map((appt) => (
+                                          <span key={appt.id} style={{ color: employeeColorMap.get(appt.employee_id) || "#2563eb", fontSize: "0.75rem" }}>&bull;</span>
+                                        ))}
                                       </div>
-                                      {secondaryLabel && (
-                                        <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                          {secondaryLabel}
-                                        </div>
-                                      )}
+                                      <span className="appointment-service" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, fontSize: "0.65rem" }}>
+                                        appointments
+                                      </span>
                                     </div>
-                                  );
-                                })}
+                                  </div>
+                                ) : (
+                                  appointmentsForDate.map((appointment) => {
+                                    const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appointment);
+                                    const appointmentTime = new Date(appointment.appointment_date);
+                                    const timeString = appointmentTime.toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: false,
+                                    });
+
+                                    const employeeColor = employeeColorMap.get(appointment.employee_id) || "#2563eb";
+                                    const isMeeting = appointment.appointment_type === "meeting";
+                                    const isCancelled = appointment.status === "cancelled";
+                                    return (
+                                      <div
+                                        key={appointment.id}
+                                        className="appointment-dot"
+                                        title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
+                                        style={{
+                                          position: "relative",
+                                          backgroundColor: employeeColor,
+                                          opacity: isCancelled ? 0.65 : 1,
+                                          borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
+                                        }}
+                                        draggable={true}
+                                        onDragStart={(e) => handleDragStart(e, appointment)}
+                                        onDragEnd={handleDragEnd}
+                                        onClick={(e) => handleAppointmentClick(e, appointment)}
+                                      >
+                                        {appointment.service_id && <span style={{ position: "absolute", top: 2, right: 2, fontSize: "0.5rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
+                                          <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                                            {primaryLabel}
+                                          </span>
+                                        </div>
+                                        {secondaryLabel && (
+                                          <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                            {secondaryLabel}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })
+                                )}
                               </div>
                             )}
                             {(() => {
@@ -1870,7 +1895,7 @@ export default function Schedule() {
         .appointment-dot {
           background: #007bff;
           color: white;
-          padding: 4px 6px;
+          padding: 4px 0 4px 6px;
           border-radius: 8px;
           font-size: 10px;
           margin-bottom: 2px;
@@ -2121,7 +2146,7 @@ export default function Schedule() {
           }
           .appointment-dot {
             font-size: 9px;
-            padding: 3px 4px;
+            padding: 3px 0 3px 4px;
           }
           .appointment-event {
             font-size: 8px;
@@ -2158,7 +2183,7 @@ export default function Schedule() {
           }
           .appointment-dot {
             font-size: 8px;
-            padding: 2px 3px;
+            padding: 2px 0 2px 3px;
           }
           .appointment-event {
             font-size: 7px;

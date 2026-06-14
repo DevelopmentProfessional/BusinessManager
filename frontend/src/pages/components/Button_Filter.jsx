@@ -18,7 +18,7 @@ export default function Button_Filter({ options, value, onChange, label, icon: I
         data-active={isActive}
       />
       {isOpen && (
-        <div className="position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50 app-dropdown--min">
+        <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50 app-dropdown--min">
           {options.map((option) => (
             <button
               key={option.value}
@@ -26,7 +26,7 @@ export default function Button_Filter({ options, value, onChange, label, icon: I
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${
+              className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${
                 value === option.value
                   ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
                   : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"

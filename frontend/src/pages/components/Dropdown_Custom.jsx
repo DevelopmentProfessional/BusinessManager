@@ -167,14 +167,14 @@ export default function Dropdown_Custom({
       {multiSelect && showSelectionSummary && <div className="mt-1 text-xs text-gray-600 dark:text-gray-300">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
 
       {isOpen && (
-        <div className={`absolute z-50 w-full border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
+        <div className={`app-menu-panel absolute z-50 w-full border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
           {loading ? (
-            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+            <div className="app-menu-empty px-3 py-2 text-gray-500 dark:text-gray-400 flex items-center gap-2">
               <span className="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
               Loading...
             </div>
           ) : filteredOptions.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No options available</div>
+            <div className="app-menu-empty px-3 py-2 text-gray-500 dark:text-gray-400">No options available</div>
           ) : (
             <div className="overflow-y-auto">
               {filteredOptions.map((option) => {
@@ -185,7 +185,7 @@ export default function Dropdown_Custom({
                     type="button"
                     onClick={() => handleSelect(option)}
                     className={`
-                    w-full px-3 py-2 text-left focus:outline-none
+                    app-menu-item w-full px-3 py-2 text-left focus:outline-none
                     hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
                     ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"}
                   `}
@@ -199,7 +199,7 @@ export default function Dropdown_Custom({
           )}
 
           {searchable && footerSearch && (
-            <div className="px-2 py-2 border-top border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 d-flex align-items-center gap-2">
+            <div className="app-menu-search px-2 py-2 border-top border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 d-flex align-items-center gap-2">
               {typeof onCreateFromSearch === "function" && (
                 <button
                   type="button"
@@ -223,16 +223,16 @@ export default function Dropdown_Custom({
 
           {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle) && (
             <div className="d-flex gap-2 p-2 border-top border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky bottom-0">
-              <button type="button" onClick={() => setIsOpen(false)} className="btn btn-sm btn-outline-secondary flex-grow-1">
+              <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-sm btn-outline-secondary flex-grow-1">
                 OK
               </button>
               {showClearButton && (
-                <button type="button" onClick={handleClearMultiSelect} className="btn btn-sm btn-outline-secondary flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
+                <button type="button" onClick={handleClearMultiSelect} className="app-menu-action btn btn-sm btn-outline-secondary flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
                   Clear
                 </button>
               )}
               {allowMultiModeToggle && (
-                <button type="button" onClick={() => onToggleMultiMode?.()} className={`btn btn-sm flex-grow-1 ${isMultiModeActive ? "btn-primary" : "btn-outline-secondary"}`}>
+                <button type="button" onClick={() => onToggleMultiMode?.()} className={`app-menu-action btn btn-sm flex-grow-1 ${isMultiModeActive ? "btn-primary" : "btn-outline-secondary"}`}>
                   Multi
                 </button>
               )}

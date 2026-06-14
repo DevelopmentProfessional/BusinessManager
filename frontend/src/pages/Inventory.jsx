@@ -657,7 +657,7 @@ export default function Inventory() {
               data-active={typeFilter !== "all"}
             />
             {isTypeFilterOpen && (
-              <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
+              <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
                 {typeFilterOptions.map((option, index) => {
                   const isLast = index === typeFilterOptions.length - 1;
                   const isSelected = typeFilter === option.value;
@@ -671,7 +671,7 @@ export default function Inventory() {
                           setIsTypeFilterOpen(false);
                           setTypeFilterHelpKey(null);
                         }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                        className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                       >
                         {option.label}
                       </button>
@@ -681,7 +681,7 @@ export default function Inventory() {
                           <button
                             type="button"
                             aria-label={`${option.label} help`}
-                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                            className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
                             onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                             onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             onMouseDown={(e) => {
@@ -695,7 +695,7 @@ export default function Inventory() {
 
                           {isHelpOpen && (
                             <div
-                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              className="app-menu-panel position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
                               style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                               onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                               onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
@@ -727,7 +727,7 @@ export default function Inventory() {
               data-active={stockFilter !== "all"}
             />
             {isStockFilterOpen && (
-              <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
+              <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
                 {stockFilterOptions.map((option, index) => {
                   const isLast = index === stockFilterOptions.length - 1;
                   const isSelected = stockFilter === option.value;
@@ -741,7 +741,7 @@ export default function Inventory() {
                           setIsStockFilterOpen(false);
                           setStockFilterHelpKey(null);
                         }}
-                        className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                        className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                       >
                         {option.label}
                       </button>
@@ -751,7 +751,7 @@ export default function Inventory() {
                           <button
                             type="button"
                             aria-label={`${option.label} help`}
-                            className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                            className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
                             onMouseEnter={() => setStockFilterHelpKey(option.value)}
                             onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             onMouseDown={(e) => {

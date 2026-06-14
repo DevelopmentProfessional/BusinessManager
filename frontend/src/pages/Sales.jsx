@@ -1355,7 +1355,7 @@ export default function Sales() {
                         autoFocus
                       />
                       {showClientPanelDropdown && clientPanelSearch && (
-                        <div className="absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-50">
+                        <div className="app-menu-panel absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-50">
                           {clients
                             .filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase()))
                             .slice(0, 6)
@@ -1368,10 +1368,10 @@ export default function Sales() {
                                   setShowClientPanelDropdown(false);
                                   setShowClientPanel(false);
                                 }}
-                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                                className="app-menu-item w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
                               >
                                 <p className="font-medium">{c.name}</p>
-                                {c.email && <p className="text-xs text-gray-500 dark:text-gray-400">{c.email}</p>}
+                                {c.email && <p className="text-gray-500 dark:text-gray-400">{c.email}</p>}
                               </button>
                             ))}
                           {clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
@@ -1385,7 +1385,7 @@ export default function Sales() {
                                   setShowClientPanel(false);
                                 })
                               }
-                              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-2"
+                              className="app-menu-item w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-400 flex items-center gap-2"
                             >
                               <PlusIcon className="h-4 w-4" />
                               New
@@ -1443,9 +1443,9 @@ export default function Sales() {
                 />
 
                 {showSalesFilterDropdown && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
+                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
                     <div className="d-flex align-items-center justify-content-between mb-2">
-                      <div className="small fw-semibold text-muted">Sales Filter</div>
+                      <div className="app-menu-summary fw-semibold text-muted">Sales Filter</div>
                       <button
                         type="button"
                         onClick={() => {
@@ -1455,17 +1455,17 @@ export default function Sales() {
                           setSelectedClient(null);
                           setFilterClientSearch("");
                         }}
-                        className="btn btn-sm btn-outline-secondary"
+                        className="app-menu-action btn btn-sm btn-outline-secondary"
                       >
                         Clear
                       </button>
                     </div>
 
                     <div className="mb-2">
-                      <label className="small text-muted d-block mb-1">Client</label>
+                      <label className="app-menu-summary text-muted d-block mb-1">Client</label>
                       <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
                       {filterClientSearch && (
-                        <div className="app-card mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
+                        <div className="app-menu-panel app-card mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
                           {filteredFilterClients.map((c) => (
                             <button
                               key={c.id}
@@ -1474,13 +1474,13 @@ export default function Sales() {
                                 handleSelectClient(c);
                                 setFilterClientSearch("");
                               }}
-                              className="w-100 text-start px-2 py-1 border-0 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
+                              className="app-menu-item w-100 text-start px-2 py-1 border-0 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
                             >
-                              <div className="small fw-semibold">{c.name}</div>
-                              {c.email && <div className="small text-muted">{c.email}</div>}
+                              <div className="fw-semibold">{c.name}</div>
+                              {c.email && <div className="text-muted">{c.email}</div>}
                             </button>
                           ))}
-                          {filteredFilterClients.length === 0 && <div className="small text-muted px-2 py-1">No matching clients</div>}
+                          {filteredFilterClients.length === 0 && <div className="app-menu-empty text-muted px-2 py-1">No matching clients</div>}
                         </div>
                       )}
                     </div>
@@ -1496,7 +1496,7 @@ export default function Sales() {
                     />
 
                     <div>
-                      <label className="small text-muted d-block mb-1">Subscription start date</label>
+                      <label className="app-menu-summary text-muted d-block mb-1">Subscription start date</label>
                       <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control form-control-sm" />
                     </div>
                   </div>

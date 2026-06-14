@@ -279,12 +279,12 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
 
   return (
     <div ref={rootRef} className="position-relative purchase-period-filter-dropup">
-      <button type="button" onClick={() => setOpen((v) => !v)} className={`btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`} aria-expanded={open} aria-haspopup="listbox" title="Filter by month">
+      <button type="button" onClick={() => setOpen((v) => !v)} className={`app-menu-trigger btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`} aria-expanded={open} aria-haspopup="listbox" title="Filter by month">
         <FunnelIcon className="h-4 w-4 flex-shrink-0" />
         <span className="text-nowrap">{activeLabel}</span>
       </button>
       {open && (
-        <div role="listbox" className="position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}>
+        <div role="listbox" className="app-menu-panel position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}>
           <div
             role="option"
             tabIndex={0}
@@ -293,13 +293,13 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
               onChange(null);
               setOpen(false);
             }}
-            className={`py-2 px-3${!value ? " bg-primary text-white" : " text-body"}`}
-            style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem" }}
+            className={`app-menu-item py-2 px-3${!value ? " bg-primary text-white" : " text-body"}`}
+            style={{ cursor: "pointer", width: "100%", margin: 0 }}
           >
             All periods
           </div>
           {periods.length === 0 ? (
-            <div className="py-2 px-3 text-muted small">No dated transactions</div>
+            <div className="app-menu-empty py-2 px-3 text-muted">No dated transactions</div>
           ) : (
             periods.map((period) => {
               const isActive = value?.year === period.year && value?.month === period.month;
@@ -313,8 +313,8 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
                     onChange({ year: period.year, month: period.month });
                     setOpen(false);
                   }}
-                  className={`py-2 px-3${isActive ? " bg-primary text-white" : " text-body"}`}
-                  style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem" }}
+                  className={`app-menu-item py-2 px-3${isActive ? " bg-primary text-white" : " text-body"}`}
+                  style={{ cursor: "pointer", width: "100%", margin: 0 }}
                 >
                   {period.label}
                 </div>

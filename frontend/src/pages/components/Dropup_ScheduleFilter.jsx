@@ -24,6 +24,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { XMarkIcon, CheckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -33,7 +34,9 @@ import Modal from "./Modal";
 function FilterDropup({ label, options, selectedIds, onToggle, onClear, placeholder = "Search..." }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [panelStyle, setPanelStyle] = useState({});
   const dropupRef = useRef(null);
+  const triggerRef = useRef(null);
   const inputRef = useRef(null);
 
   // Close when clicking outside
@@ -46,6 +49,23 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Compute fixed position so the panel escapes overflow-clipped ancestors
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const panelWidth = Math.max(288, rect.width); // 18rem = 288px min
+      const left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
+      setPanelStyle({
+        position: "fixed",
+        bottom: window.innerHeight - rect.top + 4,
+        left: Math.max(8, left),
+        width: panelWidth,
+        maxWidth: "min(30rem, calc(100vw - 2rem))",
+        zIndex: 9999,
+      });
+    }
+  }, [isOpen]);
 
   // Focus input when opening
   useEffect(() => {
@@ -70,9 +90,10 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
   const selectedCount = selectedIds.length;
 
   return (
-    <div ref={dropupRef} className="position-relative w-100" style={{ zIndex: isOpen ? 100 : 1 }}>
+    <div ref={dropupRef} className="position-relative w-100">
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="btn-unstyled d-flex align-items-center justify-content-between gap-2 w-100 rounded-pill"
@@ -97,16 +118,13 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
         <span>{isOpen ? "▲" : "▼"}</span>
       </button>
 
-      {/* Dropup Panel */}
-      {isOpen && (
+      {/* Dropup Panel — rendered via portal so it escapes overflow-clipped modal */}
+      {isOpen && createPortal(
         <div
-          className="position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+          className="app-menu-panel bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
           style={{
-            zIndex: 20050,
+            ...panelStyle,
             maxHeight: "300px",
-            minWidth: "max(18rem, 100%)",
-            width: "max-content",
-            maxWidth: "min(30rem, calc(100vw - 2rem))",
           }}
         >
           {/* Search Input */}
@@ -118,7 +136,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
               <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className="form-control form-control-sm ps-5" />
             </div>
             {selectedCount > 0 && (
-              <button type="button" onClick={onClear} className="btn-unstyled p-0 text-muted mt-1" style={{ fontSize: "0.75rem", textDecoration: "underline" }}>
+              <button type="button" onClick={onClear} className="app-menu-action btn-unstyled p-0 text-muted mt-1" style={{ textDecoration: "underline" }}>
                 Clear all ({selectedCount})
               </button>
             )}
@@ -127,14 +145,14 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
           {/* Options List */}
           <div className="overflow-y-auto" style={{ maxHeight: "200px" }}>
             {filteredOptions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-gray-500">No matches</div>
+              <div className="app-menu-empty px-3 py-2 text-gray-500">No matches</div>
             ) : (
               filteredOptions.map((option) => {
                 const isSelected = selectedIds.includes(option.id);
                 return (
-                  <label key={option.id} className={`d-flex align-items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
+                  <label key={option.id} className={`app-menu-item d-flex align-items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
                     <input type="checkbox" checked={isSelected} onChange={() => onToggle(option.id)} className="form-check-input" />
-                    <span style={{ fontSize: "0.875rem" }}>{option.label}</span>
+                    <span>{option.label}</span>
                   </label>
                 );
               })
@@ -157,7 +175,8 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
               Done
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
