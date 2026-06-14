@@ -36,20 +36,10 @@ export default function Dropdown_Filter({
 
   return (
     <div className="position-relative">
-      <Button_Toolbar
-        icon={Icon}
-        label={compactButtonLabel(label)}
-        title={label}
-        onClick={handleToggle}
-        className={`border-0 shadow-lg transition-all ${isActive ? activeClass : inactiveClass}`}
-        data-active={isActive}
-      />
+      <Button_Toolbar icon={Icon} label={compactButtonLabel(label)} title={label} onClick={handleToggle} className={`border-0 shadow-lg transition-all ${isActive ? activeClass : inactiveClass}`} data-active={isActive} />
 
       {isOpen && (
-        <div
-          className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min"
-          style={dropdownStyle}
-        >
+        <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min" style={dropdownStyle}>
           {options.map((option, index) => {
             const isLast = index === options.length - 1;
             const isSelected = value === option.value;
@@ -63,11 +53,7 @@ export default function Dropdown_Filter({
                     setIsOpen(false);
                     setHelpKey(null);
                   }}
-                  className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${
-                    isSelected
-                      ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
-                      : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  }`}
+                  className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                 >
                   {option.label}
                 </button>
@@ -78,7 +64,6 @@ export default function Dropdown_Filter({
                       type="button"
                       aria-label={`${option.label} help`}
                       className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
-                      
                       onMouseEnter={() => setHelpKey(option.value)}
                       onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
                       onMouseDown={(e) => {

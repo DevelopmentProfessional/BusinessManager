@@ -1269,10 +1269,14 @@ export default function Schedule() {
                                     }}
                                   >
                                     <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-                                      <span className="overlap-count" style={{ minWidth: 16, textAlign: "center" }}>{appointmentsForDate.length}</span>
+                                      <span className="overlap-count" style={{ minWidth: 16, textAlign: "center" }}>
+                                        {appointmentsForDate.length}
+                                      </span>
                                       <div className="overlap-dots" style={{ display: "flex", gap: 2 }}>
                                         {appointmentsForDate.map((appt) => (
-                                          <span key={appt.id} style={{ color: employeeColorMap.get(appt.employee_id) || "#2563eb", fontSize: "0.75rem" }}>&bull;</span>
+                                          <span key={appt.id} style={{ color: employeeColorMap.get(appt.employee_id) || "#2563eb", fontSize: "0.75rem" }}>
+                                            &bull;
+                                          </span>
                                         ))}
                                       </div>
                                       <span className="appointment-service" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, fontSize: "0.65rem" }}>
