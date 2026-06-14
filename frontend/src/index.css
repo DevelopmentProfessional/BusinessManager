@@ -1532,6 +1532,32 @@ textarea.form-control {
   min-width: 200px;
 }
 
+.app-menu-panel {
+  font-size: var(--app-input-font-size) !important;
+}
+
+.app-menu-trigger {
+  font-size: var(--app-btn-label-font-size) !important;
+}
+
+.app-menu-item,
+.app-menu-item button,
+.app-menu-item label,
+.app-menu-item input,
+.app-menu-item span,
+.app-menu-empty,
+.app-menu-search,
+.app-menu-action,
+.app-menu-summary {
+  font-size: var(--app-input-font-size) !important;
+}
+
+.app-menu-panel .small,
+.app-menu-panel .text-sm,
+.app-menu-panel .text-xs {
+  font-size: inherit !important;
+}
+
 .app-icon--sm {
   width: calc(var(--app-icon-size) * 0.9) !important;
   height: calc(var(--app-icon-size) * 0.9) !important;

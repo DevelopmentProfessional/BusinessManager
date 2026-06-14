@@ -1174,14 +1174,14 @@ export default function Reports() {
                         onKeyDown={handleEventTypeKeyDown}
                         aria-haspopup="listbox"
                         aria-expanded={eventTypeMenuOpen}
-                        className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
-                        style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minWidth: "11rem" }}
+                        className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                        style={{ whiteSpace: "nowrap", minWidth: "11rem" }}
                       >
                         <CalendarIcon className="h-4 w-4 flex-shrink-0" />
                         <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
                       </button>
                       {eventTypeMenuOpen && (
-                        <div className="position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
+                        <div className="app-menu-panel position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
                           {FILTER_CONFIG.eventType.options.map((o) => {
                             const OptionIcon = o.icon;
                             return (
@@ -1209,8 +1209,8 @@ export default function Reports() {
                                   }
                                 }}
                                 tabIndex={0}
-                                className={`px-3 py-2 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
-                                style={{ cursor: "pointer", width: "100%", margin: 0, fontSize: "0.875rem", userSelect: "none" }}
+                                className={`app-menu-item px-3 py-2 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                                style={{ cursor: "pointer", width: "100%", margin: 0, userSelect: "none" }}
                                 role="option"
                                 aria-selected={reportFilters.eventType === o.value}
                               >
@@ -1244,18 +1244,18 @@ export default function Reports() {
                 <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
                 {savedFiltersMenuOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
+                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
                     {savedFilters.filter((f) => f.report_id === selectedReport?.id).length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">No saved filters</div>
+                      <div className="app-menu-empty px-3 py-2 text-gray-500">No saved filters</div>
                     ) : (
                       savedFilters
                         .filter((f) => f.report_id === selectedReport?.id)
                         .map((filter) => (
                           <div key={filter.id} className="d-flex align-items-center justify-content-between gap-2 px-2 py-1">
-                            <button type="button" onClick={() => handleLoadFilter(filter)} className="btn btn-sm btn-outline-secondary flex-grow-1 text-start text-truncate" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
+                            <button type="button" onClick={() => handleLoadFilter(filter)} className="app-menu-item btn btn-sm btn-outline-secondary flex-grow-1 text-start text-truncate">
                               {filter.name}
                             </button>
-                            <button type="button" onClick={() => handleDeleteFilter(filter.id)} className="btn btn-sm btn-outline-danger" title="Delete">
+                            <button type="button" onClick={() => handleDeleteFilter(filter.id)} className="app-menu-action btn btn-sm btn-outline-danger" title="Delete">
                               ×
                             </button>
                           </div>

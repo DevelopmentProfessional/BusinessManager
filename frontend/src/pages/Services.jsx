@@ -405,7 +405,7 @@ export default function Services() {
             data-active={categoryFilter !== "all"}
           />
           {isCategoryFilterOpen && (
-            <div className="position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min" style={{ maxHeight: "300px", overflowY: "auto" }}>
+            <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min" style={{ maxHeight: "300px", overflowY: "auto" }}>
               {categories.map((cat, index) => {
                 const key = cat ?? "__none__";
                 const label = cat === "all" ? "All Categories" : cat || "No Category";
@@ -422,7 +422,7 @@ export default function Services() {
                         setIsCategoryFilterOpen(false);
                         setCategoryFilterHelpKey(null);
                       }}
-                      className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                      className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                     >
                       {label}
                     </button>

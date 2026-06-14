@@ -346,7 +346,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                   <QuestionMarkCircleIcon className="h-4 w-4" />
                 </button>
                 {showDescriptionHelp && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ width: "280px", zIndex: 20 }}>
+                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ width: "280px", zIndex: 20 }}>
                     <label className="form-label text-xs mb-1">Template description</label>
                     <textarea
                       value={description}
@@ -381,13 +381,13 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
             </select>
 
             <div className="position-relative">
-              <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
+              <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
                 Pages <ChevronUpIcon className="h-3 w-3" />
               </button>
               {showPagesDropup && (
-                <div className="position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ minWidth: "180px", zIndex: 20 }}>
+                <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ minWidth: "180px", zIndex: 20 }}>
                   {PAGE_OPTIONS.map((pg) => (
-                    <label key={pg.value} className="d-flex align-items-center gap-2 small py-1">
+                    <label key={pg.value} className="app-menu-item d-flex align-items-center gap-2 py-1">
                       <input
                         type="checkbox"
                         checked={accessiblePages.includes(pg.value)}
@@ -404,14 +404,14 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
             </div>
 
             <div className="position-relative">
-              <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
+              <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
                 Insert <ChevronUpIcon className="h-3 w-3" />
               </button>
               {showInsertDropup && (
-                <div className="position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ minWidth: "180px", zIndex: 20 }}>
+                <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ minWidth: "180px", zIndex: 20 }}>
                   <button
                     type="button"
-                    className="btn btn-sm w-100 text-start"
+                    className="app-menu-item btn btn-sm w-100 text-start"
                     onClick={() => {
                       handleTabClick(TAB_VARS);
                       setShowInsertDropup(false);
@@ -421,7 +421,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm w-100 text-start"
+                    className="app-menu-item btn btn-sm w-100 text-start"
                     onClick={() => {
                       handleTabClick(TAB_LAYOUTS);
                       setShowInsertDropup(false);

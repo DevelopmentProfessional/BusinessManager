@@ -977,7 +977,7 @@ export default function Documents() {
                   data-active={templateTypeFilter !== "all"}
                 />
                 {isTemplateTypeFilterOpen && (
-                  <div className="position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
+                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
                     {[
                       { value: "all", label: "All Types" },
                       { value: "email", label: "Email" },
@@ -996,7 +996,7 @@ export default function Documents() {
                               setTemplateTypeFilter(option.value);
                               setIsTemplateTypeFilterOpen(false);
                             }}
-                            className={`d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
+                            className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
                           >
                             {option.label}
                           </button>

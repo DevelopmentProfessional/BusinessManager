@@ -444,7 +444,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
                   {/* Dropdown suggestions */}
                   {showTagDropdown && tagSuggestions.length > 0 && (
-                    <div ref={tagDropdownRef} className="absolute z-50 mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg max-h-40 overflow-y-auto">
+                    <div ref={tagDropdownRef} className="app-menu-panel absolute z-50 mt-1 w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg max-h-40 overflow-y-auto">
                       {tagSuggestions.map((tag) => (
                         <button
                           key={tag.id}
@@ -453,7 +453,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                             e.preventDefault();
                             handleAddTag(tag);
                           }}
-                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-200"
+                          className="app-menu-item w-full text-left px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-200"
                         >
                           {tag.name}
                         </button>
@@ -465,7 +465,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                             e.preventDefault();
                             handleAddTag(tagSearch.trim());
                           }}
-                          className="w-full text-left px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-t border-gray-100 dark:border-gray-700"
+                          className="app-menu-item w-full text-left px-3 py-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 border-t border-gray-100 dark:border-gray-700"
                         >
                           + Create "{tagSearch.trim()}"
                         </button>

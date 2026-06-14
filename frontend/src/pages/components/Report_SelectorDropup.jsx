@@ -5,7 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { ChartBarIcon, ChevronUpDownIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
 const ITEM_STYLE = {
-  fontSize: "0.875rem",
+  fontSize: "var(--app-input-font-size, 0.875rem)",
   lineHeight: 1.35,
   padding: "0.5rem 0.75rem",
   textAlign: "left",
@@ -50,7 +50,7 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
         type="button"
         onClick={() => onToggle(!open)}
         className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1 w-100"
-        style={{ fontSize: "0.875rem", whiteSpace: "nowrap", minHeight: "2rem" }}
+        style={{ fontSize: "var(--app-btn-label-font-size, 0.875rem)", whiteSpace: "nowrap", minHeight: "2rem" }}
         aria-expanded={open}
         aria-haspopup="listbox"
         title={selectedTitle || "Report"}
@@ -62,7 +62,7 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
       {open && (
         <div
           role="listbox"
-          className="position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-lg bg-white dark:bg-gray-900"
+          className="app-menu-panel position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-lg bg-white dark:bg-gray-900"
           style={{
             zIndex: 1050,
             width: "100%",
