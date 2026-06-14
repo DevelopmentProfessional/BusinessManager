@@ -692,12 +692,15 @@ export default function Schedule() {
     return Math.floor(minuteInHour / 15) * 15;
   }, []);
 
-  const handleDragOver = useCallback((e, targetDate, targetHour = null) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const snappedMinute = targetHour !== null ? _snapMinuteToQuarter(e) : null;
-    setDragOverCell({ date: targetDate, hour: targetHour, minute: snappedMinute });
-  }, [_snapMinuteToQuarter]);
+  const handleDragOver = useCallback(
+    (e, targetDate, targetHour = null) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const snappedMinute = targetHour !== null ? _snapMinuteToQuarter(e) : null;
+      setDragOverCell({ date: targetDate, hour: targetHour, minute: snappedMinute });
+    },
+    [_snapMinuteToQuarter]
+  );
 
   const handleDragLeave = useCallback((e) => {
     // Only clear if we're leaving the calendar area entirely
@@ -712,7 +715,7 @@ export default function Schedule() {
 
       if (!draggedAppointment) return;
 
-      const dropMinute = targetHour !== null ? dragOverCell?.minute ?? _snapMinuteToQuarter(e) : null;
+      const dropMinute = targetHour !== null ? (dragOverCell?.minute ?? _snapMinuteToQuarter(e)) : null;
 
       if (!isDayEnabled(targetDate)) {
         setPastDateError("This day is disabled in Schedule Settings");
@@ -770,18 +773,7 @@ export default function Schedule() {
       setDraggedAppointment(null);
       setDragOverCell(null);
     },
-    [
-      _formatLocalDateTime,
-      _snapMinuteToQuarter,
-      currentView,
-      dragOverCell?.minute,
-      draggedAppointment,
-      isDayEnabled,
-      pastDateErrorTimer,
-      refreshSchedules,
-      scheduleSettings.end_of_day,
-      scheduleSettings.start_of_day,
-    ]
+    [_formatLocalDateTime, _snapMinuteToQuarter, currentView, dragOverCell?.minute, draggedAppointment, isDayEnabled, pastDateErrorTimer, refreshSchedules, scheduleSettings.end_of_day, scheduleSettings.start_of_day]
   );
 
   const closeModal = useCallback(() => {
