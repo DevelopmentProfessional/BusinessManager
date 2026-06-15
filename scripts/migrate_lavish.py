@@ -2,7 +2,7 @@
 """
 One-time migration: clients, services, schedule from Render (lavish_beauty_db) -> AWS.
 - All records assigned company_id = 03200
-- All schedule records assigned to employee tpinto
+- Schedule rows are filtered from a cutoff date forward and mapped to the target employee
 - ON CONFLICT (id) DO NOTHING — safe to re-run
 """
 
@@ -17,7 +17,9 @@ OLD_DB = os.getenv(
     "postgresql://lavish_beauty_db_user:1haMVuAaGaJN3kWTKJrRNY211mSAAnw3@dpg-d2qsadmr433s73eqpd40-a.oregon-postgres.render.com/lavish_beauty_db",
 )
 COMPANY_ID = os.getenv("MIGRATION_COMPANY_ID", "03200")
-TARGET_USERNAME = os.getenv("MIGRATION_TARGET_USERNAME", "tpinto")
+CUTOFF_DATE = os.getenv("MIGRATION_CUTOFF_DATE", "2026-05-22")
+TARGET_EMPLOYEE_NAME = os.getenv("MIGRATION_TARGET_EMPLOYEE_NAME", "Tameshia Pinto")
+TARGET_EMPLOYEE_USERNAME = os.getenv("MIGRATION_TARGET_USERNAME", "tpinto")
 
 
 def normalize_postgres_url(url):
@@ -53,6 +55,47 @@ def get_target_db_url():
         or os.getenv("DATABASE_URL", "").strip()
     )
     return apply_target_ssl_options(normalize_postgres_url(configured_url))
+
+
+def resolve_target_employee_id(new_conn):
+    with new_conn.cursor() as cur:
+        cur.execute(
+            'SELECT id FROM "user" WHERE company_id = %s AND (first_name || \' \' || last_name) = %s',
+            (COMPANY_ID, TARGET_EMPLOYEE_NAME),
+        )
+        row = cur.fetchone()
+        if not row:
+            cur.execute(
+                'SELECT id FROM "user" WHERE company_id = %s AND username = %s',
+                (COMPANY_ID, TARGET_EMPLOYEE_USERNAME),
+            )
+            row = cur.fetchone()
+        if not row:
+            cur.execute(
+                'SELECT id FROM "user" WHERE (first_name || \' \' || last_name) = %s',
+                (TARGET_EMPLOYEE_NAME,),
+            )
+            row = cur.fetchone()
+        if not row:
+            cur.execute(
+                'SELECT id FROM "user" WHERE username = %s',
+                (TARGET_EMPLOYEE_USERNAME,),
+            )
+            row = cur.fetchone()
+        if not row:
+            raise RuntimeError(
+                f"Target employee not found: {TARGET_EMPLOYEE_NAME} / {TARGET_EMPLOYEE_USERNAME}"
+            )
+        return row["id"]
+
+
+def fetch_source_schedule_rows(old_conn):
+    with old_conn.cursor() as cur:
+        cur.execute(
+            "SELECT * FROM schedule WHERE appointment_date >= %s ORDER BY appointment_date ASC",
+            (CUTOFF_DATE,),
+        )
+        return cur.fetchall()
 
 
 def get_columns(conn, table):
@@ -190,21 +233,8 @@ def main():
     with psycopg.connect(OLD_DB, row_factory=dict_row, connect_timeout=30) as old_conn, \
          psycopg.connect(new_db, row_factory=dict_row, connect_timeout=15) as new_conn:
 
-        # Resolve tpinto's UUID
-        with new_conn.cursor() as cur:
-            cur.execute(
-                'SELECT id FROM "user" WHERE username = %s AND company_id = %s',
-                (TARGET_USERNAME, COMPANY_ID)
-            )
-            row = cur.fetchone()
-            if not row:
-                cur.execute('SELECT id FROM "user" WHERE username = %s', (TARGET_USERNAME,))
-                row = cur.fetchone()
-            if not row:
-                print(f"ERROR: user '{TARGET_USERNAME}' not found in the database. Aborting.")
-                return
-            tpinto_id = row["id"]
-            print(f"Resolved {TARGET_USERNAME} -> {tpinto_id}")
+        employee_id = resolve_target_employee_id(new_conn)
+        print(f"Resolved {TARGET_EMPLOYEE_NAME} / {TARGET_EMPLOYEE_USERNAME} -> {employee_id}")
 
         # ── Services ────────────────────────────────────────────────────────
         print("\n[1/3] Migrating services...")
@@ -229,11 +259,9 @@ def main():
 
         # ── Schedule ─────────────────────────────────────────────────────────
         print("\n[3/3] Migrating schedule...")
-        with old_conn.cursor() as cur:
-            cur.execute("SELECT * FROM schedule")
-            schedules = cur.fetchall()
-        print(f"  Found {len(schedules)} schedule records in old DB")
-        migrate_schedule_rows(old_conn, new_conn, schedules, service_duration_by_id, tpinto_id)
+        schedules = fetch_source_schedule_rows(old_conn)
+        print(f"  Found {len(schedules)} schedule records in old DB on/after {CUTOFF_DATE}")
+        migrate_schedule_rows(old_conn, new_conn, schedules, service_duration_by_id, employee_id)
 
         print("\nMigration complete.")
 
