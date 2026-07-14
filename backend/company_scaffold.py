@@ -54,6 +54,207 @@ def _load_template_seed_rows() -> list[dict]:
             ),
         },
         {
+            "name": "Appointment Reminder",
+            "template_type": "email",
+            "accessible_pages": '["schedule","clients"]',
+            "description": "Reminder email for upcoming appointments.",
+            "content": (
+                "<p>Dear {{client.name}},</p>"
+                "<p>This is a reminder about your upcoming appointment:</p>"
+                "<ul>"
+                "<li><strong>Date:</strong> {{appointment.date}}</li>"
+                "<li><strong>Time:</strong> {{appointment.time}}</li>"
+                "<li><strong>Service:</strong> {{appointment.service}}</li>"
+                "<li><strong>Duration:</strong> {{appointment.duration}}</li>"
+                "<li><strong>With:</strong> {{appointment.employee_name}}</li>"
+                "</ul>"
+                "<p>If you need to reschedule, please use {{reschedule_link}} or contact us at {{company.phone}}.</p>"
+                "<p>Cancellation policy: {{cancellation_policy}}</p>"
+                "<p>Best regards,<br>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Appointment Cancellation Notice",
+            "template_type": "email",
+            "accessible_pages": '["schedule","clients"]',
+            "description": "Notice sent after a cancellation or no-show.",
+            "content": (
+                "<p>Dear {{client.name}},</p>"
+                "<p>Your appointment on {{appointment.date}} at {{appointment.time}} has been marked as <strong>{{appointment.status}}</strong>.</p>"
+                "<p>Reason: {{cancellation_reason}}</p>"
+                "<p>Any applicable fee: {{fee_amount}}</p>"
+                "<p>If you'd like to reschedule, visit {{reschedule_link}} or contact {{company.phone}} / {{company.email}}.</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Client Feedback Request",
+            "template_type": "email",
+            "accessible_pages": '["clients","sales","schedule"]',
+            "description": "Post-service review request email for clients.",
+            "content": (
+                "<p>Dear {{client.name}},</p>"
+                "<p>Thank you for choosing {{company.name}} for {{service.name}} on {{appointment.date}}.</p>"
+                "<p>We would appreciate your feedback here: {{review_link}}</p>"
+                "<p>Your review helps us improve and serve you better.</p>"
+                "<p>Best regards,<br>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "New Client Welcome",
+            "template_type": "email",
+            "accessible_pages": '["clients"]',
+            "description": "Welcome email sent to newly registered clients.",
+            "content": (
+                "<p>Welcome {{client.name}},</p>"
+                "<p>Thanks for choosing {{company.name}}. We are excited to work with you.</p>"
+                "<p>If you have questions, contact us at {{company.email}} or {{company.phone}}.</p>"
+                "<p>Best regards,<br>{{sender.first_name}} {{sender.last_name}}</p>"
+            ),
+        },
+        {
+            "name": "Membership Renewal Notice",
+            "template_type": "email",
+            "accessible_pages": '["clients","sales"]',
+            "description": "Renewal notice for memberships and recurring client plans.",
+            "content": (
+                "<p>Dear {{client.name}},</p>"
+                "<p>Your {{membership.name}} membership is due for renewal on {{renewal_date}}.</p>"
+                "<p>Amount due: {{amount_due}}</p>"
+                "<p>Please complete payment by {{deadline}} to keep your account active.</p>"
+                "<p>Thank you,<br>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Employee Onboarding Contract",
+            "template_type": "memo",
+            "accessible_pages": '["employees","documents"]',
+            "description": "Printable onboarding contract and acknowledgement form for new hires.",
+            "content": (
+                "<h2>Employee Onboarding Contract</h2>"
+                "<p><strong>Employee:</strong> {{employee.first_name}} {{employee.last_name}}</p>"
+                "<p><strong>Role:</strong> {{employee.role}}</p>"
+                "<p><strong>Hire Date:</strong> {{employee.hire_date}}</p>"
+                "<p><strong>Start Date:</strong> {{start_date}}</p>"
+                "<p><strong>Compensation:</strong> {{compensation.amount}}</p>"
+                "<p><strong>Manager:</strong> {{manager.name}}</p>"
+                "<hr>"
+                "<p>[Insert onboarding terms, confidentiality language, and acknowledgements here.]</p>"
+                "<p>Signature Date: {{signature_date}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Employee Handbook Acknowledgment",
+            "template_type": "memo",
+            "accessible_pages": '["employees","documents"]',
+            "description": "Acknowledgement that the employee received and reviewed the handbook.",
+            "content": (
+                "<h2>Handbook Acknowledgment</h2>"
+                "<p><strong>Employee:</strong> {{employee.name}}</p>"
+                "<p><strong>Handbook Version:</strong> {{handbook.version}}</p>"
+                "<p><strong>Acknowledgment Date:</strong> {{acknowledgement.date}}</p>"
+                "<p>[Employee confirms receipt, review, and agreement to comply with company policy.]</p>"
+                "<p>Signature: ____________________</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Performance Review",
+            "template_type": "memo",
+            "accessible_pages": '["employees","documents"]',
+            "description": "Performance review form for managers and HR.",
+            "content": (
+                "<h2>Performance Review</h2>"
+                "<p><strong>Employee:</strong> {{employee.name}}</p>"
+                "<p><strong>Review Period:</strong> {{review.period_start}} to {{review.period_end}}</p>"
+                "<p><strong>Reviewer:</strong> {{reviewer.name}}</p>"
+                "<p><strong>Rating:</strong> {{review.rating}}</p>"
+                "<p><strong>Strengths:</strong> {{review.strengths}}</p>"
+                "<p><strong>Improvement Areas:</strong> {{review.improvements}}</p>"
+                "<p><strong>Goals:</strong> {{review.goals}}</p>"
+                "<p><strong>Follow-up Date:</strong> {{follow_up_date}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Disciplinary Warning",
+            "template_type": "memo",
+            "accessible_pages": '["employees","documents"]',
+            "description": "Formal coaching or disciplinary warning notice.",
+            "content": (
+                "<h2>Disciplinary Warning</h2>"
+                "<p><strong>Employee:</strong> {{employee.name}}</p>"
+                "<p><strong>Date:</strong> {{warning.date}}</p>"
+                "<p><strong>Issue Summary:</strong> {{issue.summary}}</p>"
+                "<p><strong>Expected Next Steps:</strong> {{next_steps}}</p>"
+                "<p><strong>Follow-up Date:</strong> {{follow_up_date}}</p>"
+                "<p><strong>Manager:</strong> {{manager.name}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Employee Offboarding Checklist",
+            "template_type": "memo",
+            "accessible_pages": '["employees","documents"]',
+            "description": "Exit checklist for employee offboarding and access removal.",
+            "content": (
+                "<h2>Employee Offboarding Checklist</h2>"
+                "<p><strong>Employee:</strong> {{employee.name}}</p>"
+                "<p><strong>Last Day:</strong> {{last_day}}</p>"
+                "<p><strong>Disable Access:</strong> {{disable_access_date}}</p>"
+                "<p><strong>Exit Interview:</strong> {{exit_interview_date}}</p>"
+                "<p><strong>Return Assets:</strong> {{return_assets}}</p>"
+                "<p><strong>Manager:</strong> {{manager.name}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Payment Plan Agreement",
+            "template_type": "memo",
+            "accessible_pages": '["clients","sales"]',
+            "description": "Agreement for splitting an outstanding balance into installments.",
+            "content": (
+                "<h2>Payment Plan Agreement</h2>"
+                "<p><strong>Client:</strong> {{client.name}}</p>"
+                "<p><strong>Invoice #:</strong> {{invoice.number}}</p>"
+                "<p><strong>Balance Due:</strong> {{balance_due}}</p>"
+                "<p><strong>Installments:</strong> {{installment_count}}</p>"
+                "<p><strong>Installment Amount:</strong> {{installment_amount}}</p>"
+                "<p><strong>Due Date:</strong> {{due_date}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Vendor Follow-up Request",
+            "template_type": "memo",
+            "accessible_pages": '["inventory"]',
+            "description": "Purchase follow-up memo for suppliers and inventory restock.",
+            "content": (
+                "<h2>Vendor Follow-up Request</h2>"
+                "<p><strong>Supplier:</strong> {{supplier.name}}</p>"
+                "<p><strong>Item:</strong> {{item.name}}</p>"
+                "<p><strong>Quantity:</strong> {{quantity}}</p>"
+                "<p><strong>Need By:</strong> {{need_by_date}}</p>"
+                "<p><strong>Requester:</strong> {{requester.name}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
+            "name": "Internal Policy Update",
+            "template_type": "memo",
+            "accessible_pages": '["employees","documents"]',
+            "description": "Internal policy memo or company announcement.",
+            "content": (
+                "<h2>Internal Policy Update</h2>"
+                "<p><strong>Effective Date:</strong> {{effective_date}}</p>"
+                "<p><strong>Policy Title:</strong> {{policy.title}}</p>"
+                "<p>{{policy.body}}</p>"
+                "<p><strong>Issued By:</strong> {{sender.first_name}} {{sender.last_name}}</p>"
+                "<p>{{company.name}}</p>"
+            ),
+        },
+        {
             "name": "New Client Welcome",
             "template_type": "email",
             "accessible_pages": '["clients"]',
@@ -189,6 +390,27 @@ def _seed_document_templates(conn, company_id: str) -> int:
         seeded += 1
 
     return seeded
+
+
+def seed_document_templates_for_all_companies(conn) -> dict[str, int]:
+    """Backfill the scaffolded document templates for every existing company."""
+    if not _table_exists(conn, "company") or not _table_exists(conn, "document_template"):
+        return {}
+
+    seeded_by_company: dict[str, int] = {}
+    rows = conn.execute(
+        text("SELECT company_id FROM company WHERE company_id IS NOT NULL ORDER BY company_id")
+    ).fetchall()
+
+    for row in rows:
+        cid = str(row[0] or "").strip().upper()
+        if not cid:
+            continue
+        seeded = _seed_document_templates(conn, cid)
+        if seeded:
+            seeded_by_company[cid] = seeded
+
+    return seeded_by_company
 
 
 def _seed_roles_and_permissions(conn, company_id: str) -> tuple[int, int, str | None]:
