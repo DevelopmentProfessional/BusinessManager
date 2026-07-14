@@ -742,6 +742,7 @@ export const settingsAPI = {
     }
     return api.post("/settings/admin/seed", { force }, { headers });
   },
+  createStripeTestCheckout: (amount = 0.5) => api.post("/settings/stripe/test-checkout", { amount }),
 };
 
 // Compatibility aliases mapped to canonical settings methods.

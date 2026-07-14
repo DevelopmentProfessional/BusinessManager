@@ -71,8 +71,10 @@ const Panel_General = ({
   resetPortalBrandingDefaults,
   stripeSettings,
   stripeSettingsLoading,
+  stripeTestLoading,
   handleStripeSettingsChange,
   handleSaveStripeSettings,
+  handleStripeTestCheckout,
   settingsSuccess,
   HelpIcon,
   onCheckStartDatabase,
@@ -366,6 +368,14 @@ const Panel_General = ({
           </div>
 
           <Button_Toolbar icon={CheckCircleIcon} label={stripeSettingsLoading ? "Saving..." : "Save Stripe Settings"} onClick={handleSaveStripeSettings} className="btn-success" disabled={stripeSettingsLoading} />
+
+          {/* TEMPORARY TEST BLOCK (isolated for easy removal) */}
+          <div className="alert alert-warning mb-0 mt-2 py-1">
+            <div className="fw-semibold mb-1 small">Temporary Test Utilities</div>
+            <button type="button" className="btn btn-outline-dark btn-sm" onClick={handleStripeTestCheckout} disabled={stripeTestLoading || stripeSettingsLoading}>
+              {stripeTestLoading ? "Launching test..." : "Test Stripe Checkout ($0.50)"}
+            </button>
+          </div>
         </SettingsSection>
       )}
 

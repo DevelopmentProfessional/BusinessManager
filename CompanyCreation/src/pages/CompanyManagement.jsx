@@ -27,6 +27,21 @@ export default function CompanyManagement() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [createForm, setCreateForm] = useState({
+    company_id: "",
+    company_name: "",
+    company_email: "",
+    company_phone: "",
+    company_address: "",
+    admin_first_name: "Admin",
+    admin_last_name: "User",
+    admin_username: "",
+    admin_email: "",
+    admin_password: "",
+    admin_password_confirm: "",
+  });
+  const [creatingCompany, setCreatingCompany] = useState(false);
+  const [createError, setCreateError] = useState("");
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -45,6 +60,98 @@ export default function CompanyManagement() {
   const logout = () => {
     localStorage.removeItem("cc_token");
     navigate("/login");
+  };
+
+  const setCreateField = (field, value) => {
+    setCreateForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetCreateForm = () => {
+    setCreateForm({
+      company_id: "",
+      company_name: "",
+      company_email: "",
+      company_phone: "",
+      company_address: "",
+      admin_first_name: "Admin",
+      admin_last_name: "User",
+      admin_username: "",
+      admin_email: "",
+      admin_password: "",
+      admin_password_confirm: "",
+    });
+  };
+
+  const createCompany = async () => {
+    setCreateError("");
+
+    if (createForm.admin_password !== createForm.admin_password_confirm) {
+      setCreateError("Passwords do not match.");
+      return;
+    }
+    if (createForm.admin_password.trim().length < 6) {
+      setCreateError("Password must be at least 6 characters.");
+      return;
+    }
+
+    const payload = {
+      company_id: createForm.company_id.trim().toUpperCase(),
+      company_name: createForm.company_name.trim(),
+      company_email: createForm.company_email.trim() || null,
+      company_phone: createForm.company_phone.trim() || null,
+      company_address: createForm.company_address.trim() || null,
+      admin_first_name: createForm.admin_first_name.trim() || "Admin",
+      admin_last_name: createForm.admin_last_name.trim() || "User",
+      admin_username: createForm.admin_username.trim(),
+      admin_email: createForm.admin_email.trim() || null,
+      admin_password: createForm.admin_password,
+    };
+
+    if (!payload.company_id || !payload.company_name || !payload.admin_username || !payload.admin_password) {
+      setCreateError("Company ID, Company Name, Username, and Password are required.");
+      return;
+    }
+
+    setCreatingCompany(true);
+    try {
+      const res = await fetch(`${API}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to create company");
+      }
+      showToast(`Created ${data.company_id}. It is pending approval.`, "success");
+      resetCreateForm();
+      await load();
+    } catch (e) {
+      setCreateError(e.message || "Failed to create company");
+    } finally {
+      setCreatingCompany(false);
+    }
+  };
+
+  const seedTemplatesForExistingCompanies = async () => {
+    try {
+      const res = await fetch(`${API}/templates/backfill`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to backfill templates");
+      }
+      const seededCount = data?.seeded_companies ? Object.keys(data.seeded_companies).length : 0;
+      showToast(seededCount ? `Seeded templates for ${seededCount} companies.` : "Templates already existed for all companies.", "success");
+    } catch (e) {
+      showToast(e.message || "Failed to backfill templates", "error");
+    }
   };
 
   const load = async () => {
@@ -219,6 +326,40 @@ export default function CompanyManagement() {
     <div style={s.page}>
       {/* TOAST */}
       {toast && <div style={{ ...s.toast, background: toastBg }}>{toast.msg}</div>}
+
+      <div style={s.createPanel}>
+        <div style={s.createPanelHeader}>
+          <div>
+            <h2 style={s.createTitle}>Create Company</h2>
+            <p style={s.createSubtitle}>Create a company record here, then approve it below when ready.</p>
+          </div>
+          <button style={s.seedTemplatesBtn} onClick={seedTemplatesForExistingCompanies}>
+            Seed Templates for Existing Companies
+          </button>
+        </div>
+        {createError && <div style={s.errorBox}>{createError}</div>}
+        <div style={s.createGrid}>
+          <input style={s.createInput} placeholder="Company ID" value={createForm.company_id} onChange={(e) => setCreateField("company_id", e.target.value)} />
+          <input style={s.createInput} placeholder="Company Name" value={createForm.company_name} onChange={(e) => setCreateField("company_name", e.target.value)} />
+          <input style={s.createInput} placeholder="Business Email" value={createForm.company_email} onChange={(e) => setCreateField("company_email", e.target.value)} />
+          <input style={s.createInput} placeholder="Phone Number" value={createForm.company_phone} onChange={(e) => setCreateField("company_phone", e.target.value)} />
+          <input style={{ ...s.createInput, gridColumn: "1 / -1" }} placeholder="Business Address" value={createForm.company_address} onChange={(e) => setCreateField("company_address", e.target.value)} />
+          <input style={s.createInput} placeholder="Admin First Name" value={createForm.admin_first_name} onChange={(e) => setCreateField("admin_first_name", e.target.value)} />
+          <input style={s.createInput} placeholder="Admin Last Name" value={createForm.admin_last_name} onChange={(e) => setCreateField("admin_last_name", e.target.value)} />
+          <input style={s.createInput} placeholder="Admin Username" value={createForm.admin_username} onChange={(e) => setCreateField("admin_username", e.target.value)} />
+          <input style={s.createInput} placeholder="Admin Email" value={createForm.admin_email} onChange={(e) => setCreateField("admin_email", e.target.value)} />
+          <input style={s.createInput} type="password" placeholder="Admin Password" value={createForm.admin_password} onChange={(e) => setCreateField("admin_password", e.target.value)} />
+          <input style={s.createInput} type="password" placeholder="Confirm Password" value={createForm.admin_password_confirm} onChange={(e) => setCreateField("admin_password_confirm", e.target.value)} />
+        </div>
+        <div style={s.createActions}>
+          <button style={{ ...s.createBtn, opacity: creatingCompany ? 0.7 : 1 }} onClick={createCompany} disabled={creatingCompany}>
+            {creatingCompany ? "Creating..." : "Create Company"}
+          </button>
+          <button style={s.createResetBtn} onClick={resetCreateForm} disabled={creatingCompany}>
+            Reset
+          </button>
+        </div>
+      </div>
 
       {/* HEADER */}
       <div style={s.topBar}>
@@ -420,6 +561,23 @@ export default function CompanyManagement() {
 
 const s = {
   page: { padding: "2rem", maxWidth: 1100, margin: "0 auto" },
+  createPanel: {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "0.75rem",
+    padding: "1rem",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+    marginBottom: "1rem",
+  },
+  createPanelHeader: { display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap" },
+  createTitle: { fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.15rem" },
+  createSubtitle: { color: "#64748b", fontSize: "0.85rem", margin: 0 },
+  seedTemplatesBtn: { padding: "0.6rem 0.9rem", borderRadius: "0.375rem", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: 700, cursor: "pointer" },
+  createGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.65rem" },
+  createInput: { padding: "0.7rem 0.8rem", border: "1px solid #cbd5e1", borderRadius: "0.375rem", fontSize: "0.9rem", outline: "none" },
+  createActions: { display: "flex", gap: "0.75rem", marginTop: "0.9rem", flexWrap: "wrap" },
+  createBtn: { padding: "0.7rem 1rem", background: "#4f46e5", color: "#fff", border: "none", borderRadius: "0.375rem", fontWeight: 700, cursor: "pointer" },
+  createResetBtn: { padding: "0.7rem 1rem", background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "0.375rem", fontWeight: 700, cursor: "pointer" },
   topBar: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" },
   title: { fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.25rem" },
   sub: { color: "#64748b", fontSize: "0.875rem" },

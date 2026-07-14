@@ -23,6 +23,7 @@ from sqlmodel import Session, select
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel
+import stripe
 
 try:
     from backend.database import get_session
@@ -44,6 +45,17 @@ router = APIRouter()
 
 class SeedRequest(BaseModel):
     force: bool = True
+
+
+# TEMPORARY: isolated Stripe test checkout payload/response models.
+class StripeTestCheckoutRequest(BaseModel):
+    amount: float = 0.5
+
+
+class StripeTestCheckoutResponse(BaseModel):
+    ok: bool
+    checkout_url: str
+    checkout_session_id: str | None = None
 
 
 # ─── 1 SETTINGS SINGLETON HELPER ───────────────────────────────────────────────
@@ -287,6 +299,61 @@ def update_schedule_settings(
         response.stripe_secret_key = None
         response.stripe_webhook_secret = None
     return response
+
+
+# TEMPORARY: isolated endpoint for Stripe test checkout (easy to remove).
+@router.post("/stripe/test-checkout", response_model=StripeTestCheckoutResponse)
+def create_stripe_test_checkout(
+    payload: StripeTestCheckoutRequest,
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    company_id = resolve_company_id(session, current_user)
+    settings = get_or_create_settings(session, company_id)
+
+    if not settings.stripe_enabled:
+        raise HTTPException(status_code=400, detail="Stripe is disabled in settings.")
+    if not (settings.stripe_secret_key or "").strip():
+        raise HTTPException(status_code=400, detail="Stripe secret key is missing.")
+
+    stripe.api_key = settings.stripe_secret_key.strip()
+
+    amount = max(0.5, float(payload.amount or 0.5))
+    base_origin = (os.getenv("APP_WEB_URL") or os.getenv("CLIENT_PORTAL_URL") or "https://app.vadpivi.com").rstrip("/")
+
+    try:
+        session_obj = stripe.checkout.Session.create(
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "usd",
+                        "product_data": {"name": "Stripe Integration Test"},
+                        "unit_amount": int(round(amount * 100)),
+                    },
+                    "quantity": 1,
+                }
+            ],
+            metadata={
+                "type": "stripe_test_checkout",
+                "company_id": company_id,
+                "requested_by": str(getattr(current_user, "id", "")),
+            },
+            success_url=f"{base_origin}/profile?stripe_test=success&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_origin}/profile?stripe_test=cancelled",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Stripe test checkout failed: {str(exc)}")
+
+    return StripeTestCheckoutResponse(
+        ok=True,
+        checkout_url=session_obj.get("url") or "",
+        checkout_session_id=session_obj.get("id"),
+    )
 
 
 # ─── 2B COMPANY LOGO UPLOAD ────────────────────────────────────────────────────
