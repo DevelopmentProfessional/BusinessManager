@@ -428,6 +428,23 @@ def _ensure_company_multitenancy_if_needed():
                 print(f"  Warning: Could not drop unique constraint on {table}.{col}: {e}")
 
 
+def _seed_document_templates_for_existing_companies_if_needed():
+    """Backfill company-scoped document templates for every company in the database."""
+    try:
+        from backend.company_scaffold import seed_document_templates_for_all_companies
+    except ModuleNotFoundError:
+        from company_scaffold import seed_document_templates_for_all_companies  # type: ignore
+
+    try:
+        with engine.begin() as conn:
+            seeded_by_company = seed_document_templates_for_all_companies(conn)
+            if seeded_by_company:
+                summary = ", ".join(f"{cid}:{count}" for cid, count in sorted(seeded_by_company.items()))
+                print(f"  + Seeded document templates for existing companies ({summary})")
+    except Exception as e:
+        print(f"  [WARN] Could not backfill document templates for existing companies: {e}")
+
+
 # ─── MIGRATION: ENSURE userrole ENUM HAS ALL EXPECTED VALUES ────────────────────
 def _ensure_userrole_enum_values_if_needed():
     """Add any missing values to the userrole PostgreSQL enum (idempotent)."""
@@ -1277,6 +1294,7 @@ def create_db_and_tables():
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()
     _ensure_company_multitenancy_if_needed()
+    _seed_document_templates_for_existing_companies_if_needed()
     _backfill_company_logo_from_settings_if_needed()
     _ensure_user_username_composite_unique_if_needed()
     _ensure_userrole_enum_values_if_needed()
