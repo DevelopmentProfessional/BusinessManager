@@ -42,16 +42,34 @@ import os
 import inspect
 import uuid as uuid_module
 import jwt as pyjwt
+import logging
+import smtplib
+import ssl
 from datetime import datetime
+from urllib.parse import urlparse
 from typing import Type, Dict, Any, Optional
 from uuid import UUID
+from email.message import EmailMessage
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, Header
 from fastapi.responses import FileResponse, Response
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, or_, func
 from sqlmodel import SQLModel, select as sql_select
+import stripe
+
+try:
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError
+except ModuleNotFoundError:
+    boto3 = None
+
+    class BotoCoreError(Exception):
+        pass
+
+    class ClientError(Exception):
+        pass
 
 from ..database import get_session
 from ..models import *
@@ -66,6 +84,348 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Tables without company_id (system tables, never filter by company)
 SYSTEM_TABLES = {"company", "database_connection", "document_blob", "schema_migration"}
+logger = logging.getLogger(__name__)
+
+
+def _render_html_template(template_html: str, variables: dict[str, Any]) -> str:
+    html = template_html or ""
+    for key, value in variables.items():
+        html = html.replace("{{" + key + "}}", str(value if value is not None else ""))
+    return html
+
+
+def _send_sale_receipt_email(session: Session, sale: SaleTransaction) -> bool:
+    if not sale.client_id:
+        return False
+
+    client = session.get(Client, sale.client_id)
+    recipient = (getattr(client, "email", None) or "").strip() if client else ""
+    if not recipient:
+        return False
+
+    company = session.exec(
+        sql_select(Company).where(Company.company_id == (sale.company_id or ""))
+    ).first()
+    sender_user = session.get(User, sale.employee_id) if sale.employee_id else None
+    items = session.exec(
+        sql_select(SaleTransactionItem).where(SaleTransactionItem.sale_transaction_id == sale.id)
+    ).all()
+
+    receipt_templates = session.exec(
+        sql_select(DocumentTemplate)
+        .where(DocumentTemplate.is_active == True)
+        .where(DocumentTemplate.template_type == "receipt")
+        .where(
+            or_(
+                DocumentTemplate.company_id == (sale.company_id or ""),
+                DocumentTemplate.is_standard == True,
+            )
+        )
+        .order_by(DocumentTemplate.updated_at.desc())
+    ).all()
+
+    selected_template = None
+    for tpl in receipt_templates:
+        if not getattr(tpl, "is_standard", False):
+            selected_template = tpl
+            break
+    if selected_template is None and receipt_templates:
+        selected_template = receipt_templates[0]
+
+    company_name = (getattr(company, "name", None) or "BusinessManager").strip()
+    company_email = (getattr(company, "company_email", None) or "").strip()
+    company_phone = (getattr(company, "company_phone", None) or "").strip()
+    client_name = (getattr(client, "name", None) or "Client").strip()
+    invoice_date = (sale.created_at or datetime.utcnow()).strftime("%Y-%m-%d %H:%M")
+
+    item_rows = "".join(
+        [
+            f"<tr><td>{(it.item_name or '')}</td><td style='text-align:right'>{int(it.quantity or 1)}</td><td style='text-align:right'>${float(it.unit_price or 0):.2f}</td><td style='text-align:right'>${float(it.line_total or 0):.2f}</td></tr>"
+            for it in items
+        ]
+    )
+    if not item_rows:
+        item_rows = "<tr><td colspan='4'>No line items recorded.</td></tr>"
+
+    items_table = (
+        "<table style='width:100%;border-collapse:collapse' border='1' cellpadding='6'>"
+        "<thead><tr><th align='left'>Item</th><th align='right'>Qty</th><th align='right'>Unit</th><th align='right'>Total</th></tr></thead>"
+        f"<tbody>{item_rows}</tbody></table>"
+    )
+
+    variables = {
+        "invoice.date": invoice_date,
+        "invoice.number": str(sale.id),
+        "invoice.items": items_table,
+        "invoice.subtotal": f"${float(sale.subtotal or 0):.2f}",
+        "invoice.tax": f"${float(sale.tax_amount or 0):.2f}",
+        "invoice.total": f"${float(sale.total or 0):.2f}",
+        "invoice.payment_method": str(sale.payment_method or "card").replace("_", " ").title(),
+        "client.name": client_name,
+        "client.email": recipient,
+        "company.name": company_name,
+        "company.email": company_email,
+        "company.phone": company_phone,
+        "sender.first_name": getattr(sender_user, "first_name", "") if sender_user else "",
+        "sender.last_name": getattr(sender_user, "last_name", "") if sender_user else "",
+    }
+
+    default_html = (
+        f"<p>Hi {client_name},</p>"
+        f"<p>Your payment has been confirmed for sale <strong>{sale.id}</strong>.</p>"
+        f"{items_table}"
+        f"<p><strong>Total Paid:</strong> ${float(sale.total or 0):.2f}</p>"
+        f"<p>Thank you,<br>{company_name}</p>"
+    )
+    html_body = _render_html_template(getattr(selected_template, "content", "") or default_html, variables)
+    text_body = (
+        f"Hi {client_name},\n\n"
+        f"Your payment has been confirmed for sale {sale.id}.\n"
+        f"Total paid: ${float(sale.total or 0):.2f}\n\n"
+        f"Thank you,\n{company_name}"
+    )
+    subject = f"Payment receipt from {company_name}"
+
+    ses_sender = (
+        (os.getenv("AWS_SES_FROM_EMAIL") or "").strip()
+        or (os.getenv("SMTP_FROM_EMAIL") or "").strip()
+        or "no-reply@vadpivi.com"
+    )
+    ses_region = (os.getenv("AWS_SES_REGION") or os.getenv("AWS_REGION") or "us-east-1").strip()
+
+    if boto3 is not None and ses_sender:
+        try:
+            client_ses = boto3.client("sesv2", region_name=ses_region)
+            client_ses.send_email(
+                FromEmailAddress=ses_sender,
+                Destination={"ToAddresses": [recipient]},
+                Content={
+                    "Simple": {
+                        "Subject": {"Data": subject},
+                        "Body": {
+                            "Text": {"Data": text_body},
+                            "Html": {"Data": html_body},
+                        },
+                    }
+                },
+            )
+            return True
+        except (BotoCoreError, ClientError, Exception):
+            logger.exception("Failed to send POS receipt via SES")
+
+    smtp_host = (os.getenv("SMTP_HOST") or "").strip()
+    if not smtp_host:
+        return False
+
+    sender = (
+        (os.getenv("SMTP_FROM_EMAIL") or "").strip()
+        or (os.getenv("SMTP_USERNAME") or "").strip()
+        or ses_sender
+    )
+    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+    smtp_username = (os.getenv("SMTP_USERNAME") or "").strip()
+    smtp_password = os.getenv("SMTP_PASSWORD") or ""
+    use_ssl = (os.getenv("SMTP_USE_SSL") or "").strip().lower() in {"1", "true", "yes", "on"}
+    use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = recipient
+    msg.set_content(text_body)
+    msg.add_alternative(html_body, subtype="html")
+
+    try:
+        if use_ssl:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ssl.create_default_context(), timeout=20) as server:
+                if smtp_username:
+                    server.login(smtp_username, smtp_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+                if use_tls:
+                    server.starttls(context=ssl.create_default_context())
+                if smtp_username:
+                    server.login(smtp_username, smtp_password)
+                server.send_message(msg)
+        return True
+    except Exception:
+        logger.exception("Failed to send POS receipt via SMTP")
+        return False
+
+
+def _sale_is_paid(session: Session, sale_transaction_id) -> bool:
+    sale = session.get(SaleTransaction, sale_transaction_id)
+    return bool(getattr(sale, "paid_at", None)) if sale else False
+
+
+def _consume_sale_transaction_inventory(session: Session, sale_transaction_id) -> None:
+    sale = session.get(SaleTransaction, sale_transaction_id)
+    if not sale or getattr(sale, "inventory_consumed_at", None):
+        return
+
+    items = session.exec(
+        sql_select(SaleTransactionItem).where(SaleTransactionItem.sale_transaction_id == sale_transaction_id)
+    ).all()
+
+    for sale_item in items:
+        item_type = getattr(sale_item, "item_type", None)
+        item_id = getattr(sale_item, "item_id", None)
+        qty_sold = getattr(sale_item, "quantity", 1) or 1
+
+        def _consume_resources(product_id, units_sold: float):
+            try:
+                res_links = session.exec(
+                    sql_select(ProductResource).where(ProductResource.inventory_id == product_id)
+                ).all()
+                for pr in res_links:
+                    res_inv = session.get(Inventory, pr.resource_id)
+                    if res_inv is not None:
+                        res_inv.quantity = max(0, (res_inv.quantity or 0) - (pr.quantity_per_batch * units_sold))
+                        session.add(res_inv)
+            except Exception as e:
+                print(f"Warning: resource consumption failed for product {product_id}: {e}")
+
+        if item_type == 'product' and item_id:
+            try:
+                inv = session.get(Inventory, item_id)
+                if inv is not None:
+                    inv.quantity = max(0, inv.quantity - qty_sold)
+                    session.add(inv)
+                _consume_resources(item_id, qty_sold)
+            except Exception as e:
+                print(f"Warning: stock decrement failed for inventory {item_id}: {e}")
+
+        elif item_type == 'mix' and item_id:
+            try:
+                import json as _json
+                raw = getattr(sale_item, 'mix_selections', None)
+                selections = _json.loads(raw) if raw else []
+                for sel in selections:
+                    pid = sel.get('product_id')
+                    qty = int(sel.get('quantity', 0)) * qty_sold
+                    if pid and qty > 0:
+                        comp_inv = session.get(Inventory, pid)
+                        if comp_inv is not None:
+                            comp_inv.quantity = max(0, comp_inv.quantity - qty)
+                            session.add(comp_inv)
+                        _consume_resources(pid, qty)
+            except Exception as e:
+                print(f"Warning: mix stock decrement failed for mix {item_id}: {e}")
+
+        elif item_type == 'bundle' and item_id:
+            try:
+                components = session.exec(
+                    sql_select(BundleComponent).where(BundleComponent.bundle_id == item_id)
+                ).all()
+                for comp in components:
+                    comp_inv = session.get(Inventory, comp.component_id)
+                    if comp_inv is not None and (comp_inv.type or '').lower() == 'product':
+                        units = comp.quantity * qty_sold
+                        comp_inv.quantity = max(0, comp_inv.quantity - units)
+                        session.add(comp_inv)
+                        _consume_resources(comp.component_id, units)
+            except Exception as e:
+                print(f"Warning: bundle stock decrement failed for bundle {item_id}: {e}")
+
+    sale.inventory_consumed_at = datetime.utcnow()
+    session.add(sale)
+
+
+def _get_company_stripe_settings(session: Session, company_id: str | None) -> dict:
+    if not company_id:
+        return {"enabled": False, "secret_key": None, "webhook_secret": None}
+
+    settings = session.exec(
+        sql_select(AppSettings).where(AppSettings.company_id == company_id)
+    ).first()
+
+    return {
+        "enabled": bool(getattr(settings, "stripe_enabled", False)) if settings else False,
+        "secret_key": (getattr(settings, "stripe_secret_key", None) or "").strip() if settings else None,
+        "webhook_secret": (getattr(settings, "stripe_webhook_secret", None) or "").strip() if settings else None,
+    }
+
+
+def _resolve_stripe_checkout_base_url(request: Request) -> str:
+    origin = (request.headers.get("origin") or "").strip()
+    if origin:
+        return origin.rstrip("/")
+
+    referer = (request.headers.get("referer") or "").strip()
+    if referer:
+        parsed = urlparse(referer)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+
+    return os.getenv("CLIENT_PORTAL_URL", "https://clients.vadpivi.com").rstrip("/")
+
+
+def _create_sale_checkout_session(record: SQLModel, request: Request, session: Session) -> tuple[str, str | None]:
+    stripe_cfg = _get_company_stripe_settings(session, getattr(record, "company_id", None))
+    if not stripe_cfg["enabled"] or not stripe_cfg["secret_key"]:
+        return "", None
+
+    stripe.api_key = stripe_cfg["secret_key"]
+    base_url = _resolve_stripe_checkout_base_url(request)
+    payment_method = str(getattr(record, "payment_method", "") or "").strip().lower()
+
+    # Only card/tap-to-pay paths use Stripe; cash remains fully offline.
+    if payment_method not in {"card", "card_scan", "tap_pay", "tap_to_pay"}:
+        return "", None
+
+    amount = max(0.5, float(getattr(record, "total", 0) or 0))
+    sale_id = str(getattr(record, "id", ""))
+    company_id = str(getattr(record, "company_id", "") or "")
+
+    session_obj = stripe.checkout.Session.create(
+        mode="payment",
+        payment_method_types=["card"],
+        line_items=[
+            {
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": f"Sale {sale_id[:8] or ''}".strip()},
+                    "unit_amount": int(round(amount * 100)),
+                },
+                "quantity": 1,
+            }
+        ],
+        client_reference_id=sale_id,
+        metadata={
+            "sale_transaction_id": sale_id,
+            "company_id": company_id,
+        },
+        success_url=f"{base_url}/sales?payment=success&sale_id={sale_id}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{base_url}/sales?payment=cancelled&sale_id={sale_id}",
+    )
+    return session_obj.get("url") or "", session_obj.get("id")
+
+
+def _construct_stripe_event(payload: bytes, stripe_signature: str | None, session: Session):
+    if not stripe_signature:
+        raise HTTPException(status_code=400, detail="Missing Stripe signature header.")
+
+    secrets: list[str] = []
+    settings_rows = session.exec(sql_select(AppSettings)).all()
+    for row in settings_rows:
+        secret = (getattr(row, "stripe_webhook_secret", None) or "").strip()
+        if secret and secret not in secrets:
+            secrets.append(secret)
+
+    env_secret = (os.getenv("STRIPE_WEBHOOK_SECRET", "") or "").strip()
+    if env_secret and env_secret not in secrets:
+        secrets.append(env_secret)
+
+    for secret in secrets:
+        try:
+            return stripe.Webhook.construct_event(payload, stripe_signature, secret)
+        except stripe.SignatureVerificationError:
+            continue
+        except Exception:
+            continue
+
+    raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
 
 def _normalize_inventory_cost_fields(record_data: Dict[str, Any], apply_default_purchase_date: bool = False) -> None:
@@ -688,6 +1048,63 @@ async def insert_with_file(
 
     return result
 
+
+@router.post("/sale_transaction/webhooks/stripe", include_in_schema=False)
+async def sale_transaction_stripe_webhook(
+    request: Request,
+    stripe_signature: str = Header(None, alias="stripe-signature"),
+    session: Session = Depends(get_session),
+):
+    payload = await request.body()
+
+    try:
+        event = _construct_stripe_event(payload, stripe_signature, session)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Webhook parse error.")
+
+    payload_obj = event["data"]["object"]
+    metadata = payload_obj.get("metadata", {}) if isinstance(payload_obj, dict) else {}
+    sale_id = metadata.get("sale_transaction_id") or payload_obj.get("client_reference_id")
+    if not sale_id:
+        return {"received": True}
+
+    try:
+        sale_uuid = UUID(str(sale_id))
+    except (TypeError, ValueError):
+        return {"received": True}
+
+    sale = session.get(SaleTransaction, sale_uuid)
+    if not sale:
+        return {"received": True}
+
+    if event["type"] in {"checkout.session.completed", "payment_intent.succeeded"}:
+        sale.paid_at = sale.paid_at or datetime.utcnow()
+        if event["type"] == "checkout.session.completed":
+            sale.stripe_checkout_session_id = payload_obj.get("id") or sale.stripe_checkout_session_id
+            sale.stripe_payment_intent_id = payload_obj.get("payment_intent") or sale.stripe_payment_intent_id
+        else:
+            sale.stripe_payment_intent_id = payload_obj.get("id") or sale.stripe_payment_intent_id
+            sale.stripe_charge_id = payload_obj.get("latest_charge") or sale.stripe_charge_id
+        if getattr(sale, "schedule_id", None):
+            schedule = session.get(Schedule, sale.schedule_id)
+            if schedule is not None:
+                schedule.is_paid = True
+                schedule.sale_transaction_id = sale.id
+        if not getattr(sale, "receipt_emailed_at", None):
+            if _send_sale_receipt_email(session, sale):
+                sale.receipt_emailed_at = datetime.utcnow()
+        try:
+            _consume_sale_transaction_inventory(session, sale_uuid)
+            session.add(sale)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise HTTPException(status_code=500, detail="Failed to persist sale payment status.")
+
+    return {"received": True}
+
 @router.post("/{table_name}")
 async def insert(
     table_name: str,
@@ -738,6 +1155,22 @@ async def insert(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
 
+    checkout_url = ""
+    checkout_session_id = None
+    if table_name.lower() in ("sale_transaction", "sale_transactions"):
+        try:
+            checkout_url, checkout_session_id = _create_sale_checkout_session(record, request, session)
+            if checkout_session_id:
+                record.stripe_checkout_session_id = checkout_session_id
+                session.add(record)
+                session.commit()
+                session.refresh(record)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            session.rollback()
+            raise HTTPException(status_code=502, detail=f"Stripe checkout creation failed: {str(exc)}")
+
     if table_name.lower() in ('client', 'clients') and membership_ids is not None:
         try:
             _sync_client_memberships(session, record.id, membership_ids, current_user.company_id)
@@ -748,78 +1181,25 @@ async def insert(
         session.refresh(record)
 
     # ── P1-E: Decrement inventory stock when a product is sold ────────────────
-    # Runs after the sale_transaction_item is committed so a failure here does
-    # not roll back the sale itself — the sale is already persisted.
+    # Runs only for paid sales so tokenized Stripe payments do not deduct stock
+    # until the payment is actually confirmed.
     if table_name.lower() in ('sale_transaction_item', 'sale_transaction_items'):
-        item_type = getattr(record, 'item_type', None)
-        item_id = getattr(record, 'item_id', None)
-        qty_sold = getattr(record, 'quantity', 1) or 1
-
-        def _consume_resources(product_id, units_sold: float):
-            """Decrement resource inventory for each ProductResource linked to product_id."""
+        sale_transaction_id = getattr(record, 'sale_transaction_id', None)
+        sale = session.get(SaleTransaction, sale_transaction_id) if sale_transaction_id else None
+        if sale and (getattr(sale, 'paid_at', None) or str(getattr(sale, 'payment_method', '')).lower() == 'cash'):
             try:
-                res_links = session.exec(
-                    sql_select(ProductResource).where(ProductResource.inventory_id == product_id)
-                ).all()
-                for pr in res_links:
-                    res_inv = session.get(Inventory, pr.resource_id)
-                    if res_inv is not None:
-                        res_inv.quantity = max(0, (res_inv.quantity or 0) - (pr.quantity_per_batch * units_sold))
-                        session.add(res_inv)
-            except Exception as e:
-                print(f"Warning: resource consumption failed for product {product_id}: {e}")
-
-        if item_type == 'product' and item_id:
-            try:
-                inv = session.get(Inventory, item_id)
-                if inv is not None:
-                    inv.quantity = max(0, inv.quantity - qty_sold)
-                    session.add(inv)
-                _consume_resources(item_id, qty_sold)
+                _consume_sale_transaction_inventory(session, sale_transaction_id)
                 session.commit()
             except Exception as e:
                 session.rollback()
-                print(f"Warning: stock decrement failed for inventory {item_id}: {e}")
+                print(f"Warning: stock decrement failed for sale transaction {sale_transaction_id}: {e}")
 
-        elif item_type == 'mix' and item_id:
-            # Decrement stock for each product the client picked × how many mixes were sold
-            try:
-                import json as _json
-                raw = getattr(record, 'mix_selections', None)
-                selections = _json.loads(raw) if raw else []
-                for sel in selections:
-                    pid = sel.get('product_id')
-                    qty = int(sel.get('quantity', 0)) * qty_sold  # multiply by mixes sold
-                    if pid and qty > 0:
-                        comp_inv = session.get(Inventory, pid)
-                        if comp_inv is not None:
-                            comp_inv.quantity = max(0, comp_inv.quantity - qty)
-                            session.add(comp_inv)
-                        _consume_resources(pid, qty)
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                print(f"Warning: mix stock decrement failed for mix {item_id}: {e}")
-
-        elif item_type == 'bundle' and item_id:
-            # Decrement stock for each component product × qty_sold bundles
-            try:
-                components = session.exec(
-                    sql_select(BundleComponent).where(BundleComponent.bundle_id == item_id)
-                ).all()
-                for comp in components:
-                    comp_inv = session.get(Inventory, comp.component_id)
-                    if comp_inv is not None and (comp_inv.type or '').lower() == 'product':
-                        units = comp.quantity * qty_sold
-                        comp_inv.quantity = max(0, comp_inv.quantity - units)
-                        session.add(comp_inv)
-                        _consume_resources(comp.component_id, units)
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                print(f"Warning: bundle stock decrement failed for bundle {item_id}: {e}")
-
-    return _serialize_record(record, table_name, session)
+    result = _serialize_record(record, table_name, session)
+    if checkout_url:
+        result["checkout_url"] = checkout_url
+    if checkout_session_id:
+        result["stripe_checkout_session_id"] = checkout_session_id
+    return result
 
 # ─── [9] UPDATE ENDPOINTS ──────────────────────────────────────────────────────
 @router.put("/{table_name}/{record_id}")

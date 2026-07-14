@@ -137,6 +137,14 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='discount_amount'"
             )).fetchone()
+            sale_transaction_inventory_consumed_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='inventory_consumed_at'"
+            )).fetchone()
+            sale_transaction_receipt_emailed_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='receipt_emailed_at'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -153,6 +161,8 @@ def _required_schema_artifacts_present() -> bool:
                 and schedule_parent_schedule_id_column is not None
                 and schedule_send_reminder_column is not None
                 and sale_transaction_discount_amount_column is not None
+                and sale_transaction_inventory_consumed_column is not None
+                and sale_transaction_receipt_emailed_column is not None
             )
     except Exception:
         return False
@@ -288,6 +298,12 @@ def _ensure_schedule_payment_columns_if_needed():
         "sale_transaction": {
             "schedule_id": "UUID",
             "discount_amount": "DOUBLE PRECISION NOT NULL DEFAULT 0.0",
+            "paid_at": "TIMESTAMP",
+            "stripe_payment_intent_id": "VARCHAR",
+            "stripe_checkout_session_id": "VARCHAR",
+            "stripe_charge_id": "VARCHAR",
+            "inventory_consumed_at": "TIMESTAMP",
+            "receipt_emailed_at": "TIMESTAMP",
         },
         "service_resource": {
             "consumption_rate_pct": "DOUBLE PRECISION",

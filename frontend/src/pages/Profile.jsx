@@ -349,6 +349,7 @@ const Profile = () => {
     stripe_webhook_secret: "",
   });
   const [stripeSettingsLoading, setStripeSettingsLoading] = useState(false);
+  const [stripeTestLoading, setStripeTestLoading] = useState(false);
 
   const [portalBranding, setPortalBranding] = useState({
     portal_hero_title: "",
@@ -690,6 +691,26 @@ const Profile = () => {
       setSettingsError(err.response?.data?.detail || "Failed to save Stripe settings");
     } finally {
       setStripeSettingsLoading(false);
+    }
+  };
+
+  // TEMPORARY: isolated Stripe test checkout launcher (easy to remove).
+  const handleStripeTestCheckout = async () => {
+    setStripeTestLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      const res = await settingsAPI.createStripeTestCheckout(0.5);
+      const checkoutUrl = res?.data?.checkout_url || res?.checkout_url;
+      if (!checkoutUrl) {
+        throw new Error("No checkout URL returned from Stripe test endpoint.");
+      }
+      setSettingsSuccess("Stripe test checkout created. Redirecting...");
+      window.location.assign(checkoutUrl);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || err.message || "Failed to start Stripe test checkout");
+    } finally {
+      setStripeTestLoading(false);
     }
   };
 
@@ -1587,8 +1608,10 @@ const Profile = () => {
           resetPortalBrandingDefaults={resetPortalBrandingDefaults}
           stripeSettings={stripeSettings}
           stripeSettingsLoading={stripeSettingsLoading}
+          stripeTestLoading={stripeTestLoading}
           handleStripeSettingsChange={handleStripeSettingsChange}
           handleSaveStripeSettings={handleSaveStripeSettings}
+          handleStripeTestCheckout={handleStripeTestCheckout}
           settingsSuccess={settingsSuccess}
           HelpIcon={HelpIcon}
           onCheckStartDatabase={handleCheckStartDatabase}

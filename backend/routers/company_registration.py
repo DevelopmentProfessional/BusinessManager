@@ -41,10 +41,12 @@ try:
     from backend.database import get_session
     from backend.models import Company, User, UserRole
     from backend.company_scaffold import seed_company_scaffold
+    from backend.company_scaffold import seed_document_templates_for_all_companies
 except ModuleNotFoundError:
     from database import get_session
     from models import Company, User, UserRole
     from company_scaffold import seed_company_scaffold
+    from company_scaffold import seed_document_templates_for_all_companies
 
 router = APIRouter(prefix="/company-registration", tags=["company-registration"])
 basic_auth = HTTPBasic()
@@ -451,6 +453,25 @@ def list_company_users(
         )
         for user in users
     ]
+
+
+@router.post("/templates/backfill")
+def backfill_company_templates(
+    _: str = Depends(require_company_creation_auth),
+    session: Session = Depends(get_session),
+):
+    """Seed the approved document templates for all existing companies."""
+    try:
+        seeded_by_company = seed_document_templates_for_all_companies(session.connection())
+        session.commit()
+        return {
+            "ok": True,
+            "seeded_companies": seeded_by_company,
+            "seeded_count": sum(seeded_by_company.values()) if seeded_by_company else 0,
+        }
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Template backfill failed: {str(e)}")
 
 
 @router.patch("/companies/{company_id}/users/{user_id}/credentials", response_model=CompanyUserInfo)

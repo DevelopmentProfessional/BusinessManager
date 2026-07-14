@@ -36,10 +36,6 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, discountAmount = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
   const [paymentMethod, setPaymentMethod] = useState("card_scan");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCVC, setCardCVC] = useState("");
-  const [cardName, setCardName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showTemplateUse, setShowTemplateUse] = useState(false);
@@ -64,55 +60,11 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCardScan = paymentMethod === "card_scan";
   const isTapPay = paymentMethod === "tap_pay";
+  const stripeReady = Boolean(appSettings?.stripe_enabled);
   const nfcSupported = typeof window !== "undefined" && "NDEFReader" in window;
 
-  // ─── 2 INPUT FORMATTERS ────────────────────────────────────────────────────
-  // Format card number with spaces
-  const formatCardNumber = (value) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || "";
-    const parts = [];
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-    return parts.length ? parts.join(" ") : value;
-  };
-
-  // Format expiry date
-  const formatExpiry = (value) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (v.length >= 2) {
-      return v.substring(0, 2) + "/" + v.substring(2, 4);
-    }
-    return v;
-  };
-
-  const handleCardNumberChange = (e) => {
-    const formatted = formatCardNumber(e.target.value);
-    if (formatted.length <= 19) setCardNumber(formatted);
-  };
-
-  const handleExpiryChange = (e) => {
-    const formatted = formatExpiry(e.target.value.replace("/", ""));
-    if (formatted.length <= 5) setCardExpiry(formatted);
-  };
-
-  const handleCVCChange = (e) => {
-    const v = e.target.value.replace(/[^0-9]/gi, "");
-    if (v.length <= 4) setCardCVC(v);
-  };
-
   // ─── 3 VALIDATION & FORM HANDLERS ──────────────────────────────────────────
-  const isCardValid = () => {
-    return cardNumber.replace(/\s/g, "").length >= 15 && cardExpiry.length === 5 && cardCVC.length >= 3 && cardName.trim().length > 0;
-  };
-
   const resetForm = () => {
-    setCardNumber("");
-    setCardExpiry("");
-    setCardCVC("");
-    setCardName("");
     setPaymentSuccess(false);
     setIsProcessing(false);
     setShowTemplateUse(false);
@@ -189,28 +141,31 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
 
   const handleSubmit = async () => {
     setIsProcessing(true);
+    try {
+      const paymentResult = await onProcessPayment(paymentMethod);
+      if (paymentResult?.checkout_url) {
+        window.location.assign(paymentResult.checkout_url);
+        return;
+      }
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      completedSaleRef.current = {
+        id: paymentResult?.sale_id || Date.now().toString(),
+        created_at: new Date().toISOString(),
+        subtotal,
+        tax_amount: tax,
+        total,
+        payment_method: paymentMethod,
+      };
 
-    // Capture sale entity so template modal has stable data
-    completedSaleRef.current = {
-      id: Date.now().toString(),
-      created_at: new Date().toISOString(),
-      subtotal,
-      tax_amount: tax,
-      total,
-      payment_method: paymentMethod,
-    };
-
-    setIsProcessing(false);
-    setPaymentSuccess(true);
-    // User clicks Done to close — no auto-close
+      setPaymentSuccess(true);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDone = () => {
-    onProcessPayment(paymentMethod);
     resetForm();
+    onClose();
   };
 
   const handleClose = () => {
@@ -273,91 +228,37 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   <input type="email" value={promptEmail} onChange={(e) => setPromptEmail(e.target.value)} placeholder="client@email.com" className="flex-1 form-control form-control-sm" />
                   <button
                     type="button"
-                    className="btn btn-emerald btn-sm"
-                    onClick={() => {
-                      if (!selectedClient || !promptEmail) return;
-                      setEmailSaveError("");
-                      clientsAPI
-                        .update(selectedClient.id, { email: promptEmail })
-                        .then(() => {
-                          setShowEmailPrompt(false);
-                          setTemplateFilterType("receipt");
-                          setShowTemplateUse(true);
-                        })
-                        .catch(() => setEmailSaveError("Failed to save email. Please try again."));
-                    }}
-                    disabled={!promptEmail}
-                    style={{ background: "#059669", color: "#fff", border: "none" }}
-                  >
-                    Send
-                  </button>
-                  <button
-                    type="button"
-                    className="btn ui-btn-outline-secondary-sm"
-                    onClick={() => {
-                      setShowEmailPrompt(false);
-                      setEmailSaveError("");
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {emailSaveError && <p className="mb-0 mt-1 small text-danger">{emailSaveError}</p>}
-              </div>
-            )}
-            {showTemplateUse && completedSaleRef.current && (
-              <Modal_TemplateUse
-                page="sales"
-                entity={completedSaleRef.current}
-                client={selectedClient}
-                items={cart.map((item) => ({
-                  item_name: item.name,
-                  quantity: item.quantity,
-                  unit_price: item.price,
-                  line_total: item.price * item.quantity,
-                  selectedOptions: item.selectedOptions ?? [],
-                }))}
-                currentUser={currentUser}
-                settings={appSettings}
-                filterType={templateFilterType}
-                onClose={() => setShowTemplateUse(false)}
-              />
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col max-h-[calc(90vh-80px)] md:flex-row overflow-hidden">
-            {/* ─── 6 ORDER SUMMARY PANEL ───────────────────────────────────── */}
-            {/* Order Summary */}
-            <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800/50 dark:border-gray-700 md:border-b-0 md:border-r md:w-2/5 overflow-y-auto p-1">
-              <h3 className="dark:text-white flex font-semibold gap-1 items-center mb-1 text-gray-900">
-                <ReceiptPercentIcon className="h-5 text-gray-500 w-5" />
-                Order Summary
-              </h3>
-
-              {selectedClient && (
-                <div className="bg-primary-50 border border-primary-200 dark:bg-primary-900/30 dark:border-primary-800 mb-1 p-1 rounded-xl">
-                  <div className="ui-flex-items-gap-1">
-                    <UserIcon className="h-4 text-primary-500 w-4" />
-                    <p className="dark:text-primary-400 font-medium text-primary-600 text-xs">Customer</p>
-                  </div>
-                  <p className="dark:text-white font-semibold mt-1 text-gray-900 text-sm">{selectedClient.name}</p>
-                  {selectedClient.email && <p className="ui-muted-xs">{selectedClient.email}</p>}
-                </div>
-              )}
-
-              <div className="max-h-48 mb-1 overflow-y-auto pr-1 space-y-1">
-                {cart.map((item) => (
-                  <div key={item.cartKey} className="bg-white dark:bg-gray-800 flex justify-between p-1 rounded-lg text-sm">
-                    <div className="flex-1 min-w-0">
-                      <p className="dark:text-white font-medium text-gray-900 truncate">{item.name}</p>
-                      {item.selectedOptions?.length > 0 && <p className="dark:text-indigo-400 mt-0.5 text-indigo-600 text-xs">{item.selectedOptions.map((o) => `${o.featureName}: ${o.optionName}`).join(" · ")}</p>}
-                      <p className="ui-muted-xs">
-                        ${item.price?.toFixed(2)} × {item.quantity}
-                      </p>
-                    </div>
-                    <span className="dark:text-white font-semibold ml-2 text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
+                    {isCardScan || isTapPay ? (
+                      <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-1 rounded-2xl space-y-1">
+                        <div className="flex items-center gap-1">
+                          <div className="bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-full">
+                            {isTapPay ? <DevicePhoneMobileIcon className="h-5 text-emerald-600 w-5" /> : <CreditCardIcon className="h-5 text-emerald-600 w-5" />}
+                          </div>
+                          <div>
+                            <p className="dark:text-white font-semibold text-gray-900 text-sm">{isTapPay ? "Tap to Pay" : "Stripe checkout"}</p>
+                            <p className="dark:text-gray-400 text-gray-500 text-xs">{stripeReady ? "Payment opens in Stripe's hosted flow. No card data is stored in the app." : "Stripe is not configured for this company."}</p>
+                          </div>
+                        </div>
+                        <div className="border border-dashed border-emerald-200 dark:border-emerald-800 rounded-xl p-1 text-sm text-gray-600 dark:text-gray-300">
+                          Total: <span className="font-semibold text-gray-900 dark:text-white">${total.toFixed(2)}</span>
+                        </div>
+                        <button
+                          onClick={handleSubmit}
+                          disabled={!stripeReady || isProcessing}
+                          className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${stripeReady && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
+                        >
+                          {isProcessing ? (
+                            <>
+                              <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircleIcon className="ui-icon-5" />
+                              Continue to secure checkout
+                            </>
+                          )}
+                        </button>
+                      </div>
               </div>
 
               <div className="border-gray-200 border-t dark:border-gray-700 pt-1 space-y-1">
@@ -421,78 +322,24 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                 </button>
               </div>
 
-              {isCardScan ? (
-                <div className="space-y-1">
-                  {/* Card Number */}
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <CreditCardIcon className="h-5 text-gray-400 w-5" />
-                    </span>
-                    <div className="flex-1 form-floating">
-                      <input type="text" id="cardNumber" value={cardNumber} onChange={handleCardNumberChange} placeholder="Card Number" className="form-control ui-control-sm" />
-                      <label htmlFor="cardNumber">Card Number</label>
+              {isCardScan || isTapPay ? (
+                <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-1 rounded-2xl space-y-1">
+                  <div className="flex items-center gap-1">
+                    <div className="bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-full">
+                      {isTapPay ? <DevicePhoneMobileIcon className="h-5 text-emerald-600 w-5" /> : <CreditCardIcon className="h-5 text-emerald-600 w-5" />}
                     </div>
-                    <button type="button" onClick={() => setShowCamera(true)} className="btn ui-btn-outline-secondary-sm" title="Scan card with camera">
-                      <CameraIcon className="ui-icon-5" />
-                    </button>
-                  </div>
-
-                  {/* Camera modal */}
-                  {showCamera && (
-                    <div className="bg-black border overflow-hidden relative rounded-xl">
-                      <div className="bg-gray-900 flex items-center justify-between px-0 py-1">
-                        <span className="flex gap-1 items-center text-white text-xs">
-                          <VideoCameraIcon className="ui-icon-4" /> Point camera at card
-                        </span>
-                        <button type="button" onClick={() => setShowCamera(false)} className="hover:text-gray-300 text-white">
-                          <XMarkIcon className="ui-icon-4" />
-                        </button>
-                      </div>
-                      {cameraError ? (
-                        <div className="p-1 text-center text-red-400 text-sm">{cameraError}</div>
-                      ) : (
-                        <>
-                          <video ref={videoRef} className="w-full" playsInline muted style={{ maxHeight: "200px", objectFit: "cover" }} />
-                          {/* Card outline guide */}
-                          <div className="absolute flex inset-0 items-center justify-center pointer-events-none" style={{ top: "2rem" }}>
-                            <div className="border-2 border-white/70 rounded-xl" style={{ width: "85%", height: "55%" }} />
-                          </div>
-                          <div className="bg-gray-900 flex gap-1 p-1">
-                            <button type="button" onClick={captureAndParseCard} className="btn btn-sm flex-1 text-white" style={{ background: "#059669", border: "none" }}>
-                              <CameraIcon className="h-4 inline me-1 w-4" /> Capture
-                            </button>
-                            <button type="button" onClick={() => setShowCamera(false)} className="border-gray-600 btn btn-outline-secondary btn-sm text-white">
-                              Cancel
-                            </button>
-                          </div>
-                          <p className="pb-1 text-center text-gray-400 text-xs">After capture, verify and adjust the fields manually.</p>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Cardholder Name */}
-                  <div className="form-floating">
-                    <input type="text" id="cardName" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Cardholder Name" className="form-control ui-control-sm" />
-                    <label htmlFor="cardName">Cardholder Name</label>
-                  </div>
-
-                  {/* Expiry & CVC */}
-                  <div className="gap-4 grid grid-cols-2">
-                    <div className="form-floating">
-                      <input type="text" id="cardExpiry" value={cardExpiry} onChange={handleExpiryChange} placeholder="MM/YY" className="form-control ui-control-sm" />
-                      <label htmlFor="cardExpiry">Expiry Date</label>
-                    </div>
-                    <div className="form-floating">
-                      <input type="text" id="cardCVC" value={cardCVC} onChange={handleCVCChange} placeholder="CVC" className="form-control ui-control-sm" />
-                      <label htmlFor="cardCVC">CVC</label>
+                    <div>
+                      <p className="dark:text-white font-semibold text-gray-900 text-sm">{isTapPay ? "Tap to Pay" : "Stripe checkout"}</p>
+                      <p className="dark:text-gray-400 text-gray-500 text-xs">{stripeReady ? "Payment opens in Stripe's hosted flow. No card data is stored in the app." : "Stripe is not configured for this company."}</p>
                     </div>
                   </div>
-
+                  <div className="border border-dashed border-emerald-200 dark:border-emerald-800 rounded-xl p-1 text-sm text-gray-600 dark:text-gray-300">
+                    Total: <span className="font-semibold text-gray-900 dark:text-white">${total.toFixed(2)}</span>
+                  </div>
                   <button
                     onClick={handleSubmit}
-                    disabled={!isCardValid() || isProcessing}
-                    className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${isCardValid() && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
+                    disabled={!stripeReady || isProcessing}
+                    className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${stripeReady && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
                   >
                     {isProcessing ? (
                       <>
@@ -501,28 +348,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                     ) : (
                       <>
                         <CheckCircleIcon className="ui-icon-5" />
-                        Pay ${total.toFixed(2)}
-                      </>
-                    )}
-                  </button>
-                </div>
-              ) : isTapPay ? (
-                <div className="py-0 text-center">
-                  <div className="bg-indigo-100 dark:bg-indigo-900/50 flex h-20 items-center justify-center mb-2 mx-auto rounded-full w-20">
-                    <DevicePhoneMobileIcon className="app-icon app-icon--lg dark:text-indigo-400 text-indigo-600" />
-                  </div>
-                  <p className="dark:text-gray-400 mb-1 text-gray-600">Tap customer card or device to continue</p>
-                  <p className="dark:text-gray-400 mb-2 text-gray-500 text-xs">{nfcSupported ? "NFC-ready device detected." : "NFC hardware may be unavailable in this browser/device. You can still complete payment manually."}</p>
-                  <p className="dark:text-emerald-400 font-bold mb-2 text-4xl text-emerald-600">${total.toFixed(2)}</p>
-                  <button onClick={handleSubmit} disabled={isProcessing} className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full">
-                    {isProcessing ? (
-                      <>
-                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircleIcon className="ui-icon-5" />
-                        Charge ${total.toFixed(2)}
+                        Continue to secure checkout
                       </>
                     )}
                   </button>

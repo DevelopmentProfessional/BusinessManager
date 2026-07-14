@@ -2060,6 +2060,12 @@ class SaleTransaction(BaseModel, table=True):
     tax_amount: float = Field(default=0)
     total: float = Field(default=0)
     payment_method: str = Field(default="cash")  # "card" or "cash"
+    stripe_payment_intent_id: Optional[str] = Field(default=None)
+    stripe_checkout_session_id: Optional[str] = Field(default=None)
+    stripe_charge_id: Optional[str] = Field(default=None)
+    paid_at: Optional[datetime] = Field(default=None)
+    inventory_consumed_at: Optional[datetime] = Field(default=None)
+    receipt_emailed_at: Optional[datetime] = Field(default=None)
     schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)  # linked appointment
     company_id: Optional[str] = Field(default=None, index=True)
 
@@ -2087,6 +2093,12 @@ class SaleTransactionRead(SQLModel):
     tax_amount: float
     total: float
     payment_method: str
+    stripe_payment_intent_id: Optional[str] = None
+    stripe_checkout_session_id: Optional[str] = None
+    stripe_charge_id: Optional[str] = None
+    paid_at: Optional[datetime] = None
+    inventory_consumed_at: Optional[datetime] = None
+    receipt_emailed_at: Optional[datetime] = None
     schedule_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

@@ -28,7 +28,7 @@
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
@@ -351,6 +351,7 @@ export default function Sales() {
   const [appSettings, setAppSettings] = useState(null);
   const [showSalesFilterDropdown, setShowSalesFilterDropdown] = useState(false);
   const [filterClientSearch, setFilterClientSearch] = useState("");
+  const [successNotice, setSuccessNotice] = useState("");
   const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   // Invoice template modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -376,6 +377,7 @@ export default function Sales() {
     saleSource: "all",
     status: "",
   });
+  const stripeReturnHandledRef = useRef(false);
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
@@ -505,6 +507,85 @@ export default function Sales() {
       } catch {}
     }
   }, [cart, selectedClient?.id]);
+
+  useEffect(() => {
+    if (stripeReturnHandledRef.current) return;
+
+    const params = new URLSearchParams(location.search || "");
+    const paymentState = String(params.get("payment") || "").toLowerCase();
+    const saleId = params.get("sale_id");
+    if (!paymentState || !saleId) return;
+
+    stripeReturnHandledRef.current = true;
+
+    const clearStripeQueryParams = () => {
+      try {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete("payment");
+        currentUrl.searchParams.delete("sale_id");
+        currentUrl.searchParams.delete("session_id");
+        window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+      } catch {}
+    };
+
+    if (paymentState === "cancelled") {
+      setSuccessNotice("");
+      setError("Payment was cancelled. You can retry checkout.");
+      clearStripeQueryParams();
+      return;
+    }
+
+    if (paymentState !== "success") {
+      clearStripeQueryParams();
+      return;
+    }
+
+    const finalizeStripeSaleReturn = async () => {
+      const pendingRaw = localStorage.getItem("pending_stripe_sale");
+      let pending = null;
+      if (pendingRaw) {
+        try {
+          pending = JSON.parse(pendingRaw);
+        } catch {
+          pending = null;
+        }
+      }
+
+      const saleIdMatches = pending && String(pending.saleId || "") === String(saleId);
+
+      try {
+        if (saleIdMatches && pending?.selectedClientId && Array.isArray(pending.soldSubscriptions) && pending.soldSubscriptions.length > 0) {
+          await applySubscriptionsForSale(pending.selectedClientId, pending.soldSubscriptions);
+        }
+
+        if (saleIdMatches && pending?.selectedClientId) {
+          await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+        }
+
+        if (saleIdMatches && pending?.linkedScheduleId) {
+          await scheduleAPI
+            .update(pending.linkedScheduleId, {
+              is_paid: true,
+              sale_transaction_id: saleId,
+            })
+            .catch(() => {});
+        }
+
+        await loadTransactionHistory();
+        setCart([]);
+        setSelectedClient(null);
+        setShowCheckout(false);
+        setLinkedScheduleId(null);
+        clearError();
+        setSuccessNotice("Payment confirmed. Receipt email was sent to the client when an email address is on file.");
+      } finally {
+        localStorage.removeItem("pending_stripe_sale");
+        clearStripeQueryParams();
+      }
+    };
+
+    finalizeStripeSaleReturn();
+  }, [location.search]);
 
   // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
   const mapCartItemToDb = (item) => ({
@@ -959,6 +1040,7 @@ export default function Sales() {
     // Totals already calculated at module level with discount applied (invoiceTaxAmount, invoiceTotal)
 
     const provisionalSaleId = `local-${Date.now()}`;
+    let paymentResult = { completed: false };
 
     // Build local sale record for immediate UI update
     const sale = {
@@ -1007,6 +1089,28 @@ export default function Sales() {
         );
 
         const soldSubscriptions = cart.filter((item) => item.itemType === "subscription");
+
+        const checkoutUrl = txResponse?.data?.checkout_url || txResponse?.checkout_url || null;
+        if (checkoutUrl && String(paymentMethod || "").toLowerCase() !== "cash") {
+          try {
+            const pendingSaleContext = {
+              saleId: txId,
+              selectedClientId: selectedClient?.id || null,
+              linkedScheduleId: linkedScheduleId || null,
+              soldSubscriptions: soldSubscriptions.map((sub) => ({
+                id: sub.id,
+                subscriptionStartDate: sub.subscriptionStartDate || null,
+                lock_term_count: sub.lock_term_count,
+                lock_term_unit: sub.lock_term_unit,
+              })),
+              createdAt: new Date().toISOString(),
+            };
+            localStorage.setItem("pending_stripe_sale", JSON.stringify(pendingSaleContext));
+          } catch {}
+          paymentResult = { checkout_url: checkoutUrl, sale_id: txId, txResponse };
+          return paymentResult;
+        }
+
         if (selectedClient?.id && soldSubscriptions.length > 0) {
           await applySubscriptionsForSale(selectedClient.id, soldSubscriptions);
         }
@@ -1051,6 +1155,7 @@ export default function Sales() {
           setLinkedScheduleId(null);
         }
         persistedSuccessfully = true;
+        paymentResult = { completed: true, sale_id: txId, txResponse };
       }
     } catch (err) {
       console.error("Failed to persist sale transaction:", err);
@@ -1074,6 +1179,11 @@ export default function Sales() {
     setSelectedClient(null);
     setShowCheckout(false);
     clearError();
+    if (String(paymentMethod || "").toLowerCase() === "cash") {
+      setSuccessNotice("Payment confirmed.");
+    }
+
+    return paymentResult.completed || paymentResult.checkout_url ? paymentResult : { completed: persistedSuccessfully };
   };
 
   // ─── 9  SERVICE LOAD FUNCTION ─────────────────────────────────────────────
@@ -1203,6 +1313,14 @@ export default function Sales() {
           <div className="bg-red-50 border border-red-200 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300 flex items-center justify-between mb-2 px-1 py-0 rounded-xl text-red-700 text-sm">
             <span>{error}</span>
             <button onClick={clearError} className="hover:text-red-700 ml-2 text-red-500">
+              <XMarkIcon className="ui-icon-4" />
+            </button>
+          </div>
+        )}
+        {successNotice && (
+          <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300 flex items-center justify-between mb-2 px-1 py-0 rounded-xl text-emerald-700 text-sm">
+            <span>{successNotice}</span>
+            <button onClick={() => setSuccessNotice("")} className="hover:text-emerald-700 ml-2 text-emerald-500">
               <XMarkIcon className="ui-icon-4" />
             </button>
           </div>
