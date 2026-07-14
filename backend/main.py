@@ -199,7 +199,6 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
-app.include_router(settings.router, prefix="/api/v1", tags=["settings-root"])
 app.include_router(database_connections.router, prefix="/api/v1", tags=["database-connections"])
 app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])

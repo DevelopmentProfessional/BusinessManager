@@ -735,12 +735,6 @@ export const settingsAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
-  // Aliases (same endpoint, both names work)
-  getSettings: () => getCachedOrFetch("schedule-settings", () => api.get("/settings/schedule")),
-  updateSettings: (data) => {
-    clearCache("schedule-settings");
-    return api.put("/settings/schedule", data);
-  },
   seedDemoData: (force = true, seedKey = "") => {
     const headers = {};
     if (seedKey) {
@@ -749,6 +743,10 @@ export const settingsAPI = {
     return api.post("/settings/admin/seed", { force }, { headers });
   },
 };
+
+// Compatibility aliases mapped to canonical settings methods.
+settingsAPI.getSettings = settingsAPI.getScheduleSettings;
+settingsAPI.updateSettings = settingsAPI.updateScheduleSettings;
 
 export const templatesAPI = {
   getAll: (page) => api.get("/templates" + (page ? `?page=${encodeURIComponent(page)}` : "")),
