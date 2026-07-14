@@ -28,16 +28,16 @@ export default class PageErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="d-flex flex-column align-items-center justify-content-center text-center p-5" style={{ minHeight: "60vh" }}>
+        <div className="align-items-center d-flex flex-column justify-content-center p-1 text-center" style={{ minHeight: "60vh" }}>
           <div className="mb-3" style={{ fontSize: "2.5rem" }}>
             ⚠
           </div>
           <h4 className="fw-semibold mb-2">Something went wrong on this page</h4>
-          <p className="text-muted small mb-1" style={{ maxWidth: 480 }}>
+          <p className="mb-1 small text-muted" style={{ maxWidth: 480 }}>
             An unexpected error occurred. This is usually a temporary issue. Try reloading or navigating back.
           </p>
           {this.state.error?.message && (
-            <pre className="bg-light border rounded p-2 text-danger small text-start mt-2" style={{ maxWidth: 560, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            <pre className="bg-light border mt-2 p-0 rounded small text-danger text-start" style={{ maxWidth: 560, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {this.state.error.message}
             </pre>
           )}
@@ -46,7 +46,7 @@ export default class PageErrorBoundary extends React.Component {
               Retry
             </button>
             <button
-              className="btn btn-outline-secondary btn-sm"
+              className="btn ui-btn-outline-secondary-sm"
               onClick={() => {
                 window.history.back();
                 this.handleReload();

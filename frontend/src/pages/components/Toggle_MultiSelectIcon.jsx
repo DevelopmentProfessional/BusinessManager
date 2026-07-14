@@ -6,7 +6,7 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
  * Icon-based multi-select toggle used in row/header bulk-selection controls.
  * Selected state uses the filled icon; unselected uses outline icon.
  */
-export default function Toggle_MultiSelectIcon({ selected = false, onToggle, title = "Toggle selection", className = "" }) {
+export default function Toggle_MultiSelectIcon({ selected = false, onToggle, title = "Toggle selection", className="" }) {
   const baseStyle = {
     width: "2rem",
     height: "2rem",

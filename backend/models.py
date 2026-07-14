@@ -684,6 +684,11 @@ class AppSettings(BaseModel, table=True):
     portal_footer_text: Optional[str] = Field(default=None)
     portal_primary_color: Optional[str] = Field(default=None)
     portal_secondary_color: Optional[str] = Field(default=None)
+    # Stripe configuration (admin-managed, company scoped)
+    stripe_enabled: bool = Field(default=False)
+    stripe_publishable_key: Optional[str] = Field(default=None)
+    stripe_secret_key: Optional[str] = Field(default=None)
+    stripe_webhook_secret: Optional[str] = Field(default=None)
     
     # Company logo (added by migration)
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
@@ -1533,6 +1538,10 @@ class AppSettingsCreate(SQLModel):
     friday_enabled: bool = True
     saturday_enabled: bool = True
     sunday_enabled: bool = True
+    stripe_enabled: bool = False
+    stripe_publishable_key: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
 
 
 class AppSettingsUpdate(SQLModel):
@@ -1567,6 +1576,10 @@ class AppSettingsUpdate(SQLModel):
     portal_footer_text: Optional[str] = None
     portal_primary_color: Optional[str] = None
     portal_secondary_color: Optional[str] = None
+    stripe_enabled: Optional[bool] = None
+    stripe_publishable_key: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
 
 
 class AppSettingsRead(SQLModel):
@@ -1602,6 +1615,10 @@ class AppSettingsRead(SQLModel):
     portal_footer_text: Optional[str] = None
     portal_primary_color: Optional[str] = None
     portal_secondary_color: Optional[str] = None
+    stripe_enabled: bool = False
+    stripe_publishable_key: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

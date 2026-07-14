@@ -220,16 +220,16 @@ export default function Editor_OnlyOffice({ documentId }) {
   // Show fallback UI when OnlyOffice is not configured
   if (!ONLYOFFICE_URL) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 p-8">
+      <div className="bg-gray-50 dark:bg-gray-800 flex flex-col h-full items-center justify-center p-1 w-full">
         <div className="max-w-md text-center">
-          <div className="text-6xl mb-4">📄</div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Document Editor Not Available</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            OnlyOffice Document Server is not configured. To enable full document editing for DOCX, XLSX, and PDF files, configure the <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded text-gray-900 dark:text-gray-100">VITE_ONLYOFFICE_URL</code> environment variable.
+          <div className="mb-4 text-6xl">📄</div>
+          <h3 className="dark:text-gray-100 font-semibold mb-2 text-gray-900 text-lg">Document Editor Not Available</h3>
+          <p className="dark:text-gray-400 mb-4 text-gray-600 text-sm">
+            OnlyOffice Document Server is not configured. To enable full document editing for DOCX, XLSX, and PDF files, configure the <code className="bg-gray-200 dark:bg-gray-600 dark:text-gray-100 px-1 rounded text-gray-900">VITE_ONLYOFFICE_URL</code> environment variable.
           </p>
-          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-left">
-            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">Alternative Options:</h4>
-            <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+          <div className="bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 p-1 rounded-lg text-left">
+            <h4 className="dark:text-blue-200 font-medium mb-2 text-blue-900 text-sm">Alternative Options:</h4>
+            <ul className="dark:text-blue-300 space-y-1 text-blue-800 text-sm">
               <li>• Download the file, edit locally, and re-upload</li>
               <li>• Use the "Replace Content" feature in document history</li>
               <li>• View PDFs directly in the browser</li>
@@ -241,22 +241,22 @@ export default function Editor_OnlyOffice({ documentId }) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white">
+    <div className="bg-white flex flex-col h-full w-full">
       {error ? (
-        <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
+        <div className="bg-red-50 border border-red-200 p-1 rounded text-red-700 text-sm">
           <strong>Editor Error:</strong> {error}
         </div>
       ) : null}
-      {loading && !error ? <div className="p-3 text-sm text-gray-600">Loading editor…</div> : null}
+      {loading && !error ? <div className="p-1 text-gray-600 text-sm">Loading editor…</div> : null}
       {/* Document container - always white background, document should not inherit dark mode */}
-      <div id={containerId} className="flex-1 min-h-0 bg-white" />
+      <div id={containerId} className="bg-white flex-1 min-h-0" />
       {/* Footer: icon-only buttons with tooltips on hover/long-press - can have dark mode */}
-      <footer className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-2 flex items-center gap-1 flex-wrap shrink-0" style={{ position: "sticky", bottom: 0, zIndex: 40 }} role="toolbar" aria-label="Editor actions">
+      <footer className="bg-gray-50 border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex flex-wrap gap-1 items-center px-0 py-0 shrink-0" style={{ position: "sticky", bottom: 0, zIndex: 40 }} role="toolbar" aria-label="Editor actions">
         {/* Text Formatting */}
-        <div className="flex items-center gap-1">
+        <div className="ui-flex-items-gap-1">
           <button
             type="button"
-            className="px-2 py-1 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100 disabled:cursor-not-allowed disabled:opacity-50 font-bold hover:bg-gray-50 px-0 py-1 rounded text-gray-900 text-sm"
             title="Bold (Ctrl+B)"
             aria-label="Bold (Ctrl+B)"
             disabled={buttonsDisabled}
@@ -266,7 +266,7 @@ export default function Editor_OnlyOffice({ documentId }) {
           </button>
           <button
             type="button"
-            className="px-2 py-1 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed italic"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 italic px-0 py-1 rounded text-gray-900 text-sm"
             title="Italic (Ctrl+I)"
             aria-label="Italic (Ctrl+I)"
             disabled={buttonsDisabled}
@@ -276,7 +276,7 @@ export default function Editor_OnlyOffice({ documentId }) {
           </button>
           <button
             type="button"
-            className="px-2 py-1 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed underline"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 px-0 py-1 rounded text-gray-900 text-sm underline"
             title="Underline (Ctrl+U)"
             aria-label="Underline (Ctrl+U)"
             disabled={buttonsDisabled}
@@ -286,13 +286,13 @@ export default function Editor_OnlyOffice({ documentId }) {
           </button>
         </div>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <div className="bg-gray-300 dark:bg-gray-600 h-5 mx-1 w-px" />
 
         {/* History */}
-        <div className="flex items-center gap-1">
+        <div className="ui-flex-items-gap-1">
           <button
             type="button"
-            className="px-2 py-1 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 px-0 py-1 rounded text-gray-900 text-sm"
             title="Undo (Ctrl+Z)"
             aria-label="Undo (Ctrl+Z)"
             disabled={buttonsDisabled}
@@ -302,7 +302,7 @@ export default function Editor_OnlyOffice({ documentId }) {
           </button>
           <button
             type="button"
-            className="px-2 py-1 text-sm rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-100 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 px-0 py-1 rounded text-gray-900 text-sm"
             title="Redo (Ctrl+Y)"
             aria-label="Redo (Ctrl+Y)"
             disabled={buttonsDisabled}
@@ -312,12 +312,12 @@ export default function Editor_OnlyOffice({ documentId }) {
           </button>
         </div>
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <div className="bg-gray-300 dark:bg-gray-600 h-5 mx-1 w-px" />
 
         {/* Save */}
         <button
           type="button"
-          className="px-2 py-1 text-sm rounded border bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-green-600 border disabled:cursor-not-allowed disabled:opacity-50 hover:bg-green-700 px-0 py-1 rounded text-sm text-white"
           title={saving ? "Saving…" : "Save (Ctrl+S)"}
           aria-label={saving ? "Saving…" : "Save (Ctrl+S)"}
           disabled={buttonsDisabled || saving}
@@ -327,7 +327,7 @@ export default function Editor_OnlyOffice({ documentId }) {
         </button>
 
         {/* Status indicator */}
-        <div className="ml-auto flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="dark:text-gray-400 flex gap-2 items-center ml-auto text-gray-500 text-xs">
           {loading && <span>Loading editor...</span>}
           {!loading && hasConnector && <span className="text-green-600">● Connected</span>}
           {!loading && !hasConnector && !error && <span className="text-yellow-600">● Limited mode</span>}

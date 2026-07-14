@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Sales.jsx
  *
@@ -82,11 +82,11 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       {/* Full Card Background Image */}
       <div className={`absolute inset-0 ${hasImage ? "" : "bg-gradient-to-br"} ${isService ? "from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800" : "from-secondary-100 to-secondary-200 dark:from-secondary-900 dark:to-secondary-800"}`}>
         {hasImage ? (
-          <div className="w-full h-full">
+          <div className="h-full w-full">
             <img
               src={imageUrl}
               alt={item.name}
-              className="w-full h-full object-cover object-center"
+              className="h-full object-center object-cover w-full"
               onError={(e) => {
                 e.target.style.display = "none";
                 // Show fallback when image fails
@@ -97,41 +97,41 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
           </div>
         ) : null}
         {/* Fallback icon - always present but conditionally visible */}
-        <div className={`absolute inset-0 items-center justify-center ${hasImage ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="h-16 w-16 text-primary-400/50 dark:text-primary-500/50" /> : <CubeIcon className="h-16 w-16 text-secondary-400/50 dark:text-secondary-500/50" />}</div>
+        <div className={`absolute inset-0 items-center justify-center ${hasImage ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="dark:text-primary-500/50 h-16 text-primary-400/50 w-16" /> : <CubeIcon className="dark:text-secondary-500/50 h-16 text-secondary-400/50 w-16" />}</div>
       </div>
 
       {/* Gradient Overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      <div className="absolute bg-gradient-to-t from-black/80 inset-0 to-transparent via-black/20" />
 
       {/* Item Name - Top Left */}
-      <div className="absolute top-1 left-1" style={{ maxWidth: "85%" }}>
+      <div className="absolute left-1 top-1" style={{ maxWidth: "85%" }}>
         <div className={`inline-block px-1 rounded-lg backdrop-blur-sm ${isService ? "bg-primary-600/90" : "bg-secondary-600/90"}`}>
-          <h3 className="font-semibold text-white text-sm line-clamp-2 m-0">{item.name}</h3>
+          <h3 className="font-semibold line-clamp-2 m-0 text-sm text-white">{item.name}</h3>
         </div>
       </div>
 
       {/* Content Footer - Overlays bottom of image with badge-style backgrounds */}
-      <div className="absolute bottom-0 left-0 right-0 p-1 text-left">
-        <div className="flex items-center justify-between gap-2">
+      <div className="absolute bottom-0 left-0 p-1 right-0 text-left">
+        <div className="flex gap-2 items-center justify-between">
           {/* Price Badge */}
-          <span className={`inline-block px-2 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${isService ? "bg-primary-700/90" : "bg-secondary-700/90"}`}>
+          <span className={`inline-block px-0 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${isService ? "bg-primary-700/90" : "bg-secondary-700/90"}`}>
             {!isService && item.price_min != null && item.price_max != null ? (item.price_min === item.price_max ? `$${item.price_min.toFixed(2)}` : `$${item.price_min.toFixed(2)}–$${item.price_max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}
           </span>
 
           {/* Cart Controls - Bottom Right */}
           <div>
             {inCart ? (
-              <div className="flex items-center gap-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg px-1 py-0.5">
-                <button onClick={handleDecrement} className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900 text-gray-600 dark:text-gray-300 hover:text-red-600 transition-colors">
+              <div className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow-lg">
+                <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-6 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
                   <MinusIcon className="h-3.5 w-3.5" />
                 </button>
-                <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-white">{cartQuantity}</span>
-                <button onClick={handleIncrement} className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-secondary-100 dark:hover:bg-secondary-900 text-gray-600 dark:text-gray-300 hover:text-secondary-600 transition-colors">
+                <span className="dark:text-white font-bold text-center text-gray-900 text-sm w-6">{cartQuantity}</span>
+                <button onClick={handleIncrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-6 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
                   <PlusIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
-              <button onClick={handleAddToCart} className="flex items-center gap-1 px-2 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-full shadow-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-secondary-500 hover:text-white transition-colors">
+              <button onClick={handleAddToCart} className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-0 py-1 rounded-full shadow-lg text-gray-700 text-xs transition-colors">
                 <ShoppingCartIcon className="h-3.5 w-3.5" />
                 Add
               </button>
@@ -141,7 +141,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
       </div>
 
       {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors pointer-events-none" />
+      <div className="absolute bg-white/0 group-hover:bg-white/10 inset-0 pointer-events-none transition-colors" />
     </div>
   );
 };
@@ -271,11 +271,11 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
                     {comp.max_quantity != null ? ` · max ${comp.max_quantity}` : config?.has_max_per_product && config?.max_per_product ? ` · max ${config.max_per_product}` : ""}
                   </div>
                 </div>
-                <button type="button" onClick={() => adjust(comp.component_id, -1)} disabled={selected === 0} className="btn btn-outline-secondary rounded-circle p-0" style={{ opacity: selected === 0 ? 0.3 : 1 }}>
+                <button type="button" onClick={() => adjust(comp.component_id, -1)} disabled={selected === 0} className="btn btn-outline-secondary p-0 rounded-circle" style={{ opacity: selected === 0 ? 0.3 : 1 }}>
                   −
                 </button>
                 <span style={{ width: 24, textAlign: "center", fontWeight: 700 }}>{selected}</span>
-                <button type="button" onClick={() => adjust(comp.component_id, 1)} disabled={!canAdd} className="btn btn-outline-secondary rounded-circle p-0" style={{ opacity: canAdd ? 1 : 0.3 }}>
+                <button type="button" onClick={() => adjust(comp.component_id, 1)} disabled={!canAdd} className="btn btn-outline-secondary p-0 rounded-circle" style={{ opacity: canAdd ? 1 : 0.3 }}>
                   +
                 </button>
               </div>
@@ -1173,57 +1173,57 @@ export default function Sales() {
   // ─── 11  RENDER / RETURN ──────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900 flex flex-col h-full min-h-0 overflow-hidden">
       {/* Sticky Header */}
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center justify-between pb-3">
+      <div className="bg-gray-50 dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
+        <div className="flex items-center justify-between pb-1">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">Sales</h1>
+            <h1 className="dark:text-white font-bold leading-tight text-2xl text-gray-900">Sales</h1>
             {selectedClient && (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-2 h-2 rounded-full bg-green-400" />
-                <span className="text-xs text-green-600 dark:text-green-400 font-medium">{selectedClient.name}</span>
+              <div className="flex gap-1.5 items-center mt-0.5">
+                <span className="bg-green-400 h-2 rounded-full w-2" />
+                <span className="dark:text-green-400 font-medium text-green-600 text-xs">{selectedClient.name}</span>
               </div>
             )}
           </div>
-          <div className="d-flex align-items-center gap-2">
-            <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <div className="ui-flex-center-gap-2">
+            <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
               <Cog6ToothIcon style={{ width: 18, height: 18 }} />
             </button>
           </div>
         </div>
         {error && (
-          <div className="mb-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-xl flex items-center justify-between text-sm">
+          <div className="bg-red-50 border border-red-200 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300 flex items-center justify-between mb-2 px-1 py-0 rounded-xl text-red-700 text-sm">
             <span>{error}</span>
-            <button onClick={clearError} className="text-red-500 hover:text-red-700 ml-2">
-              <XMarkIcon className="h-4 w-4" />
+            <button onClick={clearError} className="hover:text-red-700 ml-2 text-red-500">
+              <XMarkIcon className="ui-icon-4" />
             </button>
           </div>
         )}
       </div>
 
       {/* Main Body - Items Grid */}
-      <div className="flex-1 min-h-0 overflow-y-auto pb-4">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-1">
         {/* Services Section */}
         {showServices && filteredServices.length > 0 && (
           <div className="mb-6">
             {showProducts && (
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #4f46e510, #7c3aed10)", color: "#4f46e5", border: "1px solid #4f46e530" }}>
+              <div className="flex gap-2 items-center mb-3">
+                <div className="flex font-bold gap-1.5 items-center px-1 py-1 rounded-full text-xs tracking-wider uppercase" style={{ background: "linear-gradient(135deg, #4f46e510, #7c3aed10)", color: "#4f46e5", border: "1px solid #4f46e530" }}>
                   <SparklesIcon className="h-3.5 w-3.5" />
                   Services
                 </div>
-                <span className="text-xs text-gray-400">{filteredServices.length} available</span>
+                <span className="text-gray-400 text-xs">{filteredServices.length} available</span>
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            <div className="gap-2 grid grid-cols-2 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">
               {filteredServices.map((service) => (
                 <ItemCard
                   key={`service-${service.id}`}
@@ -1245,15 +1245,15 @@ export default function Sales() {
         {showProducts && filteredProducts.length > 0 && (
           <div className="mb-6">
             {showServices && (
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #0ea5e910, #06b6d410)", color: "#0ea5e9", border: "1px solid #0ea5e930" }}>
+              <div className="flex gap-2 items-center mb-3">
+                <div className="flex font-bold gap-1.5 items-center px-1 py-1 rounded-full text-xs tracking-wider uppercase" style={{ background: "linear-gradient(135deg, #0ea5e910, #06b6d410)", color: "#0ea5e9", border: "1px solid #0ea5e930" }}>
                   <CubeIcon className="h-3.5 w-3.5" />
                   Products
                 </div>
-                <span className="text-xs text-gray-400">{filteredProducts.length} available</span>
+                <span className="text-gray-400 text-xs">{filteredProducts.length} available</span>
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            <div className="gap-2 grid grid-cols-2 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">
               {filteredProducts.map((product) => {
                 const pType = (product.type || "product").toLowerCase();
                 return (
@@ -1278,15 +1278,15 @@ export default function Sales() {
         {showSubscriptions && filteredSubscriptions.length > 0 && (
           <div className="mb-6">
             {(showServices || showProducts) && (
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ background: "linear-gradient(135deg, #16a34a10, #22c55e10)", color: "#15803d", border: "1px solid #16a34a30" }}>
+              <div className="flex gap-2 items-center mb-3">
+                <div className="flex font-bold gap-1.5 items-center px-1 py-1 rounded-full text-xs tracking-wider uppercase" style={{ background: "linear-gradient(135deg, #16a34a10, #22c55e10)", color: "#15803d", border: "1px solid #16a34a30" }}>
                   <UserIcon className="h-3.5 w-3.5" />
                   Subs
                 </div>
-                <span className="text-xs text-gray-400">{filteredSubscriptions.length} available</span>
+                <span className="text-gray-400 text-xs">{filteredSubscriptions.length} available</span>
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            <div className="gap-2 grid grid-cols-2 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">
               {filteredSubscriptions.map((subscription) => (
                 <ItemCard
                   key={`subscription-${subscription.id}`}
@@ -1306,39 +1306,39 @@ export default function Sales() {
 
         {/* Empty State */}
         {filteredServices.length === 0 && filteredProducts.length === 0 && filteredSubscriptions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-              <MagnifyingGlassIcon className="h-8 w-8 text-gray-400" />
+          <div className="flex flex-col items-center justify-center py-1 text-center">
+            <div className="bg-gray-100 dark:bg-gray-800 flex h-16 items-center justify-center mb-4 rounded-full w-16">
+              <MagnifyingGlassIcon className="h-8 text-gray-400 w-8" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No items found</h3>
-            <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter</p>
+            <h3 className="dark:text-white font-medium mb-1 text-gray-900 text-lg">No items found</h3>
+            <p className="dark:text-gray-400 text-gray-500">Try adjusting your search or filter</p>
           </div>
         )}
       </div>
 
       {/* Fixed Footer - Search, Toggles, Cart */}
-      <footer className="app-footer-shell app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm" style={{ zIndex: 10 }}>
+      <footer className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm" style={{ zIndex: 10 }}>
         <div className="app-footer-padding app-standard-footer">
           <div className="app-footer-stack">
             {/* Client Selection Panel - shown when account icon is active */}
             {showClientPanel && (
               <div className="relative">
                 {selectedClient ? (
-                  <div className="flex items-center justify-between px-3 py-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 rounded-xl">
-                    <div className="flex items-center gap-1 min-w-0">
-                      <UserCircleIcon className="h-5 w-5 text-primary-600 flex-shrink-0" />
+                  <div className="bg-primary-50 border border-primary-200 dark:bg-primary-900/30 dark:border-primary-700 flex items-center justify-between px-1 py-0 rounded-xl">
+                    <div className="flex gap-1 items-center min-w-0">
+                      <UserCircleIcon className="flex-shrink-0 h-5 text-primary-600 w-5" />
                       <div className="min-w-0">
-                        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{selectedClient.name}</p>
-                        {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedClient.email}</p>}
+                        <p className="dark:text-white font-medium text-gray-900 text-sm truncate">{selectedClient.name}</p>
+                        {selectedClient.email && <p className="dark:text-gray-400 text-gray-500 text-xs truncate">{selectedClient.email}</p>}
                       </div>
                     </div>
-                    <button onClick={() => setSelectedClient(null)} className="flex-shrink-0 p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors ml-2" title="Remove client">
-                      <XMarkIcon className="h-4 w-4 text-gray-500" />
+                    <button onClick={() => setSelectedClient(null)} className="dark:hover:bg-primary-800 flex-shrink-0 hover:bg-primary-100 ml-2 p-1 rounded-lg transition-colors" title="Remove client">
+                      <XMarkIcon className="h-4 text-gray-500 w-4" />
                     </button>
                   </div>
                 ) : (
                   <div className="flex gap-1">
-                    <div className="relative flex-1">
+                    <div className="flex-1 relative">
                       <input
                         type="text"
                         placeholder="Search clients..."
@@ -1351,11 +1351,11 @@ export default function Sales() {
                           loadClients();
                           setShowClientPanelDropdown(true);
                         }}
-                        className="app-search-input w-full px-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="app-search-input bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-transparent focus:ring-2 focus:ring-primary-500 placeholder-gray-400 px-1 rounded-xl text-gray-900 w-full"
                         autoFocus
                       />
                       {showClientPanelDropdown && clientPanelSearch && (
-                        <div className="app-menu-panel absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-40 overflow-y-auto z-50">
+                        <div className="absolute app-menu-panel bg-white border border-gray-200 bottom-full dark:bg-gray-800 dark:border-gray-700 left-0 max-h-40 mb-1 overflow-y-auto right-0 rounded-xl shadow-lg z-50">
                           {clients
                             .filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase()))
                             .slice(0, 6)
@@ -1368,10 +1368,10 @@ export default function Sales() {
                                   setShowClientPanelDropdown(false);
                                   setShowClientPanel(false);
                                 }}
-                                className="app-menu-item w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
+                                className="app-menu-item dark:hover:bg-gray-700 dark:text-white hover:bg-gray-50 px-1 py-2.5 text-gray-900 text-left w-full"
                               >
                                 <p className="font-medium">{c.name}</p>
-                                {c.email && <p className="text-gray-500 dark:text-gray-400">{c.email}</p>}
+                                {c.email && <p className="dark:text-gray-400 text-gray-500">{c.email}</p>}
                               </button>
                             ))}
                           {clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
@@ -1385,9 +1385,9 @@ export default function Sales() {
                                   setShowClientPanel(false);
                                 })
                               }
-                              className="app-menu-item w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-400 flex items-center gap-2"
+                              className="app-menu-item dark:hover:bg-gray-700 dark:text-primary-400 flex gap-2 hover:bg-gray-50 items-center px-1 py-2.5 text-left text-primary-600 w-full"
                             >
-                              <PlusIcon className="h-4 w-4" />
+                              <PlusIcon className="ui-icon-4" />
                               New
                             </button>
                           )}
@@ -1405,10 +1405,10 @@ export default function Sales() {
                           setShowClientPanel(false);
                         })
                       }
-                      className="flex-shrink-0 flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                      className="bg-primary-600 flex flex-shrink-0 hover:bg-primary-700 items-center justify-center rounded-full text-white transition-colors"
                       title="Add new client"
                     >
-                      <PlusIcon className="h-5 w-5" />
+                      <PlusIcon className="ui-icon-5" />
                     </button>
                   </div>
                 )}
@@ -1430,7 +1430,7 @@ export default function Sales() {
               />
 
               {/* Unified Sales Filter Button */}
-              <div className="position-relative">
+              <div className="ui-pos-rel">
                 <Button_Toolbar
                   icon={FunnelIcon}
                   label="Filter"
@@ -1443,8 +1443,8 @@ export default function Sales() {
                 />
 
                 {showSalesFilterDropdown && (
-                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 app-card p-2 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
-                    <div className="d-flex align-items-center justify-content-between mb-2">
+                  <div className="app-card app-menu-panel bottom-100 mb-2 p-0 position-absolute start-0 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
+                    <div className="align-items-center d-flex justify-content-between mb-2">
                       <div className="app-menu-summary fw-semibold text-muted">Sales Filter</div>
                       <button
                         type="button"
@@ -1455,17 +1455,17 @@ export default function Sales() {
                           setSelectedClient(null);
                           setFilterClientSearch("");
                         }}
-                        className="app-menu-action btn btn-sm btn-outline-secondary"
+                        className="app-menu-action btn btn-outline-secondary btn-sm"
                       >
                         Clear
                       </button>
                     </div>
 
                     <div className="mb-2">
-                      <label className="app-menu-summary text-muted d-block mb-1">Client</label>
+                      <label className="app-menu-summary d-block mb-1 text-muted">Client</label>
                       <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
                       {filterClientSearch && (
-                        <div className="app-menu-panel app-card mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
+                        <div className="app-card app-menu-panel mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
                           {filteredFilterClients.map((c) => (
                             <button
                               key={c.id}
@@ -1474,13 +1474,13 @@ export default function Sales() {
                                 handleSelectClient(c);
                                 setFilterClientSearch("");
                               }}
-                              className="app-menu-item w-100 text-start px-2 py-1 border-0 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700"
+                              className="app-menu-item bg-transparent border-0 dark:hover:bg-gray-700 hover:bg-gray-50 px-0 py-1 text-start w-100"
                             >
                               <div className="fw-semibold">{c.name}</div>
                               {c.email && <div className="text-muted">{c.email}</div>}
                             </button>
                           ))}
-                          {filteredFilterClients.length === 0 && <div className="app-menu-empty text-muted px-2 py-1">No matching clients</div>}
+                          {filteredFilterClients.length === 0 && <div className="app-menu-empty px-0 py-1 text-muted">No matching clients</div>}
                         </div>
                       )}
                     </div>
@@ -1496,8 +1496,8 @@ export default function Sales() {
                     />
 
                     <div>
-                      <label className="app-menu-summary text-muted d-block mb-1">Subscription start date</label>
-                      <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control form-control-sm" />
+                      <label className="app-menu-summary d-block mb-1 text-muted">Subscription start date</label>
+                      <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control ui-control-sm" />
                     </div>
                   </div>
                 )}
@@ -1508,16 +1508,16 @@ export default function Sales() {
             </div>
 
             {/* Search Row — Cart button + search input */}
-            <div className="app-footer-search-row d-flex align-items-center gap-1 w-100">
+            <div className="align-items-center app-footer-search-row d-flex gap-1 w-100">
               <Button_Toolbar
                 icon={ShoppingCartIcon}
                 label="Cart"
                 onClick={() => setShowCartModal(true)}
                 className="btn btn-secondary flex-shrink-0"
                 style={{ position: "relative" }}
-                badge={cartItemCount > 0 ? <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{cartItemCount}</span> : null}
+                badge={cartItemCount > 0 ? <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{cartItemCount}</span> : null}
               />
-              <input type="text" placeholder="Search products and services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="app-search-input form-control w-100 rounded-pill" />
+              <input type="text" placeholder="Search products and services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="app-search-input form-control rounded-pill w-100" />
             </div>
           </div>
         </div>
@@ -1656,16 +1656,16 @@ export default function Sales() {
             .catch(() => {});
         }}
       >
-        <div className="small text-muted mb-2">Use these controls to manage the sales experience on this page.</div>
+        <div className="mb-2 ui-small-muted">Use these controls to manage the sales experience on this page.</div>
 
         {/* Receipt Settings */}
         <hr className="my-2" />
-        <div className="small fw-semibold mb-2">Receipt Settings</div>
+        <div className="fw-semibold mb-2 ui-text-sm">Receipt Settings</div>
 
         <div className="mb-2">
-          <label className="small text-muted d-block mb-1">Receipt Template</label>
+          <label className="d-block mb-1 small text-muted">Receipt Template</label>
           <select
-            className="form-select form-select-sm"
+            className="form-select ui-control-sm"
             value={receiptSettings.templateId ?? ""}
             onChange={(e) => {
               const id = e.target.value;
@@ -1682,13 +1682,13 @@ export default function Sales() {
               </option>
             ))}
           </select>
-          {rcptTemplates.length === 0 && <div className="small text-muted mt-1">No receipt templates found. Create one in Documents → Templates.</div>}
+          {rcptTemplates.length === 0 && <div className="mt-1 ui-small-muted">No receipt templates found. Create one in Documents → Templates.</div>}
         </div>
 
         <div className="mb-2">
-          <label className="small text-muted d-block mb-1">After Receipt Selected</label>
+          <label className="d-block mb-1 small text-muted">After Receipt Selected</label>
           <select
-            className="form-select form-select-sm"
+            className="form-select ui-control-sm"
             value={receiptSettings.action}
             onChange={(e) => {
               const next = { ...receiptSettings, action: e.target.value };

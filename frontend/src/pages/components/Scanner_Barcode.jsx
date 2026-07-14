@@ -64,10 +64,10 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
 
   return (
     <div className="space-y-3">
-      <div className="aspect-video bg-black rounded overflow-hidden">
-        <video ref={videoRef} className="w-full h-full object-cover" muted playsInline autoPlay />
+      <div className="aspect-video bg-black overflow-hidden rounded">
+        <video ref={videoRef} className="h-full object-cover w-full" muted playsInline autoPlay />
       </div>
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {error && <div className="text-red-600 text-sm">{error}</div>}
     </div>
   );
 }

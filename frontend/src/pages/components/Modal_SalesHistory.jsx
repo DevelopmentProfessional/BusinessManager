@@ -1,4 +1,4 @@
-﻿/*
+/*
  * FILE: Modal_SalesHistory.jsx
  * Full-screen sales / payment history with header, scrollable list, and filter footer.
  */
@@ -101,17 +101,17 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
   };
 
   return (
-    <div className="sales-history-footer w-100 bg-body">
+    <div className="bg-body sales-history-footer w-100">
       <div className="app-footer-padding app-standard-footer">
-        <div className="sales-history-filter-panel d-flex flex-column gap-2">
-          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div className="d-flex flex-column gap-2 sales-history-filter-panel">
+          <div className="align-items-center d-flex flex-wrap gap-2 justify-content-between">
             <Filter_CatalogCheckboxes legend="" value={local} onChange={(key, checked) => setLocal((prev) => ({ ...prev, [key]: checked }))} />
             <Filter_SourceToggle value={local.saleSource} onChange={(saleSource) => setLocal((prev) => ({ ...prev, saleSource }))} />
           </div>
 
-          <div className="sales-history-filter-grid gap-1">
+          <div className="gap-1 sales-history-filter-grid">
             {/* Client dropup search */}
-            <div className="position-relative" ref={clientRef}>
+            <div className="ui-pos-rel" ref={clientRef}>
               <div className="input-group input-group-sm">
                 <span className="input-group-text">
                   <UserIcon style={{ width: 14, height: 14 }} />
@@ -125,12 +125,12 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                   }}
                   onFocus={() => setClientDropupOpen(true)}
                   placeholder={local.clientQuery ? `\u2713 ${local.clientQuery}` : "Client"}
-                  className="form-control form-control-sm"
+                  className="form-control ui-control-sm"
                   aria-label="Filter by client"
                 />
                 {local.clientQuery && (
                   <button
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn ui-btn-outline-secondary-sm"
                     type="button"
                     onClick={() => {
                       setLocal((p) => ({ ...p, clientQuery: "" }));
@@ -142,7 +142,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                 )}
               </div>
               {clientDropupOpen && (
-                <div className="app-menu-panel position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
+                <div className="app-menu-panel bg-body border bottom-100 mb-1 position-absolute rounded-2 shadow start-0" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
                   {clients
                     .filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()))
                     .slice(0, 8)
@@ -150,7 +150,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                       <button
                         key={c.id}
                         type="button"
-                        className="app-menu-item w-100 text-start px-2 py-1 border-0 bg-transparent"
+                        className="app-menu-item bg-transparent border-0 px-0 py-1 text-start w-100"
                         style={{ cursor: "pointer" }}
                         onClick={() => {
                           setLocal((p) => ({ ...p, clientQuery: c.name }));
@@ -162,13 +162,13 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                         {c.email && <div className="text-muted">{c.email}</div>}
                       </button>
                     ))}
-                  {clients.filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && <div className="app-menu-empty text-muted px-2 py-1">No matches</div>}
+                  {clients.filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && <div className="app-menu-empty px-0 py-1 text-muted">No matches</div>}
                 </div>
               )}
             </div>
 
             {/* Employee dropup search */}
-            <div className="position-relative" ref={employeeRef}>
+            <div className="ui-pos-rel" ref={employeeRef}>
               <div className="input-group input-group-sm">
                 <span className="input-group-text">
                   <UserCircleIcon style={{ width: 14, height: 14 }} />
@@ -182,12 +182,12 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                   }}
                   onFocus={() => setEmployeeDropupOpen(true)}
                   placeholder={local.employeeQuery ? `\u2713 ${local.employeeQuery}` : "Employee"}
-                  className="form-control form-control-sm"
+                  className="form-control ui-control-sm"
                   aria-label="Filter by employee"
                 />
                 {local.employeeQuery && (
                   <button
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn ui-btn-outline-secondary-sm"
                     type="button"
                     onClick={() => {
                       setLocal((p) => ({ ...p, employeeQuery: "" }));
@@ -199,7 +199,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                 )}
               </div>
               {employeeDropupOpen && (
-                <div className="app-menu-panel position-absolute bottom-100 start-0 mb-1 bg-body border rounded-2 shadow" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
+                <div className="app-menu-panel bg-body border bottom-100 mb-1 position-absolute rounded-2 shadow start-0" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
                   {employees
                     .filter((e) => {
                       if (!employeeSearch) return true;
@@ -213,7 +213,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                         <button
                           key={e.id}
                           type="button"
-                          className="w-100 text-start px-2 py-1 border-0 bg-transparent small"
+                          className="bg-transparent border-0 px-0 py-1 small text-start w-100"
                           style={{ cursor: "pointer" }}
                           onClick={() => {
                             setLocal((p) => ({ ...p, employeeQuery: name }));
@@ -230,7 +230,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                         </button>
                       );
                     })}
-                  {employees.length === 0 && <div className="small text-muted px-2 py-1">No employees loaded</div>}
+                  {employees.length === 0 && <div className="px-0 py-1 small text-muted">No employees loaded</div>}
                 </div>
               )}
             </div>
@@ -248,9 +248,9 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
             <input type="date" value={local.endDate} onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))} className="form-control form-control-sm rounded-pill" aria-label="To date" />
           </div>
 
-          <div className="d-flex gap-1 align-items-center pt-1">
+          <div className="align-items-center d-flex gap-1 pt-1">
             <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close sales history">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close sales history">
               <XMarkIcon />
             </button>
             <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
@@ -328,12 +328,12 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">
-            <ClockIcon className="app-icon text-muted me-1" aria-hidden="true" />
+            <ClockIcon className="app-icon me-1 text-muted" aria-hidden="true" />
             Sales History
-            <span className="badge rounded-pill bg-secondary-subtle text-secondary-emphasis fw-normal ms-1">{filteredHistory.length}</span>
+            <span className="badge bg-secondary-subtle fw-normal ms-1 rounded-pill text-secondary-emphasis">{filteredHistory.length}</span>
           </div>
           <div className="component-header-center"></div>
           <div className="component-header-right"></div>
@@ -342,10 +342,10 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
         <div className="component-body">
           <div className="component-body-inner">
             {filteredHistory.length === 0 ? (
-              <div className="h-100 d-flex flex-column align-items-center justify-content-center text-center px-4 py-5">
-                <ClockIcon className="text-muted mb-3" style={{ width: "3rem", height: "3rem" }} aria-hidden="true" />
-                <h3 className="h5 text-body mb-1">No transactions</h3>
-                <p className="small text-muted mb-0">Adjust filters in the footer, then tap Apply.</p>
+              <div className="align-items-center d-flex flex-column h-100 justify-content-center px-1 py-1 text-center">
+                <ClockIcon className="mb-3 text-muted" style={{ width: "3rem", height: "3rem" }} aria-hidden="true" />
+                <h3 className="h5 mb-1 text-body">No transactions</h3>
+                <p className="mb-0 ui-small-muted">Adjust filters in the footer, then tap Apply.</p>
               </div>
             ) : (
               <div className="list-group list-group-flush">
@@ -357,48 +357,48 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                   const loadedItems = itemsCache[sale.id];
 
                   return (
-                    <div key={sale.id} className="list-group-item p-0 border-0 border-bottom">
-                      <button type="button" onClick={() => toggleSale(sale)} className="w-100 px-3 py-3 d-flex align-items-center justify-content-between gap-3 text-start btn btn-unstyled border-0 rounded-0">
-                        <div className="min-w-0 flex-grow-1">
-                          <div className="d-flex align-items-center flex-wrap gap-1 mb-1">
-                            <span className="small text-muted">
+                    <div key={sale.id} className="border-0 border-bottom list-group-item p-0">
+                      <button type="button" onClick={() => toggleSale(sale)} className="align-items-center border-0 btn btn-unstyled d-flex gap-3 justify-content-between px-1 py-1 rounded-0 text-start w-100">
+                        <div className="flex-grow-1 min-w-0">
+                          <div className="align-items-center d-flex flex-wrap gap-1 mb-1">
+                            <span className="ui-small-muted">
                               {new Date(sale.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} {new Date(sale.date).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                             <span className={`badge rounded-pill ${sale.source === "portal" ? "text-bg-primary" : "text-bg-info"}`}>{sale.source === "portal" ? "Portal" : "POS"}</span>
                             {effectiveStatus && <span className="badge rounded-pill text-bg-secondary">{STATUS_LABELS[effectiveStatus] || effectiveStatus}</span>}
                           </div>
-                          <div className="d-flex align-items-center flex-wrap gap-1">
-                            {sale.clientName && <span className="small fw-medium text-truncate">{sale.clientName}</span>}
-                            {sale.employeeName && <span className="small text-muted">· {sale.employeeName}</span>}
+                          <div className="align-items-center d-flex flex-wrap gap-1">
+                            {sale.clientName && <span className="fw-medium small text-truncate">{sale.clientName}</span>}
+                            {sale.employeeName && <span className="ui-small-muted">· {sale.employeeName}</span>}
                           </div>
-                          <p className="small text-muted mb-0">{effectivePaymentMethod}</p>
+                          <p className="mb-0 ui-small-muted">{effectivePaymentMethod}</p>
                         </div>
-                        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                        <div className="align-items-center d-flex flex-shrink-0 gap-2">
                           <span className="fw-semibold">${sale.total.toFixed(2)}</span>
                           <ChevronDownIcon className="app-icon text-muted" style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s ease" }} aria-hidden="true" />
                         </div>
                       </button>
 
                       {isExpanded && (
-                        <div className="px-3 pb-3 bg-body-secondary">
-                          {sale.source === "portal" && statusError && <p className="small text-warning mb-2">{statusError}</p>}
+                        <div className="bg-body-secondary pb-1 px-1">
+                          {sale.source === "portal" && statusError && <p className="mb-2 small text-warning">{statusError}</p>}
                           {sale.source === "portal" && (
-                            <div className="app-footer-toolbar d-flex align-items-center flex-wrap pb-2 mb-2 border-bottom">
+                            <div className="align-items-center app-footer-toolbar border-bottom d-flex flex-wrap mb-2 pb-0">
                               {(NEXT_PORTAL_STATUSES[effectiveStatus] || []).map((nextStatus) => (
-                                <button key={`${sale.id}-${nextStatus}`} type="button" onClick={() => handlePortalStatusUpdate(sale, nextStatus)} className="btn btn-sm btn-outline-secondary" disabled={statusUpdatingId === sale.id}>
+                                <button key={`${sale.id}-${nextStatus}`} type="button" onClick={() => handlePortalStatusUpdate(sale, nextStatus)} className="btn ui-btn-outline-secondary-sm" disabled={statusUpdatingId === sale.id}>
                                   {STATUS_LABELS[nextStatus] || nextStatus}
                                 </button>
                               ))}
                             </div>
                           )}
                           {isLoading ? (
-                            <p className="small text-muted mb-0">Loading items…</p>
+                            <p className="mb-0 ui-small-muted">Loading items…</p>
                           ) : !loadedItems || loadedItems.length === 0 ? (
-                            <p className="small text-muted mb-0">No items found.</p>
+                            <p className="mb-0 ui-small-muted">No items found.</p>
                           ) : (
                             <div className="pt-1">
                               {sale.subtotal != null && (
-                                <div className="d-flex justify-content-between small text-muted pb-2 mb-2 border-bottom">
+                                <div className="border-bottom d-flex justify-content-between mb-2 pb-0 small text-muted">
                                   <span>
                                     Subtotal ${Number(sale.subtotal).toFixed(2)} · Tax ${Number(sale.tax || 0).toFixed(2)}
                                   </span>
@@ -406,22 +406,22 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                                 </div>
                               )}
                               {loadedItems.map((item, idx) => (
-                                <div key={item.id ?? idx} className="d-flex justify-content-between align-items-start gap-2 py-1 small">
+                                <div key={item.id ?? idx} className="align-items-start d-flex gap-2 justify-content-between py-1 small">
                                   <div className="min-w-0">
                                     <span className="text-body">
                                       {item.item_name || item.name || "—"}
-                                      {(item.quantity ?? 1) > 1 && <span className="text-muted ms-1">×{item.quantity}</span>}
+                                      {(item.quantity ?? 1) > 1 && <span className="ms-1 text-muted">×{item.quantity}</span>}
                                     </span>
-                                    {item.item_type && <span className="text-muted ms-1">({item.item_type})</span>}
+                                    {item.item_type && <span className="ms-1 text-muted">({item.item_type})</span>}
                                     {item.selectedOptions?.length > 0 && (
-                                      <p className="small text-primary mb-0 mt-1">
+                                      <p className="mb-0 mt-1 small text-primary">
                                         {item.selectedOptions
                                           .map((o) => `${o.featureName ?? o.feature_name ?? ""}: ${o.optionName ?? o.option_name ?? ""}`)
                                           .filter((s) => s.trim() !== ":")
                                           .join(" · ")}
                                       </p>
                                     )}
-                                    {item.unit_price != null && <span className="small text-muted d-block">@ ${Number(item.unit_price).toFixed(2)} each</span>}
+                                    {item.unit_price != null && <span className="d-block small text-muted">@ ${Number(item.unit_price).toFixed(2)} each</span>}
                                   </div>
                                   <span className="text-muted text-nowrap">{item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : ""}</span>
                                 </div>

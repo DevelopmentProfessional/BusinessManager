@@ -8,7 +8,7 @@ export default function Dropdown_Custom({
   options = [],
   placeholder = "",
   required = false,
-  className = "",
+  className="",
   disabled = false,
   name = "",
   id = "",
@@ -129,7 +129,7 @@ export default function Dropdown_Custom({
             }}
             placeholder={placeholder}
             className={`
-              w-full px-3 py-2 border rounded-lg 
+              w-full px-1 py-0 border rounded-lg 
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
               border-gray-300 dark:border-gray-600
               ${disabled ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500"}
@@ -137,7 +137,7 @@ export default function Dropdown_Custom({
             `}
             disabled={disabled}
           />
-          <button type="button" onClick={() => !disabled && setIsOpen(!isOpen)} className="absolute right-2 top-1/2 transform -translate-y-1/2">
+          <button type="button" onClick={() => !disabled && setIsOpen(!isOpen)} className="-translate-y-1/2 absolute right-2 top-1/2 transform">
             <ChevronDownIcon className={`app-icon app-icon--sm text-gray-400 dark:text-gray-500 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
           </button>
         </div>
@@ -150,7 +150,7 @@ export default function Dropdown_Custom({
             setIsOpen(!isOpen);
           }}
           className={`
-            w-full px-3 py-2 border rounded-lg 
+            w-full px-1 py-0 border rounded-lg 
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
             flex items-center justify-between
             border-gray-300 dark:border-gray-600
@@ -164,17 +164,17 @@ export default function Dropdown_Custom({
         </button>
       )}
 
-      {multiSelect && showSelectionSummary && <div className="mt-1 text-xs text-gray-600 dark:text-gray-300">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
+      {multiSelect && showSelectionSummary && <div className="dark:text-gray-300 mt-1 text-gray-600 text-xs">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
 
       {isOpen && (
         <div className={`app-menu-panel absolute z-50 w-full border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
           {loading ? (
-            <div className="app-menu-empty px-3 py-2 text-gray-500 dark:text-gray-400 flex items-center gap-2">
-              <span className="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+            <div className="app-menu-empty dark:text-gray-400 flex gap-2 items-center px-1 py-0 text-gray-500">
+              <span className="animate-spin border-2 border-gray-400 border-t-transparent h-4 rounded-full w-4" />
               Loading...
             </div>
           ) : filteredOptions.length === 0 ? (
-            <div className="app-menu-empty px-3 py-2 text-gray-500 dark:text-gray-400">No options available</div>
+            <div className="app-menu-empty dark:text-gray-400 px-1 py-0 text-gray-500">No options available</div>
           ) : (
             <div className="overflow-y-auto">
               {filteredOptions.map((option) => {
@@ -185,7 +185,7 @@ export default function Dropdown_Custom({
                     type="button"
                     onClick={() => handleSelect(option)}
                     className={`
-                    app-menu-item w-full px-3 py-2 text-left focus:outline-none
+                    app-menu-item w-full px-1 py-0 text-left focus:outline-none
                     hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
                     ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"}
                   `}
@@ -199,7 +199,7 @@ export default function Dropdown_Custom({
           )}
 
           {searchable && footerSearch && (
-            <div className="app-menu-search px-2 py-2 border-top border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 d-flex align-items-center gap-2">
+            <div className="align-items-center app-menu-search bg-gray-50 border-gray-200 border-top d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 px-0 py-0">
               {typeof onCreateFromSearch === "function" && (
                 <button
                   type="button"
@@ -208,26 +208,26 @@ export default function Dropdown_Custom({
                     setIsOpen(false);
                     onCreateFromSearch(searchTerm.trim());
                   }}
-                  className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center"
+                  className="align-items-center btn btn-outline-secondary btn-sm d-inline-flex justify-content-center"
                   style={{ minWidth: "2rem", minHeight: "2rem", padding: "0.25rem" }}
                   title={createButtonTitle}
                   aria-label={createButtonTitle}
                   disabled={!searchTerm.trim()}
                 >
-                  <PlusIcon className="h-4 w-4" />
+                  <PlusIcon className="ui-icon-4" />
                 </button>
               )}
-              <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control form-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} />
+              <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} />
             </div>
           )}
 
           {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle) && (
-            <div className="d-flex gap-2 p-2 border-top border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 sticky bottom-0">
-              <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-sm btn-outline-secondary flex-grow-1">
+            <div className="bg-gray-50 border-gray-200 border-top bottom-0 d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 p-0 sticky">
+              <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1">
                 OK
               </button>
               {showClearButton && (
-                <button type="button" onClick={handleClearMultiSelect} className="app-menu-action btn btn-sm btn-outline-secondary flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
+                <button type="button" onClick={handleClearMultiSelect} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
                   Clear
                 </button>
               )}

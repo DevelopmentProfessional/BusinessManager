@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Modal_Detail_Item.jsx
  *
@@ -239,7 +239,7 @@ function ProductionRelationsPanel({ productId }) {
                 </select>
                 <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddResource}>
-                  <PlusIcon className="h-4 w-4" />
+                  <PlusIcon className="ui-icon-4" />
                   <span>Add</span>
                 </button>
                 <button
@@ -251,13 +251,13 @@ function ProductionRelationsPanel({ productId }) {
                     setNewResourceQty(1);
                   }}
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <XMarkIcon className="ui-icon-4" />
                   <span>Cancel</span>
                 </button>
               </div>
             ) : (
               <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`} style={{ marginTop: 6 }} onClick={() => setAddingResource(true)}>
-                <PlusIcon className="h-4 w-4" />
+                <PlusIcon className="ui-icon-4" />
                 <span>Add</span>
               </button>
             )}
@@ -297,7 +297,7 @@ function ProductionRelationsPanel({ productId }) {
                 <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddAsset}>
-                  <PlusIcon className="h-4 w-4" />
+                  <PlusIcon className="ui-icon-4" />
                   <span>Add</span>
                 </button>
                 <button
@@ -310,13 +310,13 @@ function ProductionRelationsPanel({ productId }) {
                     setNewAssetDur("");
                   }}
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <XMarkIcon className="ui-icon-4" />
                   <span>Cancel</span>
                 </button>
               </div>
             ) : (
               <button type="button" className={`${btnOutlineClass} d-flex align-items-center gap-2`} style={{ marginTop: 6 }} onClick={() => setAddingAsset(true)}>
-                <PlusIcon className="h-4 w-4" />
+                <PlusIcon className="ui-icon-4" />
                 <span>Add</span>
               </button>
             )}
@@ -1123,7 +1123,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
   // Reusable image display with navigation
   const renderImage = (containerStyle = {}) => (
-    <div className="position-relative" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", ...containerStyle }}>
+    <div className="ui-pos-rel" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", ...containerStyle }}>
       {displayImage ? (
         <img
           src={displayImage}
@@ -1154,13 +1154,13 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
       {hasImages && images.length > 1 && (
         <>
-          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-1">
-            <ChevronLeftIcon className="h-4 w-4" />
+          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="btn btn-dark btn-sm ms-1 position-absolute rounded-circle start-0 top-50 translate-middle-y">
+            <ChevronLeftIcon className="ui-icon-4" />
           </button>
-          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-1">
-            <ChevronRightIcon className="h-4 w-4" />
+          <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="btn btn-dark btn-sm end-0 me-1 position-absolute rounded-circle top-50 translate-middle-y">
+            <ChevronRightIcon className="ui-icon-4" />
           </button>
-          <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1" style={{ fontSize: "0.7rem", borderTopLeftRadius: "4px" }}>
+          <div className="bg-dark bg-opacity-75 bottom-0 end-0 position-absolute px-0 py-1 text-white" style={{ fontSize: "0.7rem", borderTopLeftRadius: "4px" }}>
             {currentImageIndex + 1} / {images.length}
           </div>
         </>
@@ -1172,12 +1172,12 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 h-100">
+      <div className="ui-page-shell">
         {/* ─── 7 INVENTORY MODE HEADER ─────────────────────────────────────── */}
         {/* Header for Inventory Mode - Fixed at top */}
         {!isSalesMode && (
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Edit Item</h6>
+          <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+            <h6 className="ui-heading-strong">Edit Item</h6>
           </div>
         )}
 
@@ -1204,13 +1204,13 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
             {hasImages && images.length > 1 && (
               <>
-                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="position-absolute top-50 start-0 translate-middle-y btn btn-dark btn-sm rounded-circle ms-2">
-                  <ChevronLeftIcon className="h-4 w-4" />
+                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))} className="btn btn-dark btn-sm ms-2 position-absolute rounded-circle start-0 top-50 translate-middle-y">
+                  <ChevronLeftIcon className="ui-icon-4" />
                 </button>
-                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="position-absolute top-50 end-0 translate-middle-y btn btn-dark btn-sm rounded-circle me-2">
-                  <ChevronRightIcon className="h-4 w-4" />
+                <button type="button" onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))} className="btn btn-dark btn-sm end-0 me-2 position-absolute rounded-circle top-50 translate-middle-y">
+                  <ChevronRightIcon className="ui-icon-4" />
                 </button>
-                <div className="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white px-2 py-1 rounded-top-start">
+                <div className="bg-dark bg-opacity-75 bottom-0 end-0 position-absolute px-0 py-1 rounded-top-start text-white">
                   {currentImageIndex + 1} / {images.length}
                 </div>
               </>
@@ -1225,49 +1225,49 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         )}
 
         {/* Container_Scrollable Content Area */}
-        <div className="flex-grow-1 min-h-0 overflow-auto px-3 pt-3 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
           {isSalesMode ? (
             /* Sales Mode - Display only */
             <div>
               <h4 className="fw-bold mb-2">{item.name}</h4>
-              <div className="fs-4 fw-bold text-primary mb-3">{salesPriceRange ? (salesPriceRange.min === salesPriceRange.max ? `$${salesPriceRange.min.toFixed(2)}` : `From $${salesPriceRange.min.toFixed(2)} to $${salesPriceRange.max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}</div>
+              <div className="fs-4 fw-bold mb-3 text-primary">{salesPriceRange ? (salesPriceRange.min === salesPriceRange.max ? `$${salesPriceRange.min.toFixed(2)}` : `From $${salesPriceRange.min.toFixed(2)} to $${salesPriceRange.max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}</div>
 
-              {item.description && <p className="text-muted mb-3">{item.description}</p>}
+              {item.description && <p className="mb-3 text-muted">{item.description}</p>}
 
-              <div className="d-flex gap-2 text-muted small mb-4">
+              <div className="d-flex gap-2 mb-4 small text-muted">
                 {item.sku && (
-                  <span className="d-flex align-items-center gap-1">
-                    <TagIcon className="h-4 w-4" /> {item.sku}
+                  <span className="ui-flex-center-gap-1">
+                    <TagIcon className="ui-icon-4" /> {item.sku}
                   </span>
                 )}
                 {item.location && (
-                  <span className="d-flex align-items-center gap-1">
-                    <MapPinIcon className="h-4 w-4" /> {item.location}
+                  <span className="ui-flex-center-gap-1">
+                    <MapPinIcon className="ui-icon-4" /> {item.location}
                   </span>
                 )}
               </div>
 
               {/* Quantity Selector */}
-              <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="align-items-center d-flex justify-content-between mb-3">
                 <div>
                   <span className="fw-medium">Quantity</span>
-                  {inCart && <div className="small text-muted">{cartQuantity} already in cart</div>}
+                  {inCart && <div className="ui-small-muted">{cartQuantity} already in cart</div>}
                 </div>
-                <div className="d-flex align-items-center gap-3">
-                  <button onClick={decrementQuantity} disabled={quantity <= 1} className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`} style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}>
-                    <MinusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
+                <div className="align-items-center d-flex gap-3">
+                  <button onClick={decrementQuantity} disabled={quantity <= 1} className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-0" : "rounded-circle p-0"}`} style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}>
+                    <MinusIcon className="ui-icon-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                   <span className="fs-4 fw-semibold" style={{ minWidth: "50px", textAlign: "center" }}>
                     {quantity}
                   </span>
-                  <button onClick={incrementQuantity} className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-2" : "rounded-circle p-0"}`} style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}>
-                    <PlusIcon className="h-5 w-5" style={{ margin: "auto", display: "block" }} />
+                  <button onClick={incrementQuantity} className={`btn btn-outline-secondary ${isTrainingMode ? "rounded-pill px-0" : "rounded-circle p-0"}`} style={{ width: isTrainingMode ? "auto" : "40px", height: isTrainingMode ? "auto" : "40px" }}>
+                    <PlusIcon className="ui-icon-5" style={{ margin: "auto", display: "block" }} />
                   </button>
                 </div>
               </div>
 
               {/* Total Display */}
-              <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="align-items-center d-flex justify-content-between mb-3">
                 <small className="text-muted">Total</small>
                 <div className="fs-3 fw-bold text-primary">{salesPriceRange && salesPriceRange.min !== salesPriceRange.max ? `$${(salesPriceRange.min * quantity).toFixed(2)}–$${(salesPriceRange.max * quantity).toFixed(2)}` : `$${((salesPriceRange?.min ?? item.price) * quantity).toFixed(2)}`}</div>
               </div>
@@ -1283,8 +1283,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     {renderImage({ width: "100%", aspectRatio: "1" })}
                     {/* Add image panel */}
                     {addImageMode !== null && (
-                      <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
-                        <div className="d-flex align-items-center gap-2 mb-2">
+                      <div className="bg-gray-100 border dark:bg-gray-800 mt-1 p-0 rounded">
+                        <div className="align-items-center d-flex gap-2 mb-2">
                           <div className="btn-group btn-group-sm">
                             <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
                               Camera
@@ -1303,7 +1303,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                               setNewImageUrl("");
                               setImageError("");
                             }}
-                            className="btn btn-link btn-sm p-0 ms-auto"
+                            className="btn btn-link btn-sm ms-auto p-0"
                             style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
                           >
                             ✕
@@ -1311,7 +1311,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         </div>
 
                         {addImageMode === "camera" && (
-                          <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                          <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                               <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                               <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -1323,7 +1323,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         {addImageMode === "upload" && (
                           <div>
                             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
                                 <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />
@@ -1335,7 +1335,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                         {addImageMode === "url" && (
                           <div className="d-flex gap-1">
-                            <input type="url" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddImageUrl()} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} />
+                            <input type="url" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddImageUrl()} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
                             <button type="button" onClick={handleAddImageUrl} className="btn btn-primary btn-sm flex-shrink-0">
                               Add
                             </button>
@@ -1343,7 +1343,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                         )}
 
                         {imageError && (
-                          <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                          <div className="mt-1 text-danger" style={{ fontSize: "0.75rem" }}>
                             {imageError}
                           </div>
                         )}
@@ -1353,7 +1353,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                   {/* Photo management strip */}
                   <div className="mb-2">
-                    <div className="d-flex align-items-center gap-1 flex-wrap" style={{ minHeight: "44px" }}>
+                    <div className="align-items-center d-flex flex-wrap gap-1" style={{ minHeight: "44px" }}>
                       {images.map((img, idx) => (
                         <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
                           <div onClick={() => setCurrentImageIndex(idx)}>
@@ -1447,7 +1447,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                       {/* Add photo button */}
                       {addImageMode === null && (
-                        <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
+                        <button type="button" onClick={() => setAddImageMode("camera")} className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center" title="Add photo">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                             <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -1458,8 +1458,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                     {/* Edit existing image URL panel */}
                     {editingImageId !== null && (
-                      <div className="mt-1 p-2 border rounded bg-gray-100 dark:bg-gray-800">
-                        <div className="d-flex align-items-center gap-2 mb-2">
+                      <div className="bg-gray-100 border dark:bg-gray-800 mt-1 p-0 rounded">
+                        <div className="align-items-center d-flex gap-2 mb-2">
                           <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>Edit</span>
                           <button
                             type="button"
@@ -1468,20 +1468,20 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                               setEditingImageUrl("");
                               setImageError("");
                             }}
-                            className="btn btn-link btn-sm p-0 ms-auto"
+                            className="btn btn-link btn-sm ms-auto p-0"
                             style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
                           >
                             ✕
                           </button>
                         </div>
                         <div className="d-flex gap-1">
-                          <input type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} autoFocus />
-                          <button type="button" onClick={handleSaveEditImageUrl} className="btn btn-warning btn-sm flex-shrink-0">
+                          <input type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} autoFocus />
+                          <button type="button" onClick={handleSaveEditImageUrl} className="btn btn-sm btn-warning flex-shrink-0">
                             Save
                           </button>
                         </div>
                         {imageError && (
-                          <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                          <div className="mt-1 text-danger" style={{ fontSize: "0.75rem" }}>
                             {imageError}
                           </div>
                         )}
@@ -1489,7 +1489,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     )}
 
                     {imageError && addImageMode === null && editingImageId === null && (
-                      <div className="text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                      <div className="mt-1 text-danger" style={{ fontSize: "0.75rem" }}>
                         {imageError}
                       </div>
                     )}
@@ -1502,11 +1502,11 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     </div>
                   ) : (
                     <div className="d-flex flex-column gap-2 mb-2">
-                      <div className="d-flex align-items-center gap-2 text-success">
-                        <CheckCircleSolid className="h-5 w-5" />
+                      <div className="align-items-center d-flex gap-2 text-success">
+                        <CheckCircleSolid className="ui-icon-5" />
                         <div>
                           <div className="fw-medium">Status: OK</div>
-                          <div className="small text-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
+                          <div className="ui-small-muted">{isLocation ? "Locations" : "Assets"} do not track stock</div>
                         </div>
                       </div>
                     </div>
@@ -1515,39 +1515,39 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   <div className={inventoryRowClass}>
                     {!isLocation && !isAsset && (
                       <div className="form-floating position-relative" style={equalFieldStyle}>
-                        <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
+                        <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control ui-control-sm" placeholder="Min Count" min="0" />
                         <label htmlFor="min_stock_level">Min Count</label>
                       </div>
                     )}
                     {!isLocation && !isAsset && (
                       <div className="form-floating" style={equalFieldStyle}>
-                        <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
+                        <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control ui-control-sm" placeholder="Current Count" min="0" />
                         <label htmlFor="quantity">Current Count</label>
                       </div>
                     )}
                     <div className="form-floating" style={equalFieldStyle}>
-                      <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                      <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
                       <label htmlFor="detail_cost">Cost</label>
                     </div>
                     <div className="form-floating" style={equalFieldStyle}>
-                      <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                      <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
                       <label htmlFor="detail_price">Price</label>
                     </div>
                   </div>
                   {featuresPriceRange && (
-                    <div className="mt-1 mb-2 small text-primary fw-semibold">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
+                    <div className="fw-semibold mb-2 mt-1 small text-primary">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
                   )}
 
                   <div className={inventoryRowClass}>
                     <div className="form-floating" style={equalFieldStyle}>
-                      <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
+                      <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select ui-control-sm">
                         <option value="one_time">One-Time Purchase</option>
                         <option value="recurring">Recurring Rental</option>
                       </select>
                       <label htmlFor="detail_cost_type">Cost Type</label>
                     </div>
                     <div className="form-floating" style={equalFieldStyle}>
-                      <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Name" required />
+                      <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
                       <label htmlFor="detail_name">Name *</label>
                     </div>
                   </div>
@@ -1555,7 +1555,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   {!isLocation ? (
                     <div className={inventoryRowClass}>
                       <div className="form-floating" style={equalFieldStyle}>
-                        <select id="detail_location" name="location" value={formData.location} onChange={handleChange} className="form-select form-select-sm">
+                        <select id="detail_location" name="location" value={formData.location} onChange={handleChange} className="form-select ui-control-sm">
                           <option value="">Select location</option>
                           {availableLocations.map((location) => (
                             <option key={location} value={location}>
@@ -1567,10 +1567,10 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       </div>
 
                       <div className="form-floating" style={equalFieldStyle}>
-                        <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
+                        <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
                         <label htmlFor="detail_sku">Serial Number</label>
                         {!isSalesMode && (
-                          <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y" style={{ right: "0.5rem" }} title="Scan Barcode">
+                          <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm m-0 p-0 position-absolute top-50 translate-middle-y" style={{ right: "0.5rem" }} title="Scan Barcode">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                               <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
                               <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
@@ -1582,11 +1582,11 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   ) : null}
                 </div>
 
-                {scanError && <div className="alert alert-danger py-1 small mt-0 mb-2">{scanError}</div>}
+                {scanError && <div className="alert alert-danger mb-2 mt-0 py-1 small">{scanError}</div>}
 
                 <div className={inventoryRowClass}>
                   <div className="form-floating" style={equalFieldStyle}>
-                    <select id="detail_type" name="type" value={formData.type} onChange={handleChange} className="form-select form-select-sm">
+                    <select id="detail_type" name="type" value={formData.type} onChange={handleChange} className="form-select ui-control-sm">
                       <option value="PRODUCT">Product</option>
                       <option value="BUNDLE">Bundle</option>
                       <option value="MIX">Mix</option>
@@ -1598,14 +1598,14 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     <label htmlFor="detail_type">Type</label>
                   </div>
                   <div className="form-floating" style={equalFieldStyle}>
-                    <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Purchase" />
+                    <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
                     <label htmlFor="detail_date_of_purchase">Date of Purchase</label>
                   </div>
                 </div>
 
                 <div className={inventoryRowClass}>
                   <div className="form-floating" style={equalFieldStyle}>
-                    <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
+                    <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select ui-control-sm">
                       <option value="">— None —</option>
                       {availableSuppliers.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -1616,21 +1616,21 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     <label htmlFor="detail_supplier">Supplier</label>
                   </div>
                   <div className="form-floating" style={equalFieldStyle}>
-                    <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Sale" />
+                    <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
                     <label htmlFor="detail_date_of_sale">Date of Sale</label>
                   </div>
                 </div>
-                {saleDateError && <div className="alert alert-danger py-1 small mt-1 mb-2">{saleDateError}</div>}
+                {saleDateError && <div className="alert alert-danger mb-2 mt-1 py-1 small">{saleDateError}</div>}
 
                 {/* Category picker disabled for now; re-enable later once the flow is ready. */}
                 {/* {!isLocation && (
                   <div className="mb-2 mt-2">
                     {showCategoryManager && (
-                      <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                        {itemCategories.length === 0 && <div className="small text-muted mb-2">No categories yet for this type.</div>}
+                      <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 p-0 rounded">
+                        {itemCategories.length === 0 && <div className="mb-2 ui-small-muted">No categories yet for this type.</div>}
                         <div className="d-flex flex-wrap gap-1 mb-2">
                           {itemCategories.map((cat) => (
-                            <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                            <span key={cat.id} className="align-items-center badge bg-secondary-subtle d-flex gap-1 text-secondary-emphasis" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
                               {cat.name}
                               <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="btn-close btn-close-sm ms-1" style={{ fontSize: "0.55rem", padding: "0.1rem" }} aria-label="Remove" />
                             </span>
@@ -1643,10 +1643,10 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
                             placeholder="New category name..."
-                            className="form-control form-control-sm"
+                            className="form-control ui-control-sm"
                             style={{ fontSize: "0.8rem" }}
                           />
-                          <button type="button" onClick={handleAddCategory} className="btn btn-sm btn-outline-primary flex-shrink-0" style={{ fontSize: "0.78rem" }}>
+                          <button type="button" onClick={handleAddCategory} className="btn btn-outline-primary btn-sm flex-shrink-0" style={{ fontSize: "0.78rem" }}>
                             Add
                           </button>
                         </div>
@@ -1672,8 +1672,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               {item?.id && isMix && <MixSetupPanel mixId={item.id} />}
 
               <hr className="my-2" />
-              <div className="form-floating mb-2 border-0">
-                <textarea id="detail_description" name="description" value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="form-control form-control-sm border-0" placeholder="Description" />
+              <div className="border-0 form-floating mb-2">
+                <textarea id="detail_description" name="description" value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="border-0 form-control form-control-sm" placeholder="Description" />
                 <label htmlFor="detail_description">Description</label>
               </div>
             </>
@@ -1681,7 +1681,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         </div>
 
         {/* Fixed Footer with Action Buttons */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
           {!isSalesMode ? (
             <Footer_Actions
               start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}

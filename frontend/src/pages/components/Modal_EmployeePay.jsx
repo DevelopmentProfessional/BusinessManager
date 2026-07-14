@@ -233,7 +233,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
   // ─── [4] RENDER ─────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
-      <form onSubmit={handleSubmit} className="component h-100 min-h-0">
+      <form onSubmit={handleSubmit} className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Pay {employee.first_name} {employee.last_name}</div>
           <div className="component-header-center"></div>
@@ -242,10 +242,10 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
 
         <div className="component-body">
           <div className="component-body-inner">
-              {payError && <div className="alert alert-danger py-1 px-2 small mb-2">{payError}</div>}
-              {paySuccess && <div className="alert alert-success py-1 px-2 small mb-2">{paySuccess}</div>}
+              {payError && <div className="alert alert-danger mb-2 px-0 py-1 small">{payError}</div>}
+              {paySuccess && <div className="alert alert-success mb-2 px-0 py-1 small">{paySuccess}</div>}
 
-              <div className="mb-2 small text-muted">
+              <div className="mb-2 ui-small-muted">
                 Type: <strong style={{ textTransform: "capitalize" }}>{normalizedEmploymentType || "salary"}</strong>
                 {normalizedPayFrequency && (
                   <>
@@ -264,12 +264,12 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
               {/* Period selector — varies by pay frequency */}
               {(["weekly", "biweekly", "monthly"].includes(normalizedPayFrequency) || availablePeriods.length > 0) && normalizedPayFrequency !== "daily" ? (
                 <div className="mb-2">
-                  <label className="form-label small mb-1">Select Period</label>
+                  <label className="form-label ui-form-label-sm">Select Period</label>
                   {scheduleLoading ? (
-                    <div className="text-muted small py-1">Loading periods…</div>
+                    <div className="py-1 small text-muted">Loading periods…</div>
                   ) : (
                     <select
-                      className="form-select form-select-sm"
+                      className="form-select ui-control-sm"
                       value={payForm.pay_period_start}
                       onChange={(e) => {
                         const p = availablePeriods.find((w) => w.start === e.target.value);
@@ -287,51 +287,51 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                     </select>
                   )}
                   {payForm.pay_period_start && (
-                    <div className="text-muted small mt-1">
+                    <div className="mt-1 ui-small-muted">
                       {payForm.pay_period_start} → {payForm.pay_period_end}
                     </div>
                   )}
                 </div>
               ) : normalizedPayFrequency === "daily" ? (
                 <div className="mb-2">
-                  <label className="form-label small mb-1">Payment Date</label>
-                  <input type="date" className="form-control form-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value, pay_period_end: e.target.value }))} required />
+                  <label className="form-label ui-form-label-sm">Payment Date</label>
+                  <input type="date" className="form-control ui-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value, pay_period_end: e.target.value }))} required />
                 </div>
               ) : (
                 <>
                   <div className="mb-2">
-                    <label className="form-label small mb-1">Pay Period Start</label>
-                    <input type="date" className="form-control form-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value }))} required />
+                    <label className="form-label ui-form-label-sm">Pay Period Start</label>
+                    <input type="date" className="form-control ui-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value }))} required />
                   </div>
                   <div className="mb-2">
-                    <label className="form-label small mb-1">Pay Period End</label>
-                    <input type="date" className="form-control form-control-sm" value={payForm.pay_period_end} min={payForm.pay_period_start || undefined} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_end: e.target.value }))} required />
+                    <label className="form-label ui-form-label-sm">Pay Period End</label>
+                    <input type="date" className="form-control ui-control-sm" value={payForm.pay_period_end} min={payForm.pay_period_start || undefined} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_end: e.target.value }))} required />
                   </div>
                 </>
               )}
 
               {normalizedEmploymentType === "hourly" ? (
                 <div className="mb-2">
-                  <label className="form-label small mb-1">Hours Worked</label>
-                  <input type="number" className="form-control form-control-sm" placeholder="0" min="0" step="0.25" value={payForm.hours_worked} onChange={(e) => setPayForm((f) => ({ ...f, hours_worked: e.target.value }))} required />
-                  {employee.hourly_rate && <div className="text-muted small mt-1">Rate: ${employee.hourly_rate}/hr</div>}
+                  <label className="form-label ui-form-label-sm">Hours Worked</label>
+                  <input type="number" className="form-control ui-control-sm" placeholder="0" min="0" step="0.25" value={payForm.hours_worked} onChange={(e) => setPayForm((f) => ({ ...f, hours_worked: e.target.value }))} required />
+                  {employee.hourly_rate && <div className="mt-1 ui-small-muted">Rate: ${employee.hourly_rate}/hr</div>}
                 </div>
               ) : (
                 <div className="mb-2">
-                  <label className="form-label small mb-1">Gross Amount ($)</label>
-                  <input type="number" className="form-control form-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.gross_amount} onChange={(e) => setPayForm((f) => ({ ...f, gross_amount: e.target.value }))} />
-                  <div className="text-muted small mt-1">Leave blank to use employee salary</div>
+                  <label className="form-label ui-form-label-sm">Gross Amount ($)</label>
+                  <input type="number" className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.gross_amount} onChange={(e) => setPayForm((f) => ({ ...f, gross_amount: e.target.value }))} />
+                  <div className="mt-1 ui-small-muted">Leave blank to use employee salary</div>
                 </div>
               )}
 
               <div className="mb-2">
-                <label className="form-label small mb-1">Other Deductions ($)</label>
-                <input type="number" className="form-control form-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.other_deductions} onChange={(e) => setPayForm((f) => ({ ...f, other_deductions: e.target.value }))} />
+                <label className="form-label ui-form-label-sm">Other Deductions ($)</label>
+                <input type="number" className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.other_deductions} onChange={(e) => setPayForm((f) => ({ ...f, other_deductions: e.target.value }))} />
               </div>
 
               <div className="mb-0">
-                <label className="form-label small mb-1">Notes (optional)</label>
-                <textarea className="form-control form-control-sm" rows="2" value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
+                <label className="form-label ui-form-label-sm">Notes (optional)</label>
+                <textarea className="form-control ui-control-sm" rows="2" value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
@@ -341,7 +341,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
             <Button_Toolbar type="submit" icon={CheckIcon} label={payLoading ? "…" : "Pay"} className="btn-outline-secondary" title="Process payment" disabled={payLoading} />
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

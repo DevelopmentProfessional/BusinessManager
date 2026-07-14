@@ -81,7 +81,7 @@ function InlineTextInput({ value, onSave, placeholder = "" }) {
   return (
     <input
       type="text"
-      className="form-control form-control-sm"
+      className="form-control ui-control-sm"
       value={draft}
       placeholder={placeholder}
       onChange={(e) => setDraft(e.target.value)}
@@ -604,22 +604,22 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   );
 
   return (
-    <div className="mt-3 mb-2 border rounded p-1">
+    <div className="border mb-2 mt-3 p-1 rounded">
       <div className="mb-2">
-        <div className="d-flex align-items-center gap-2 mb-2">
-          <h6 className="mb-0 fw-semibold">Feature</h6>
-          {priceDisplay && <span className="badge text-bg-light border ms-auto">{priceDisplay}</span>}
+        <div className="align-items-center d-flex gap-2 mb-2">
+          <h6 className="fw-semibold mb-0">Feature</h6>
+          {priceDisplay && <span className="badge border ms-auto text-bg-light">{priceDisplay}</span>}
         </div>
 
         <div className="d-flex flex-column gap-2 mb-2 position-relative" ref={featureSearchRef}>
-          <div className="d-flex gap-2 align-items-start position-relative">
+          <div className="align-items-start d-flex gap-2 position-relative">
             <button type="button" className={`btn btn-sm ${canCreateFeature ? "btn-primary" : "btn-outline-secondary"}`} disabled={!canCreateFeature} onClick={() => void createFeatureWithName(trimmedSearch)}>
               Add
             </button>
-            <div className="position-relative flex-grow-1" style={{ minWidth: 0 }}>
+            <div className="flex-grow-1 position-relative" style={{ minWidth: 0 }}>
               <input
                 type="text"
-                className="form-control form-control-sm"
+                className="form-control ui-control-sm"
                 placeholder="Search Feature"
                 value={featureSearchTerm}
                 onFocus={() => setIsFeatureSearchOpen(true)}
@@ -647,7 +647,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                 }}
               />
               {isFeatureSearchOpen && matchingFeatures.length > 0 && (
-                <div className="position-absolute bg-white border rounded shadow-sm w-100" style={{ top: "calc(100% + 4px)", zIndex: 20, maxHeight: 220, overflowY: "auto" }}>
+                <div className="bg-white border position-absolute rounded shadow-sm w-100" style={{ top: "calc(100% + 4px)", zIndex: 20, maxHeight: 220, overflowY: "auto" }}>
                   {matchingFeatures.map((feature) => {
                     const linked = isFeatureLinked(feature.id);
                     return (
@@ -656,7 +656,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         role="option"
                         aria-selected={linked}
                         tabIndex={linked ? -1 : 0}
-                        className={`w-100 px-2 py-1 border-bottom ${linked ? "opacity-75" : ""}`}
+                        className={`w-100 px-0 py-1 border-bottom ${linked ? "opacity-75" : ""}`}
                         style={{ cursor: linked ? "default" : "pointer", userSelect: "none" }}
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -675,12 +675,12 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                           }
                         }}
                       >
-                        <div className="d-flex align-items-center justify-content-between gap-2">
+                        <div className="align-items-center d-flex gap-2 justify-content-between">
                           <div className="fw-medium text-truncate" style={{ fontSize: "0.82rem" }}>
                             {feature.name}
                           </div>
                           {linked && (
-                            <span className="badge text-bg-light border" style={{ fontSize: "0.6rem" }}>
+                            <span className="badge border text-bg-light" style={{ fontSize: "0.6rem" }}>
                               Linked
                             </span>
                           )}
@@ -698,7 +698,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
           <div className="w-100">
             <select
-              className="form-select form-select-sm"
+              className="form-select ui-control-sm"
               value={affectingFeatureId == null ? "fixed" : String(affectingFeatureId)}
               onChange={(e) => {
                 const selectedValue = e.target.value;
@@ -716,12 +716,12 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                 </option>
               ))}
             </select>
-            <div className="small text-muted mt-1">{priceModeLabel}</div>
+            <div className="mt-1 ui-small-muted">{priceModeLabel}</div>
           </div>
         </div>
 
         {itemFeatures.length === 0 ? (
-          <div className="text-muted small py-2">No descriptive features added yet.</div>
+          <div className="py-0 small text-muted">No descriptive features added yet.</div>
         ) : (
           <div className="d-flex flex-column gap-2 mb-1">
             {itemFeatures.map((feature) => {
@@ -732,11 +732,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
               const featureNameDraft = featureNameDrafts[feature.feature_id] ?? feature.feature_name;
 
               return (
-                <div key={feature.feature_id} className="border rounded overflow-hidden bg-white">
+                <div key={feature.feature_id} className="bg-white border overflow-hidden rounded">
                   <div
                     role="button"
                     tabIndex={0}
-                    className="d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-bottom"
+                    className="align-items-center border-bottom d-flex gap-2 justify-content-between px-1 py-0"
                     style={{ background: "#f8f9fa", cursor: "pointer" }}
                     onClick={() => setOpenFeatureIds((prev) => ({ ...prev, [feature.feature_id]: !(prev[feature.feature_id] ?? true) }))}
                     onKeyDown={(e) => {
@@ -746,11 +746,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       }
                     }}
                   >
-                    <div className="d-flex align-items-center gap-2 flex-wrap min-w-0">
+                    <div className="align-items-center d-flex flex-wrap gap-2 min-w-0">
                       {isEditingName ? (
                         <input
                           type="text"
-                          className="form-control form-control-sm"
+                          className="form-control ui-control-sm"
                           value={featureNameDraft}
                           autoFocus
                           onChange={(e) => setFeatureNameDrafts((prev) => ({ ...prev, [feature.feature_id]: e.target.value }))}
@@ -772,7 +772,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       ) : (
                         <button
                           type="button"
-                          className="btn btn-link p-0 fw-semibold text-truncate text-start text-decoration-none"
+                          className="btn btn-link fw-semibold p-0 text-decoration-none text-start text-truncate"
                           style={{ fontSize: "0.86rem", color: isMismatched ? "#b45309" : "inherit", maxWidth: 220 }}
                           title="Click to rename feature"
                           onClick={(e) => {
@@ -796,10 +796,10 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       )}
                     </div>
 
-                    <div className="d-flex align-items-center gap-1 flex-shrink-0">
+                    <div className="align-items-center d-flex flex-shrink-0 gap-1">
                       <button
                         type="button"
-                        className="btn btn-link p-0 text-muted d-flex align-items-center"
+                        className="align-items-center btn btn-link d-flex p-0 text-muted"
                         title="Copy feature"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -810,7 +810,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       </button>
                       <button
                         type="button"
-                        className="btn btn-link p-0 text-danger d-flex align-items-center"
+                        className="align-items-center btn btn-link d-flex p-0 text-danger"
                         title="Remove feature"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -824,24 +824,24 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                   </div>
 
                   {isOpen && (
-                    <div className="p-2">
+                    <div className="p-0">
                       <div className="mb-2">
-                        <div className="small text-muted mb-1">Description</div>
+                        <div className="mb-1 small text-muted">Description</div>
                         <InlineTextInput value={feature.feature_description ?? ""} placeholder="Blank description" onSave={(nextDescription) => handleFeatureDescriptionSave(feature.feature_id, feature.feature_name, nextDescription)} />
                       </div>
 
-                      <div className="d-flex align-items-center justify-content-between gap-2 mb-1">
-                        <div className="small text-muted">Options</div>
+                      <div className="align-items-center d-flex gap-2 justify-content-between mb-1">
+                        <div className="ui-small-muted">Options</div>
                         {itemFeatures.length === 1 && (
-                          <div className="small text-muted" style={{ width: 72, textAlign: "right" }}>
+                          <div className="ui-small-muted" style={{ width: 72, textAlign: "right" }}>
                             Stock
                           </div>
                         )}
                       </div>
                       <div className="d-flex flex-column gap-1">
                         {feature.options.map((opt) => (
-                          <div key={opt.option_id} className="d-flex align-items-center gap-2" style={{ opacity: opt.is_enabled ? 1 : 0.45 }}>
-                            <label className="d-flex align-items-center gap-2 mb-0 flex-grow-1" style={{ cursor: "pointer", minWidth: 0 }}>
+                          <div key={opt.option_id} className="ui-flex-center-gap-2" style={{ opacity: opt.is_enabled ? 1 : 0.45 }}>
+                            <label className="align-items-center d-flex flex-grow-1 gap-2 mb-0" style={{ cursor: "pointer", minWidth: 0 }}>
                               <input type="checkbox" className="form-check-input" style={{ flexShrink: 0, marginTop: 0 }} checked={opt.is_enabled} onChange={(e) => handleOptionChange(feature.feature_id, opt.option_id, "is_enabled", e.target.checked)} />
                               <span className="text-truncate" style={{ fontSize: "0.82rem" }}>
                                 {opt.option_name}
@@ -853,7 +853,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                                 type="number"
                                 min={0}
                                 step="0.01"
-                                className="form-control form-control-sm"
+                                className="form-control ui-control-sm"
                                 style={{ width: 72, fontSize: "0.75rem", padding: "0 4px" }}
                                 value={opt.price ?? ""}
                                 placeholder="$"
@@ -867,7 +867,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                                 type="number"
                                 min={0}
                                 step="1"
-                                className="form-control form-control-sm"
+                                className="form-control ui-control-sm"
                                 style={{ width: 72, fontSize: "0.75rem", padding: "0 4px", textAlign: "right" }}
                                 value={getSingleFeatureOptionStock(feature.feature_id, opt.option_id)}
                                 placeholder="0"
@@ -881,17 +881,17 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
                       <div className="border-top my-2" />
 
-                      <div className="d-flex align-items-center gap-2">
+                      <div className="ui-flex-center-gap-2">
                         <input
                           type="text"
-                          className="form-control form-control-sm"
+                          className="form-control ui-control-sm"
                           style={{ fontSize: "0.75rem", minWidth: 80 }}
                           placeholder="New option…"
                           value={newOptionInputs[feature.feature_id] ?? ""}
                           onChange={(e) => setNewOptionInputs((prev) => ({ ...prev, [feature.feature_id]: e.target.value }))}
                           onKeyDown={(e) => e.key === "Enter" && handleAddOption(feature.feature_id)}
                         />
-                        <button type="button" className="btn btn-outline-secondary btn-sm" style={{ fontSize: "0.75rem", padding: "1px 8px", flexShrink: 0 }} onClick={() => handleAddOption(feature.feature_id)} disabled={!(newOptionInputs[feature.feature_id] ?? "").trim()}>
+                        <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ fontSize: "0.75rem", padding: "1px 8px", flexShrink: 0 }} onClick={() => handleAddOption(feature.feature_id)} disabled={!(newOptionInputs[feature.feature_id] ?? "").trim()}>
                           +
                         </button>
                       </div>
@@ -904,7 +904,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         )}
 
         {error && (
-          <div className="text-danger small mt-2">
+          <div className="mt-2 small text-danger">
             {error}{" "}
             <button type="button" className="btn btn-link btn-sm p-0 text-danger text-decoration-underline" onClick={() => setError(null)}>
               dismiss
@@ -914,8 +914,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
       </div>
 
       {itemFeatures.length > 1 && (
-        <div className="mt-2 border rounded overflow-hidden">
-          <button type="button" className="btn-unstyled btn-tab w-100 d-flex align-items-center justify-content-between gap-2 px-3 py-2 border-0" style={{ background: "#f8f9fa" }} onClick={() => setIsCombinationsOpen((prev) => !prev)}>
+        <div className="border mt-2 overflow-hidden rounded">
+          <button type="button" className="align-items-center border-0 btn-tab btn-unstyled d-flex gap-2 justify-content-between px-1 py-0 w-100" style={{ background: "#f8f9fa" }} onClick={() => setIsCombinationsOpen((prev) => !prev)}>
             <span className="fw-semibold" style={{ fontSize: "0.86rem" }}>
               {itemFeatures.length === 1 ? `${itemFeatures[0].feature_name} Stock` : "Feature Combinations"}
             </span>
@@ -923,13 +923,13 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           </button>
 
           {isCombinationsOpen && (
-            <div className="p-2 bg-light-subtle">
-              <div className="text-muted mb-2" style={{ fontSize: "0.74rem" }}>
+            <div className="bg-light-subtle p-0">
+              <div className="mb-2 text-muted" style={{ fontSize: "0.74rem" }}>
                 {itemFeatures.length === 1 ? "Set available stock for each enabled option." : "Add one row for each sellable feature combination and set the available count."}
               </div>
 
               <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                <table className="table table-sm align-middle mb-2" style={{ width: "max-content" }}>
+                <table className="align-middle mb-2 table table-sm" style={{ width: "max-content" }}>
                   <thead>
                     <tr>
                       {itemFeatures.map((feature) => (
@@ -964,10 +964,10 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                               );
                             })}
                             <td>
-                              <input type="number" min={0} className="form-control form-control-sm" value={row.quantity} onChange={(e) => updateCombinationQuantity(row.combination_key, e.target.value)} />
+                              <input type="number" min={0} className="form-control ui-control-sm" value={row.quantity} onChange={(e) => updateCombinationQuantity(row.combination_key, e.target.value)} />
                             </td>
                             <td className="text-end">
-                              <button type="button" className="btn btn-link btn-sm text-danger p-0" onClick={() => removeCombinationRow(row.combination_key)}>
+                              <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => removeCombinationRow(row.combination_key)}>
                                 Remove
                               </button>
                             </td>
@@ -982,7 +982,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         return (
                           <React.Fragment key={`draft-${feature.feature_id}`}>
                             <td>
-                              <select className="form-select form-select-sm" value={combinationDraft.selections[feature.feature_id] ?? ""} onChange={(e) => handleDraftSelectionChange(feature.feature_id, e.target.value)}>
+                              <select className="form-select ui-control-sm" value={combinationDraft.selections[feature.feature_id] ?? ""} onChange={(e) => handleDraftSelectionChange(feature.feature_id, e.target.value)}>
                                 <option value="">Select…</option>
                                 {enabledOptions.map((option) => (
                                   <option key={option.option_id} value={option.option_id}>
@@ -1004,7 +1004,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         );
                       })}
                       <td>
-                        <input type="number" min={0} className="form-control form-control-sm" placeholder="0" value={combinationDraft.quantity} onChange={(e) => setCombinationDraft((prev) => ({ ...prev, quantity: e.target.value }))} />
+                        <input type="number" min={0} className="form-control ui-control-sm" placeholder="0" value={combinationDraft.quantity} onChange={(e) => setCombinationDraft((prev) => ({ ...prev, quantity: e.target.value }))} />
                       </td>
                       <td className="text-end">
                         <button type="button" className="btn btn-outline-primary btn-sm" onClick={handleAddCombination}>

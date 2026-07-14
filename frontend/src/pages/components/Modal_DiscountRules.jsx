@@ -1,4 +1,4 @@
-﻿/*
+/*
 
  * Full-screen discount rules panel (Inventory → Deals).
 
@@ -291,10 +291,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">
-            <TagIcon className="app-icon text-primary me-1" />
+            <TagIcon className="app-icon me-1 text-primary" />
             Discount Rules
           </div>
           <div className="component-header-center"></div>
@@ -307,13 +307,13 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
         <div className="component-body">
           <div className="component-body-inner">
-          {error && !showEditor && <div className="small text-danger mb-2">{error}</div>}
+          {error && !showEditor && <div className="mb-2 small text-danger">{error}</div>}
 
           {loading ? (
-            <div className="text-muted small p-3">Loading…</div>
+            <div className="p-1 small text-muted">Loading…</div>
           ) : (
-            <div className="table-responsive border rounded">
-              <table className="table table-sm table-hover mb-0 align-middle">
+            <div className="border rounded table-responsive">
+              <table className="align-middle mb-0 table table-hover table-sm">
                 <thead className="table-light">
                   <tr>
                     <th>Name</th>
@@ -331,7 +331,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 <tbody>
                   {rules.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center text-muted small py-4">
+                      <td colSpan={5} className="py-1 small text-center text-muted">
                         No rules yet. Click New or a row to edit.
                       </td>
                     </tr>
@@ -364,7 +364,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                         <td>{rule.is_active ? "Active" : "Inactive"}</td>
 
                         <td className="text-end" onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className="btn btn-sm btn-outline-danger btn-bulk-circle p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
+                          <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
                             <XMarkIcon style={{ width: 14, height: 14 }} />
                           </button>
                         </td>
@@ -381,7 +381,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
         <div className="component-footer">
           <div className="component-footer-left"></div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>
@@ -389,29 +389,29 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
         </div>
 
         {showEditor && (
-          <div className="position-absolute top-0 end-0 bottom-0 border-start bg-white dark:bg-gray-900 d-flex flex-column shadow-lg" style={{ width: "min(100%, 22rem)", zIndex: 10 }}>
-            <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center justify-content-between gap-2">
-              <span className="fw-semibold small">{editingId ? "Edit rule" : "New rule"}</span>
+          <div className="bg-white border-start bottom-0 d-flex dark:bg-gray-900 end-0 flex-column position-absolute shadow-lg top-0" style={{ width: "min(100%, 22rem)", zIndex: 10 }}>
+            <div className="align-items-center border-bottom d-flex flex-shrink-0 gap-2 justify-content-between p-0">
+              <span className="fw-semibold ui-text-sm">{editingId ? "Edit rule" : "New rule"}</span>
 
-              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={resetForm} disabled={saving}>
+              <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={resetForm} disabled={saving}>
                 Clear
               </button>
             </div>
 
-            <div className="flex-grow-1 overflow-auto p-3 min-h-0">
-              {error && <div className="small text-danger mb-2">{error}</div>}
+            <div className="flex-grow-1 min-h-0 overflow-auto p-1">
+              {error && <div className="mb-2 small text-danger">{error}</div>}
 
               <div className="mb-2">
-                <label className="form-label small mb-0">Rule name</label>
+                <label className="form-label mb-0 small">Rule name</label>
 
-                <input className="form-control form-control-sm" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+                <input className="form-control ui-control-sm" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
 
-              <div className="row g-2 mb-2">
+              <div className="g-2 mb-2 row">
                 <div className="col-6">
-                  <label className="form-label small mb-0">Type</label>
+                  <label className="form-label mb-0 small">Type</label>
 
-                  <select className="form-select form-select-sm" value={form.discount_type} onChange={(e) => setForm((p) => ({ ...p, discount_type: e.target.value }))}>
+                  <select className="form-select ui-control-sm" value={form.discount_type} onChange={(e) => setForm((p) => ({ ...p, discount_type: e.target.value }))}>
                     <option value="percentage">%</option>
 
                     <option value="fixed">$</option>
@@ -419,26 +419,26 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 </div>
 
                 <div className="col-6">
-                  <label className="form-label small mb-0">Value</label>
+                  <label className="form-label mb-0 small">Value</label>
 
-                  <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={form.discount_value} onChange={(e) => setForm((p) => ({ ...p, discount_value: e.target.value }))} />
+                  <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={form.discount_value} onChange={(e) => setForm((p) => ({ ...p, discount_value: e.target.value }))} />
                 </div>
               </div>
 
-              <label className="d-flex align-items-center gap-1 small mb-2">
+              <label className="align-items-center d-flex gap-1 mb-2 small">
                 <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
                 Active
               </label>
 
               <div className="mb-2">
-                <span className="small fw-semibold text-muted d-block mb-1">Apply to</span>
+                <span className="d-block fw-semibold mb-1 small text-muted">Apply to</span>
 
-                <label className="d-flex align-items-center gap-1 small me-2">
+                <label className="align-items-center d-flex gap-1 me-2 small">
                   <input type="radio" name="applies_to" value="all" checked={form.applies_to === "all"} onChange={() => setForm((p) => ({ ...p, applies_to: "all", item_ids: [] }))} />
                   All
                 </label>
 
-                <label className="d-flex align-items-center gap-1 small">
+                <label className="align-items-center d-flex gap-1 small">
                   <input type="radio" name="applies_to" value="selected" checked={form.applies_to === "selected"} onChange={() => setForm((p) => ({ ...p, applies_to: "selected" }))} />
                   Selected
                 </label>
@@ -448,39 +448,39 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 <>
                   <input type="text" className="form-control form-control-sm mb-2" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
 
-                  <div className="border rounded mb-2" style={{ maxHeight: "8rem", overflowY: "auto" }}>
+                  <div className="border mb-2 rounded" style={{ maxHeight: "8rem", overflowY: "auto" }}>
                     {filteredInventory.map((item) => (
-                      <label key={item.id} className="d-flex align-items-center gap-2 px-2 py-1 border-bottom small mb-0">
+                      <label key={item.id} className="align-items-center border-bottom d-flex gap-2 mb-0 px-0 py-1 small">
                         <input type="checkbox" checked={form.item_ids.includes(item.id)} onChange={() => toggleProduct(item.id)} />
 
-                        <span className="text-truncate flex-grow-1">{item.name}</span>
+                        <span className="flex-grow-1 text-truncate">{item.name}</span>
                       </label>
                     ))}
                   </div>
                 </>
               )}
 
-              <div className="row g-2 mb-2">
+              <div className="g-2 mb-2 row">
                 <div className="col-12">
-                  <label className="form-label small mb-0">Start</label>
+                  <label className="form-label mb-0 small">Start</label>
 
-                  <input type="datetime-local" className="form-control form-control-sm" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
+                  <input type="datetime-local" className="form-control ui-control-sm" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
                 </div>
 
                 <div className="col-12">
-                  <label className="form-label small mb-0">End</label>
+                  <label className="form-label mb-0 small">End</label>
 
-                  <input type="datetime-local" className="form-control form-control-sm" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
+                  <input type="datetime-local" className="form-control ui-control-sm" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
                 </div>
               </div>
 
-              <label className="d-flex align-items-center gap-1 small mb-2">
+              <label className="align-items-center d-flex gap-1 mb-2 small">
                 <input type="checkbox" checked={form.is_recurring} onChange={(e) => setForm((p) => ({ ...p, is_recurring: e.target.checked }))} />
                 Recurring
               </label>
 
               {form.is_recurring && (
-                <div className="small border rounded p-2 mb-0">
+                <div className="border mb-0 p-0 rounded small">
                   <select className="form-select form-select-sm mb-2" value={form.recur_frequency} onChange={(e) => setForm((p) => ({ ...p, recur_frequency: e.target.value }))}>
                     <option value="daily">Daily</option>
 
@@ -502,9 +502,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               )}
             </div>
 
-            <div className="flex-shrink-0 border-top p-2 d-flex align-items-center gap-2">
+            <div className="align-items-center border-top d-flex flex-shrink-0 gap-2 p-0">
               <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save rule" />
-              <button type="button" onClick={resetForm} className="btn btn-circle btn-outline-secondary" title="Cancel" disabled={saving}>
+              <button type="button" onClick={resetForm} className="btn ui-btn-circle-outline-secondary" title="Cancel" disabled={saving}>
                 <XMarkIcon />
               </button>
             </div>

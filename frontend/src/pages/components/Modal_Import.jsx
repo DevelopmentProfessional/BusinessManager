@@ -114,7 +114,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
   // ─── 5 JSX RENDER ────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding centered>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Import Data from CSV Files</div>
           <div className="component-header-center"></div>
@@ -123,32 +123,32 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
 
         <div className="component-body">
           <div className="component-body-inner">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Upload CSV files to import clients, services, and appointments. You can upload one, two, or all three files at once.</p>
+            <p className="dark:text-gray-400 mb-4 text-gray-500 text-sm">Upload CSV files to import clients, services, and appointments. You can upload one, two, or all three files at once.</p>
 
             <div className="space-y-4">
         {/* Clients Upload */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Clients CSV</label>
+          <label className="block dark:text-gray-300 font-medium mb-2 text-gray-700 text-sm">Clients CSV</label>
           <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-              <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="bg-gray-50 border-2 border-dashed border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 flex flex-col h-24 hover:bg-gray-100 items-center justify-center rounded-lg w-full">
+              <div className="flex flex-col items-center justify-center pb-1 pt-1">
+                <DocumentArrowUpIcon className="dark:text-gray-400 h-6 mb-1 text-gray-500 w-6" />
+                <p className="ui-muted-xs">
                   <span className="font-semibold">Click to upload</span> clients.csv
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only (.csv)</p>
+                <p className="ui-muted-xs">CSV files only (.csv)</p>
               </div>
               <input id="clients-upload" type="file" className="hidden" accept=".csv" onChange={(e) => handleFileChange("clients", e)} />
             </label>
           </div>
           {files.clients && (
-            <div className="flex items-center justify-between p-2 mt-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 flex items-center justify-between mt-2 p-0 rounded-lg">
               <div className="flex items-center">
-                <DocumentArrowUpIcon className="w-4 h-4 text-green-600 mr-2" />
-                <span className="text-xs text-green-800 dark:text-green-300">{files.clients.name}</span>
+                <DocumentArrowUpIcon className="h-4 mr-2 text-green-600 w-4" />
+                <span className="dark:text-green-300 text-green-800 text-xs">{files.clients.name}</span>
               </div>
-              <button onClick={() => setFiles((prev) => ({ ...prev, clients: null }))} className="text-green-600 hover:text-green-800">
-                <XMarkIcon className="w-4 h-4" />
+              <button onClick={() => setFiles((prev) => ({ ...prev, clients: null }))} className="hover:text-green-800 text-green-600">
+                <XMarkIcon className="ui-icon-4" />
               </button>
             </div>
           )}
@@ -156,27 +156,27 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
 
         {/* Services Upload */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Services CSV</label>
+          <label className="block dark:text-gray-300 font-medium mb-2 text-gray-700 text-sm">Services CSV</label>
           <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-              <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="bg-gray-50 border-2 border-dashed border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 flex flex-col h-24 hover:bg-gray-100 items-center justify-center rounded-lg w-full">
+              <div className="flex flex-col items-center justify-center pb-1 pt-1">
+                <DocumentArrowUpIcon className="dark:text-gray-400 h-6 mb-1 text-gray-500 w-6" />
+                <p className="ui-muted-xs">
                   <span className="font-semibold">Click to upload</span> services.csv
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only (.csv)</p>
+                <p className="ui-muted-xs">CSV files only (.csv)</p>
               </div>
               <input id="services-upload" type="file" className="hidden" accept=".csv" onChange={(e) => handleFileChange("services", e)} />
             </label>
           </div>
           {files.services && (
-            <div className="flex items-center justify-between p-2 mt-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 flex items-center justify-between mt-2 p-0 rounded-lg">
               <div className="flex items-center">
-                <DocumentArrowUpIcon className="w-4 h-4 text-green-600 mr-2" />
-                <span className="text-xs text-green-800 dark:text-green-300">{files.services.name}</span>
+                <DocumentArrowUpIcon className="h-4 mr-2 text-green-600 w-4" />
+                <span className="dark:text-green-300 text-green-800 text-xs">{files.services.name}</span>
               </div>
-              <button onClick={() => setFiles((prev) => ({ ...prev, services: null }))} className="text-green-600 hover:text-green-800">
-                <XMarkIcon className="w-4 h-4" />
+              <button onClick={() => setFiles((prev) => ({ ...prev, services: null }))} className="hover:text-green-800 text-green-600">
+                <XMarkIcon className="ui-icon-4" />
               </button>
             </div>
           )}
@@ -184,27 +184,27 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
 
         {/* Appointments Upload */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Appointments CSV</label>
+          <label className="block dark:text-gray-300 font-medium mb-2 text-gray-700 text-sm">Appointments CSV</label>
           <div className="flex items-center justify-center w-full">
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-              <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                <DocumentArrowUpIcon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="bg-gray-50 border-2 border-dashed border-gray-300 cursor-pointer dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 flex flex-col h-24 hover:bg-gray-100 items-center justify-center rounded-lg w-full">
+              <div className="flex flex-col items-center justify-center pb-1 pt-1">
+                <DocumentArrowUpIcon className="dark:text-gray-400 h-6 mb-1 text-gray-500 w-6" />
+                <p className="ui-muted-xs">
                   <span className="font-semibold">Click to upload</span> appointments.csv
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only (.csv)</p>
+                <p className="ui-muted-xs">CSV files only (.csv)</p>
               </div>
               <input id="appointments-upload" type="file" className="hidden" accept=".csv" onChange={(e) => handleFileChange("appointments", e)} />
             </label>
           </div>
           {files.appointments && (
-            <div className="flex items-center justify-between p-2 mt-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 flex items-center justify-between mt-2 p-0 rounded-lg">
               <div className="flex items-center">
-                <DocumentArrowUpIcon className="w-4 h-4 text-green-600 mr-2" />
-                <span className="text-xs text-green-800 dark:text-green-300">{files.appointments.name}</span>
+                <DocumentArrowUpIcon className="h-4 mr-2 text-green-600 w-4" />
+                <span className="dark:text-green-300 text-green-800 text-xs">{files.appointments.name}</span>
               </div>
-              <button onClick={() => setFiles((prev) => ({ ...prev, appointments: null }))} className="text-green-600 hover:text-green-800">
-                <XMarkIcon className="w-4 h-4" />
+              <button onClick={() => setFiles((prev) => ({ ...prev, appointments: null }))} className="hover:text-green-800 text-green-600">
+                <XMarkIcon className="ui-icon-4" />
               </button>
             </div>
           )}
@@ -212,14 +212,14 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
 
         {/* Error message */}
         {error && (
-          <div className="flex items-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <span className="text-sm text-red-800 dark:text-red-300">{error}</span>
+          <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 flex items-center p-1 rounded-lg">
+            <span className="dark:text-red-300 text-red-800 text-sm">{error}</span>
           </div>
         )}
 
         {success && (
-            <div className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <span className="text-sm text-green-800 dark:text-green-300">{success}</span>
+            <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 flex items-center p-1 rounded-lg">
+              <span className="dark:text-green-300 text-green-800 text-sm">{success}</span>
             </div>
           )}
           </div>{/* /space-y-4 */}
@@ -238,7 +238,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
             />
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={handleClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+            <button type="button" onClick={handleClose} className="btn ui-btn-circle-outline-secondary" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

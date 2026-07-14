@@ -220,7 +220,7 @@ function PaydayBadge({ payday, schedule }) {
   const dow = WEEKDAY_LABELS[d.getDay()];
   const timing = schedule?.pay_timing === "advance" ? "paid before work" : "paid after work";
   return (
-    <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: "0.68rem" }}>
+    <span className="badge bg-success-subtle border border-success-subtle text-success" style={{ fontSize: "0.68rem" }}>
       Payday: {dow} {fmtShort(payday)} · {timing}
     </span>
   );
@@ -464,14 +464,14 @@ export default function Modal_Wages({ employees = [], onClose }) {
   // RENDER
   // ──────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-50 d-flex flex-column bg-white dark:bg-gray-900">
+    <div className="bg-white d-flex dark:bg-gray-900 fixed flex-column inset-0 z-50">
 
       {/* ── Header + tabs ── */}
-      <div className="flex-shrink-0 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 pt-2">
-        <div className="d-flex align-items-center gap-2 mb-2">
+      <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-0 px-1">
+        <div className="align-items-center d-flex gap-2 mb-2">
           <BanknotesIcon className="text-muted" style={{ width: 20, height: 20 }} />
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-white flex-grow-1">Wages &amp; Payroll</h6>
-          <button type="button" onClick={onClose} className="btn btn-sm btn-outline-secondary p-1">
+          <h6 className="dark:text-white flex-grow-1 fw-semibold mb-0 text-gray-900">Wages &amp; Payroll</h6>
+          <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1">
             <XMarkIcon style={{ width: 16, height: 16 }} />
           </button>
         </div>
@@ -486,7 +486,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
               key={key}
               type="button"
               onClick={() => setActiveTab(key)}
-              className={`btn btn-sm px-3 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`}
+              className={`btn btn-sm px-1 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`}
               style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}
             >
               {label}
@@ -496,7 +496,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar">
+      <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto">
 
         {/* ═══ CALENDAR TAB ═══ */}
         {activeTab === "calendar" && (
@@ -612,30 +612,30 @@ function CalendarTab({
   return (
     <div>
       {/* Month navigator */}
-      <div className="d-flex align-items-center gap-2 px-3 py-2 border-bottom border-gray-100 dark:border-gray-700">
-        <button type="button" onClick={prevMonth} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
+      <div className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-2 px-1 py-0">
+        <button type="button" onClick={prevMonth} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
           <ChevronLeftIcon style={{ width: 14, height: 14 }} />
         </button>
-        <div className="fw-semibold flex-grow-1 text-center" style={{ fontSize: "0.9rem" }}>
+        <div className="flex-grow-1 fw-semibold text-center" style={{ fontSize: "0.9rem" }}>
           {fmtMonthYear(calYear, calMonth)}
         </div>
-        <button type="button" onClick={nextMonth} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
+        <button type="button" onClick={nextMonth} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
           <ChevronRightIcon style={{ width: 14, height: 14 }} />
         </button>
       </div>
 
       {scheduleLoading || slipsLoading ? (
-        <div className="d-flex justify-content-center py-5">
+        <div className="d-flex justify-content-center py-1">
           <div className="spinner-border spinner-border-sm text-primary" role="status" />
         </div>
       ) : (
         <>
           {/* Calendar grid */}
-          <div className="px-2 pt-2">
+          <div className="pt-0 px-0">
             {/* Day-of-week headers */}
             <div className="d-grid mb-1" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
               {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                <div key={i} className="text-center text-muted fw-medium" style={{ fontSize: "0.7rem", padding: "2px 0" }}>{d}</div>
+                <div key={i} className="fw-medium text-center text-muted" style={{ fontSize: "0.7rem", padding: "2px 0" }}>{d}</div>
               ))}
             </div>
 
@@ -689,12 +689,12 @@ function CalendarTab({
           </div>
 
           {/* Period legend + stats */}
-          <div className="px-3 pt-3 pb-2">
-            <div className="fw-medium text-muted mb-2" style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div className="pb-0 pt-1 px-1">
+            <div className="fw-medium mb-2 text-muted" style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Pay Periods
             </div>
             {calPeriods.length === 0 ? (
-              <p className="text-muted small text-center py-3">No pay periods for this month.</p>
+              <p className="py-1 small text-center text-muted">No pay periods for this month.</p>
             ) : (
               calPeriods.map((period, idx) => {
                 const color = PERIOD_COLORS[idx % PERIOD_COLORS.length];
@@ -706,7 +706,7 @@ function CalendarTab({
                   <div
                     key={idx}
                     onClick={() => setSelectedPeriod(isSelected ? null : period)}
-                    className={`d-flex align-items-center gap-2 py-2 px-2 rounded mb-1 ${isSelected ? "shadow-sm" : ""}`}
+                    className={`d-flex align-items-center gap-2 py-0 px-0 rounded mb-1 ${isSelected ? "shadow-sm" : ""}`}
                     style={{
                       background: isSelected ? color.bg : "var(--bs-tertiary-bg, #f8f9fa)",
                       border: `1px solid ${isSelected ? color.border : "transparent"}`,
@@ -722,7 +722,7 @@ function CalendarTab({
                         </div>
                       )}
                     </div>
-                    <div className="d-flex gap-1 flex-shrink-0">
+                    <div className="d-flex flex-shrink-0 gap-1">
                       {paidEmps.length > 0 && (
                         <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>{paidEmps.length} paid</span>
                       )}
@@ -738,14 +738,14 @@ function CalendarTab({
 
           {/* Selected period: employee breakdown */}
           {selectedPeriod && (
-            <div className="border-top border-gray-100 dark:border-gray-700 px-3 pt-3 pb-2">
-              <div className="d-flex align-items-center justify-content-between mb-2">
+            <div className="border-gray-100 border-top dark:border-gray-700 pb-0 pt-1 px-1">
+              <div className="align-items-center d-flex justify-content-between mb-2">
                 <div className="fw-semibold" style={{ fontSize: "0.85rem" }}>
                   {selectedPeriod.label}
                 </div>
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-secondary"
+                  className="btn ui-btn-outline-secondary-sm"
                   style={{ fontSize: "0.72rem" }}
                   onClick={() => onGoToProcess(selectedPeriod)}
                 >
@@ -753,7 +753,7 @@ function CalendarTab({
                 </button>
               </div>
               {activeEmps.length === 0 ? (
-                <p className="text-muted small">No active employees.</p>
+                <p className="ui-small-muted">No active employees.</p>
               ) : (
                 activeEmps.map((emp) => {
                   const paid = isPaid(slipMap[emp.id], selectedPeriod.start, selectedPeriod.end);
@@ -764,8 +764,8 @@ function CalendarTab({
                   );
                   const slip = emp_slips[0];
                   return (
-                    <div key={emp.id} className="d-flex align-items-center gap-2 py-1 border-bottom border-gray-50 dark:border-gray-800">
-                      <div className="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center fw-bold text-white" style={{ width: 28, height: 28, fontSize: "0.62rem", background: paid ? "#16a34a" : "#9ca3af" }}>
+                    <div key={emp.id} className="align-items-center border-bottom border-gray-50 d-flex dark:border-gray-800 gap-2 py-1">
+                      <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white" style={{ width: 28, height: 28, fontSize: "0.62rem", background: paid ? "#16a34a" : "#9ca3af" }}>
                         {emp.first_name?.[0]}{emp.last_name?.[0]}
                       </div>
                       <div className="flex-grow-1 min-w-0">
@@ -774,7 +774,7 @@ function CalendarTab({
                       <div className="flex-shrink-0 text-end">
                         {paid ? (
                           <div>
-                            <span className="text-success d-flex align-items-center gap-1" style={{ fontSize: "0.7rem" }}>
+                            <span className="align-items-center d-flex gap-1 text-success" style={{ fontSize: "0.7rem" }}>
                               <CheckCircleSolidIcon style={{ width: 12, height: 12 }} /> ${slip?.net_amount?.toFixed(2)}
                             </span>
                             {slip?.created_at && (
@@ -845,14 +845,14 @@ function ProcessTab({
 
   if (scheduleLoading || slipsLoading) {
     return (
-      <div className="d-flex justify-content-center py-5">
+      <div className="d-flex justify-content-center py-1">
         <div className="spinner-border spinner-border-sm text-primary" role="status" />
       </div>
     );
   }
 
   if (!currentProcPeriod) {
-    return <div className="text-center text-muted py-5 small">No pay periods configured.</div>;
+    return <div className="py-1 small text-center text-muted">No pay periods configured.</div>;
   }
 
   const unpaidEmps = activeEmps.filter((e) => !isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end));
@@ -889,11 +889,11 @@ function ProcessTab({
   return (
     <>
       {/* Period header */}
-      <div className="bg-white dark:bg-gray-800 border-bottom border-gray-100 dark:border-gray-700 px-3 py-2" style={{ position: "sticky", top: 0, zIndex: 5 }}>
+      <div className="bg-white border-bottom border-gray-100 dark:bg-gray-800 dark:border-gray-700 px-1 py-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
 
         {/* Period navigator */}
-        <div className="d-flex align-items-center gap-2 mb-2">
-          <button type="button" onClick={prevPeriod} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
+        <div className="align-items-center d-flex gap-2 mb-2">
+          <button type="button" onClick={prevPeriod} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
             <ChevronLeftIcon style={{ width: 14, height: 14 }} />
           </button>
           <div className="flex-grow-1 text-center">
@@ -904,7 +904,7 @@ function ProcessTab({
               Work period: {fmtShort(currentProcPeriod.start)} – {fmtShort(currentProcPeriod.end, true)}
             </div>
           </div>
-          <button type="button" onClick={nextPeriod} disabled={!canGoForward} className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" >
+          <button type="button" onClick={nextPeriod} disabled={!canGoForward} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
             <ChevronRightIcon style={{ width: 14, height: 14 }} />
           </button>
         </div>
@@ -914,7 +914,7 @@ function ProcessTab({
           {currentProcPeriod.payday ? (
             <PaydayBadge payday={currentProcPeriod.payday} schedule={schedule} />
           ) : (
-            <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style={{ fontSize: "0.68rem" }}>
+            <span className="badge bg-secondary-subtle border border-secondary-subtle text-secondary" style={{ fontSize: "0.68rem" }}>
               No payday configured — set in Settings → Payroll
             </span>
           )}
@@ -928,7 +928,7 @@ function ProcessTab({
 
         {/* Select-all row */}
         {unpaidEmps.length > 0 && (
-          <div className="d-flex align-items-center gap-2 mt-1">
+          <div className="align-items-center d-flex gap-2 mt-1">
             <input
               type="checkbox"
               className="form-check-input mt-0"
@@ -948,8 +948,8 @@ function ProcessTab({
 
       {/* Employee list */}
       {activeEmps.length === 0 ? (
-        <div className="text-center text-muted py-5 small">
-          <BanknotesIcon className="mx-auto mb-2" style={{ width: 32, height: 32, opacity: 0.25 }} />
+        <div className="py-1 small text-center text-muted">
+          <BanknotesIcon className="mb-2 mx-auto" style={{ width: 32, height: 32, opacity: 0.25 }} />
           <div>No active employees found.</div>
         </div>
       ) : (
@@ -966,12 +966,12 @@ function ProcessTab({
           return (
             <div key={emp.id} className={`border-bottom border-gray-100 dark:border-gray-700 ${paidNow ? "bg-success-subtle" : ""}`}>
               {/* Main row */}
-              <div className="d-flex align-items-center gap-2 px-3 py-2">
+              <div className="align-items-center d-flex gap-2 px-1 py-0">
                 {/* Checkbox (only for unpaid) */}
                 {!paidNow && (
                   <input
                     type="checkbox"
-                    className="form-check-input mt-0 flex-shrink-0"
+                    className="flex-shrink-0 form-check-input mt-0"
                     checked={isSelected}
                     onChange={() =>
                       setSelectedEmpIds((p) => {
@@ -987,7 +987,7 @@ function ProcessTab({
 
                 {/* Avatar */}
                 <div
-                  className="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
+                  className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white"
                   style={{ width: 34, height: 34, fontSize: "0.68rem", background: paidNow ? "#16a34a" : "#9ca3af" }}
                 >
                   {emp.first_name?.[0]}{emp.last_name?.[0]}
@@ -998,7 +998,7 @@ function ProcessTab({
                   <div className="fw-medium text-truncate" style={{ fontSize: "0.84rem" }}>
                     {emp.first_name} {emp.last_name}
                   </div>
-                  <div className="d-flex align-items-center gap-1 flex-wrap" style={{ fontSize: "0.68rem" }}>
+                  <div className="align-items-center d-flex flex-wrap gap-1" style={{ fontSize: "0.68rem" }}>
                     <span className={`badge ${roleBadge(emp.role)}`} style={{ fontSize: "0.58rem" }}>{emp.role}</span>
                     <span className="text-muted">
                       {isH ? `$${emp.hourly_rate}/hr` : emp.salary ? `$${Number(emp.salary).toLocaleString()}/yr` : "No rate"}
@@ -1007,12 +1007,12 @@ function ProcessTab({
                 </div>
 
                 {/* Amount + action */}
-                <div className="flex-shrink-0 text-end d-flex flex-column align-items-end" style={{ gap: 2 }}>
+                <div className="align-items-end d-flex flex-column flex-shrink-0 text-end" style={{ gap: 2 }}>
                   <span className="fw-semibold" style={{ fontSize: "0.86rem" }}>
-                    {amt != null ? `$${amt.toFixed(2)}` : <span className="text-muted small">—</span>}
+                    {amt != null ? `$${amt.toFixed(2)}` : <span className="ui-small-muted">—</span>}
                   </span>
                   {paidNow ? (
-                    <span className="text-success d-flex align-items-center gap-1" style={{ fontSize: "0.68rem" }}>
+                    <span className="align-items-center d-flex gap-1 text-success" style={{ fontSize: "0.68rem" }}>
                       <CheckCircleSolidIcon style={{ width: 11, height: 11 }} /> Paid
                     </span>
                   ) : (
@@ -1030,11 +1030,11 @@ function ProcessTab({
 
               {/* Inline pay form */}
               {isExpanded && !paidNow && (
-                <div className="px-3 pb-3 pt-1" style={{ background: "var(--bs-tertiary-bg, #f8f9fa)" }}>
-                  {rowErr && <div className="alert alert-danger py-1 px-2 small mb-2">{rowErr}</div>}
-                  <div className="row g-2">
+                <div className="pb-1 pt-1 px-1" style={{ background: "var(--bs-tertiary-bg, #f8f9fa)" }}>
+                  {rowErr && <div className="alert alert-danger mb-2 px-0 py-1 small">{rowErr}</div>}
+                  <div className="row ui-row-g2">
                     <div className="col-6">
-                      <label className="form-label small fw-semibold mb-1">{isH ? "Hours Worked" : "Gross Amount"}</label>
+                      <label className="form-label fw-semibold mb-1 small">{isH ? "Hours Worked" : "Gross Amount"}</label>
                       <div className="input-group input-group-sm">
                         {!isH && <span className="input-group-text">$</span>}
                         <input
@@ -1046,11 +1046,11 @@ function ProcessTab({
                         {isH && <span className="input-group-text">hrs</span>}
                       </div>
                       {isH && emp.hourly_rate && (
-                        <div className="text-muted mt-1" style={{ fontSize: "0.66rem" }}>@ ${emp.hourly_rate}/hr</div>
+                        <div className="mt-1 text-muted" style={{ fontSize: "0.66rem" }}>@ ${emp.hourly_rate}/hr</div>
                       )}
                     </div>
                     <div className="col-6">
-                      <label className="form-label small fw-semibold mb-1">Deductions</label>
+                      <label className="form-label fw-semibold mb-1 small">Deductions</label>
                       <div className="input-group input-group-sm">
                         <span className="input-group-text">$</span>
                         <input
@@ -1062,17 +1062,17 @@ function ProcessTab({
                       </div>
                     </div>
                     <div className="col-12">
-                      <label className="form-label small fw-semibold mb-1">Notes</label>
+                      <label className="form-label fw-semibold mb-1 small">Notes</label>
                       <input
-                        type="text" className="form-control form-control-sm" placeholder="Optional"
+                        type="text" className="form-control ui-control-sm" placeholder="Optional"
                         value={form.notes ?? ""}
                         onChange={(e) => updateForm(emp.id, "notes", e.target.value)}
                       />
                     </div>
                   </div>
-                  <div className="d-flex justify-content-end gap-2 mt-2">
-                    <button type="button" onClick={() => handleExpandEmp(emp)} className="btn btn-sm btn-outline-secondary">Cancel</button>
-                    <button type="button" onClick={() => handlePaySingle(emp)} disabled={isProc} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
+                  <div className="d-flex gap-2 justify-content-end mt-2">
+                    <button type="button" onClick={() => handleExpandEmp(emp)} className="btn ui-btn-outline-secondary-sm">Cancel</button>
+                    <button type="button" onClick={() => handlePaySingle(emp)} disabled={isProc} className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-1">
                       {isProc ? <><span className="spinner-border" style={{ width: 11, height: 11 }} /> …</> : <><CheckIcon style={{ width: 11, height: 11 }} /> Pay</>}
                     </button>
                   </div>
@@ -1085,8 +1085,8 @@ function ProcessTab({
 
       {/* Footer: Pay selected */}
       {selectedUnpaid.length > 0 && (
-        <div className="border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 app-standard-footer">
-          <div className="d-flex align-items-center justify-content-between">
+        <div className="app-standard-footer bg-white border-gray-200 border-top dark:bg-gray-800 dark:border-gray-700 px-1 py-0">
+          <div className="align-items-center d-flex justify-content-between">
             <div>
               <div className="fw-medium" style={{ fontSize: "0.84rem" }}>
                 {selectedUnpaid.length} employee{selectedUnpaid.length !== 1 ? "s" : ""} selected
@@ -1099,7 +1099,7 @@ function ProcessTab({
               type="button"
               onClick={handlePaySelected}
               disabled={batchBusy}
-              className="btn btn-outline-secondary d-flex align-items-center gap-2"
+              className="align-items-center btn btn-outline-secondary d-flex gap-2"
               style={{ fontSize: "0.82rem" }}
             >
               {batchBusy ? (
@@ -1121,22 +1121,22 @@ function ProcessTab({
 
 function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit }) {
   return (
-    <div className="p-3">
-      <p className="small text-muted mb-3">
+    <div className="p-1">
+      <p className="mb-3 small text-muted">
         Issue a bonus, commission, reimbursement, or any one-off payment. These appear in the employee's pay history and do not affect regular payroll cycles.
       </p>
 
       {otResult?.ok && (
-        <div className="alert alert-success py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+        <div className="alert alert-success align-items-center d-flex gap-2 mb-3 px-1 py-0 small">
           <CheckCircleSolidIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
           ${otResult.amount} {otResult.type} paid to {otResult.name}
         </div>
       )}
-      {otResult?.ok === false && <div className="alert alert-danger py-2 px-3 small mb-3">{otResult.error}</div>}
+      {otResult?.ok === false && <div className="alert alert-danger mb-3 px-1 py-0 small">{otResult.error}</div>}
 
       <div className="mb-3">
-        <label className="form-label small fw-semibold mb-1">Employee</label>
-        <select className="form-select form-select-sm" value={ot.employee_id} onChange={(e) => setOt((p) => ({ ...p, employee_id: e.target.value }))}>
+        <label className="form-label fw-semibold mb-1 small">Employee</label>
+        <select className="form-select ui-control-sm" value={ot.employee_id} onChange={(e) => setOt((p) => ({ ...p, employee_id: e.target.value }))}>
           <option value="">— Select employee —</option>
           {employees.filter((e) => e.is_active).map((e) => (
             <option key={e.id} value={e.id}>{e.first_name} {e.last_name} · {e.role}</option>
@@ -1145,7 +1145,7 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
       </div>
 
       <div className="mb-3">
-        <label className="form-label small fw-semibold mb-1">Payment Type</label>
+        <label className="form-label fw-semibold mb-1 small">Payment Type</label>
         <div className="d-flex flex-wrap gap-1">
           {ONE_TIME_TYPES.map((t) => (
             <button key={t.value} type="button"
@@ -1158,9 +1158,9 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
         </div>
       </div>
 
-      <div className="row g-2 mb-3">
+      <div className="g-2 mb-3 row">
         <div className="col-6">
-          <label className="form-label small fw-semibold mb-1">Amount</label>
+          <label className="form-label fw-semibold mb-1 small">Amount</label>
           <div className="input-group input-group-sm">
             <span className="input-group-text">$</span>
             <input type="number" min="0" step="0.01" className="form-control" placeholder="0.00"
@@ -1168,21 +1168,21 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
           </div>
         </div>
         <div className="col-6">
-          <label className="form-label small fw-semibold mb-1">Date</label>
-          <input type="date" className="form-control form-control-sm"
+          <label className="form-label fw-semibold mb-1 small">Date</label>
+          <input type="date" className="form-control ui-control-sm"
             value={ot.date} onChange={(e) => setOt((p) => ({ ...p, date: e.target.value }))} />
         </div>
       </div>
 
       <div className="mb-3">
-        <label className="form-label small fw-semibold mb-1">Notes (optional)</label>
-        <input type="text" className="form-control form-control-sm" placeholder="e.g. Year-end bonus, Q1 commission…"
+        <label className="form-label fw-semibold mb-1 small">Notes (optional)</label>
+        <input type="text" className="form-control ui-control-sm" placeholder="e.g. Year-end bonus, Q1 commission…"
           value={ot.notes} onChange={(e) => setOt((p) => ({ ...p, notes: e.target.value }))} />
       </div>
 
       <button type="button" onClick={handleOtSubmit}
         disabled={otLoading || !ot.employee_id || !ot.amount || !ot.date}
-        className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
+        className="align-items-center btn btn-outline-secondary d-flex gap-2 justify-content-center w-100">
         {otLoading
           ? <><span className="spinner-border spinner-border-sm" style={{ width: 14, height: 14 }} /> Processing…</>
           : <><BanknotesIcon style={{ width: 16, height: 16 }} /> Pay</>}
@@ -1198,17 +1198,17 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
 function HistoryTab({ slipsLoading, filteredHistory, histSearch, setHistSearch, empMap }) {
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 border-bottom border-gray-100 dark:border-gray-700 px-3 py-2" style={{ position: "sticky", top: 0, zIndex: 5 }}>
-        <input type="text" placeholder="Search by employee or notes…" className="form-control form-control-sm"
+      <div className="bg-white border-bottom border-gray-100 dark:bg-gray-800 dark:border-gray-700 px-1 py-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
+        <input type="text" placeholder="Search by employee or notes…" className="form-control ui-control-sm"
           value={histSearch} onChange={(e) => setHistSearch(e.target.value)} />
       </div>
 
       {slipsLoading ? (
-        <div className="d-flex justify-content-center py-5">
+        <div className="d-flex justify-content-center py-1">
           <div className="spinner-border spinner-border-sm text-primary" role="status" />
         </div>
       ) : filteredHistory.length === 0 ? (
-        <div className="text-center text-muted py-5 small">No pay history yet.</div>
+        <div className="py-1 small text-center text-muted">No pay history yet.</div>
       ) : (
         filteredHistory.map((slip) => {
           const name = empMap[slip.employee_id] || "Unknown";
@@ -1219,8 +1219,8 @@ function HistoryTab({ slipsLoading, filteredHistory, histSearch, setHistSearch, 
           const paidOn = slip.created_at ? fmtShort(slip.created_at.slice(0, 10), true) : null;
 
           return (
-            <div key={slip.id} className="d-flex align-items-center gap-2 px-3 py-2 border-bottom border-gray-100 dark:border-gray-700">
-              <div className="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: 32, height: 32, fontSize: "0.65rem", background: "#d1fae5", color: "#065f46" }}>$</div>
+            <div key={slip.id} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-2 px-1 py-0">
+              <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle" style={{ width: 32, height: 32, fontSize: "0.65rem", background: "#d1fae5", color: "#065f46" }}>$</div>
               <div className="flex-grow-1 min-w-0">
                 <div className="fw-medium text-truncate" style={{ fontSize: "0.83rem" }}>{name}</div>
                 <div className="text-muted text-truncate" style={{ fontSize: "0.7rem" }}>

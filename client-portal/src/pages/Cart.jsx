@@ -131,6 +131,12 @@ export default function Cart() {
       setCurrentOrderId(result.order_id);
       setCurrentOrderTotal(result.total);
       clearCart();
+
+      if (result?.checkout_url) {
+        window.location.href = result.checkout_url;
+        return;
+      }
+
       addToast("Order created!", "success");
     } catch (err) {
       setError(err?.message || err?.response?.data?.detail || "Checkout failed. Please try again.");
@@ -144,7 +150,12 @@ export default function Cart() {
     setPaying(true);
     setError(null);
     try {
-      await ordersAPI.pay(currentOrderId, { payment_method: "card" });
+      const paymentResult = await ordersAPI.pay(currentOrderId, { payment_method: "card" });
+      if (paymentResult?.checkout_url) {
+        window.location.href = paymentResult.checkout_url;
+        return;
+      }
+
       addToast("Payment recorded!", "success");
       navigate("/orders");
     } catch (err) {

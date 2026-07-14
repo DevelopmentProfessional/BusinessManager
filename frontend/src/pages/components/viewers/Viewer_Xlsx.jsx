@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Viewer_Xlsx.jsx
  *
@@ -304,21 +304,21 @@ export default function Viewer_Xlsx({ document, onEdit }) {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
-          <TableCellsIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm text-gray-600 dark:text-gray-300">Excel Spreadsheet</span>
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
+        <div className="ui-flex-items-gap-2">
+          <TableCellsIcon className="dark:text-gray-400 h-4 text-gray-500 w-4" />
+          <span className="dark:text-gray-300 text-gray-600 text-sm">Excel Spreadsheet</span>
           {workbook && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">
+            <span className="dark:text-gray-500 text-gray-400 text-xs">
               ({workbook.SheetNames.length} sheet{workbook.SheetNames.length !== 1 ? "s" : ""})
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ui-flex-items-gap-2">
           {/* Edit mode toggle */}
           {!loading && !error && (
-            <button onClick={toggleEditMode} className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors ${isEditing ? "bg-primary-600 text-white hover:bg-primary-700" : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"}`}>
-              <PencilIcon className="h-4 w-4" />
+            <button onClick={toggleEditMode} className={`flex items-center gap-1 px-1 py-1 text-sm rounded transition-colors ${isEditing ? "bg-primary-600 text-white hover:bg-primary-700" : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"}`}>
+              <PencilIcon className="ui-icon-4" />
               {isEditing ? "Editing" : "Edit"}
             </button>
           )}
@@ -328,27 +328,27 @@ export default function Viewer_Xlsx({ document, onEdit }) {
               <button
                 onClick={saveWorkbook}
                 disabled={!isDirty || isSaving}
-                className={`flex items-center gap-1 px-3 py-1 text-sm rounded transition-colors ${isDirty && !isSaving ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"}`}
+                className={`flex items-center gap-1 px-1 py-1 text-sm rounded transition-colors ${isDirty && !isSaving ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"}`}
               >
-                {isSaving ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div> : <CheckIcon className="h-4 w-4" />}
+                {isSaving ? <div className="animate-spin border-b-2 border-white h-3 rounded-full w-3"></div> : <CheckIcon className="ui-icon-4" />}
                 {isSaving ? "Saving..." : saveStatus === "saved" ? "Saved" : "Save"}
               </button>
-              <button onClick={handleAddRow} className="flex items-center gap-1 px-3 py-1 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
-                <PlusIcon className="h-4 w-4" />
+              <button onClick={handleAddRow} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 flex gap-1 hover:bg-gray-200 items-center px-1 py-1 rounded text-gray-700 text-sm">
+                <PlusIcon className="ui-icon-4" />
                 Row
               </button>
-              <button onClick={handleAddColumn} className="flex items-center gap-1 px-3 py-1 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
-                <PlusIcon className="h-4 w-4" />
+              <button onClick={handleAddColumn} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 flex gap-1 hover:bg-gray-200 items-center px-1 py-1 rounded text-gray-700 text-sm">
+                <PlusIcon className="ui-icon-4" />
                 Col
               </button>
             </>
           )}
           {/* Save status indicator */}
-          {saveStatus === "saved" && <span className="text-xs text-green-600 dark:text-green-400">Saved</span>}
-          {saveStatus === "error" && <span className="text-xs text-red-600 dark:text-red-400">Save failed</span>}
+          {saveStatus === "saved" && <span className="dark:text-green-400 text-green-600 text-xs">Saved</span>}
+          {saveStatus === "error" && <span className="dark:text-red-400 text-red-600 text-xs">Save failed</span>}
           {onEdit && (
-            <button onClick={onEdit} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
-              <PencilIcon className="h-4 w-4" />
+            <button onClick={onEdit} className="bg-primary-600 flex gap-1 hover:bg-primary-700 items-center px-1 py-1 rounded text-sm text-white">
+              <PencilIcon className="ui-icon-4" />
               Metadata
             </button>
           )}
@@ -358,12 +358,12 @@ export default function Viewer_Xlsx({ document, onEdit }) {
       {/* ─── 8 SHEET TABS RENDER ────────────────────────────────────────────── */}
       {/* Sheet Tabs */}
       {workbook && workbook.SheetNames.length > 1 && (
-        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 overflow-x-auto">
+        <div className="bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex overflow-x-auto">
           {workbook.SheetNames.map((name) => (
             <button
               key={name}
               onClick={() => handleSheetChange(name)}
-              className={`px-4 py-1.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
+              className={`px-1 py-1.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
                 activeSheet === name ? "border-primary-600 text-primary-700 dark:text-primary-400 bg-white dark:bg-gray-700 font-medium" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               }`}
             >
@@ -375,52 +375,52 @@ export default function Viewer_Xlsx({ document, onEdit }) {
 
       {/* ─── 9 SPREADSHEET TABLE RENDER ─────────────────────────────────────── */}
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-white" ref={tableRef}>
+      <div className="bg-white flex-1 overflow-auto" ref={tableRef}>
         {loading && (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="flex h-32 items-center justify-center">
+            <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
           </div>
         )}
         {error && (
-          <div className="p-4">
-            <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded mb-4">{error}</div>
-            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
-              <ArrowDownTrayIcon className="h-5 w-5" />
+          <div className="p-1">
+            <div className="bg-red-50 dark:bg-red-900/20 mb-4 p-1 rounded text-red-600">{error}</div>
+            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+              <ArrowDownTrayIcon className="ui-icon-5" />
               Download to View
             </a>
           </div>
         )}
         {!loading && !error && sheetData.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-32 text-gray-500 dark:text-gray-400 gap-2">
+          <div className="dark:text-gray-400 flex flex-col gap-2 h-32 items-center justify-center text-gray-500">
             <span>This sheet is empty.</span>
             {isEditing && (
-              <button onClick={handleAddRow} className="flex items-center gap-1 px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700">
-                <PlusIcon className="h-4 w-4" />
+              <button onClick={handleAddRow} className="bg-primary-600 flex gap-1 hover:bg-primary-700 items-center px-1 py-1 rounded text-sm text-white">
+                <PlusIcon className="ui-icon-4" />
                 Add Row
               </button>
             )}
           </div>
         )}
         {!loading && !error && sheetData.length > 0 && (
-          <table className="w-full text-sm border-collapse">
+          <table className="border-collapse text-sm w-full">
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-100 dark:bg-gray-800">
                 {/* Row number header */}
-                <th className="px-2 py-1 text-center text-xs font-medium text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 w-10">#</th>
+                <th className="bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500 font-medium px-0 py-1 text-center text-gray-400 text-xs w-10">#</th>
                 {Array.from({ length: maxCols }, (_, i) => (
-                  <th key={i} className="px-3 py-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 min-w-[80px]">
+                  <th key={i} className="bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 font-medium min-w-[80px] px-1 py-1 text-center text-gray-500 text-xs">
                     {getColLetter(i)}
                   </th>
                 ))}
                 {/* Delete column placeholder when editing */}
-                {isEditing && <th className="w-8 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"></th>}
+                {isEditing && <th className="bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 w-8"></th>}
               </tr>
             </thead>
             <tbody>
               {sheetData.map((row, rowIdx) => (
-                <tr key={rowIdx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
+                <tr key={rowIdx} className="dark:hover:bg-gray-800/50 group hover:bg-gray-50">
                   {/* Row number */}
-                  <td className="px-2 py-1 text-center text-xs text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">{rowIdx + 1}</td>
+                  <td className="bg-gray-50 border border-gray-200 dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-500 px-0 py-1 text-center text-gray-400 text-xs">{rowIdx + 1}</td>
                   {Array.from({ length: maxCols }, (_, colIdx) => {
                     const isEditingThis = editingCell && editingCell.row === rowIdx && editingCell.col === colIdx;
                     const cellVal = Array.isArray(row) ? row[colIdx] : "";
@@ -429,12 +429,12 @@ export default function Viewer_Xlsx({ document, onEdit }) {
                     return (
                       <td
                         key={colIdx}
-                        className={`px-3 py-1 border border-gray-200 bg-white whitespace-nowrap ${isEditing ? "cursor-cell" : ""} ${isEditingThis ? "p-0" : "text-gray-800"}`}
+                        className={`px-1 py-1 border border-gray-200 bg-white whitespace-nowrap ${isEditing ? "cursor-cell" : ""} ${isEditingThis ? "p-0" : "text-gray-800"}`}
                         title={isEditing ? "Double-click to edit" : display}
                         onDoubleClick={() => handleCellDoubleClick(rowIdx, colIdx)}
                       >
                         {isEditingThis ? (
-                          <input ref={editInputRef} type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={commitEdit} onKeyDown={handleCellKeyDown} className="w-full h-full px-2 py-1 text-sm border-2 border-primary-500 outline-none bg-white text-gray-900" />
+                          <input ref={editInputRef} type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={commitEdit} onKeyDown={handleCellKeyDown} className="bg-white border-2 border-primary-500 h-full outline-none px-0 py-1 text-gray-900 text-sm w-full" />
                         ) : (
                           display
                         )}
@@ -443,8 +443,8 @@ export default function Viewer_Xlsx({ document, onEdit }) {
                   })}
                   {/* Delete row button */}
                   {isEditing && (
-                    <td className="px-1 py-1 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                      <button onClick={() => handleDeleteRow(rowIdx)} className="p-0.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete row">
+                    <td className="bg-gray-50 border border-gray-200 dark:bg-gray-800/50 dark:border-gray-700 px-1 py-1">
+                      <button onClick={() => handleDeleteRow(rowIdx)} className="dark:hover:text-red-400 dark:text-gray-600 group-hover:opacity-100 hover:text-red-500 opacity-0 p-0.5 text-gray-300 transition-opacity" title="Delete row">
                         <XMarkIcon className="h-3.5 w-3.5" />
                       </button>
                     </td>
@@ -459,11 +459,11 @@ export default function Viewer_Xlsx({ document, onEdit }) {
       {/* ─── 10 STATUS BAR RENDER ───────────────────────────────────────────── */}
       {/* Status bar */}
       {!loading && !error && (
-        <div className="px-3 py-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-4">
+        <div className="bg-gray-50 border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 flex gap-4 items-center px-1 py-1 text-gray-500 text-xs">
           <span>{sheetData.length} rows</span>
           <span>{maxCols} columns</span>
           <span>Sheet: {activeSheet}</span>
-          {isEditing && isDirty && <span className="text-amber-600 dark:text-amber-400">Unsaved changes</span>}
+          {isEditing && isDirty && <span className="dark:text-amber-400 text-amber-600">Unsaved changes</span>}
           {isEditing && <span className="ml-auto text-gray-400">Double-click a cell to edit | Ctrl+S to save</span>}
         </div>
       )}

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Services.jsx
  *
@@ -285,8 +285,8 @@ export default function Services() {
   // ─── 9  RENDER / RETURN ───────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
@@ -294,9 +294,9 @@ export default function Services() {
   return (
     <PageLayout title="Services" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
       {/* Scrollable rows – grow upwards from bottom */}
-      <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+      <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
         {sortedAndFiltered.length > 0 ? (
-          <table className="table table-borderless table-hover mb-0">
+          <table className="mb-0 table table-borderless table-hover">
             <colgroup>
               <col style={{ width: "56px" }} />
               <col />
@@ -312,7 +312,7 @@ export default function Services() {
                     ) : (
                       <Gate_Permission page="services" permission="delete">
                         <button type="button" className="btn btn-circle btn-outline-danger" title="Delete service" onClick={(e) => handleDeleteService(service.id, e)}>
-                          <XMarkIcon className="h-4 w-4" />
+                          <XMarkIcon className="ui-icon-4" />
                         </button>
                       </Gate_Permission>
                     )}
@@ -321,7 +321,7 @@ export default function Services() {
                   <td className="main-page-table-data">
                     <div className="fw-medium text-wrap-word">{service.name}</div>
                     {service.category && (
-                      <span className="badge bg-secondary-subtle text-secondary rounded-pill text-xxs" style={{ width: "fit-content" }}>
+                      <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs" style={{ width: "fit-content" }}>
                         {service.category}
                       </span>
                     )}
@@ -334,21 +334,21 @@ export default function Services() {
 
                   {/* Duration */}
                   <td className="main-page-table-data text-center">
-                    <span className="badge bg-info-subtle text-info rounded-pill">{service.duration_minutes || 30}m</span>
+                    <span className="badge bg-info-subtle rounded-pill text-info">{service.duration_minutes || 30}m</span>
                   </td>
                 </PageTableRow>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
         )}
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+        <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="ui-flex-center-gap-2">
+            <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected services" onClick={() => setShowMultiEdit(true)}>
@@ -391,7 +391,7 @@ export default function Services() {
         {categoryFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setCategoryFilter("all")} className="btn-app-danger" />}
 
         {/* Category Filter */}
-        <div className="position-relative">
+        <div className="ui-pos-rel">
           <Button_Toolbar
             icon={FolderOpenIcon}
             label="Category"
@@ -405,7 +405,7 @@ export default function Services() {
             data-active={categoryFilter !== "all"}
           />
           {isCategoryFilterOpen && (
-            <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min" style={{ maxHeight: "300px", overflowY: "auto" }}>
+            <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={{ maxHeight: "300px", overflowY: "auto" }}>
               {categories.map((cat, index) => {
                 const key = cat ?? "__none__";
                 const label = cat === "all" ? "All Categories" : cat || "No Category";
@@ -422,17 +422,17 @@ export default function Services() {
                         setIsCategoryFilterOpen(false);
                         setCategoryFilterHelpKey(null);
                       }}
-                      className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                      className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                     >
                       {label}
                     </button>
 
                     {isTrainingMode && (
-                      <div className="position-relative flex-shrink-0">
+                      <div className="flex-shrink-0 position-relative">
                         <button
                           type="button"
                           aria-label={`${label} help`}
-                          className="btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                          className="align-items-center app-label--bold btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
                           onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                           onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           onMouseDown={(e) => {
@@ -446,13 +446,13 @@ export default function Services() {
 
                         {isHelpOpen && (
                           <div
-                            className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                            className="bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
                             style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                             onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                             onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           >
-                            <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</div>
-                            <div className="small text-gray-700 dark:text-gray-300">{description}</div>
+                            <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{label}</div>
+                            <div className="dark:text-gray-300 small text-gray-700">{description}</div>
                           </div>
                         )}
                       </div>
@@ -519,7 +519,7 @@ export default function Services() {
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Service Page Controls">
-        <div className="small text-muted">Use these controls to manage the Services page view.</div>
+        <div className="ui-small-muted">Use these controls to manage the Services page view.</div>
         <div className="small">Search, category filter, and add actions are available in the footer.</div>
       </PageControlsModal>
 

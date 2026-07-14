@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Profile.jsx
  *
@@ -61,21 +61,21 @@ import Panel_Database from "./components/Panel_Database";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
-const AlignLeftIcon = ({ className = "app-icon flex-shrink-0" }) => (
+const AlignLeftIcon = ({ className="app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignCenterIcon = ({ className = "app-icon flex-shrink-0" }) => (
+const AlignCenterIcon = ({ className="app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignRightIcon = ({ className = "app-icon flex-shrink-0" }) => (
+const AlignRightIcon = ({ className="app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />
@@ -144,11 +144,11 @@ const sortLeaveRequestsDesc = (requests) =>
 
 function LeaveRequestsTable({ requests, emptyMessage }) {
   if (!requests.length) {
-    return <p className="text-muted small mb-0">{emptyMessage}</p>;
+    return <p className="mb-0 ui-small-muted">{emptyMessage}</p>;
   }
   return (
     <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-      <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
+      <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
         <thead className="table-light">
           <tr>
             <th>Type</th>
@@ -338,8 +338,17 @@ const Profile = () => {
     companyInfo: false,
     branding: false,
     clientPortal: false,
+    payments: false,
     notifications: false,
   });
+
+  const [stripeSettings, setStripeSettings] = useState({
+    stripe_enabled: false,
+    stripe_publishable_key: "",
+    stripe_secret_key: "",
+    stripe_webhook_secret: "",
+  });
+  const [stripeSettingsLoading, setStripeSettingsLoading] = useState(false);
 
   const [portalBranding, setPortalBranding] = useState({
     portal_hero_title: "",
@@ -474,6 +483,12 @@ const Profile = () => {
             portal_primary_color: res.data.portal_primary_color || "#4f46e5",
             portal_secondary_color: res.data.portal_secondary_color || "#0ea5e9",
           }));
+          setStripeSettings({
+            stripe_enabled: res.data.stripe_enabled ?? false,
+            stripe_publishable_key: res.data.stripe_publishable_key || "",
+            stripe_secret_key: res.data.stripe_secret_key || "",
+            stripe_webhook_secret: res.data.stripe_webhook_secret || "",
+          });
         }
       } catch {
         /* silently degrade */
@@ -498,12 +513,12 @@ const Profile = () => {
   };
 
   const HelpIcon = ({ id, text }) => (
-    <div className="relative inline-block ml-1">
-      <QuestionMarkCircleIcon className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" onClick={() => setActiveTooltip(activeTooltip === id ? null : id)} onMouseEnter={() => setActiveTooltip(id)} onMouseLeave={() => setActiveTooltip(null)} />
+    <div className="inline-block ml-1 relative">
+      <QuestionMarkCircleIcon className="cursor-help h-4 hover:text-gray-600 text-gray-400 transition-colors w-4" onClick={() => setActiveTooltip(activeTooltip === id ? null : id)} onMouseEnter={() => setActiveTooltip(id)} onMouseLeave={() => setActiveTooltip(null)} />
       {activeTooltip === id && (
-        <div className="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-lg shadow-lg max-w-xs text-center">
+        <div className="-translate-x-1/2 absolute bg-gray-800 bottom-full left-1/2 max-w-xs mb-2 px-1 py-0 rounded-lg shadow-lg text-center text-white text-xs z-10">
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+          <div className="-translate-x-1/2 absolute border-4 border-t-gray-800 border-transparent left-1/2 top-full"></div>
         </div>
       )}
     </div>
@@ -661,6 +676,23 @@ const Profile = () => {
 
   const handlePortalBrandingChange = (field, value) => setPortalBranding((prev) => ({ ...prev, [field]: value }));
 
+  const handleStripeSettingsChange = (field, value) => setStripeSettings((prev) => ({ ...prev, [field]: value }));
+
+  const handleSaveStripeSettings = async () => {
+    setStripeSettingsLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      await settingsAPI.updateSettings(stripeSettings);
+      setSettingsSuccess("Stripe settings saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Failed to save Stripe settings");
+    } finally {
+      setStripeSettingsLoading(false);
+    }
+  };
+
   const handleSavePortalBranding = async () => {
     setPortalBrandingLoading(true);
     setSettingsError("");
@@ -682,6 +714,7 @@ const Profile = () => {
     if (openAccordions.branding) tasks.push(handleSaveBranding());
     if (openAccordions.notifications) tasks.push(handleSaveNotifications());
     if (openAccordions.clientPortal) tasks.push(handleSavePortalBranding());
+    if (openAccordions.payments && user?.role === "admin") tasks.push(handleSaveStripeSettings());
     if (tasks.length > 0) await Promise.all(tasks);
   };
 
@@ -1076,7 +1109,7 @@ const Profile = () => {
       <div className="container-fluid py-1">
         <div className="card">
           <div className="card-body text-center">
-            <div className="spinner-border text-primary mb-3" role="status">
+            <div className="mb-3 spinner-border text-primary" role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
             <h2 className="h5 mb-2">Loading...</h2>
@@ -1209,9 +1242,9 @@ const Profile = () => {
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="profile-page d-flex flex-column flex-grow-1 min-h-0 h-100 overflow-hidden" style={{ height: "var(--vvp-height, 100dvh)" }}>
+    <div className="d-flex flex-column flex-grow-1 h-100 min-h-0 overflow-hidden profile-page" style={{ height: "var(--vvp-height, 100dvh)" }}>
       <div
-        className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column"
+        className="d-flex flex-column flex-grow-1 min-h-0 overflow-auto"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
@@ -1230,10 +1263,10 @@ const Profile = () => {
               <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "profile" && (
-                    <div className="p-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="p-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <div className="row">
                         <div className="col-sm-6">
-                          <div className="flex wrap mb-1">
+                          <div className="flex mb-1 wrap">
                             <UserIcon className="w-4" />{" "}
                             <div className="fw-medium p-1">
                               {user.first_name} {user.last_name}
@@ -1241,56 +1274,56 @@ const Profile = () => {
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="flex wrap mb-1">
+                          <div className="flex mb-1 wrap">
                             <span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>{user.role || "Employee"}</span>
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="flex wrap mb-1">
+                          <div className="flex mb-1 wrap">
                             <div className="fw-medium p-1">{user.email || "Not set"}</div>
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="flex wrap mb-1">
+                          <div className="flex mb-1 wrap">
                             <div className="fw-medium p-1">{user.phone || "Not set"}</div>
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="flex wrap mb-1">
+                          <div className="flex mb-1 wrap">
                             <div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="flex wrap mb-1">
+                          <div className="flex mb-1 wrap">
                             <div className="fw-medium p-1">{formatDate(user.last_login)}</div>
                           </div>
                         </div>
                       </div>
                       <hr className="my-2" />
                       <h6 className="fw-semibold mb-2">Details</h6>
-                      <div className="row g-2">
+                      <div className="row ui-row-g2">
                         <div className="col-sm-6">
-                          <div className="text-muted small">Username</div>
+                          <div className="ui-small-muted">Username</div>
                           <div className="fw-medium">{user.username || "Not set"}</div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">Employee ID</div>
+                          <div className="ui-small-muted">Employee ID</div>
                           <div className="fw-medium">{user.id || "N/A"}</div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">Location</div>
+                          <div className="ui-small-muted">Location</div>
                           <div className="fw-medium">{user.location || "Not set"}</div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">IOD Number</div>
+                          <div className="ui-small-muted">IOD Number</div>
                           <div className="fw-medium">{user.iod_number || "Not set"}</div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">Reports To</div>
+                          <div className="ui-small-muted">Reports To</div>
                           <div className="fw-medium">{user.reports_to_name || user.reports_to || "Not set"}</div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">Active</div>
+                          <div className="ui-small-muted">Active</div>
                           <div className="fw-medium">{user.is_active === false ? "No" : "Yes"}</div>
                         </div>
                       </div>
@@ -1302,7 +1335,7 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
                     style={{ cursor: "pointer", userSelect: "none" }}
                     onClick={() => toggleMeSection("profile")}
                     onKeyDown={(e) => {
@@ -1312,11 +1345,11 @@ const Profile = () => {
                       }
                     }}
                   >
-                    <div className="d-flex align-items-center gap-1">
-                      <UserIcon className="h-4 w-4" />
+                    <div className="ui-flex-center-gap-1">
+                      <UserIcon className="ui-icon-4" />
                       <span className="fw-semibold">Profile</span>
                     </div>
-                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "profile" ? "rotate(180deg)" : "none" }} />
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "profile" ? "rotate(180deg)" : "none" }} />
                   </div>
                 </div>
 
@@ -1328,7 +1361,7 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
                     style={{ cursor: "pointer", userSelect: "none" }}
                     onClick={() => toggleMeSection("wage")}
                     onKeyDown={(e) => {
@@ -1338,85 +1371,85 @@ const Profile = () => {
                       }
                     }}
                   >
-                    <div className="d-flex align-items-center gap-1">
-                      <CurrencyDollarIcon className="h-4 w-4" />
+                    <div className="ui-flex-center-gap-1">
+                      <CurrencyDollarIcon className="ui-icon-4" />
                       <span className="fw-semibold">Wage</span>
                     </div>
-                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "wage" ? "rotate(180deg)" : "none" }} />
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "wage" ? "rotate(180deg)" : "none" }} />
                   </div>
                 </div>
 
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "benefits" && (
-                    <div className="p-3" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
-                      <div className="row g-2 mb-3">
+                    <div className="p-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                      <div className="g-2 mb-3 row">
                         <div className="col-sm-6">
-                          <div className="text-muted small">Salary</div>
+                          <div className="ui-small-muted">Salary</div>
                           <div className="fw-medium">{user.salary != null ? `$${Number(user.salary).toLocaleString()}` : "Not set"}</div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">Pay Frequency</div>
+                          <div className="ui-small-muted">Pay Frequency</div>
                           <div className="fw-medium" style={{ textTransform: "capitalize" }}>
                             {user.pay_frequency || "Not set"}
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className="text-muted small">Insurance Plan</div>
-                          <div className="d-flex align-items-center gap-2">
+                          <div className="ui-small-muted">Insurance Plan</div>
+                          <div className="ui-flex-center-gap-2">
                             <span className="fw-medium">{user.insurance_plan || "Not set"}</span>
                             {user.insurance_plan && <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === user.insurance_plan)?.id} planName={user.insurance_plan} insurancePlans={insurancePlans} title="View your insurance plan document" />}
                           </div>
                         </div>
                       </div>
 
-                      <div className="border-top pt-3">
+                      <div className="border-top pt-1">
                         <h6 className="fw-semibold mb-3">Leave Management</h6>
 
                         {leaveRequestsLoading ? (
-                          <div className="text-center py-4">
+                          <div className="py-1 text-center">
                             <div className="spinner-border spinner-border-sm text-primary" role="status" />
                           </div>
                         ) : (
                           <>
-                            <div className="row g-2 mb-3">
+                            <div className="g-2 mb-3 row">
                               <div className="col-6">
-                                <div className="bg-light rounded p-2 small">
+                                <div className="bg-light p-0 rounded small">
                                   <div className="fw-semibold text-primary">Vacation Days</div>
-                                  <div className="text-muted small mb-1">
+                                  <div className="mb-1 small text-muted">
                                     {vacUsed} / {vacTotal} used
                                   </div>
                                   <div className="progress">
-                                    <div className="progress-bar bg-primary" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
+                                    <div className="bg-primary progress-bar" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
                                   </div>
-                                  <div className="text-muted small mt-1">{vacRemaining} remaining</div>
+                                  <div className="mt-1 ui-small-muted">{vacRemaining} remaining</div>
                                 </div>
                               </div>
                               <div className="col-6">
-                                <div className="bg-light rounded p-2 small">
+                                <div className="bg-light p-0 rounded small">
                                   <div className="fw-semibold text-warning">Sick Days</div>
-                                  <div className="text-muted small mb-1">
+                                  <div className="mb-1 small text-muted">
                                     {sickUsed} / {sickTotal} used
                                   </div>
                                   <div className="progress">
-                                    <div className="progress-bar bg-warning" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
+                                    <div className="bg-warning progress-bar" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
                                   </div>
-                                  <div className="text-muted small mt-1">{sickRemaining} remaining</div>
+                                  <div className="mt-1 ui-small-muted">{sickRemaining} remaining</div>
                                 </div>
                               </div>
                             </div>
 
                             <div className="mb-3">
-                              <h6 className="small fw-semibold mb-2">Pending Requests</h6>
+                              <h6 className="fw-semibold mb-2 ui-text-sm">Pending Requests</h6>
                               <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status === "pending"))} emptyMessage="No pending requests" />
                             </div>
 
                             <div className="mb-3">
-                              <h6 className="small fw-semibold mb-2">History</h6>
+                              <h6 className="fw-semibold mb-2 ui-text-sm">History</h6>
                               <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
                             </div>
 
                             <button type="button" className="btn btn-primary btn-sm w-100" onClick={() => openLeaveModal()}>
-                              <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
+                              <PlusCircleIcon className="h-4 me-1 w-4" style={{ display: "inline" }} />
                               New
                             </button>
                           </>
@@ -1430,7 +1463,7 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
                     style={{ cursor: "pointer", userSelect: "none" }}
                     onClick={() => toggleMeSection("benefits")}
                     onKeyDown={(e) => {
@@ -1440,17 +1473,17 @@ const Profile = () => {
                       }
                     }}
                   >
-                    <div className="d-flex align-items-center gap-1">
-                      <HeartIcon className="h-4 w-4" />
+                    <div className="ui-flex-center-gap-1">
+                      <HeartIcon className="ui-icon-4" />
                       <span className="fw-semibold">Benefits</span>
                     </div>
-                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "benefits" ? "rotate(180deg)" : "none" }} />
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "benefits" ? "rotate(180deg)" : "none" }} />
                   </div>
                 </div>
 
                 <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "settings" && (
-                    <div className="p-2" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="p-0" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <Modal_Settings
                         embedded={true}
                         isMobile={isMobile}
@@ -1492,7 +1525,7 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="w-100 d-flex align-items-center justify-content-between px-3 py-2"
+                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
                     style={{ cursor: "pointer", userSelect: "none" }}
                     onClick={() => toggleMeSection("settings")}
                     onKeyDown={(e) => {
@@ -1502,11 +1535,11 @@ const Profile = () => {
                       }
                     }}
                   >
-                    <div className="d-flex align-items-center gap-1">
-                      <CogIcon className="h-4 w-4" />
+                    <div className="ui-flex-center-gap-1">
+                      <CogIcon className="ui-icon-4" />
                       <span className="fw-semibold">Settings</span>
                     </div>
-                    <ChevronDownIcon className="h-4 w-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
                   </div>
                 </div>
               </div>
@@ -1552,6 +1585,10 @@ const Profile = () => {
           handleSavePortalBranding={handleSavePortalBranding}
           handleUploadHeroImage={handleUploadHeroImage}
           resetPortalBrandingDefaults={resetPortalBrandingDefaults}
+          stripeSettings={stripeSettings}
+          stripeSettingsLoading={stripeSettingsLoading}
+          handleStripeSettingsChange={handleStripeSettingsChange}
+          handleSaveStripeSettings={handleSaveStripeSettings}
           settingsSuccess={settingsSuccess}
           HelpIcon={HelpIcon}
           onCheckStartDatabase={handleCheckStartDatabase}
@@ -1559,7 +1596,7 @@ const Profile = () => {
           dbCheckStatus={dbCheckStatus}
           onSave={handleSaveGeneralPanel}
           onClose={() => setOpenAccordion("")}
-          saving={companyLoading || portalBrandingLoading || brandingLogoUploading}
+          saving={companyLoading || portalBrandingLoading || brandingLogoUploading || stripeSettingsLoading}
         />
       )}
 
@@ -1590,55 +1627,55 @@ const Profile = () => {
       {/* Leave Management Panel */}
       {leaveManagementOpen && (
         <div style={{ position: "fixed", bottom: `${row1PanelBottom}px`, left: 0, right: 0, maxHeight: "calc(100vh - 164px)", overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none", backgroundColor: "var(--bs-body-bg)", zIndex: 1000 }} className="accordion-popup">
-          <div className="card border-0 rounded-0" style={{ minHeight: "200px" }}>
+          <div className="border-0 card rounded-0" style={{ minHeight: "200px" }}>
             <div className="card-body">
               <h6 className="card-title mb-3">Leave Management</h6>
               {leaveRequestsLoading ? (
-                <div className="text-center py-4">
+                <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm text-primary" role="status" />
                 </div>
               ) : (
                 <>
-                  <div className="row g-2 mb-3">
+                  <div className="g-2 mb-3 row">
                     <div className="col-6">
-                      <div className="bg-light rounded p-2 small">
+                      <div className="bg-light p-0 rounded small">
                         <div className="fw-semibold text-primary">Vacation Days</div>
-                        <div className="text-muted small mb-1">
+                        <div className="mb-1 small text-muted">
                           {vacUsed} / {vacTotal} used
                         </div>
                         <div className="progress">
-                          <div className="progress-bar bg-primary" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
+                          <div className="bg-primary progress-bar" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
                         </div>
-                        <div className="text-muted small mt-1">{vacRemaining} remaining</div>
+                        <div className="mt-1 ui-small-muted">{vacRemaining} remaining</div>
                       </div>
                     </div>
                     <div className="col-6">
-                      <div className="bg-light rounded p-2 small">
+                      <div className="bg-light p-0 rounded small">
                         <div className="fw-semibold text-warning">Sick Days</div>
-                        <div className="text-muted small mb-1">
+                        <div className="mb-1 small text-muted">
                           {sickUsed} / {sickTotal} used
                         </div>
                         <div className="progress">
-                          <div className="progress-bar bg-warning" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
+                          <div className="bg-warning progress-bar" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
                         </div>
-                        <div className="text-muted small mt-1">{sickRemaining} remaining</div>
+                        <div className="mt-1 ui-small-muted">{sickRemaining} remaining</div>
                       </div>
                     </div>
                   </div>
                   <div className="mb-3">
-                    <h6 className="small fw-semibold mb-2">Pending Requests</h6>
+                    <h6 className="fw-semibold mb-2 ui-text-sm">Pending Requests</h6>
                     <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status === "pending"))} emptyMessage="No pending requests" />
                   </div>
                   <div className="mb-3">
-                    <h6 className="small fw-semibold mb-2">History</h6>
+                    <h6 className="fw-semibold mb-2 ui-text-sm">History</h6>
                     <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
                   </div>
                   <div className="d-flex gap-2">
                     <button type="button" className="btn btn-primary btn-sm flex-grow-1" onClick={() => openLeaveModal()}>
-                      <PlusCircleIcon className="h-4 w-4 me-1" style={{ display: "inline" }} />
+                      <PlusCircleIcon className="h-4 me-1 w-4" style={{ display: "inline" }} />
                       Request
                     </button>
-                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setLeaveManagementOpen(false)}>
+                    <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setLeaveManagementOpen(false)}>
                       Close
                     </button>
                   </div>
@@ -1654,7 +1691,7 @@ const Profile = () => {
           {/* Footer Tabs */}
           <footer
             ref={row1Ref}
-            className="app-footer-shell app-footer-search profile-footer-nav flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-sm"
+            className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 profile-footer-nav shadow-sm"
             style={{
               zIndex: 1050,
               ...(isMobile
@@ -1669,7 +1706,7 @@ const Profile = () => {
           >
             <div className="app-footer-padding bg-white dark:bg-gray-800">
               <div className="app-footer-stack">
-                <div className="search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100">
+                <div className="align-items-center app-footer-toolbar d-flex search-hide-on-focus w-100">
                   <div className={`d-flex align-items-center gap-1 flex-grow-1 min-w-0 ${footerJustify}`}>
                     {canAccessSettings && (
                       <Button_Toolbar
@@ -1709,7 +1746,7 @@ const Profile = () => {
       {/* Request Modal */}
       {showLeaveModal && (
         <div
-          className="modal d-block"
+          className="d-block modal"
           tabIndex="-1"
           style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
           onClick={(e) => {
@@ -1719,10 +1756,10 @@ const Profile = () => {
             }
           }}
         >
-          <div className="modal-dialog modal-sm modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-sm">
             <div className="modal-content">
-              <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">New Leave Request</h6>
+              <div className="modal-header py-0">
+                <h6 className="mb-0 modal-title">New Leave Request</h6>
                 <button
                   type="button"
                   className="btn-close"
@@ -1733,12 +1770,12 @@ const Profile = () => {
                 />
               </div>
               <form onSubmit={handleLeaveSubmit}>
-                <div className="modal-body py-3">
-                  {leaveError && <div className="alert alert-danger py-1 small mb-2">{leaveError}</div>}
+                <div className="modal-body py-1">
+                  {leaveError && <div className="alert alert-danger mb-2 py-1 small">{leaveError}</div>}
                   <div className="mb-2">
-                    <label className="form-label small mb-1">Request Type</label>
+                    <label className="form-label ui-form-label-sm">Request Type</label>
                     <select
-                      className="form-select form-select-sm"
+                      className="form-select ui-control-sm"
                       value={leaveModalType}
                       onChange={(e) => {
                         setLeaveModalType(e.target.value);
@@ -1755,29 +1792,29 @@ const Profile = () => {
                   {leaveModalType === "vacation" || leaveModalType === "sick" ? (
                     <>
                       <div className="mb-2">
-                        <label className="form-label small mb-1">Start Date</label>
-                        <input type="date" className="form-control form-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
+                        <label className="form-label ui-form-label-sm">Start Date</label>
+                        <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
                       </div>
                       <div className="mb-2">
-                        <label className="form-label small mb-1">End Date</label>
-                        <input type="date" className="form-control form-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
+                        <label className="form-label ui-form-label-sm">End Date</label>
+                        <input type="date" className="form-control ui-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
                       </div>
                     </>
                   ) : (
                     <div className="mb-2">
-                      <label className="form-label small mb-1">Requested Date (optional)</label>
-                      <input type="date" className="form-control form-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
+                      <label className="form-label ui-form-label-sm">Requested Date (optional)</label>
+                      <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
                     </div>
                   )}
                   <div className="mb-0">
-                    <label className="form-label small mb-1">Notes (optional)</label>
-                    <textarea className="form-control form-control-sm" rows="2" value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
+                    <label className="form-label ui-form-label-sm">Notes (optional)</label>
+                    <textarea className="form-control ui-control-sm" rows="2" value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
                   </div>
                 </div>
-                <div className="modal-footer py-2">
+                <div className="modal-footer py-0">
                   <button
                     type="button"
-                    className="btn btn-outline-secondary btn-sm"
+                    className="btn ui-btn-outline-secondary-sm"
                     onClick={() => {
                       setShowLeaveModal(false);
                       setLeaveError("");
@@ -1798,7 +1835,7 @@ const Profile = () => {
       {/* Pay Slip Detail Modal */}
       {selectedSlip && (
         <div
-          className="modal d-block"
+          className="d-block modal"
           tabIndex="-1"
           style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 2000 }}
           onClick={(e) => {
@@ -1807,70 +1844,70 @@ const Profile = () => {
         >
           <div className="modal-dialog modal-dialog-centered modal-sm">
             <div className="modal-content" id="pay-slip-print-area">
-              <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">Pay Slip</h6>
+              <div className="modal-header py-0">
+                <h6 className="mb-0 modal-title">Pay Slip</h6>
                 <button type="button" className="btn-close" onClick={() => setSelectedSlip(null)} />
               </div>
               <div className="modal-body" style={{ fontSize: "0.85rem" }}>
-                <div className="text-center mb-3">
-                  <div className="fw-bold fs-6">
+                <div className="mb-3 text-center">
+                  <div className="fs-6 fw-bold">
                     {user?.first_name} {user?.last_name}
                   </div>
-                  <div className="text-muted small">{user?.role}</div>
+                  <div className="ui-small-muted">{user?.role}</div>
                 </div>
                 <hr className="my-2" />
-                <div className="row g-1 mb-2">
-                  <div className="col-6 text-muted">Pay Period</div>
-                  <div className="col-6 text-end">
+                <div className="g-1 mb-2 row">
+                  <div className="col-6 ui-text-muted">Pay Period</div>
+                  <div className="col-6 ui-text-end">
                     {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
                   </div>
-                  <div className="col-6 text-muted">Type</div>
-                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                  <div className="col-6 ui-text-muted">Type</div>
+                  <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
                     {selectedSlip.employment_type || "—"}
                   </div>
                   {selectedSlip.employment_type === "hourly" && (
                     <>
-                      <div className="col-6 text-muted">Hours</div>
-                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? "—"}</div>
-                      <div className="col-6 text-muted">Rate</div>
-                      <div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                      <div className="col-6 ui-text-muted">Hours</div>
+                      <div className="col-6 ui-text-end">{selectedSlip.hours_worked ?? "—"}</div>
+                      <div className="col-6 ui-text-muted">Rate</div>
+                      <div className="col-6 ui-text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
                     </>
                   )}
-                  <div className="col-6 text-muted">Pay Frequency</div>
-                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                  <div className="col-6 ui-text-muted">Pay Frequency</div>
+                  <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
                     {selectedSlip.pay_frequency || "—"}
                   </div>
                 </div>
                 <hr className="my-2" />
-                <div className="row g-1">
-                  <div className="col-6 text-muted">Gross Pay</div>
-                  <div className="col-6 text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                <div className="g-1 row">
+                  <div className="col-6 ui-text-muted">Gross Pay</div>
+                  <div className="col-6 ui-text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                   {selectedSlip.insurance_plan_name && (
                     <>
-                      <div className="col-6 text-muted small">Insurance ({selectedSlip.insurance_plan_name})</div>
-                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                      <div className="col-6 small text-muted">Insurance ({selectedSlip.insurance_plan_name})</div>
+                      <div className="col-6 small text-danger text-end">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </>
                   )}
                   {(selectedSlip.other_deductions ?? 0) > 0 && (
                     <>
-                      <div className="col-6 text-muted small">Other Deductions</div>
-                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                      <div className="col-6 small text-muted">Other Deductions</div>
+                      <div className="col-6 small text-danger text-end">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </>
                   )}
-                  <div className="col-6 fw-bold border-top pt-1 mt-1">Net Pay</div>
-                  <div className="col-6 fw-bold text-end border-top pt-1 mt-1 text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="border-top col-6 fw-bold mt-1 pt-1">Net Pay</div>
+                  <div className="border-top col-6 fw-bold mt-1 pt-1 text-end text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                 </div>
-                {selectedSlip.notes && <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>}
+                {selectedSlip.notes && <div className="mt-2 small text-muted">Notes: {selectedSlip.notes}</div>}
               </div>
-              <div className="modal-footer py-2">
+              <div className="modal-footer py-0">
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-outline-primary btn-sm"
                   onClick={() => {
                     const el = document.getElementById("pay-slip-print-area");
                     if (el) {
                       const w = window.open("", "_blank");
-                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + "</body></html>");
+                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-1">' + el.innerHTML + "</body></html>");
                       w.document.close();
                       w.focus();
                       setTimeout(() => {
@@ -1881,7 +1918,7 @@ const Profile = () => {
                 >
                   Print
                 </button>
-                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setSelectedSlip(null)}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSelectedSlip(null)}>
                   Close
                 </button>
               </div>

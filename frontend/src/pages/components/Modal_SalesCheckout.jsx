@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Modal_Checkout_Sales.jsx
  *
@@ -222,58 +222,58 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true} contentGravity="top">
-      <div className="bg-white dark:bg-gray-900 w-full h-full  max-w-2xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 h-full max-w-2xl overflow-hidden w-full">
         {/* ─── 4 MODAL HEADER ──────────────────────────────────────────────── */}
         {/* Header */}
-        <div className="flex items-center justify-between p-1 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600">
-          <div className="flex items-center gap-1">
-            <div className="p-1 bg-white/20 rounded-lg">
-              <ShoppingCartIcon className="h-5 w-5 text-white" />
+        <div className="bg-gradient-to-r border-b border-gray-200 dark:border-gray-700 flex from-emerald-500 items-center justify-between p-1 to-emerald-600">
+          <div className="ui-flex-items-gap-1">
+            <div className="bg-white/20 p-1 rounded-lg">
+              <ShoppingCartIcon className="h-5 text-white w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Checkout</h2>
+              <h2 className="font-bold text-lg text-white">Checkout</h2>
               <p className="text-emerald-100 text-sm">{itemCount} items</p>
             </div>
           </div>
-          <button onClick={handleClose} disabled={isProcessing} className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50">
-            <XMarkIcon className="h-5 w-5 text-white" />
+          <button onClick={handleClose} disabled={isProcessing} className="disabled:opacity-50 hover:bg-white/20 p-1 rounded-lg transition-colors">
+            <XMarkIcon className="h-5 text-white w-5" />
           </button>
         </div>
 
         {/* ─── 5 PAYMENT SUCCESS SCREEN ────────────────────────────────────── */}
         {paymentSuccess ? (
           <div className="p-1 text-center">
-            <div className="w-24 h-24 mx-auto mb-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center animate-in zoom-in duration-300">
-              <CheckCircleSolid className="h-14 w-14 text-emerald-500" />
+            <div className="animate-in bg-emerald-100 dark:bg-emerald-900/50 duration-300 flex h-24 items-center justify-center mb-1 mx-auto rounded-full w-24 zoom-in">
+              <CheckCircleSolid className="h-14 text-emerald-500 w-14" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Payment Successful!</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-1">Transaction completed successfully</p>
-            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-3">${total.toFixed(2)}</p>
+            <h3 className="dark:text-white font-bold mb-1 text-2xl text-gray-900">Payment Successful!</h3>
+            <p className="dark:text-gray-400 mb-1 text-gray-500">Transaction completed successfully</p>
+            <p className="dark:text-emerald-400 font-bold mb-3 text-3xl text-emerald-600">${total.toFixed(2)}</p>
 
             {/* Receipt / Done row */}
-            <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex gap-2 items-center justify-between mb-1">
               <button
                 type="button"
                 onClick={triggerReceiptAction}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                className="bg-emerald-600 flex font-semibold gap-1.5 hover:bg-emerald-700 items-center px-1 py-0 rounded-xl text-sm text-white transition-colors"
                 title={receiptSettings?.templateId ? "Send / print receipt" : "Select receipt template"}
               >
-                <PrinterIcon className="h-4 w-4" /> Receipt
+                <PrinterIcon className="ui-icon-4" /> Receipt
               </button>
-              <button type="button" onClick={handleDone} className="flex-1 mx-2 py-2 rounded-xl text-sm font-semibold bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors">
+              <button type="button" onClick={handleDone} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 flex-1 font-semibold hover:bg-gray-300 mx-2 py-0 rounded-xl text-gray-700 text-sm transition-colors">
                 Done
               </button>
             </div>
 
             {/* Email prompt when client has no email */}
             {showEmailPrompt && (
-              <div className="mt-2 p-2 border rounded-xl bg-gray-50 dark:bg-gray-800 text-left">
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">Client has no email on file. Enter email to send receipt:</p>
+              <div className="bg-gray-50 border dark:bg-gray-800 mt-2 p-0 rounded-xl text-left">
+                <p className="dark:text-gray-300 mb-1 text-gray-700 text-sm">Client has no email on file. Enter email to send receipt:</p>
                 <div className="flex gap-1">
-                  <input type="email" value={promptEmail} onChange={(e) => setPromptEmail(e.target.value)} placeholder="client@email.com" className="form-control form-control-sm flex-1" />
+                  <input type="email" value={promptEmail} onChange={(e) => setPromptEmail(e.target.value)} placeholder="client@email.com" className="flex-1 form-control form-control-sm" />
                   <button
                     type="button"
-                    className="btn btn-sm btn-emerald"
+                    className="btn btn-emerald btn-sm"
                     onClick={() => {
                       if (!selectedClient || !promptEmail) return;
                       setEmailSaveError("");
@@ -293,7 +293,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn ui-btn-outline-secondary-sm"
                     onClick={() => {
                       setShowEmailPrompt(false);
                       setEmailSaveError("");
@@ -302,7 +302,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                     Cancel
                   </button>
                 </div>
-                {emailSaveError && <p className="text-danger small mt-1 mb-0">{emailSaveError}</p>}
+                {emailSaveError && <p className="mb-0 mt-1 small text-danger">{emailSaveError}</p>}
               </div>
             )}
             {showTemplateUse && completedSaleRef.current && (
@@ -325,98 +325,98 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
             )}
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row max-h-[calc(90vh-80px)] overflow-hidden">
+          <div className="flex flex-col max-h-[calc(90vh-80px)] md:flex-row overflow-hidden">
             {/* ─── 6 ORDER SUMMARY PANEL ───────────────────────────────────── */}
             {/* Order Summary */}
-            <div className="md:w-2/5 p-1 bg-gray-50 dark:bg-gray-800/50 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-1">
-                <ReceiptPercentIcon className="h-5 w-5 text-gray-500" />
+            <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800/50 dark:border-gray-700 md:border-b-0 md:border-r md:w-2/5 overflow-y-auto p-1">
+              <h3 className="dark:text-white flex font-semibold gap-1 items-center mb-1 text-gray-900">
+                <ReceiptPercentIcon className="h-5 text-gray-500 w-5" />
                 Order Summary
               </h3>
 
               {selectedClient && (
-                <div className="mb-1 p-1 bg-primary-50 dark:bg-primary-900/30 rounded-xl border border-primary-200 dark:border-primary-800">
-                  <div className="flex items-center gap-1">
-                    <UserIcon className="h-4 w-4 text-primary-500" />
-                    <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Customer</p>
+                <div className="bg-primary-50 border border-primary-200 dark:bg-primary-900/30 dark:border-primary-800 mb-1 p-1 rounded-xl">
+                  <div className="ui-flex-items-gap-1">
+                    <UserIcon className="h-4 text-primary-500 w-4" />
+                    <p className="dark:text-primary-400 font-medium text-primary-600 text-xs">Customer</p>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">{selectedClient.name}</p>
-                  {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>}
+                  <p className="dark:text-white font-semibold mt-1 text-gray-900 text-sm">{selectedClient.name}</p>
+                  {selectedClient.email && <p className="ui-muted-xs">{selectedClient.email}</p>}
                 </div>
               )}
 
-              <div className="space-y-1 max-h-48 overflow-y-auto mb-1 pr-1">
+              <div className="max-h-48 mb-1 overflow-y-auto pr-1 space-y-1">
                 {cart.map((item) => (
-                  <div key={item.cartKey} className="flex justify-between text-sm p-1 bg-white dark:bg-gray-800 rounded-lg">
+                  <div key={item.cartKey} className="bg-white dark:bg-gray-800 flex justify-between p-1 rounded-lg text-sm">
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-900 dark:text-white font-medium truncate">{item.name}</p>
-                      {item.selectedOptions?.length > 0 && <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">{item.selectedOptions.map((o) => `${o.featureName}: ${o.optionName}`).join(" · ")}</p>}
-                      <p className="text-gray-500 dark:text-gray-400 text-xs">
+                      <p className="dark:text-white font-medium text-gray-900 truncate">{item.name}</p>
+                      {item.selectedOptions?.length > 0 && <p className="dark:text-indigo-400 mt-0.5 text-indigo-600 text-xs">{item.selectedOptions.map((o) => `${o.featureName}: ${o.optionName}`).join(" · ")}</p>}
+                      <p className="ui-muted-xs">
                         ${item.price?.toFixed(2)} × {item.quantity}
                       </p>
                     </div>
-                    <span className="font-semibold text-gray-900 dark:text-white ml-2">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="dark:text-white font-semibold ml-2 text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-1 space-y-1">
+              <div className="border-gray-200 border-t dark:border-gray-700 pt-1 space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-                  <span className="text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
+                  <span className="dark:text-gray-400 text-gray-500">Subtotal</span>
+                  <span className="dark:text-white text-gray-900">${subtotal.toFixed(2)}</span>
                 </div>
                 {(discountAmount || 0) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Discount</span>
-                    <span className="text-red-600 dark:text-red-400">-${(discountAmount || 0).toFixed(2)}</span>
+                    <span className="dark:text-gray-400 text-gray-500">Discount</span>
+                    <span className="dark:text-red-400 text-red-600">-${(discountAmount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 {taxRate > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
-                    <span className="text-gray-900 dark:text-white">${tax.toFixed(2)}</span>
+                    <span className="dark:text-gray-400 text-gray-500">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
+                    <span className="dark:text-white text-gray-900">${tax.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-xl font-bold pt-1 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-gray-900 dark:text-white">Total</span>
-                  <span className="text-emerald-600 dark:text-emerald-400">${total.toFixed(2)}</span>
+                <div className="border-gray-200 border-t dark:border-gray-700 flex font-bold justify-between pt-1 text-xl">
+                  <span className="dark:text-white text-gray-900">Total</span>
+                  <span className="dark:text-emerald-400 text-emerald-600">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             {/* ─── 7 PAYMENT FORM ──────────────────────────────────────────── */}
             {/* Payment Form */}
-            <div className="md:w-3/5 p-1 overflow-y-auto">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Payment Method</h3>
+            <div className="md:w-3/5 overflow-y-auto p-1">
+              <h3 className="dark:text-white font-semibold mb-1 text-gray-900">Payment Method</h3>
 
               {/* ─── 8 PAYMENT METHOD TABS ───────────────────────────────── */}
               {/* Payment Method Tabs */}
               <div className="flex gap-1 mb-1">
                 <button
                   onClick={() => setPaymentMethod("card_scan")}
-                  className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
+                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
                     isCardScan ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
-                  <CreditCardIcon className="h-5 w-5" />
+                  <CreditCardIcon className="ui-icon-5" />
                   <span className="font-medium">Card Scan</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("tap_pay")}
-                  className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
+                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
                     isTapPay ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
-                  <DevicePhoneMobileIcon className="h-5 w-5" />
+                  <DevicePhoneMobileIcon className="ui-icon-5" />
                   <span className="font-medium">Tap Pay</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("cash")}
-                  className={`flex-1 py-1 px-2 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
+                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
                     paymentMethod === "cash" ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
-                  <BanknotesIcon className="h-5 w-5" />
+                  <BanknotesIcon className="ui-icon-5" />
                   <span className="font-medium">Cash</span>
                 </button>
               </div>
@@ -426,46 +426,46 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   {/* Card Number */}
                   <div className="input-group">
                     <span className="input-group-text">
-                      <CreditCardIcon className="h-5 w-5 text-gray-400" />
+                      <CreditCardIcon className="h-5 text-gray-400 w-5" />
                     </span>
-                    <div className="form-floating flex-1">
-                      <input type="text" id="cardNumber" value={cardNumber} onChange={handleCardNumberChange} placeholder="Card Number" className="form-control form-control-sm" />
+                    <div className="flex-1 form-floating">
+                      <input type="text" id="cardNumber" value={cardNumber} onChange={handleCardNumberChange} placeholder="Card Number" className="form-control ui-control-sm" />
                       <label htmlFor="cardNumber">Card Number</label>
                     </div>
-                    <button type="button" onClick={() => setShowCamera(true)} className="btn btn-sm btn-outline-secondary" title="Scan card with camera">
-                      <CameraIcon className="h-5 w-5" />
+                    <button type="button" onClick={() => setShowCamera(true)} className="btn ui-btn-outline-secondary-sm" title="Scan card with camera">
+                      <CameraIcon className="ui-icon-5" />
                     </button>
                   </div>
 
                   {/* Camera modal */}
                   {showCamera && (
-                    <div className="border rounded-xl overflow-hidden bg-black relative">
-                      <div className="flex items-center justify-between px-2 py-1 bg-gray-900">
-                        <span className="text-white text-xs flex items-center gap-1">
-                          <VideoCameraIcon className="h-4 w-4" /> Point camera at card
+                    <div className="bg-black border overflow-hidden relative rounded-xl">
+                      <div className="bg-gray-900 flex items-center justify-between px-0 py-1">
+                        <span className="flex gap-1 items-center text-white text-xs">
+                          <VideoCameraIcon className="ui-icon-4" /> Point camera at card
                         </span>
-                        <button type="button" onClick={() => setShowCamera(false)} className="text-white hover:text-gray-300">
-                          <XMarkIcon className="h-4 w-4" />
+                        <button type="button" onClick={() => setShowCamera(false)} className="hover:text-gray-300 text-white">
+                          <XMarkIcon className="ui-icon-4" />
                         </button>
                       </div>
                       {cameraError ? (
-                        <div className="p-3 text-center text-red-400 text-sm">{cameraError}</div>
+                        <div className="p-1 text-center text-red-400 text-sm">{cameraError}</div>
                       ) : (
                         <>
                           <video ref={videoRef} className="w-full" playsInline muted style={{ maxHeight: "200px", objectFit: "cover" }} />
                           {/* Card outline guide */}
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ top: "2rem" }}>
+                          <div className="absolute flex inset-0 items-center justify-center pointer-events-none" style={{ top: "2rem" }}>
                             <div className="border-2 border-white/70 rounded-xl" style={{ width: "85%", height: "55%" }} />
                           </div>
-                          <div className="flex gap-1 p-1 bg-gray-900">
-                            <button type="button" onClick={captureAndParseCard} className="flex-1 btn btn-sm text-white" style={{ background: "#059669", border: "none" }}>
-                              <CameraIcon className="h-4 w-4 inline me-1" /> Capture
+                          <div className="bg-gray-900 flex gap-1 p-1">
+                            <button type="button" onClick={captureAndParseCard} className="btn btn-sm flex-1 text-white" style={{ background: "#059669", border: "none" }}>
+                              <CameraIcon className="h-4 inline me-1 w-4" /> Capture
                             </button>
-                            <button type="button" onClick={() => setShowCamera(false)} className="btn btn-sm btn-outline-secondary text-white border-gray-600">
+                            <button type="button" onClick={() => setShowCamera(false)} className="border-gray-600 btn btn-outline-secondary btn-sm text-white">
                               Cancel
                             </button>
                           </div>
-                          <p className="text-xs text-gray-400 text-center pb-1">After capture, verify and adjust the fields manually.</p>
+                          <p className="pb-1 text-center text-gray-400 text-xs">After capture, verify and adjust the fields manually.</p>
                         </>
                       )}
                     </div>
@@ -473,18 +473,18 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
 
                   {/* Cardholder Name */}
                   <div className="form-floating">
-                    <input type="text" id="cardName" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Cardholder Name" className="form-control form-control-sm" />
+                    <input type="text" id="cardName" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Cardholder Name" className="form-control ui-control-sm" />
                     <label htmlFor="cardName">Cardholder Name</label>
                   </div>
 
                   {/* Expiry & CVC */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="gap-4 grid grid-cols-2">
                     <div className="form-floating">
-                      <input type="text" id="cardExpiry" value={cardExpiry} onChange={handleExpiryChange} placeholder="MM/YY" className="form-control form-control-sm" />
+                      <input type="text" id="cardExpiry" value={cardExpiry} onChange={handleExpiryChange} placeholder="MM/YY" className="form-control ui-control-sm" />
                       <label htmlFor="cardExpiry">Expiry Date</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="cardCVC" value={cardCVC} onChange={handleCVCChange} placeholder="CVC" className="form-control form-control-sm" />
+                      <input type="text" id="cardCVC" value={cardCVC} onChange={handleCVCChange} placeholder="CVC" className="form-control ui-control-sm" />
                       <label htmlFor="cardCVC">CVC</label>
                     </div>
                   </div>
@@ -492,56 +492,56 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   <button
                     onClick={handleSubmit}
                     disabled={!isCardValid() || isProcessing}
-                    className={`w-full py-2 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${isCardValid() && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
+                    className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${isCardValid() && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
                   >
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />…
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
                       </>
                     ) : (
                       <>
-                        <CheckCircleIcon className="h-5 w-5" />
+                        <CheckCircleIcon className="ui-icon-5" />
                         Pay ${total.toFixed(2)}
                       </>
                     )}
                   </button>
                 </div>
               ) : isTapPay ? (
-                <div className="text-center py-2">
-                  <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                    <DevicePhoneMobileIcon className="app-icon app-icon--lg text-indigo-600 dark:text-indigo-400" />
+                <div className="py-0 text-center">
+                  <div className="bg-indigo-100 dark:bg-indigo-900/50 flex h-20 items-center justify-center mb-2 mx-auto rounded-full w-20">
+                    <DevicePhoneMobileIcon className="app-icon app-icon--lg dark:text-indigo-400 text-indigo-600" />
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-1">Tap customer card or device to continue</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{nfcSupported ? "NFC-ready device detected." : "NFC hardware may be unavailable in this browser/device. You can still complete payment manually."}</p>
-                  <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${total.toFixed(2)}</p>
-                  <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-2 rounded-pill font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-1">
+                  <p className="dark:text-gray-400 mb-1 text-gray-600">Tap customer card or device to continue</p>
+                  <p className="dark:text-gray-400 mb-2 text-gray-500 text-xs">{nfcSupported ? "NFC-ready device detected." : "NFC hardware may be unavailable in this browser/device. You can still complete payment manually."}</p>
+                  <p className="dark:text-emerald-400 font-bold mb-2 text-4xl text-emerald-600">${total.toFixed(2)}</p>
+                  <button onClick={handleSubmit} disabled={isProcessing} className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full">
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />…
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
                       </>
                     ) : (
                       <>
-                        <CheckCircleIcon className="h-5 w-5" />
+                        <CheckCircleIcon className="ui-icon-5" />
                         Charge ${total.toFixed(2)}
                       </>
                     )}
                   </button>
                 </div>
               ) : (
-                <div className="text-center py-2">
-                  <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                    <BanknotesIcon className="app-icon app-icon--lg text-emerald-600 dark:text-emerald-400" />
+                <div className="py-0 text-center">
+                  <div className="bg-emerald-100 dark:bg-emerald-900/50 flex h-20 items-center justify-center mb-2 mx-auto rounded-full w-20">
+                    <BanknotesIcon className="app-icon app-icon--lg dark:text-emerald-400 text-emerald-600" />
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">Amount to collect</p>
-                  <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">${total.toFixed(2)}</p>
-                  <button onClick={handleSubmit} disabled={isProcessing} className="w-full py-2 rounded-pill font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-1">
+                  <p className="dark:text-gray-400 mb-2 text-gray-600">Amount to collect</p>
+                  <p className="dark:text-emerald-400 font-bold mb-2 text-4xl text-emerald-600">${total.toFixed(2)}</p>
+                  <button onClick={handleSubmit} disabled={isProcessing} className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full">
                     {isProcessing ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />…
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
                       </>
                     ) : (
                       <>
-                        <CheckCircleIcon className="h-5 w-5" />
+                        <CheckCircleIcon className="ui-icon-5" />
                         Confirm
                       </>
                     )}

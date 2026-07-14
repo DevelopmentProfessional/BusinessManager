@@ -117,7 +117,7 @@ export default function Modal_BulkImport({
   return (
     /* Modal wraps backdrop + dialog */
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Bulk Import {entityLabel}</div>
           <div className="component-header-center"></div>
@@ -129,23 +129,23 @@ export default function Modal_BulkImport({
           <div className="component-body-inner">
           {/* Textarea */}
           <div className="d-flex flex-column gap-1">
-            <p className="small text-muted mb-0">Paste one name per line. Each line will be saved as a new {entityLabel.replace(/s$/i, "").toLowerCase()}.</p>
+            <p className="mb-0 ui-small-muted">Paste one name per line. Each line will be saved as a new {entityLabel.replace(/s$/i, "").toLowerCase()}.</p>
             <textarea className="form-control" style={{ resize: "vertical", minHeight: "120px", fontFamily: "monospace", fontSize: "0.875rem" }} placeholder={`Name 1\nName 2\nName 3`} value={text} onChange={(e) => setText(e.target.value)} disabled={saving} autoFocus />
           </div>
 
           {/* Per-row details: type + photo (inventory only) */}
           {showRowDetails && parsedNames.length > 0 && (
             <div className="d-flex flex-column gap-1">
-              <p className="small text-muted mb-0 fw-medium">
+              <p className="fw-medium mb-0 small text-muted">
                 {allowPhotoUpload && itemTypes ? "Type, Category & Photo" : allowPhotoUpload ? "Photos" : itemTypes ? "Type & Category" : "Category"}
                 <span className="fw-normal"> (optional)</span>
               </p>
               <div className="d-flex flex-column gap-1">
                 {parsedNames.map((name, i) => (
-                  <div key={i} className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "var(--bs-secondary-bg)", minHeight: "48px" }}>
+                  <div key={i} className="align-items-center d-flex gap-2 p-0 rounded" style={{ background: "var(--bs-secondary-bg)", minHeight: "48px" }}>
                     {/* Thumbnail */}
                     {allowPhotoUpload && (
-                      <div className="flex-shrink-0 rounded overflow-hidden d-flex align-items-center justify-content-center" style={{ width: 36, height: 36, background: "#dee2e6" }}>
+                      <div className="align-items-center d-flex flex-shrink-0 justify-content-center overflow-hidden rounded" style={{ width: 36, height: 36, background: "#dee2e6" }}>
                         {photos[i] ? <img src={photos[i].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <PhotoIcon style={{ width: 18, height: 18, color: "#adb5bd" }} />}
                       </div>
                     )}
@@ -156,7 +156,7 @@ export default function Modal_BulkImport({
                     </span>
 
                     {itemTypes && (
-                      <select className="form-select form-select-sm" style={{ width: "7.5rem", fontSize: "0.72rem" }} value={types[i] || defaultItemType || ""} onChange={(e) => handleTypeChange(i, e.target.value)} disabled={saving}>
+                      <select className="form-select ui-control-sm" style={{ width: "7.5rem", fontSize: "0.72rem" }} value={types[i] || defaultItemType || ""} onChange={(e) => handleTypeChange(i, e.target.value)} disabled={saving}>
                         <option value="">Type…</option>
                         {itemTypes.map((t) => (
                           <option key={t.value} value={t.value}>
@@ -166,16 +166,16 @@ export default function Modal_BulkImport({
                       </select>
                     )}
 
-                    <input type="text" className="form-control form-control-sm" style={{ width: "6.5rem", fontSize: "0.72rem" }} placeholder="Category" value={categories[i] || ""} onChange={(e) => setCategories((prev) => ({ ...prev, [i]: e.target.value }))} disabled={saving} />
+                    <input type="text" className="form-control ui-control-sm" style={{ width: "6.5rem", fontSize: "0.72rem" }} placeholder="Category" value={categories[i] || ""} onChange={(e) => setCategories((prev) => ({ ...prev, [i]: e.target.value }))} disabled={saving} />
 
                     {/* Photo upload / remove */}
                     {allowPhotoUpload &&
                       (photos[i] ? (
-                        <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={() => handleRemovePhoto(i)} disabled={saving} title="Remove photo">
+                        <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={() => handleRemovePhoto(i)} disabled={saving} title="Remove photo">
                           <XMarkIcon style={{ width: 14, height: 14 }} />
                         </button>
                       ) : (
-                        <button type="button" className="btn btn-outline-secondary btn-bulk-circle flex-shrink-0" onClick={() => fileInputRefs.current[i]?.click()} disabled={saving} title="Add photo">
+                        <button type="button" className="btn btn-bulk-circle btn-outline-secondary flex-shrink-0" onClick={() => fileInputRefs.current[i]?.click()} disabled={saving} title="Add photo">
                           <CameraIcon style={{ width: 14, height: 14 }} />
                         </button>
                       ))}
@@ -215,7 +215,7 @@ export default function Modal_BulkImport({
             />
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" disabled={saving} title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" disabled={saving} title="Close">
               <XMarkIcon />
             </button>
           </div>

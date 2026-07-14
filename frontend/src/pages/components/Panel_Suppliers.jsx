@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Suppliers_Panel.jsx
  *
@@ -119,11 +119,11 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity={showForm ? "top" : "bottom"}>
-      <div className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 h-100">
-        <div className="flex-shrink-0 p-2 border-bottom d-flex align-items-center justify-content-between gap-2 bg-white dark:bg-gray-900">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">
+      <div className="ui-page-shell">
+        <div className="align-items-center bg-white border-bottom d-flex dark:bg-gray-900 flex-shrink-0 gap-2 justify-content-between p-0">
+          <h6 className="ui-heading-strong">
             {showForm ? (editingSupplier ? "Edit Supplier" : "Add Supplier") : "Suppliers"}
-            {!showForm && <span className="text-muted small fw-normal ms-1">({suppliers.length})</span>}
+            {!showForm && <span className="fw-normal ms-1 small text-muted">({suppliers.length})</span>}
           </h6>
         </div>
 
@@ -135,11 +135,11 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
           {showForm ? (
             <SupplierForm supplier={editingSupplier} onSubmit={handleSubmit} onCancel={handleCancelForm} className="flex-grow-1" />
           ) : loading ? (
-            <div className="d-flex justify-content-center align-items-center flex-grow-1">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center">
+              <div className="animate-spin border-b-2 border-primary-600 h-10 rounded-full w-10"></div>
             </div>
           ) : suppliers.length === 0 ? (
-            <div className="d-flex align-items-center justify-content-center text-muted flex-grow-1">No suppliers found. Add your first supplier.</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">No suppliers found. Add your first supplier.</div>
           ) : (
             <>
               {suppliers.map((supplier) => {
@@ -147,28 +147,28 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                 return (
                   <div key={supplier.id} className="border-bottom" style={{ background: "var(--bs-body-bg)" }}>
                     {isExpanded && (
-                      <div className="px-2 pt-2 pb-1 border-bottom supplier-procurement-accordion" style={{ maxHeight: "min(55vh, 24rem)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <div className="border-bottom pb-1 pt-0 px-0 supplier-procurement-accordion" style={{ maxHeight: "min(55vh, 24rem)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                         <Modal_Procurement supplierId={supplier.id} embedded onPOCreated={loadSuppliers} />
                       </div>
                     )}
-                    <div className="px-3 py-3 d-flex align-items-center gap-2">
+                    <div className="align-items-center d-flex gap-2 px-1 py-1">
                       <Gate_Permission page="suppliers" permission="delete">
-                        <button type="button" onClick={() => handleDelete(supplier.id)} className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" title="Delete">
-                          <XMarkIcon className="h-5 w-5" />
+                        <button type="button" onClick={() => handleDelete(supplier.id)} className="align-items-center btn btn-outline-danger btn-sm d-flex flex-shrink-0 justify-content-center" title="Delete">
+                          <XMarkIcon className="ui-icon-5" />
                         </button>
                       </Gate_Permission>
-                      <div className="min-w-0 flex-grow-1">
+                      <div className="flex-grow-1 min-w-0">
                         <Gate_Permission
                           page="suppliers"
                           permission="write"
-                          fallback={<div className="fw-medium text-gray-900 dark:text-gray-100">{supplier.name}</div>}
+                          fallback={<div className="dark:text-gray-100 fw-medium text-gray-900">{supplier.name}</div>}
                         >
-                          <button type="button" onClick={() => handleEdit(supplier)} className="btn btn-link p-0 text-start text-decoration-none fw-medium text-gray-900 dark:text-gray-100 border-0 shadow-none">
+                          <button type="button" onClick={() => handleEdit(supplier)} className="border-0 btn btn-link dark:text-gray-100 fw-medium p-0 shadow-none text-decoration-none text-gray-900 text-start">
                             {supplier.name}
                           </button>
                         </Gate_Permission>
-                        {supplier.email && <div className="small text-muted">{supplier.email}</div>}
-                        {supplier.phone && <div className="small text-muted">{supplier.phone}</div>}
+                        {supplier.email && <div className="ui-small-muted">{supplier.email}</div>}
+                        {supplier.phone && <div className="ui-small-muted">{supplier.phone}</div>}
                         {supplier.address && <div className="small text-muted text-truncate">{supplier.address}</div>}
                       </div>
                       <Gate_Permission page="suppliers" permission="write">
@@ -180,7 +180,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                           aria-expanded={isExpanded}
                           aria-label={isExpanded ? "Hide purchase orders" : "Show purchase orders"}
                         >
-                          {isExpanded ? <ChevronDownIcon className="h-5 w-5" /> : <ChevronUpIcon className="h-5 w-5" />}
+                          {isExpanded ? <ChevronDownIcon className="ui-icon-5" /> : <ChevronUpIcon className="ui-icon-5" />}
                         </button>
                       </Gate_Permission>
                     </div>
@@ -191,7 +191,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
           )}
         </div>
 
-        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 app-standard-footer">
+        <div className="app-standard-footer bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0">
           <div className="app-footer-padding">
             {showForm ? (
               <Footer_Actions
@@ -215,7 +215,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   );
 }
 
-function SupplierForm({ supplier, onSubmit, className = "" }) {
+function SupplierForm({ supplier, onSubmit, className="" }) {
   const [formData, setFormData] = useState({
     name: supplier?.name || "",
     email: supplier?.email || "",
@@ -234,21 +234,21 @@ function SupplierForm({ supplier, onSubmit, className = "" }) {
   };
 
   return (
-    <form id="supplier-panel-form" onSubmit={handleSubmit} className={`p-3 d-flex flex-column ${className}`} style={{ minHeight: "100%" }}>
+    <form id="supplier-panel-form" onSubmit={handleSubmit} className={`p-1 d-flex flex-column ${className}`} style={{ minHeight: "100%" }}>
       <div className="mt-auto"></div>
-      <div className="form-floating mb-2">
-        <input type="text" id="sp_name" name="name" value={formData.name} onChange={handleChange} required className="form-control form-control-sm" placeholder="Name" />
+      <div className="form-floating ui-form-floating-mb2">
+        <input type="text" id="sp_name" name="name" value={formData.name} onChange={handleChange} required className="form-control ui-control-sm" placeholder="Name" />
         <label htmlFor="sp_name">Name *</label>
       </div>
-      <div className="form-floating mb-2">
-        <input type="email" id="sp_email" name="email" value={formData.email} onChange={handleChange} className="form-control form-control-sm" placeholder="Email" />
+      <div className="form-floating ui-form-floating-mb2">
+        <input type="email" id="sp_email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
         <label htmlFor="sp_email">Email</label>
       </div>
-      <div className="form-floating mb-2">
-        <input type="tel" id="sp_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control form-control-sm" placeholder="Phone" />
+      <div className="form-floating ui-form-floating-mb2">
+        <input type="tel" id="sp_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control ui-control-sm" placeholder="Phone" />
         <label htmlFor="sp_phone">Phone</label>
       </div>
-      <div className="form-floating mb-2">
+      <div className="form-floating ui-form-floating-mb2">
         <textarea id="sp_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm min-h-[80px]" placeholder="Address" />
         <label htmlFor="sp_address">Address</label>
       </div>

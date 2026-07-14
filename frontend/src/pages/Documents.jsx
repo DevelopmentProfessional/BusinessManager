@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Documents.jsx
  *
@@ -137,19 +137,19 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="d-flex flex-column bg-white dark:bg-gray-900 min-h-0 h-100">
-      <div className="flex-grow-1 overflow-auto p-3 min-h-0">
-        <div className="small fw-semibold text-muted mb-2">Upload Document</div>
+    <form onSubmit={handleSubmit} className="ui-page-shell">
+      <div className="flex-grow-1 min-h-0 overflow-auto p-1">
+        <div className="fw-semibold mb-2 small text-muted">Upload Document</div>
 
-        <div className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
+        <div className={`border border-2 border-dashed rounded p-1 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
           {formData.file ? (
             <>
-              {formData.file.type.startsWith("image/") ? <img src={previewUrl} alt="preview" className="mx-auto mb-2 rounded" style={{ maxHeight: "8rem" }} /> : <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />}
-              <p className="small fw-medium mb-1">{formData.file.name}</p>
-              <p className="text-muted small mb-2">{formatFileSize(formData.file.size)}</p>
+              {formData.file.type.startsWith("image/") ? <img src={previewUrl} alt="preview" className="mb-2 mx-auto rounded" style={{ maxHeight: "8rem" }} /> : <DocumentIcon className="mb-2 mx-auto text-muted" style={{ width: 40, height: 40 }} />}
+              <p className="fw-medium mb-1 small">{formData.file.name}</p>
+              <p className="mb-2 ui-small-muted">{formatFileSize(formData.file.size)}</p>
               <button
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="btn btn-outline-danger btn-sm"
                 onClick={() => {
                   if (previewUrl) URL.revokeObjectURL(previewUrl);
                   setFormData((prev) => ({ ...prev, file: null }));
@@ -160,27 +160,27 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
             </>
           ) : (
             <>
-              <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />
-              <p className="small text-muted mb-2">Drag and drop or choose a file</p>
+              <DocumentIcon className="mb-2 mx-auto text-muted" style={{ width: 40, height: 40 }} />
+              <p className="mb-2 ui-small-muted">Drag and drop or choose a file</p>
               <input type="file" id="documents-page-upload-file" name="file" onChange={handleFileChange} className="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" />
-              <label htmlFor="documents-page-upload-file" className="btn btn-sm btn-outline-primary mb-0">
+              <label htmlFor="documents-page-upload-file" className="btn btn-outline-primary btn-sm mb-0">
                 Select file
               </label>
             </>
           )}
         </div>
 
-        <p className="small text-muted mt-2 mb-0">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
+        <p className="mb-0 mt-2 small text-muted">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
 
         <div className="form-floating mt-3">
-          <textarea id="documents-upload-description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm" style={{ minHeight: 72 }} placeholder="Description" disabled={uploading} />
+          <textarea id="documents-upload-description" name="description" value={formData.description} onChange={handleChange} className="form-control ui-control-sm" style={{ minHeight: 72 }} placeholder="Description" disabled={uploading} />
           <label htmlFor="documents-upload-description">Description (optional)</label>
         </div>
 
-        {error && <div className="alert alert-danger py-2 small mt-2 mb-0">{error}</div>}
+        {error && <div className="alert alert-danger mb-0 mt-2 py-0 small">{error}</div>}
       </div>
 
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+      <div className="app-footer-padding app-form-footer bg-white border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 flex-shrink-0">
         <Footer_Actions
           start={<Button_Toolbar type="submit" icon={ArrowDownTrayIcon} label={uploading ? "Uploading…" : "Upload"} className="btn-outline-secondary" disabled={uploading || !formData.file} title="Upload document" />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" disabled={uploading} title="Cancel" />}
@@ -734,28 +734,28 @@ export default function Documents() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
 
   return (
-    <div className="d-flex flex-column vh-100 min-h-0 overflow-hidden bg-body">
+    <div className="bg-body d-flex flex-column min-h-0 overflow-hidden vh-100">
       {/* Header */}
-      <div className="flex-shrink-0 border-bottom p-3 d-flex align-items-center justify-content-between">
-        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">{showTemplates ? "Templates" : "Documents"}</h1>
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
+      <div className="align-items-center border-bottom d-flex flex-shrink-0 justify-content-between p-1">
+        <h1 className="fw-bold h-4 mb-0 text-body-emphasis">{showTemplates ? "Templates" : "Documents"}</h1>
+        <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0 d-flex align-items-center justify-content-between">
+        <div className="alert alert-danger align-items-center border-0 d-flex flex-shrink-0 justify-content-between m-0 rounded-0">
           <span>{error}</span>
           <button
-            className="btn btn-sm btn-outline-danger ms-3"
+            className="btn btn-outline-danger btn-sm ms-3"
             onClick={() => {
               clearError();
               loadDocuments();
@@ -768,9 +768,9 @@ export default function Documents() {
       )}
 
       {/* Main table container */}
-      <div className="flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
+      <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-        <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+        <div className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
           {showTemplates ? (
             /* ── Templates list ── */
             (() => {
@@ -784,7 +784,7 @@ export default function Documents() {
               };
               const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter);
               return filtered.length > 0 ? (
-                <table className="table table-borderless table-hover mb-0">
+                <table className="mb-0 table table-borderless table-hover">
                   <colgroup>
                     <col style={{ width: "56px" }} />
                     <col />
@@ -793,21 +793,21 @@ export default function Documents() {
                   <tbody>
                     {filtered.map((tpl) => (
                       <tr key={tpl.id} className="align-middle border-bottom">
-                        <td className="text-center px-1">
-                          <button onClick={() => handleDeleteTemplate(tpl)} className="btn btn-sm btn-outline-danger border-0 p-1 d-flex align-items-center justify-content-center" title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"} disabled={tpl.is_standard}>
-                            <XMarkIcon className="h-4 w-4" />
+                        <td className="px-1 text-center">
+                          <button onClick={() => handleDeleteTemplate(tpl)} className="align-items-center border-0 btn btn-outline-danger btn-sm d-flex justify-content-center p-1" title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"} disabled={tpl.is_standard}>
+                            <XMarkIcon className="ui-icon-4" />
                           </button>
                         </td>
-                        <td className="px-2">
-                          <div className="d-flex align-items-center gap-2">
+                        <td className="px-0">
+                          <div className="ui-flex-center-gap-2">
                             <span className="fw-medium text-truncate">{tpl.name}</span>
                             {tpl.is_standard && <span className="badge bg-warning text-dark text-xxs">Standard</span>}
                           </div>
                           <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>{tpl.template_type}</span>
                         </td>
-                        <td className="text-center px-1">
-                          <button onClick={() => handleEditTemplate(tpl)} className="btn btn-sm btn-outline-primary border-0 p-1 d-flex align-items-center justify-content-center" title="Edit">
-                            <PencilIcon className="h-4 w-4" />
+                        <td className="px-1 text-center">
+                          <button onClick={() => handleEditTemplate(tpl)} className="align-items-center border-0 btn btn-outline-primary btn-sm d-flex justify-content-center p-1" title="Edit">
+                            <PencilIcon className="ui-icon-4" />
                           </button>
                         </td>
                       </tr>
@@ -815,19 +815,19 @@ export default function Documents() {
                   </tbody>
                 </table>
               ) : (
-                <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{templatesLoading ? S.loading : S.noResults}</div>
+                <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{templatesLoading ? S.loading : S.noResults}</div>
               );
             })()
           ) : /* ── Documents: List or Grid View ── */
           sortedAndFiltered.length > 0 ? (
             viewMode === "grid" ? (
               /* Grid View */
-              <div className="p-3" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "1.5rem", overflowY: "auto" }}>
+              <div className="p-1" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "1.5rem", overflowY: "auto" }}>
                 {sortedAndFiltered.map((doc, index) => {
                   const FileIcon = getFileTypeIcon(doc.original_filename, doc.content_type);
                   const isImage = doc.content_type?.startsWith("image/");
                   return (
-                    <div key={doc.id || index} className="d-flex flex-column align-items-center gap-2 p-2 rounded-lg hover-highlight" style={{ cursor: "pointer", transition: "background 0.2s" }} role="button" onClick={() => handleView(doc)}>
+                    <div key={doc.id || index} className="align-items-center d-flex flex-column gap-2 hover-highlight p-0 rounded-lg" style={{ cursor: "pointer", transition: "background 0.2s" }} role="button" onClick={() => handleView(doc)}>
                       {isImage ? (
                         <img src={documentsAPI.fileUrl(doc.id)} alt={doc.original_filename} style={{ width: "100%", height: "100px", objectFit: "cover", borderRadius: "6px", border: "1px solid var(--bs-border-color)" }} />
                       ) : (
@@ -843,20 +843,20 @@ export default function Documents() {
                             backgroundColor: "var(--bs-gray-100)",
                           }}
                         >
-                          <FileIcon className="h-12 w-12 text-muted" />
+                          <FileIcon className="h-12 text-muted w-12" />
                         </div>
                       )}
                       <div className="small text-center text-truncate" style={{ maxWidth: "120px" }} title={doc.original_filename}>
                         {doc.original_filename ?? "(unnamed)"}
                       </div>
-                      <div className="text-xs text-muted">{formatFileSize(doc.file_size)}</div>
+                      <div className="text-muted text-xs">{formatFileSize(doc.file_size)}</div>
                     </div>
                   );
                 })}
               </div>
             ) : (
               /* List View */
-              <table className="table table-borderless table-hover mb-0">
+              <table className="mb-0 table table-borderless table-hover">
                 <colgroup>
                   <col style={{ width: "56px" }} />
                   <col />
@@ -865,27 +865,27 @@ export default function Documents() {
                 <tbody>
                   {sortedAndFiltered.map((doc, index) => (
                     <tr key={doc.id || index} className="align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
-                      <td className="text-center px-1" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
                         {selectionMode ? (
                           <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
                         ) : (
                           <Gate_Permission page="documents" permission="delete">
                             <button onClick={() => handleDeleteDocument(doc.id)} className="btn btn-circle btn-outline-danger" title="Delete document">
-                              <XMarkIcon className="h-4 w-4" />
+                              <XMarkIcon className="ui-icon-4" />
                             </button>
                           </Gate_Permission>
                         )}
                       </td>
 
                       {/* File Name */}
-                      <td className="px-3">
+                      <td className="px-1">
                         <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
                           {doc.original_filename ?? "(unnamed)"}
                         </div>
-                        <div className="small text-muted d-flex align-items-center gap-1 flex-wrap">
+                        <div className="align-items-center d-flex flex-wrap gap-1 small text-muted">
                           <span className="text-capitalize">{doc.entity_type || "Document"}</span>
                           {(docTagMap[String(doc.id)] || []).map((tag) => (
-                            <span key={tag} className="badge rounded-pill text-xxs fw-medium" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
+                            <span key={tag} className="badge fw-medium rounded-pill text-xxs" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
                               {tag}
                             </span>
                           ))}
@@ -893,9 +893,9 @@ export default function Documents() {
                       </td>
 
                       {/* View */}
-                      <td className="text-center px-2">
-                        <button onClick={() => handleView(doc)} className="btn btn-sm btn-outline-primary border-0 p-1" title="View">
-                          <MagnifyingGlassIcon className="h-4 w-4" />
+                      <td className="px-0 text-center">
+                        <button onClick={() => handleView(doc)} className="border-0 btn btn-outline-primary btn-sm p-1" title="View">
+                          <MagnifyingGlassIcon className="ui-icon-4" />
                         </button>
                       </td>
                     </tr>
@@ -904,14 +904,14 @@ export default function Documents() {
               </table>
             )
           ) : (
-            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
           )}
         </div>
 
         {selectedIds.size > 0 && !showTemplates && (
-          <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
-            <div className="d-flex align-items-center gap-2">
-              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+          <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="ui-flex-center-gap-2">
+              <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
@@ -964,11 +964,11 @@ export default function Documents() {
           {showTemplates ? (
             /* Templates mode controls */
             <>
-              <button type="button" onClick={handleNewTemplate} className="btn flex-shrink-0 d-flex align-items-center justify-content-center rounded-pill btn-app-primary px-3" title="New template">
-                <PlusIcon className="h-5 w-5" />
+              <button type="button" onClick={handleNewTemplate} className="align-items-center btn btn-app-primary d-flex flex-shrink-0 justify-content-center px-1 rounded-pill" title="New template">
+                <PlusIcon className="ui-icon-5" />
               </button>
               {/* Type filter for templates */}
-              <div className="position-relative">
+              <div className="ui-pos-rel">
                 <Button_Toolbar
                   icon={TagIcon}
                   label="Type"
@@ -977,7 +977,7 @@ export default function Documents() {
                   data-active={templateTypeFilter !== "all"}
                 />
                 {isTemplateTypeFilterOpen && (
-                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50" style={{ minWidth: "180px" }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={{ minWidth: "180px" }}>
                     {[
                       { value: "all", label: "All Types" },
                       { value: "email", label: "Email" },
@@ -996,7 +996,7 @@ export default function Documents() {
                               setTemplateTypeFilter(option.value);
                               setIsTemplateTypeFilterOpen(false);
                             }}
-                            className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
+                            className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
                           >
                             {option.label}
                           </button>
@@ -1124,17 +1124,17 @@ export default function Documents() {
 
       <Modal_Generic isOpen={showWorkflowStatus} onClose={() => setShowWorkflowStatus(false)} fullScreen={true} noPadding={true}>
         {showWorkflowStatus && workflowDoc && (
-          <div className="p-4 bg-white dark:bg-gray-900 h-full overflow-auto">
-            <div className="d-flex align-items-center justify-content-between mb-3">
+          <div className="bg-white dark:bg-gray-900 h-full overflow-auto p-1">
+            <div className="align-items-center d-flex justify-content-between mb-3">
               <div>
-                <h3 className="text-lg font-semibold mb-1">Workflow</h3>
-                <p className="text-sm text-muted mb-0">{workflowDoc.original_filename}</p>
+                <h3 className="font-semibold mb-1 text-lg">Workflow</h3>
+                <p className="mb-0 text-muted text-sm">{workflowDoc.original_filename}</p>
               </div>
               <div className="d-flex gap-2">
                 <button type="button" onClick={() => setShowWorkflowAssign(true)} className="btn btn-primary btn-sm">
                   Assign
                 </button>
-                <button type="button" onClick={() => setShowWorkflowStatus(false)} className="btn btn-outline-secondary btn-sm">
+                <button type="button" onClick={() => setShowWorkflowStatus(false)} className="btn ui-btn-outline-secondary-sm">
                   Close
                 </button>
               </div>
@@ -1151,24 +1151,24 @@ export default function Documents() {
       <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} noPadding={true} fullScreen={true} contentGravity="bottom">
         {isHistoryOpen && historyDoc && (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">History: {historyDoc.original_filename}</h3>
-            <div className="max-h-[40vh] overflow-auto border dark:border-gray-700 rounded">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg">History: {historyDoc.original_filename}</h3>
+            <div className="border dark:border-gray-700 max-h-[40vh] overflow-auto rounded">
+              <table className="dark:divide-gray-700 divide-gray-200 divide-y min-w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Note</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                    <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Date</th>
+                    <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Note</th>
+                    <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-white dark:bg-gray-900 dark:divide-gray-700 divide-gray-200 divide-y">
                   {historyItems.map((h) => (
                     <tr key={h.id}>
-                      <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{formatDateTime(h.created_at)}</td>
-                      <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">{h.note || "-"}</td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="dark:text-gray-300 px-1 py-0 text-gray-700 text-sm">{formatDateTime(h.created_at)}</td>
+                      <td className="dark:text-gray-300 px-1 py-0 text-gray-700 text-sm">{h.note || "-"}</td>
+                      <td className="px-1 py-0 text-sm">
                         <a
-                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                          className="dark:text-indigo-400 hover:text-indigo-800 text-indigo-600"
                           href={documentsAPI.historyFileUrl(h.id, {
                             download: true,
                           })}
@@ -1182,7 +1182,7 @@ export default function Documents() {
                   ))}
                   {historyItems.length === 0 && (
                     <tr>
-                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400" colSpan={3}>
+                      <td className="dark:text-gray-400 px-1 py-1 text-gray-500 text-sm" colSpan={3}>
                         No history yet.
                       </td>
                     </tr>
@@ -1192,10 +1192,10 @@ export default function Documents() {
             </div>
 
             <form onSubmit={handleReplaceContent} className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload new version</label>
+              <label className="block dark:text-gray-300 font-medium text-gray-700 text-sm">Upload new version</label>
               <input type="file" name="newVersionFile" className="form-control form-control-sm mb-2" />
-              <div className="form-floating mb-2">
-                <input type="text" id="newVersionNote" name="newVersionNote" placeholder="Version Note" className="form-control form-control-sm" />
+              <div className="form-floating ui-form-floating-mb2">
+                <input type="text" id="newVersionNote" name="newVersionNote" placeholder="Version Note" className="form-control ui-control-sm" />
                 <label htmlFor="newVersionNote">Version Note (optional)</label>
               </div>
               <div className="flex justify-end">
@@ -1212,21 +1212,21 @@ export default function Documents() {
       <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} noPadding={true} fullScreen={true} contentGravity="top">
         {isSignOpen && signDoc && (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Sign Document</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{signDoc.original_filename}</p>
+            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg">Sign Document</h3>
+            <p className="dark:text-gray-400 text-gray-600 text-sm">{signDoc.original_filename}</p>
 
             {signaturePreview ? (
               <>
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Your signature:</p>
-                  <div className="inline-block border rounded p-3 bg-white">
+                  <p className="dark:text-gray-400 mb-2 text-gray-600 text-sm">Your signature:</p>
+                  <div className="bg-white border inline-block p-1 rounded">
                     <img src={signaturePreview} alt="Your signature" style={{ maxWidth: "300px", maxHeight: "100px" }} />
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="dark:text-gray-400 mt-2 text-gray-500 text-xs">
                     Signing as: {user?.first_name} {user?.last_name}
                   </p>
                 </div>
-                <div className="flex justify-end space-x-3 pt-2">
+                <div className="flex justify-end pt-0 space-x-3">
                   <button type="button" onClick={() => setIsSignOpen(false)} className="btn btn-secondary" disabled={signLoading}>
                     Cancel
                   </button>
@@ -1236,16 +1236,16 @@ export default function Documents() {
                 </div>
               </>
             ) : signaturePreview === null && !signDoc ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+              <div className="py-1 text-center">
+                <div className="animate-spin border-b-2 border-primary-600 h-6 mx-auto rounded-full w-6"></div>
               </div>
             ) : (
               <>
-                <div className="text-center py-4">
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">No signature saved yet.</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500">Go to Employees &gt; Edit your profile &gt; Signature tab to create your signature.</p>
+                <div className="py-1 text-center">
+                  <p className="dark:text-gray-400 mb-2 text-gray-600">No signature saved yet.</p>
+                  <p className="dark:text-gray-500 text-gray-500 text-sm">Go to Employees &gt; Edit your profile &gt; Signature tab to create your signature.</p>
                 </div>
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end pt-0">
                   <button type="button" onClick={() => setIsSignOpen(false)} className="btn btn-secondary">
                     Close
                   </button>
@@ -1266,26 +1266,26 @@ export default function Documents() {
         noPadding={true}
         fullScreen={true}
       >
-        <div className="d-flex flex-column bg-white dark:bg-gray-900">
+        <div className="bg-white d-flex dark:bg-gray-900 flex-column">
           {/* Header */}
-          <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
-            <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Manage Categories</h6>
+          <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 flex-shrink-0 p-0">
+            <h6 className="ui-heading-strong">Manage Categories</h6>
           </div>
 
           {/* Scrollable list */}
-          <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2">
+          <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
             {categories.length === 0 ? (
-              <p className="text-muted small text-center py-4">No categories yet. Add one below.</p>
+              <p className="py-1 small text-center text-muted">No categories yet. Add one below.</p>
             ) : (
-              <div className="d-flex flex-column gap-2 pb-2">
+              <div className="d-flex flex-column gap-2 pb-0">
                 {categories.map((cat) => (
-                  <div key={cat.id} className="d-flex align-items-center justify-content-between p-2 border rounded">
+                  <div key={cat.id} className="align-items-center border d-flex justify-content-between p-0 rounded">
                     {/* Name + description (or inline edit inputs) */}
                     <div className="flex-grow-1 me-2" style={{ minWidth: 0 }}>
                       {editingCatId === cat.id ? (
                         <div className="d-flex gap-2">
-                          <input className="form-control form-control-sm" value={editingCatName} onChange={(e) => setEditingCatName(e.target.value)} placeholder="Name" />
-                          <input className="form-control form-control-sm" value={editingCatDesc} onChange={(e) => setEditingCatDesc(e.target.value)} placeholder="Description" />
+                          <input className="form-control ui-control-sm" value={editingCatName} onChange={(e) => setEditingCatName(e.target.value)} placeholder="Name" />
+                          <input className="form-control ui-control-sm" value={editingCatDesc} onChange={(e) => setEditingCatDesc(e.target.value)} placeholder="Description" />
                         </div>
                       ) : (
                         <>
@@ -1302,22 +1302,22 @@ export default function Documents() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="d-flex gap-1 flex-shrink-0">
+                    <div className="d-flex flex-shrink-0 gap-1">
                       {editingCatId === cat.id ? (
                         <>
-                          <button type="button" className="btn btn-sm btn-outline-success" style={{ padding: "0.2rem 0.4rem" }} onClick={() => saveEditCategory(cat.id)} title="Save">
+                          <button type="button" className="btn btn-outline-success btn-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => saveEditCategory(cat.id)} title="Save">
                             <CheckIcon style={{ width: 14, height: 14 }} />
                           </button>
-                          <button type="button" className="btn btn-sm btn-outline-secondary" style={{ padding: "0.2rem 0.4rem" }} onClick={cancelEditCategory} title="Cancel">
+                          <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={cancelEditCategory} title="Cancel">
                             <XMarkIcon style={{ width: 14, height: 14 }} />
                           </button>
                         </>
                       ) : (
                         <>
-                          <button type="button" className="btn btn-sm btn-outline-secondary" style={{ padding: "0.2rem 0.4rem" }} onClick={() => startEditCategory(cat)} title="Edit">
+                          <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => startEditCategory(cat)} title="Edit">
                             <PencilSquareIcon style={{ width: 14, height: 14 }} />
                           </button>
-                          <button type="button" className="btn btn-sm btn-outline-danger" style={{ padding: "0.2rem 0.4rem" }} onClick={() => handleDeleteCategory(cat.id)} title="Delete">
+                          <button type="button" className="btn btn-outline-danger btn-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => handleDeleteCategory(cat.id)} title="Delete">
                             <XMarkIcon style={{ width: 14, height: 14 }} />
                           </button>
                         </>
@@ -1330,26 +1330,26 @@ export default function Documents() {
           </div>
 
           {/* Footer — Add / Edit form */}
-          <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer">
+          <div className="app-footer-padding app-form-footer bg-white border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 flex-shrink-0">
             <form onSubmit={handleCreateCategory} className="d-flex flex-column gap-2">
-              <div className="small fw-semibold text-muted">New Category</div>
-              <div className="row g-2">
+              <div className="fw-semibold small text-muted">New Category</div>
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="text" id="newCatName" className="form-control form-control-sm" placeholder="Category Name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} required />
+                    <input type="text" id="newCatName" className="form-control ui-control-sm" placeholder="Category Name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} required />
                     <label htmlFor="newCatName">Category Name *</label>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="text" id="newCatDesc" className="form-control form-control-sm" placeholder="Description" value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} />
+                    <input type="text" id="newCatDesc" className="form-control ui-control-sm" placeholder="Description" value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} />
                     <label htmlFor="newCatDesc">Description</label>
                   </div>
                 </div>
               </div>
               <Footer_Actions
                 start={
-                  <button type="submit" className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center" title="Add category">
+                  <button type="submit" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-1" title="Add category">
                     <CheckIcon style={{ width: 18, height: 18 }} />
                   </button>
                 }
@@ -1360,7 +1360,7 @@ export default function Documents() {
                       setIsCategoriesOpen(false);
                       cancelEditCategory();
                     }}
-                    className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center"
+                    className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-1"
                     title="Close"
                   >
                     <XMarkIcon style={{ width: 14, height: 14 }} />
@@ -1373,7 +1373,7 @@ export default function Documents() {
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Document Page Controls">
-        <div className="small text-muted">Use these controls to manage document and template views.</div>
+        <div className="ui-small-muted">Use these controls to manage document and template views.</div>
         <div className="small">Search, filters, upload, and templates are in the page footer. Open Categories to add or edit category labels.</div>
         <Button_Toolbar
           icon={TagIcon}

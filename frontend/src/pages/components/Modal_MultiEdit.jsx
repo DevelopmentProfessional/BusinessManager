@@ -105,7 +105,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">{title}</div>
           <div className="component-header-center" />
@@ -114,9 +114,9 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
 
         <div className="component-body">
           <div className="component-body-inner">
-            <p className="small text-muted mb-3">Leave a field blank to keep it unchanged for all selected items. Only filled-in fields will be applied.</p>
+            <p className="mb-3 small text-muted">Leave a field blank to keep it unchanged for all selected items. Only filled-in fields will be applied.</p>
 
-            {saveError && <div className="alert alert-danger py-2 small">{saveError}</div>}
+            {saveError && <div className="alert alert-danger py-0 small">{saveError}</div>}
 
             {fields.map((field) => {
               const config = fieldConfig[field.key];
@@ -126,13 +126,13 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                   <label className="form-label fw-semibold small">{field.label}</label>
 
                   {field.type === "select" && (
-                    <div className="small text-muted mb-1">
+                    <div className="mb-1 small text-muted">
                       {config.commonValue !== null && config.commonValue !== undefined ? `Shared value: ${(field.options || []).find((opt) => String(opt.value) === String(config.commonValue))?.label || config.commonValue}` : "Mixed values across selected items"}
                     </div>
                   )}
 
                   {field.type === "select" ? (
-                    <select className="form-select form-select-sm" value={formData[field.key] ?? ""} onChange={(e) => handleChange(field.key, e.target.value)}>
+                    <select className="form-select ui-control-sm" value={formData[field.key] ?? ""} onChange={(e) => handleChange(field.key, e.target.value)}>
                       <option value="">— Leave unchanged —</option>
                       {(field.options || []).map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -143,7 +143,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                   ) : field.type === "number" ? (
                     <input
                       type="number"
-                      className="form-control form-control-sm"
+                      className="form-control ui-control-sm"
                       value={formData[field.key] ?? ""}
                       onChange={(e) => handleChange(field.key, e.target.value)}
                       placeholder={field.placeholder || (config.commonValue !== null && config.commonValue !== undefined ? `Shared value: ${config.commonValue}` : "Leave blank to keep unchanged")}
@@ -154,7 +154,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                   ) : (
                     <input
                       type="text"
-                      className="form-control form-control-sm"
+                      className="form-control ui-control-sm"
                       value={formData[field.key] ?? ""}
                       onChange={(e) => handleChange(field.key, e.target.value)}
                       placeholder={field.placeholder || (config.commonValue !== null && config.commonValue !== undefined ? `Shared value: ${config.commonValue}` : "Leave blank to keep unchanged")}
@@ -168,13 +168,13 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
 
         <div className="component-footer" style={{ position: "relative" }}>
           <div className="component-footer-left">
-            <button type="button" onClick={handleSave} disabled={saving || localSaving || !hasChanges} className="btn btn-success d-flex align-items-center gap-1" title="Apply changes to all selected items">
+            <button type="button" onClick={handleSave} disabled={saving || localSaving || !hasChanges} className="align-items-center btn btn-success d-flex gap-1" title="Apply changes to all selected items">
               <CheckIcon style={{ width: 16, height: 16 }} />
               {saving || localSaving ? "Saving…" : "Save"}
             </button>
           </div>
           <div className="component-footer-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

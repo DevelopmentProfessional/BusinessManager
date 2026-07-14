@@ -1,4 +1,4 @@
-﻿// FILE: Report_SelectorDropup.jsx
+// FILE: Report_SelectorDropup.jsx
 // Static report picker dropup for Reports page footer (not affected by profile align / view mode).
 
 import React, { useEffect, useRef } from "react";
@@ -49,20 +49,20 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
       <button
         type="button"
         onClick={() => onToggle(!open)}
-        className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-1 w-100"
+        className="align-items-center btn btn-outline-secondary btn-sm d-inline-flex gap-1 justify-content-center w-100"
         style={{ fontSize: "var(--app-btn-label-font-size, 0.875rem)", whiteSpace: "nowrap", minHeight: "2rem" }}
         aria-expanded={open}
         aria-haspopup="listbox"
         title={selectedTitle || "Report"}
       >
-        <ChartBarIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
-        <ChevronUpDownIcon className="h-4 w-4 flex-shrink-0" style={{ width: "1rem", height: "1rem" }} />
+        <ChartBarIcon className="flex-shrink-0 h-4 w-4" style={{ width: "1rem", height: "1rem" }} />
+        <ChevronUpDownIcon className="flex-shrink-0 h-4 w-4" style={{ width: "1rem", height: "1rem" }} />
       </button>
 
       {open && (
         <div
           role="listbox"
-          className="app-menu-panel position-absolute bottom-100 start-50 translate-middle-x mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-lg bg-white dark:bg-gray-900"
+          className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-2 position-absolute rounded-3 shadow-lg start-50 translate-middle-x"
           style={{
             zIndex: 1050,
             width: "100%",
@@ -70,7 +70,7 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
             maxWidth: "22rem",
           }}
         >
-          <div className="reports-selector-dropup__list overflow-y-auto flex-grow-1" style={{ maxHeight: "min(50vh, 22rem)" }}>
+          <div className="flex-grow-1 overflow-y-auto reports-selector-dropup__list" style={{ maxHeight: "min(50vh, 22rem)" }}>
             <div
               role="option"
               tabIndex={0}
@@ -85,10 +85,10 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
                   onToggle(false);
                 })
               }
-              className="reports-selector-dropup__item text-body border-bottom"
+              className="border-bottom reports-selector-dropup__item text-body"
               style={ITEM_STYLE}
             >
-              <CurrencyDollarIcon className="text-green-600 flex-shrink-0" style={{ width: "1.125rem", height: "1.125rem" }} />
+              <CurrencyDollarIcon className="flex-shrink-0 text-green-600" style={{ width: "1.125rem", height: "1.125rem" }} />
               <span>Financial</span>
             </div>
             {reports.map((report) => {

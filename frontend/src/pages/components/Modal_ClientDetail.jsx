@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Modal_Detail_Client.jsx
  *
@@ -145,7 +145,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
     const inner = (
       <>
         <div
-          className="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center"
+          className="align-items-center d-flex flex-shrink-0 justify-content-center rounded-circle"
           style={{
             width: 32,
             height: 32,
@@ -157,7 +157,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
         </div>
         <div className="flex-grow-1 min-w-0">
           <div className="fw-medium text-truncate">{svc?.name || "Service"}</div>
-          <div className="small text-muted">{formatDateTime(schedule.appointment_date)}</div>
+          <div className="ui-small-muted">{formatDateTime(schedule.appointment_date)}</div>
           {schedule.notes && <div className="small text-muted text-truncate">{schedule.notes}</div>}
         </div>
         <span className={`badge rounded-pill flex-shrink-0 ${isUpcoming ? "bg-primary" : "bg-secondary"}`}>{schedule.status || "scheduled"}</span>
@@ -166,14 +166,14 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
 
     if (isUpcoming) {
       return (
-        <button type="button" key={schedule.id} className="btn-unstyled btn-tab w-100 text-start d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700 bg-transparent border-0" onClick={() => onEditSchedule?.(schedule)}>
+        <button type="button" key={schedule.id} className="align-items-start bg-transparent border-0 border-bottom border-gray-100 btn-tab btn-unstyled d-flex dark:border-gray-700 gap-2 px-1 py-0 text-start w-100" onClick={() => onEditSchedule?.(schedule)}>
           {inner}
         </button>
       );
     }
 
     return (
-      <div key={schedule.id} className="d-flex align-items-start gap-2 py-2 px-3 border-bottom border-gray-100 dark:border-gray-700">
+      <div key={schedule.id} className="align-items-start border-bottom border-gray-100 d-flex dark:border-gray-700 gap-2 px-1 py-0">
         {inner}
       </div>
     );
@@ -181,25 +181,25 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+      <div className="ui-page-shell">
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Service History</h6>
+        <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
+          <h6 className="ui-heading-strong">Service History</h6>
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
+        <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
           {loading && (
-            <div className="d-flex justify-content-center py-4">
+            <div className="d-flex justify-content-center py-1">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
             </div>
           )}
-          {error && <div className="alert alert-danger py-2 mx-3 small">{error}</div>}
+          {error && <div className="alert alert-danger mx-3 py-0 small">{error}</div>}
 
           {!loading && !error && (
             <>
               {schedules.length === 0 && (
-                <div className="text-center text-muted py-4">
+                <div className="py-1 text-center text-muted">
                   <SparklesIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
                   <div>No service history yet</div>
                 </div>
@@ -208,7 +208,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
               {/* Past — oldest at top */}
               {past.length > 0 && (
                 <div className="mb-2">
-                  <div className="fw-semibold small text-muted mb-1 px-3 pt-2">Past ({past.length})</div>
+                  <div className="fw-semibold mb-1 pt-0 px-1 small text-muted">Past ({past.length})</div>
                   {past.map((s) => renderRow(s, false))}
                 </div>
               )}
@@ -216,7 +216,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
               {/* Upcoming — nearest first, furthest at bottom; tap to edit */}
               {upcoming.length > 0 && (
                 <div>
-                  <div className="fw-semibold small text-primary mb-1 px-3 pt-2">Upcoming ({upcoming.length}) — tap to edit</div>
+                  <div className="fw-semibold mb-1 pt-0 px-1 small text-primary">Upcoming ({upcoming.length}) — tap to edit</div>
                   {upcoming.map((s) => renderRow(s, true))}
                 </div>
               )}
@@ -225,7 +225,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
           <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
@@ -280,11 +280,11 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
   return (
     <div ref={rootRef} className="position-relative purchase-period-filter-dropup">
       <button type="button" onClick={() => setOpen((v) => !v)} className={`app-menu-trigger btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`} aria-expanded={open} aria-haspopup="listbox" title="Filter by month">
-        <FunnelIcon className="h-4 w-4 flex-shrink-0" />
+        <FunnelIcon className="flex-shrink-0 h-4 w-4" />
         <span className="text-nowrap">{activeLabel}</span>
       </button>
       {open && (
-        <div role="listbox" className="app-menu-panel position-absolute bottom-100 start-0 mb-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}>
+        <div role="listbox" className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-1 overflow-auto position-absolute rounded-3 shadow-sm start-0" style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}>
           <div
             role="option"
             tabIndex={0}
@@ -293,13 +293,13 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
               onChange(null);
               setOpen(false);
             }}
-            className={`app-menu-item py-2 px-3${!value ? " bg-primary text-white" : " text-body"}`}
+            className={`app-menu-item py-0 px-1${!value ? " bg-primary text-white" : " text-body"}`}
             style={{ cursor: "pointer", width: "100%", margin: 0 }}
           >
             All periods
           </div>
           {periods.length === 0 ? (
-            <div className="app-menu-empty py-2 px-3 text-muted">No dated transactions</div>
+            <div className="app-menu-empty px-1 py-0 text-muted">No dated transactions</div>
           ) : (
             periods.map((period) => {
               const isActive = value?.year === period.year && value?.month === period.month;
@@ -313,7 +313,7 @@ function PurchasePeriodFilterDropup({ periods, value, onChange }) {
                     onChange({ year: period.year, month: period.month });
                     setOpen(false);
                   }}
-                  className={`app-menu-item py-2 px-3${isActive ? " bg-primary text-white" : " text-body"}`}
+                  className={`app-menu-item py-0 px-1${isActive ? " bg-primary text-white" : " text-body"}`}
                   style={{ cursor: "pointer", width: "100%", margin: 0 }}
                 >
                   {period.label}
@@ -464,29 +464,29 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Purchase History</h6>
+      <div className="ui-page-shell">
+        <div className="bg-white border-bottom border-gray-200 dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
+          <h6 className="ui-heading-strong">Purchase History</h6>
         </div>
 
-        <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
+        <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
           {loading && (
-            <div className="d-flex justify-content-center py-4">
+            <div className="d-flex justify-content-center py-1">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
             </div>
           )}
 
-          {error && <div className="alert alert-danger py-2 mx-3 small">{error}</div>}
+          {error && <div className="alert alert-danger mx-3 py-0 small">{error}</div>}
 
           {!loading && !error && tab === "pos" && filteredTransactions.length === 0 && (
-            <div className="text-center text-muted py-4">
+            <div className="py-1 text-center text-muted">
               <ShoppingBagIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
               <div>{transactions.length === 0 ? "No purchases yet" : "No POS purchases for this period"}</div>
             </div>
           )}
 
           {!loading && !error && tab === "portal" && filteredPortalOrders.length === 0 && (
-            <div className="text-center text-muted py-4">
+            <div className="py-1 text-center text-muted">
               <ShoppingBagIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
               <div>{portalOrders.length === 0 ? "No portal orders yet" : "No portal orders for this period"}</div>
             </div>
@@ -496,28 +496,28 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
             <div>
               {filteredTransactions.map((tx) => (
                 <div key={tx.id} className="border-bottom border-gray-100 dark:border-gray-700">
-                  <div className="d-flex align-items-center">
-                    <button type="button" onClick={() => toggleExpand(tx.id)} className="flex-grow-1 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0" style={{ cursor: "pointer" }}>
+                  <div className="align-items-center d-flex">
+                    <button type="button" onClick={() => toggleExpand(tx.id)} className="align-items-center bg-transparent border-0 d-flex flex-grow-1 gap-2 px-1 py-0 text-start" style={{ cursor: "pointer" }}>
                       <div className="flex-grow-1">
                         <div className="fw-medium">${tx.total?.toFixed(2) ?? "0.00"}</div>
-                        <div className="small text-muted">{formatDate(tx.created_at)}</div>
+                        <div className="ui-small-muted">{formatDate(tx.created_at)}</div>
                       </div>
-                      <div className="d-flex align-items-center gap-2">
-                        <span className="badge bg-secondary-subtle text-secondary text-capitalize">{tx.payment_method || "cash"}</span>
-                        <span className="text-muted small">{expandedId === tx.id ? "▲" : "▼"}</span>
+                      <div className="ui-flex-center-gap-2">
+                        <span className="badge bg-secondary-subtle text-capitalize text-secondary">{tx.payment_method || "cash"}</span>
+                        <span className="ui-small-muted">{expandedId === tx.id ? "▲" : "▼"}</span>
                       </div>
                     </button>
-                    <button type="button" onClick={() => handleOpenInvoice(tx)} className="btn btn-outline-secondary btn-sm me-2 flex-shrink-0" title="Generate invoice for this transaction" style={{ fontSize: 10, padding: "2px 6px" }}>
+                    <button type="button" onClick={() => handleOpenInvoice(tx)} className="btn btn-outline-secondary btn-sm flex-shrink-0 me-2" title="Generate invoice for this transaction" style={{ fontSize: 10, padding: "2px 6px" }}>
                       Invoice
                     </button>
                   </div>
 
                   {expandedId === tx.id && (
-                    <div className="pb-2 px-3">
+                    <div className="pb-0 px-1">
                       {(items[tx.id] || []).length === 0 ? (
-                        <div className="small text-muted">No items found</div>
+                        <div className="ui-small-muted">No items found</div>
                       ) : (
-                        <table className="table table-sm table-borderless mb-0">
+                        <table className="mb-0 table table-borderless table-sm">
                           <tbody>
                             {(items[tx.id] || []).map((item) => (
                               <tr key={item.id}>
@@ -525,17 +525,17 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                                   <span className={`badge me-1 ${item.item_type === "service" ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary"}`}>{item.item_type}</span>
                                   {item.item_name}
                                 </td>
-                                <td className="py-1 small text-muted text-end">x{item.quantity}</td>
-                                <td className="py-1 small fw-medium text-end">${item.line_total?.toFixed(2)}</td>
+                                <td className="py-1 small text-end text-muted">x{item.quantity}</td>
+                                <td className="fw-medium py-1 small text-end">${item.line_total?.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot>
                             <tr>
-                              <td colSpan={2} className="small text-muted ps-0 pt-1">
+                              <td colSpan={2} className="ps-0 pt-1 small text-muted">
                                 Tax
                               </td>
-                              <td className="small text-end pt-1">${tx.tax_amount?.toFixed(2)}</td>
+                              <td className="pt-1 small text-end">${tx.tax_amount?.toFixed(2)}</td>
                             </tr>
                             <tr>
                               <td colSpan={2} className="fw-semibold ps-0">
@@ -557,40 +557,40 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
             <div>
               {filteredPortalOrders.map((order) => (
                 <div key={order.id} className="border-bottom border-gray-100 dark:border-gray-700">
-                  <div className="d-flex align-items-center">
-                    <button type="button" onClick={() => togglePortalExpand(order.id)} className="flex-grow-1 text-start d-flex align-items-center gap-2 py-2 px-3 bg-transparent border-0" style={{ cursor: "pointer" }}>
+                  <div className="align-items-center d-flex">
+                    <button type="button" onClick={() => togglePortalExpand(order.id)} className="align-items-center bg-transparent border-0 d-flex flex-grow-1 gap-2 px-1 py-0 text-start" style={{ cursor: "pointer" }}>
                       <div className="flex-grow-1">
                         <div className="fw-medium">${order.total?.toFixed(2) ?? "0.00"}</div>
-                        <div className="small text-muted">{formatDate(order.created_at)}</div>
+                        <div className="ui-small-muted">{formatDate(order.created_at)}</div>
                       </div>
-                      <div className="d-flex align-items-center gap-2">
+                      <div className="ui-flex-center-gap-2">
                         <span className={`badge ${PORTAL_STATUS_CLASSES[order.status] || "bg-secondary-subtle text-secondary"}`}>{PORTAL_STATUS_LABELS[order.status] || order.status || "Payment Pending"}</span>
-                        <span className="text-muted small">{expandedId === order.id ? "▲" : "▼"}</span>
+                        <span className="ui-small-muted">{expandedId === order.id ? "▲" : "▼"}</span>
                       </div>
                     </button>
                   </div>
 
                   {expandedId === order.id && (
-                    <div className="pb-2 px-3">
-                      {statusUpdateError && <div className="alert alert-warning py-1 px-2 mb-2 small">{statusUpdateError}</div>}
-                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                        <div className="small text-muted">
+                    <div className="pb-0 px-1">
+                      {statusUpdateError && <div className="alert alert-warning mb-2 px-0 py-1 small">{statusUpdateError}</div>}
+                      <div className="align-items-center d-flex flex-wrap gap-2 justify-content-between mb-2">
+                        <div className="ui-small-muted">
                           <div>Created: {formatDate(order.created_at)}</div>
                           {order.paid_at && <div>Paid: {formatDate(order.paid_at)}</div>}
                           {order.fulfilled_at && <div>Fulfilled: {formatDate(order.fulfilled_at)}</div>}
                         </div>
                         <div className="d-flex flex-wrap gap-2">
                           {(NEXT_PORTAL_STATUSES[order.status] || []).map((nextStatus) => (
-                            <button key={nextStatus} type="button" onClick={() => handlePortalStatusUpdate(order, nextStatus)} className="btn btn-outline-secondary btn-sm" style={{ fontSize: 11 }} disabled={statusUpdatingOrderId === order.id}>
+                            <button key={nextStatus} type="button" onClick={() => handlePortalStatusUpdate(order, nextStatus)} className="btn ui-btn-outline-secondary-sm" style={{ fontSize: 11 }} disabled={statusUpdatingOrderId === order.id}>
                               {PORTAL_STATUS_LABELS[nextStatus] || nextStatus}
                             </button>
                           ))}
                         </div>
                       </div>
                       {(portalItems[order.id] || []).length === 0 ? (
-                        <div className="small text-muted">No items found</div>
+                        <div className="ui-small-muted">No items found</div>
                       ) : (
-                        <table className="table table-sm table-borderless mb-0">
+                        <table className="mb-0 table table-borderless table-sm">
                           <tbody>
                             {(portalItems[order.id] || []).map((item) => {
                               const selectedOptions = parseOrderOptions(item.options_json);
@@ -605,18 +605,18 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                                       </div>
                                     )}
                                   </td>
-                                  <td className="py-1 small text-muted text-end">x{item.quantity}</td>
-                                  <td className="py-1 small fw-medium text-end">${item.line_total?.toFixed(2)}</td>
+                                  <td className="py-1 small text-end text-muted">x{item.quantity}</td>
+                                  <td className="fw-medium py-1 small text-end">${item.line_total?.toFixed(2)}</td>
                                 </tr>
                               );
                             })}
                           </tbody>
                           <tfoot>
                             <tr>
-                              <td colSpan={2} className="small text-muted ps-0 pt-1">
+                              <td colSpan={2} className="ps-0 pt-1 small text-muted">
                                 Tax
                               </td>
-                              <td className="small text-end pt-1">${order.tax_amount?.toFixed(2)}</td>
+                              <td className="pt-1 small text-end">${order.tax_amount?.toFixed(2)}</td>
                             </tr>
                             <tr>
                               <td colSpan={2} className="fw-semibold ps-0">
@@ -635,10 +635,10 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
           )}
         </div>
 
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
           <Footer_Actions
             start={
-              <div className="d-flex align-items-center gap-1 flex-wrap">
+              <div className="align-items-center d-flex flex-wrap gap-1">
                 <PurchasePeriodFilterDropup periods={availablePeriods} value={periodFilter} onChange={setPeriodFilter} />
                 <button
                   type="button"
@@ -650,7 +650,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                 >
                   POS
                   {posCount > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
+                    <span className="badge bg-danger position-absolute rounded-pill start-100 top-0 translate-middle" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
                       {posCount > 99 ? "99+" : posCount}
                     </span>
                   )}
@@ -665,7 +665,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                 >
                   Portal
                   {portalCount > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
+                    <span className="badge bg-danger position-absolute rounded-pill start-100 top-0 translate-middle" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
                       {portalCount > 99 ? "99+" : portalCount}
                     </span>
                   )}
@@ -802,28 +802,28 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+      <div className="ui-page-shell">
         {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
-        <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center gap-2 bg-white dark:bg-gray-900">
-          <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Client Details</h6>
+        <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 gap-2 justify-content-between p-0">
+          <h6 className="ui-heading-strong">Client Details</h6>
           {canDelete && (
-            <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
+            <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
               <XMarkIcon style={{ width: 18, height: 18 }} />
             </button>
           )}
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-grow-1 min-h-0 overflow-auto px-3 pt-3 pe-2 no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pe-0 pt-1 px-1 text-gray-900">
           {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
           {/* Avatar + name + tier */}
-          <div className="d-flex align-items-center gap-3 mb-3">
-            <div className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0" style={{ width: 56, height: 56, background: avatarColor, fontSize: "1.25rem" }}>
+          <div className="align-items-center d-flex gap-3 mb-3">
+            <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white" style={{ width: 56, height: 56, background: avatarColor, fontSize: "1.25rem" }}>
               {initials}
             </div>
             <div className="min-w-0">
-              <div className="fw-bold fs-6 text-truncate">{formData.name || "Client"}</div>
+              <div className="fs-6 fw-bold text-truncate">{formData.name || "Client"}</div>
               <span className={`badge rounded-pill ${getTierBadgeClass(badgeMembershipNames.length)}`}>
                 {getMembershipLabel(badgeMembershipNames)} · {formData.membership_points} pts
               </span>
@@ -831,36 +831,36 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex gap-3 items-center mb-3">
             <button
               type="button"
               onClick={() => setShowPurchaseHistory(true)}
-              className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full shadow-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all relative"
+              className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white flex flex-shrink-0 h-12 hover:bg-gray-200 items-center justify-center relative rounded-full shadow-lg text-gray-800 transition-all w-12"
               title="Purchase History"
             >
               <ArrowTrendingUpIcon style={{ width: 24, height: 24 }} />
-              {purchaseHistoryCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{purchaseHistoryCount}</span>}
+              {purchaseHistoryCount > 0 && <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{purchaseHistoryCount}</span>}
             </button>
-            <button type="button" onClick={() => setShowCart(true)} className="relative flex-shrink-0 w-12 h-12 flex items-center justify-center bg-secondary-600 hover:bg-secondary-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all" title="View Cart">
+            <button type="button" onClick={() => setShowCart(true)} className="bg-secondary-600 flex flex-shrink-0 h-12 hover:bg-secondary-700 hover:shadow-xl items-center justify-center relative rounded-full shadow-lg text-white transition-all w-12" title="View Cart">
               <ShoppingCartIcon style={{ width: 24, height: 24 }} />
-              {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">{cartCount}</span>}
+              {cartCount > 0 && <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{cartCount}</span>}
             </button>
           </div>
 
           {/* ─── 8 EDITABLE FORM FIELDS ──────────────────────────────────── */}
-          <div className="form-floating mb-2">
+          <div className="form-floating ui-form-floating-mb2">
             <input type="text" id="dc_name" name="name" value={formData.name} onChange={handleChange} className={`form-control form-control-sm ${fieldErrors.name ? "is-invalid" : ""}`} placeholder="Name" required />
             <label htmlFor="dc_name">Name *</label>
             {fieldErrors.name && <div className="invalid-feedback">{fieldErrors.name}</div>}
           </div>
 
-          <div className="form-floating mb-2">
-            <input type="email" id="dc_email" name="email" value={formData.email} onChange={handleChange} className="form-control form-control-sm" placeholder="Email" />
+          <div className="form-floating ui-form-floating-mb2">
+            <input type="email" id="dc_email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
             <label htmlFor="dc_email">Email</label>
           </div>
 
-          <div className="form-floating mb-2">
-            <input type="tel" id="dc_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control form-control-sm" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number format: (555) 555-5555" />
+          <div className="form-floating ui-form-floating-mb2">
+            <input type="tel" id="dc_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control ui-control-sm" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number format: (555) 555-5555" />
             <label htmlFor="dc_phone">Phone</label>
           </div>
 
@@ -868,17 +868,17 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           {formData.membership_ids.length > 0 && (
             <>
               <hr className="my-2" />
-              <div className="small fw-semibold text-muted mb-2">Subscriptions</div>
-              <div className="row g-2 mb-2">
+              <div className="fw-semibold mb-2 small text-muted">Subscriptions</div>
+              <div className="g-2 mb-2 row">
                 <div className="col-12">
-                  <div className="border rounded p-2">
-                    <div className="small text-muted mb-2">Assign one or more subscriptions to this client.</div>
+                  <div className="border p-0 rounded">
+                    <div className="mb-2 ui-small-muted">Assign one or more subscriptions to this client.</div>
                     <div className="d-flex flex-column gap-2" style={{ maxHeight: "170px", overflowY: "auto" }}>
                       {memberships.length === 0 ? (
-                        <div className="small text-muted">No subscriptions created yet.</div>
+                        <div className="ui-small-muted">No subscriptions created yet.</div>
                       ) : (
                         memberships.map((membership) => (
-                          <label key={membership.id} className="d-flex align-items-start gap-2">
+                          <label key={membership.id} className="align-items-start d-flex gap-2">
                             <input type="checkbox" checked={formData.membership_ids.includes(membership.id)} onChange={() => toggleMembership(membership.id)} />
                             <span className="small">
                               <span className="fw-semibold">{membership.name}</span>
@@ -892,19 +892,19 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="number" id="dc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control form-control-sm" placeholder="0" />
+                    <input type="number" id="dc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control ui-control-sm" placeholder="0" />
                     <label htmlFor="dc_points">Points</label>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="date" id="dc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control form-control-sm" placeholder="Member Since" />
+                    <input type="date" id="dc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control ui-control-sm" placeholder="Member Since" />
                     <label htmlFor="dc_since">Member Since</label>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="date" id="dc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control form-control-sm" placeholder="Expires" />
+                    <input type="date" id="dc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control ui-control-sm" placeholder="Expires" />
                     <label htmlFor="dc_expires">Expires</label>
                   </div>
                 </div>
@@ -914,20 +914,20 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
           {/* Address & Notes */}
           <hr className="my-2" />
-          <div className="form-floating mb-2">
-            <textarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Address" />
+          <div className="form-floating ui-form-floating-mb2">
+            <textarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Address" />
             <label htmlFor="dc_address">Address</label>
           </div>
 
-          <div className="form-floating mb-2">
-            <textarea id="dc_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
+          <div className="form-floating ui-form-floating-mb2">
+            <textarea id="dc_notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
             <label htmlFor="dc_notes">Notes</label>
           </div>
         </div>
 
         {/* ─── 9 FIXED FOOTER ──────────────────────────────────────────────── */}
         {/* Fixed footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
           <Footer_Actions start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />} center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />} />
         </div>
       </div>

@@ -181,10 +181,10 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     >
       <div className={`d-flex flex-column h-100 w-100 ${dm ? "bg-dark text-light" : "bg-white text-dark"}`} style={{ margin: 0, padding: 0, border: "none" }}>
         {/* ── Header ── */}
-        <div className={`flex-shrink-0 px-3 py-2 ${dm ? "border-secondary" : "border-bottom"}`} style={{ margin: 0, backgroundColor: dm ? "#2d3139" : "#f8f9fa" }}>
-          <div className="d-flex align-items-center gap-2">
+        <div className={`flex-shrink-0 px-1 py-0 ${dm ? "border-secondary" : "border-bottom"}`} style={{ margin: 0, backgroundColor: dm ? "#2d3139" : "#f8f9fa" }}>
+          <div className="ui-flex-center-gap-2">
             <div
-              className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
+              className="align-items-center d-flex fw-bold justify-content-center rounded-circle text-white"
               style={{
                 width: 34,
                 height: 34,
@@ -208,17 +208,17 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         </div>
 
         {/* ── Messages ── */}
-        <div className={`flex-grow-1 min-h-0 overflow-auto px-3 py-2 ${dm ? "bg-dark" : "bg-light"}`} style={{ minHeight: 0, margin: 0, padding: "12px" }}>
+        <div className={`flex-grow-1 min-h-0 overflow-auto px-1 py-0 ${dm ? "bg-dark" : "bg-light"}`} style={{ minHeight: 0, margin: 0, padding: "12px" }}>
           {loading ? (
-            <div className="text-center text-muted small py-5">Loading messages…</div>
+            <div className="py-1 small text-center text-muted">Loading messages…</div>
           ) : messages.length === 0 ? (
-            <div className="text-center text-muted small py-5">No messages yet. Say hello!</div>
+            <div className="py-1 small text-center text-muted">No messages yet. Say hello!</div>
           ) : (
             grouped.map((item) => {
               if (item.type === "date") {
                 return (
-                  <div key={item.key} className="text-center my-2">
-                    <span className={`badge rounded-pill px-3 ${dm ? "bg-secondary" : "bg-white text-muted border"}`} style={{ fontSize: "0.68rem" }}>
+                  <div key={item.key} className="my-2 text-center">
+                    <span className={`badge rounded-pill px-1 ${dm ? "bg-secondary" : "bg-white text-muted border"}`} style={{ fontSize: "0.68rem" }}>
                       {item.label}
                     </span>
                   </div>
@@ -228,7 +228,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
               const isMine = String(msg.sender_id) === String(currentUser?.id);
               return (
                 <div key={item.key} className={`d-flex mb-2 ${isMine ? "justify-content-end" : "justify-content-start"}`}>
-                  <div className={`px-3 py-2 rounded-3 ${isMine ? "bg-primary text-white" : dm ? "bg-secondary text-light" : "bg-white border text-dark"}`} style={{ maxWidth: "75%", fontSize: "0.875rem", wordBreak: "break-word" }}>
+                  <div className={`px-1 py-0 rounded-3 ${isMine ? "bg-primary text-white" : dm ? "bg-secondary text-light" : "bg-white border text-dark"}`} style={{ maxWidth: "75%", fontSize: "0.875rem", wordBreak: "break-word" }}>
                     {msg.message_type === "document" ? (
                       <a href={documentsAPI.fileUrl(msg.document_id)} target="_blank" rel="noopener noreferrer" className={`d-flex align-items-center gap-2 text-decoration-none ${isMine ? "text-white" : dm ? "text-light" : "text-dark"}`}>
                         <DocumentIcon style={{ width: 18, height: 18, flexShrink: 0 }} />
@@ -253,17 +253,17 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         {/* ── Document Picker ── */}
         {showDocPicker && (
           <div className={`border-top flex-shrink-0 ${dm ? "bg-dark border-secondary" : "bg-white"}`} style={{ maxHeight: 200, overflowY: "auto", margin: 0 }}>
-            <div className="d-flex align-items-center gap-2 px-3 pt-2 pb-1">
+            <div className="align-items-center d-flex gap-2 pb-1 pt-0 px-1">
               <input type="text" autoFocus className={`form-control form-control-sm ${dm ? "bg-secondary text-light border-secondary placeholder-light" : ""}`} placeholder="Search documents…" value={docSearch} onChange={(e) => setDocSearch(e.target.value)} />
-              <button type="button" className="btn btn-sm btn-link text-muted p-0" onClick={() => setShowDocPicker(false)}>
+              <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={() => setShowDocPicker(false)}>
                 <XMarkIcon style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className="px-3 pb-2">
+            <div className="pb-0 px-1">
               {docsLoading ? (
-                <div className="text-muted small text-center py-2">Loading…</div>
+                <div className="py-0 small text-center text-muted">Loading…</div>
               ) : filteredDocs.length === 0 ? (
-                <div className="text-muted small text-center py-2">No documents found</div>
+                <div className="py-0 small text-center text-muted">No documents found</div>
               ) : (
                 filteredDocs.map((doc) => (
                   <button key={doc.id} type="button" className={`btn btn-sm w-100 text-start d-flex align-items-center gap-2 mb-1 ${dm ? "btn-outline-secondary" : "btn-outline-secondary"}`} onClick={() => handleSendDocument(doc)}>
@@ -272,7 +272,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                       {doc.original_filename || doc.filename}
                     </span>
                     {doc.description && (
-                      <span className="text-muted ms-auto text-truncate" style={{ fontSize: "0.72rem", maxWidth: 120 }}>
+                      <span className="ms-auto text-muted text-truncate" style={{ fontSize: "0.72rem", maxWidth: 120 }}>
                         {doc.description}
                       </span>
                     )}
@@ -286,9 +286,9 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         {/* ── Input ── */}
         <div className={`flex-shrink-0 border-top app-footer-padding app-form-footer app-standard-footer ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
           <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
-          <div className="d-flex align-items-center gap-1 mt-2">
+          <div className="align-items-center d-flex gap-1 mt-2">
             <div className="flex-grow-1 w-100">
-              <form onSubmit={handleSend} className="d-flex align-items-center gap-1 justify-content-center">
+              <form onSubmit={handleSend} className="align-items-center d-flex gap-1 justify-content-center">
                 <button
                   type="button"
                   title="Share a document"
@@ -321,7 +321,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                     }
                   }}
                 />
-                <button type="submit" className="btn btn-sm btn-primary p-1 d-flex align-items-center justify-content-center" disabled={!text.trim() || sending} title="Send" >
+                <button type="submit" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center p-1" disabled={!text.trim() || sending} title="Send" >
                   <PaperAirplaneIcon style={{ width: 18, height: 18 }} />
                 </button>
               </form>

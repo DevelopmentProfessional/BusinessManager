@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Form_Item.jsx
  *
@@ -433,12 +433,12 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+    <div className="ui-page-shell">
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
-        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{item ? "Edit" : "Add Item"}</h6>
+      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+        <h6 className="ui-heading-strong">{item ? "Edit" : "Add Item"}</h6>
         {!item && onBulkImport && (
-          <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm p-1 text-gray-500 dark:text-gray-400" style={{ lineHeight: 1 }}>
+          <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm dark:text-gray-400 p-1 text-gray-500" style={{ lineHeight: 1 }}>
             <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
           </button>
         )}
@@ -469,14 +469,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
       {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
       {/* Container_Scrollable Content Area */}
-      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
         <form id="item-form" onSubmit={handleSubmit}>
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>
             {/* Image area - layout matches Edit Item */}
             <div className="flex-shrink-0" style={{ width: "45%" }}>
               {/* Preview */}
-              <div className="position-relative" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", width: "100%", aspectRatio: "1" }}>
+              <div className="ui-pos-rel" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", width: "100%", aspectRatio: "1" }}>
                 {pendingPhotoUrl ? (
                   <img src={pendingPhotoUrl} alt="Captured" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 ) : formData.image_url ? (
@@ -507,9 +507,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               </div>
 
               {/* Add photo button strip */}
-              <div className="mt-1 d-flex align-items-center gap-1">
+              <div className="align-items-center d-flex gap-1 mt-1">
                 {addImageMode === null && (
-                  <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
+                  <button type="button" onClick={() => setAddImageMode("camera")} className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center" title="Add photo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                       <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -520,8 +520,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
               {/* Camera/URL panel */}
               {addImageMode !== null && (
-                <div className="mt-1 p-2 border rounded bg-light dark:bg-gray-800 dark:border-gray-700">
-                  <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="bg-light border dark:bg-gray-800 dark:border-gray-700 mt-1 p-0 rounded">
+                  <div className="align-items-center d-flex gap-2 mb-2">
                     <div className="btn-group btn-group-sm">
                       <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
                         Camera
@@ -538,14 +538,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       onClick={() => {
                         setAddImageMode(null);
                       }}
-                      className="btn btn-link btn-sm p-0 ms-auto"
+                      className="btn btn-link btn-sm ms-auto p-0"
                       style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
                     >
                       ✕
                     </button>
                   </div>
                   {addImageMode === "camera" && (
-                    <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                    <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                         <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -556,7 +556,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   {addImageMode === "upload" && (
                     <div>
                       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
                           <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />
@@ -567,7 +567,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   )}
                   {addImageMode === "url" && (
                     <div className="d-flex gap-1">
-                      <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} />
+                      <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
                       <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">
                         OK
                       </button>
@@ -578,47 +578,47 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
             </div>
 
             {/* Stock fields stacked on the right */}
-            <div className="flex-grow-1 d-flex flex-column  gap-1">
+            <div className="d-flex flex-column flex-grow-1 gap-1">
               {!isLocation && !isAsset ? (
                 <>
                   <div>
                     <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
                   </div>
                   <div className="d-flex gap-2 mb-1">
-                    <div className="form-floating flex-grow-1">
-                      <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control form-control-sm" placeholder="Min Count" min="0" />
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control ui-control-sm" placeholder="Min Count" min="0" />
                       <label htmlFor="min_stock_level">Min Count</label>
                     </div>
-                    <div className="form-floating flex-grow-1">
-                      <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control form-control-sm" placeholder="Current Count" min="0" />
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control ui-control-sm" placeholder="Current Count" min="0" />
                       <label htmlFor="quantity">Current Count</label>
                     </div>
                   </div>
 
                   <div className="d-flex gap-2 mb-1">
-                    <div className="form-floating flex-grow-1">
-                      <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
                       <label htmlFor="cost">Cost</label>
                     </div>
-                    <div className="form-floating flex-grow-1">
-                      <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
                       <label htmlFor="price">Price</label>
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="d-flex flex-column gap-2">
-                  <div className="d-flex align-items-center gap-2 text-success">
-                    <CheckCircleSolid className="h-5 w-5" />
+                  <div className="align-items-center d-flex gap-2 text-success">
+                    <CheckCircleSolid className="ui-icon-5" />
                     <div>
                       <div className="fw-medium">Status: OK</div>
-                      <div className="small text-muted">{isLocation ? "Locations do not track stock" : "To add more units, scroll down to Asset Units and select Add Unit"}</div>
+                      <div className="ui-small-muted">{isLocation ? "Locations do not track stock" : "To add more units, scroll down to Asset Units and select Add Unit"}</div>
                     </div>
                   </div>
                   {isLocation && (
                     <div className="mb-2">
                       <div className="form-floating">
-                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
                         <label htmlFor="cost">Cost</label>
                       </div>
                     </div>
@@ -626,12 +626,12 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   {isAsset && (
                     <>
                       <div className="d-flex gap-2 mb-1">
-                        <div className="form-floating flex-grow-1">
-                          <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control form-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <div className="flex-grow-1 form-floating">
+                          <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
                           <label htmlFor="cost">Cost (purchase / acquisition)</label>
                         </div>
-                        <div className="form-floating flex-grow-1">
-                          <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="Price" step="0.01" min="0" />
+                        <div className="flex-grow-1 form-floating">
+                          <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
                           <label htmlFor="price">Price (rental / resale)</label>
                         </div>
                       </div>
@@ -645,16 +645,16 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
           {/* ─── 8 RENDER: CORE FIELDS ───────────────────────────────────────────── */}
           {/* Full-width form fields below */}
           <div className="d-flex gap-2 mb-2">
-            <div className="form-floating flex-grow-1 mb-0">
-              <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Name" required />
+            <div className="flex-grow-1 form-floating mb-0">
+              <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
               <label htmlFor="name">Name *</label>
             </div>
             {!isLocation && (
-              <div className="form-floating flex-grow-1 mb-0 position-relative">
-                <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control form-control-sm" placeholder="Serial Number" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
+              <div className="flex-grow-1 form-floating mb-0 position-relative">
+                <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
                 <label htmlFor="sku">Serial Number</label>
                 {showScanner && (
-                  <button type="button" onClick={() => setIsScannerOpen(true)} className="btn btn-link btn-sm p-0 m-0 position-absolute top-50 translate-middle-y d-flex align-items-center justify-content-center" style={{ right: "0.25rem" }} title="Scan Barcode">
+                  <button type="button" onClick={() => setIsScannerOpen(true)} className="align-items-center btn btn-link btn-sm d-flex justify-content-center m-0 p-0 position-absolute top-50 translate-middle-y" style={{ right: "0.25rem" }} title="Scan Barcode">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
                       <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
@@ -664,14 +664,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               </div>
             )}
           </div>
-          {scanError && <div className="alert alert-danger py-1 small mb-2">{scanError}</div>}
+          {scanError && <div className="alert alert-danger mb-2 py-1 small">{scanError}</div>}
 
           <div className="d-flex gap-2 mb-2">
-            <div className="mb-0 position-relative flex-grow-1">
+            <div className="flex-grow-1 mb-0 position-relative">
               <label htmlFor="type" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
                 Type
               </label>
-              <div className="position-relative">
+              <div className="ui-pos-rel">
                 <button
                   type="button"
                   onClick={() => {
@@ -679,7 +679,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     setIsTypeDropdownOpen(nextOpen);
                     if (!nextOpen) setTypeHelpKey(null);
                   }}
-                  className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                  className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                   style={{ cursor: "pointer" }}
                 >
                   <span>{typeOptions.find((opt) => opt.value === formData.type)?.label || "Select Type"}</span>
@@ -688,11 +688,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </svg>
                 </button>
                 {isTypeDropdownOpen && (
-                  <div className="app-menu-panel position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
                     {typeOptions.map((option, index) => {
                       const isHelpOpen = typeHelpKey === option.value;
                       return (
-                        <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                        <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
                           <button
                             type="button"
                             onClick={() => {
@@ -700,14 +700,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                               setIsTypeDropdownOpen(false);
                               setTypeHelpKey(null);
                             }}
-                            className="app-menu-item btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                            className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
                           >
                             {option.label}
                           </button>
                           <div className="flex-shrink-0">
                             <button
                               type="button"
-                              className="app-menu-action btn btn-link btn-sm p-0 text-primary border-0"
+                              className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
                               aria-label={`${option.label} help`}
                               onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
@@ -738,9 +738,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
             {/* Category picker — hidden for LOCATION type */}
             {!isLocation && (
               <div className="flex-grow-1 mb-0">
-                <div className="d-flex align-items-center gap-2 mb-1">
-                  <div className="form-floating flex-grow-1">
-                    <select id="category" name="category" value={formData.category} onChange={handleChange} className="form-select form-select-sm">
+                <div className="align-items-center d-flex gap-2 mb-1">
+                  <div className="flex-grow-1 form-floating">
+                    <select id="category" name="category" value={formData.category} onChange={handleChange} className="form-select ui-control-sm">
                       <option value="">— None —</option>
                       {itemCategories.map((cat) => (
                         <option key={cat.id} value={cat.name}>
@@ -750,7 +750,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     </select>
                     <label htmlFor="category">Category</label>
                   </div>
-                  <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-sm btn-outline-secondary flex-shrink-0" style={{ fontSize: "1rem" }}>
+                  <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-outline-secondary btn-sm flex-shrink-0" style={{ fontSize: "1rem" }}>
                     {showCategoryManager ? "×" : "+"}
                   </button>
                 </div>
@@ -774,26 +774,26 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     zIndex: 9999,
                     pointerEvents: "none",
                   }}
-                  className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                  className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
                 >
                   <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                     {opt.label}
                   </div>
-                  <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                  <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
                 </div>
               );
             })()}
           {showCategoryManager && !isLocation && (
             <div className="mb-2">
-              <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                {itemCategories.length === 0 && <div className="small text-muted mb-2">No categories yet for this type.</div>}
+              <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 p-0 rounded">
+                {itemCategories.length === 0 && <div className="mb-2 ui-small-muted">No categories yet for this type.</div>}
                 <div className="d-flex flex-wrap gap-1 mb-2">
                   {itemCategories.map((cat) => (
-                    <span key={cat.id} className="badge bg-secondary-subtle text-secondary-emphasis d-flex align-items-center gap-1" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    <span key={cat.id} className="align-items-center badge bg-secondary-subtle d-flex gap-1 text-secondary-emphasis" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
                       <button
                         type="button"
                         onClick={() => handleDeleteCategory(cat.id)}
-                        className="d-flex align-items-center justify-content-center p-0 border-0 bg-transparent text-secondary-emphasis lh-1"
+                        className="align-items-center bg-transparent border-0 d-flex justify-content-center lh-1 p-0 text-secondary-emphasis"
                         style={{ fontSize: "1rem", width: "0.9rem", height: "0.9rem", cursor: "pointer" }}
                         aria-label="Remove"
                       >
@@ -810,10 +810,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
                     placeholder="New category name..."
-                    className="form-control form-control-sm"
+                    className="form-control ui-control-sm"
                     style={{ fontSize: "0.8rem" }}
                   />
-                  <button type="button" onClick={handleAddCategory} className="btn btn-sm btn-outline-primary flex-shrink-0" style={{ fontSize: "0.78rem" }}>
+                  <button type="button" onClick={handleAddCategory} className="btn btn-outline-primary btn-sm flex-shrink-0" style={{ fontSize: "0.78rem" }}>
                     Add
                   </button>
                 </div>
@@ -823,10 +823,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {!isLocation && (
             <>
-              <div className="d-flex align-items-start gap-2 mb-2">
+              <div className="align-items-start d-flex gap-2 mb-2">
                 <div className="flex-grow-1">
-                  <div className="d-flex align-items-center gap-2">
-                    <div className="form-floating flex-grow-1 mb-0">
+                  <div className="ui-flex-center-gap-2">
+                    <div className="flex-grow-1 form-floating mb-0">
                       <select
                         id="location"
                         name="location"
@@ -835,7 +835,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                           setShowNewLocationInput(false);
                           handleChange(e);
                         }}
-                        className="form-select form-select-sm"
+                        className="form-select ui-control-sm"
                       >
                         <option value="">Select location</option>
                         {availableLocations.map((location) => (
@@ -858,7 +858,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                           return next;
                         });
                       }}
-                      className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                      className="btn btn-outline-secondary btn-sm flex-shrink-0"
                       style={{ fontSize: "1rem" }}
                     >
                       {showNewLocationInput ? "×" : "+"}
@@ -866,8 +866,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </div>
                 </div>
 
-                <div className="form-floating flex-grow-1 mb-0">
-                  <select id="supplier_id" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select form-select-sm">
+                <div className="flex-grow-1 form-floating mb-0">
+                  <select id="supplier_id" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select ui-control-sm">
                     <option value="">No supplier</option>
                     {availableSuppliers.map((supplier) => (
                       <option key={supplier.id} value={supplier.id}>
@@ -880,7 +880,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               </div>
 
               {showNewLocationInput && (
-                <div className="form-floating mb-2">
+                <div className="form-floating ui-form-floating-mb2">
                   <input
                     type="text"
                     id="new_location"
@@ -889,7 +889,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     onChange={(e) => {
                       setFormData((prev) => ({ ...prev, location: e.target.value }));
                     }}
-                    className="form-control form-control-sm"
+                    className="form-control ui-control-sm"
                     placeholder="Enter new location"
                   />
                   <label htmlFor="new_location">New Location</label>
@@ -900,8 +900,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* Linked Service - only for RESOURCE or ASSET types */}
           {(formData.type === "RESOURCE" || formData.type === "ASSET") && (
-            <div className="form-floating mb-2">
-              <select id="service_id" name="service_id" value={formData.service_id} onChange={handleChange} className="form-select form-select-sm">
+            <div className="form-floating ui-form-floating-mb2">
+              <select id="service_id" name="service_id" value={formData.service_id} onChange={handleChange} className="form-select ui-control-sm">
                 <option value="">No linked service</option>
                 {availableServices.map((service) => (
                   <option key={service.id} value={service.id}>
@@ -917,46 +917,46 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* Date of Purchase / Date of Sale */}
           <div className="d-flex gap-2 mb-2">
-            <div className="form-floating flex-grow-1">
-              <select id="cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select form-select-sm">
+            <div className="flex-grow-1 form-floating">
+              <select id="cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select ui-control-sm">
                 <option value="one_time">One-Time Purchase</option>
                 <option value="recurring">Recurring Rental</option>
               </select>
               <label htmlFor="cost_type">Cost Type</label>
             </div>
-            <div className="form-floating flex-grow-1">
-              <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Purchase" />
+            <div className="flex-grow-1 form-floating">
+              <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
               <label htmlFor="date_of_purchase">Date of Purchase</label>
             </div>
-            <div className="form-floating flex-grow-1">
-              <input type="date" id="date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control form-control-sm" placeholder="Date of Sale" />
+            <div className="flex-grow-1 form-floating">
+              <input type="date" id="date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
               <label htmlFor="date_of_sale">Date of Sale</label>
             </div>
           </div>
 
-          <div className="form-floating mb-2">
-            <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm border-0 min-h-[80px]" placeholder="Description" />
+          <div className="form-floating ui-form-floating-mb2">
+            <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="border-0 form-control form-control-sm min-h-[80px]" placeholder="Description" />
             <label htmlFor="description">Description</label>
           </div>
 
           {/* ─── BUNDLE COMPONENTS INLINE ─── */}
           {upperType === "BUNDLE" && (
-            <div className="mt-3 p-3 rounded-3 border" style={{ borderColor: "#fb923c", background: "#fff7ed" }}>
+            <div className="border mt-3 p-1 rounded-3" style={{ borderColor: "#fb923c", background: "#fff7ed" }}>
               <div className="fw-semibold mb-2" style={{ color: "#c2410c", fontSize: "0.85rem" }}>
                 Bundle Components
               </div>
 
               {/* Price type */}
-              <div className="d-flex align-items-center gap-2 mb-2">
-                <label className="small text-muted mb-0">Pricing:</label>
+              <div className="align-items-center d-flex gap-2 mb-2">
+                <label className="mb-0 ui-small-muted">Pricing:</label>
                 <select className="form-select form-select-sm w-auto" value={bundlePriceType} onChange={(e) => setBundlePriceType(e.target.value)}>
                   <option value="fixed">Fixed price (use Price above)</option>
                   <option value="percentage">% of component total</option>
                 </select>
                 {bundlePriceType === "percentage" && (
-                  <div className="d-flex align-items-center gap-1">
-                    <input type="number" min="1" max="500" className="form-control form-control-sm" style={{ width: 70 }} value={bundlePricePercentage} onChange={(e) => setBundlePricePercentage(e.target.value)} />
-                    <span className="small text-muted">%</span>
+                  <div className="ui-flex-center-gap-1">
+                    <input type="number" min="1" max="500" className="form-control ui-control-sm" style={{ width: 70 }} value={bundlePricePercentage} onChange={(e) => setBundlePricePercentage(e.target.value)} />
+                    <span className="ui-small-muted">%</span>
                   </div>
                 )}
               </div>
@@ -965,19 +965,19 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               {bundleComponents.length > 0 && (
                 <div className="mb-2">
                   {bundleComponents.map((comp) => (
-                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-1 rounded bg-white border" style={{ borderColor: "#fed7aa" }}>
+                    <div key={comp.id} className="align-items-center bg-white border d-flex gap-2 mb-1 p-1 rounded" style={{ borderColor: "#fed7aa" }}>
                       <span className="flex-grow-1 small">{comp.name}</span>
-                      <span className="small text-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
-                      <span className="small text-muted">${(comp.price ?? 0).toFixed(2)} sell</span>
-                      <input type="number" min="0.1" step="0.1" className="form-control form-control-sm" style={{ width: 60 }} value={comp.quantity} onChange={(e) => setBundleComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c)))} />
-                      <span className="small fw-semibold">${((parseFloat(comp.price) || 0) * (parseFloat(comp.quantity) || 0)).toFixed(2)}</span>
-                      <button type="button" className="btn btn-sm btn-link text-danger p-0" onClick={() => setBundleComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
+                      <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
+                      <span className="ui-small-muted">${(comp.price ?? 0).toFixed(2)} sell</span>
+                      <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={comp.quantity} onChange={(e) => setBundleComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c)))} />
+                      <span className="fw-semibold ui-text-sm">${((parseFloat(comp.price) || 0) * (parseFloat(comp.quantity) || 0)).toFixed(2)}</span>
+                      <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setBundleComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
                         ✕
                       </button>
                     </div>
                   ))}
-                  <div className="d-flex justify-content-between align-items-center p-1 mt-1 rounded border bg-white" style={{ borderColor: "#fed7aa" }}>
-                    <span className="small fw-semibold">Totals</span>
+                  <div className="align-items-center bg-white border d-flex justify-content-between mt-1 p-1 rounded" style={{ borderColor: "#fed7aa" }}>
+                    <span className="fw-semibold ui-text-sm">Totals</span>
                     <span className="small">Qty: {bundleSummary.quantityTotal.toFixed(2)}</span>
                     <span className="small">Cost: ${bundleSummary.costSubtotal.toFixed(2)}</span>
                     <span className="small">Price: ${bundleSummary.priceSubtotal.toFixed(2)}</span>
@@ -986,10 +986,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               )}
 
               {/* Add component row */}
-              <div className="d-flex gap-2 align-items-center">
-                <input type="text" className="form-control form-control-sm flex-grow-1" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
-                <input type="number" min="0.1" step="0.1" className="form-control form-control-sm" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
-                <select className="form-select form-select-sm" style={{ maxWidth: 160 }} value={bundleNewProductId} onChange={(e) => setBundleNewProductId(e.target.value)}>
+              <div className="ui-flex-center-gap-2">
+                <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
+                <select className="form-select ui-control-sm" style={{ maxWidth: 160 }} value={bundleNewProductId} onChange={(e) => setBundleNewProductId(e.target.value)}>
                   <option value="">Select…</option>
                   {allProducts
                     .filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
@@ -1019,23 +1019,23 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* ─── MIX CONFIG INLINE ─── */}
           {upperType === "MIX" && (
-            <div className="mt-3 p-3 rounded-3 border" style={{ borderColor: "#f472b6", background: "#fdf2f8" }}>
+            <div className="border mt-3 p-1 rounded-3" style={{ borderColor: "#f472b6", background: "#fdf2f8" }}>
               <div className="fw-semibold mb-2" style={{ color: "#be185d", fontSize: "0.85rem" }}>
                 Mix Setup
               </div>
 
               {/* Total quantity + max per product */}
-              <div className="d-flex gap-3 align-items-center mb-2 flex-wrap">
-                <div className="d-flex align-items-center gap-2">
-                  <label className="small text-muted mb-0">Total qty:</label>
-                  <input type="number" min="1" className="form-control form-control-sm" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
+              <div className="align-items-center d-flex flex-wrap gap-3 mb-2">
+                <div className="ui-flex-center-gap-2">
+                  <label className="mb-0 ui-small-muted">Total qty:</label>
+                  <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
                 </div>
-                <div className="d-flex align-items-center gap-2">
+                <div className="ui-flex-center-gap-2">
                   <input type="checkbox" id="mix-has-max-inline" checked={mixHasMax} onChange={(e) => setMixHasMax(e.target.checked)} />
-                  <label htmlFor="mix-has-max-inline" className="small text-muted mb-0" style={{ cursor: "pointer" }}>
+                  <label htmlFor="mix-has-max-inline" className="mb-0 ui-small-muted" style={{ cursor: "pointer" }}>
                     Max per product
                   </label>
-                  {mixHasMax && <input type="number" min="1" className="form-control form-control-sm" style={{ width: 70 }} value={mixMaxPerProduct} onChange={(e) => setMixMaxPerProduct(e.target.value)} placeholder="Max" />}
+                  {mixHasMax && <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixMaxPerProduct} onChange={(e) => setMixMaxPerProduct(e.target.value)} placeholder="Max" />}
                 </div>
               </div>
 
@@ -1043,26 +1043,26 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               {mixComponents.length > 0 && (
                 <div className="mb-2">
                   {mixComponents.map((comp) => (
-                    <div key={comp.id} className="d-flex align-items-center gap-2 mb-1 p-1 rounded bg-white border" style={{ borderColor: "#fbcfe8" }}>
+                    <div key={comp.id} className="align-items-center bg-white border d-flex gap-2 mb-1 p-1 rounded" style={{ borderColor: "#fbcfe8" }}>
                       <span className="flex-grow-1 small">{comp.name}</span>
-                      <span className="small text-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
-                      <span className="small text-muted">${comp.price?.toFixed(2)}</span>
+                      <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
+                      <span className="ui-small-muted">${comp.price?.toFixed(2)}</span>
                       <input
                         type="number"
                         min="1"
-                        className="form-control form-control-sm"
+                        className="form-control ui-control-sm"
                         style={{ width: 60 }}
                         value={comp.max_quantity || ""}
                         placeholder="Max"
                         onChange={(e) => setMixComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, max_quantity: e.target.value !== "" ? parseInt(e.target.value) : null } : c)))}
                       />
-                      <button type="button" className="btn btn-sm btn-link text-danger p-0" onClick={() => setMixComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
+                      <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setMixComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
                         ✕
                       </button>
                     </div>
                   ))}
-                  <div className="d-flex justify-content-between align-items-center p-1 mt-1 rounded border bg-white" style={{ borderColor: "#fbcfe8" }}>
-                    <span className="small fw-semibold">Totals</span>
+                  <div className="align-items-center bg-white border d-flex justify-content-between mt-1 p-1 rounded" style={{ borderColor: "#fbcfe8" }}>
+                    <span className="fw-semibold ui-text-sm">Totals</span>
                     <span className="small">Items: {mixSummary.itemCount}</span>
                     <span className="small">Cost: ${mixSummary.costSubtotal.toFixed(2)}</span>
                     <span className="small">Price: ${mixSummary.priceSubtotal.toFixed(2)}</span>
@@ -1071,9 +1071,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               )}
 
               {/* Add product row */}
-              <div className="d-flex gap-2 align-items-center">
-                <input type="text" className="form-control form-control-sm flex-grow-1" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
-                <select className="form-select form-select-sm" style={{ maxWidth: 180 }} value={mixNewProductId} onChange={(e) => setMixNewProductId(e.target.value)}>
+              <div className="ui-flex-center-gap-2">
+                <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <select className="form-select ui-control-sm" style={{ maxWidth: 180 }} value={mixNewProductId} onChange={(e) => setMixNewProductId(e.target.value)}>
                   <option value="">Select…</option>
                   {allProducts
                     .filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
@@ -1083,10 +1083,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       </option>
                     ))}
                 </select>
-                <input type="number" min="1" className="form-control form-control-sm" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
+                <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
                 <button
                   type="button"
-                  className="btn btn-sm flex-shrink-0 d-flex align-items-center gap-2"
+                  className="align-items-center btn btn-sm d-flex flex-shrink-0 gap-2"
                   style={{ background: "#ec4899", color: "#fff", border: "none" }}
                   onClick={() => {
                     const prod = allProducts.find((p) => p.id === mixNewProductId);
@@ -1097,7 +1097,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     setProductSearch("");
                   }}
                 >
-                  <PlusIcon className="h-4 w-4" />
+                  <PlusIcon className="ui-icon-4" />
                   <span>Add</span>
                 </button>
               </div>
@@ -1108,7 +1108,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
       {/* ─── 9 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Fixed Footer with Action Buttons */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={item ? "Save" : "Add"} type="submit" form="item-form" className="btn-outline-secondary" title={item ? "Save changes" : "Create item"} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}

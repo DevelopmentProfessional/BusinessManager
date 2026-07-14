@@ -40,13 +40,13 @@ export default class ErrorBoundary extends React.Component {
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 d-flex align-items-center justify-content-center px-4">
-        <div className="bg-white shadow-sm rounded-4 border border-gray-200 p-4 p-md-5 text-center" style={{ maxWidth: 520, width: '100%' }}>
+      <div className="min-h-screen bg-gray-50 d-flex align-items-center justify-content-center px-1">
+        <div className="bg-white shadow-sm rounded-4 border border-gray-200 p-1 p-md-5 text-center" style={{ maxWidth: 520, width: '100%' }}>
           <h1 className="h4 fw-bold text-dark mb-2">Client Portal Failed To Load</h1>
           <p className="text-muted mb-3">
             The app hit a startup error. This is usually caused by stale cached files after a deployment.
           </p>
-          <div className="small text-danger bg-red-50 border border-red-200 rounded-3 p-3 mb-3 text-break">
+          <div className="small text-danger bg-red-50 border border-red-200 rounded-3 p-1 mb-3 text-break">
             {this.state.errorMessage}
           </div>
           <button type="button" className="btn btn-primary" onClick={this.handleReload}>

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Schedule.jsx
  *
@@ -816,15 +816,15 @@ export default function Schedule() {
 
   // ─── 18 RENDER ───────────────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-4">{S.loading}</div>;
+    return <div className="p-1">{S.loading}</div>;
   }
 
   return (
-    <div className="schedule-page h-100 d-flex flex-column">
+    <div className="d-flex flex-column h-100 schedule-page">
       <Gate_Permission page="schedule" permission="read">
         {/* Past Date Error Message */}
         {pastDateError && (
-          <div className="alert alert-warning alert-dismissible fade show mx-2 mt-2 mb-0" role="alert" style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}>
+          <div className="alert alert-dismissible alert-warning fade mb-0 mt-2 mx-2 show" role="alert" style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}>
             {pastDateError}
             <button
               type="button"
@@ -839,24 +839,24 @@ export default function Schedule() {
 
         {/* Attendance Widget - Clock In/Out (conditionally rendered based on settings) */}
         {scheduleSettings.attendance_check_in_required && (
-          <div className="mb-3 px-2">
+          <div className="mb-3 px-0">
             <Widget_Attendance compact={true} />
           </div>
         )}
 
         {/* Header with clock */}
-        <div className="schedule-header-bar d-flex justify-content-between align-items-center p-1 mb-2">
+        <div className="align-items-center d-flex justify-content-between mb-2 p-1 schedule-header-bar">
           <div className="schedule-clock">
             <span className="clock-time">{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</span>
             <span className="clock-date">{currentTime.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
           </div>
-          <div className="d-flex align-items-center gap-2 ms-auto">
+          <div className="align-items-center d-flex gap-2 ms-auto">
             {/* Unpaid past-due indicator */}
             {(() => {
               const now = new Date();
               const count = appointments.filter((a) => a.service_id && !a.is_paid && new Date(a.appointment_date) < now && a.status !== "cancelled").length;
               return count > 0 ? (
-                <div className="position-relative d-inline-flex align-items-center justify-content-center" title={`${count} unpaid past appointment${count > 1 ? "s" : ""}`} style={{ cursor: "default" }}>
+                <div className="align-items-center d-inline-flex justify-content-center position-relative" title={`${count} unpaid past appointment${count > 1 ? "s" : ""}`} style={{ cursor: "default" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#6b7280" strokeWidth="1.8" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v2m0 8v2m-4.5-6h9M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
                   </svg>
@@ -875,7 +875,7 @@ export default function Schedule() {
                 return d >= now && d <= soon && a.status !== "cancelled";
               }).length;
               return count > 0 ? (
-                <div className="position-relative d-inline-flex align-items-center justify-content-center" title={`${count} upcoming appointment${count > 1 ? "s" : ""} in the next 24h`} style={{ cursor: "default" }}>
+                <div className="align-items-center d-inline-flex justify-content-center position-relative" title={`${count} upcoming appointment${count > 1 ? "s" : ""} in the next 24h`} style={{ cursor: "default" }}>
                   <BellIcon style={{ width: 20, height: 20, color: "#6b7280" }} />
                   <span className="position-absolute" style={{ top: -4, right: -6, background: "#6b7280", color: "#fff", fontSize: "0.6rem", borderRadius: "9999px", padding: "0 4px", minWidth: 14, textAlign: "center", lineHeight: "14px" }}>
                     {count}
@@ -926,7 +926,7 @@ export default function Schedule() {
                 <tbody ref={calendarGridRef}>
                   {getTimeSlots().map((hour) => (
                     <tr key={hour} className="schedule-time-row">
-                      <th className="calendar-cell time-slot time-label-cell" data-hour={hour}>
+                      <th className="calendar-cell time-label-cell time-slot" data-hour={hour}>
                         {hour.toString().padStart(2, "0")}:00
                       </th>
                       {days.map((date, dayIndex) => {
@@ -1093,7 +1093,7 @@ export default function Schedule() {
 
                     return (
                       <tr key={hour} className="schedule-time-row">
-                        <th className="calendar-cell time-slot time-label-cell" data-hour={hour}>
+                        <th className="calendar-cell time-label-cell time-slot" data-hour={hour}>
                           {hour.toString().padStart(2, "0")}:00
                         </th>
                         <td
@@ -1373,8 +1373,8 @@ export default function Schedule() {
           </div>
         </div>
 
-        <footer className="app-footer-shell schedule-footer app-footer-padding app-standard-footer border-top">
-          <div className="app-footer-toolbar d-flex align-items-center">
+        <footer className="app-footer-padding app-footer-shell app-standard-footer border-top schedule-footer">
+          <div className="align-items-center app-footer-toolbar d-flex">
             <Button_Toolbar icon={MonthViewIcon} label="Mon" onClick={() => setCurrentView("month")} className={currentView === "month" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "month"} title="Month view" />
             <Button_Toolbar icon={WeekViewIcon} label="Week" onClick={() => setCurrentView("week")} className={`${currentView === "week" ? "btn-primary" : "btn-outline-secondary"} p-0`} data-active={currentView === "week"} title="Week view" />
             <Button_Toolbar icon={DayViewIcon} label="Day" onClick={() => setCurrentView("day")} className={currentView === "day" ? "btn-primary" : "btn-outline-secondary"} data-active={currentView === "day"} title="Day view" />
@@ -1452,7 +1452,7 @@ export default function Schedule() {
       {/* Overlap bottom modal */}
       <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true} contentGravity="bottom">
         <div className="d-flex flex-column justify-content-end">
-          <div className="overlap-event-list flex-shrink-0">
+          <div className="flex-shrink-0 overlap-event-list">
             {[...(overlapEvents || [])]
               .sort((a, b) => {
                 const timeA = new Date(a.appointment_date);
@@ -1503,9 +1503,9 @@ export default function Schedule() {
           </div>
 
           {/* Footer with Cancel button */}
-          <div className="flex-shrink-0 bg-white dark:bg-gray-900 p-4 ps-3 pt-2 d-flex justify-content-center">
-            <button type="button" className="btn btn-outline-secondary d-flex align-items-center justify-content-center" onClick={() => setOverlapEvents(null)}>
-              <XMarkIcon className="h-5 w-5" />
+          <div className="bg-white d-flex dark:bg-gray-900 flex-shrink-0 justify-content-center p-1 ps-1 pt-0">
+            <button type="button" className="align-items-center btn btn-outline-secondary d-flex justify-content-center" onClick={() => setOverlapEvents(null)}>
+              <XMarkIcon className="ui-icon-5" />
             </button>
           </div>
         </div>
@@ -1546,7 +1546,7 @@ export default function Schedule() {
             }}
           />
         ) : (
-          <div className="text-muted small">Sign in to manage schedule settings.</div>
+          <div className="ui-small-muted">Sign in to manage schedule settings.</div>
         )}
       </PageControlsModal>
 

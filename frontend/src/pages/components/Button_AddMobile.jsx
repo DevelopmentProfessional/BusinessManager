@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Button_AddMobile.jsx
  *
@@ -22,7 +22,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 
 // ─── 1 BUTTON RENDER ───────────────────────────────────────────────────────────
 
-export default function Button_AddMobile({ onClick, label = "Add", className = "" }) {
+export default function Button_AddMobile({ onClick, label = "Add", className="" }) {
   return (
     <button
       onClick={onClick}
@@ -31,7 +31,7 @@ export default function Button_AddMobile({ onClick, label = "Add", className = "
       className={`
         fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30
         bg-blue-600 hover:bg-blue-700 text-white
-        p-3 rounded-full shadow-lg hover:shadow-xl
+        p-1 rounded-full shadow-lg hover:shadow-xl
         flex items-center justify-center transition-all
         md:hidden
         ${className}

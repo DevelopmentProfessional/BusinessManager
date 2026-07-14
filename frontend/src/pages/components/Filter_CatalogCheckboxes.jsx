@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 
 /** Default catalog visibility for Sales POS and history filters. */
 export const DEFAULT_CATALOG_FILTER = {
@@ -16,7 +16,7 @@ const CATALOG_ITEMS = [
 /**
  * Checkbox group for Services / Products / Subs — shared by Sales page and Sales History.
  */
-export default function Filter_CatalogCheckboxes({ value = {}, onChange, legend = "Catalog", className = "" }) {
+export default function Filter_CatalogCheckboxes({ value = {}, onChange, legend = "Catalog", className="" }) {
   const setChecked = (key, checked) => {
     if (typeof onChange === "function") {
       onChange(key, checked);
@@ -25,7 +25,7 @@ export default function Filter_CatalogCheckboxes({ value = {}, onChange, legend 
 
   return (
     <div className={className}>
-      {legend ? <span className="small text-muted d-block mb-1">{legend}</span> : null}
+      {legend ? <span className="d-block mb-1 small text-muted">{legend}</span> : null}
       <div className="app-filter-checkgroup d-flex flex-wrap gap-3" role="group" aria-label={legend || "Catalog types"}>
         {CATALOG_ITEMS.map(({ key, label }) => (
           <label key={key} className="app-filter-check mb-0">

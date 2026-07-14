@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import Modal from "./Modal";
 import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../services/api";
@@ -92,12 +92,12 @@ function ImageViewer({ document, onEdit }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
+        <div className="ui-flex-items-gap-2">
           <button type="button" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="btn btn-outline-secondary p-0">
             -
           </button>
-          <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[60px] text-center">{Math.round(zoom * 100)}%</span>
+          <span className="dark:text-gray-300 min-w-[60px] text-center text-gray-600 text-sm">{Math.round(zoom * 100)}%</span>
           <button type="button" onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="btn btn-outline-secondary p-0">
             +
           </button>
@@ -106,17 +106,17 @@ function ImageViewer({ document, onEdit }) {
           </button>
         </div>
         {onEdit && (
-          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
-            <PencilIcon className="h-4 w-4" />
+          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
+            <PencilIcon className="ui-icon-4" />
             Edit Metadata
           </button>
         )}
       </div>
-      <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-gray-900 flex items-center justify-center cursor-move w-full" onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+      <div ref={containerRef} className="bg-white cursor-move dark:bg-gray-900 flex flex-1 items-center justify-center min-h-0 overflow-hidden w-full" onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
         <img
           src={documentsAPI.fileUrl(document.id)}
           alt={document.original_filename}
-          className="max-w-full max-h-full object-contain transition-transform"
+          className="max-h-full max-w-full object-contain transition-transform"
           style={{
             transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
             cursor: zoom > 1 ? (isDragging ? "grabbing" : "grab") : "default",
@@ -133,8 +133,8 @@ function Viewer_PDF({ document, onEdit }) {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="flex h-full items-center justify-center">
+          <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
         </div>
       }
     >
@@ -220,27 +220,27 @@ function DocxViewer({ document, onEdit }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <span className="text-sm text-gray-600 dark:text-gray-300">Word Document</span>
-        <div className="flex items-center gap-2">
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
+        <span className="dark:text-gray-300 text-gray-600 text-sm">Word Document</span>
+        <div className="ui-flex-items-gap-2">
           {onEdit && (
-            <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
-              <PencilIcon className="h-4 w-4" />
+            <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
+              <PencilIcon className="ui-icon-4" />
               Edit Metadata
             </button>
           )}
         </div>
       </div>
-      <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 w-full">
+      <div className="bg-white dark:bg-gray-900 flex-1 min-h-0 overflow-auto w-full">
         {loading && (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="flex h-full items-center justify-center">
+            <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
           </div>
         )}
-        {error && <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded m-4">{error}</div>}
+        {error && <div className="bg-red-50 dark:bg-red-900/20 m-4 p-1 rounded text-red-600">{error}</div>}
         <div
           ref={containerRef}
-          className="docx-preview-container w-full h-full"
+          className="docx-preview-container h-full w-full"
           style={{
             width: "100%",
             height: "100%",
@@ -260,21 +260,21 @@ function OfficeViewer({ document, documentType, onEdit }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <span className="text-sm text-gray-600 dark:text-gray-300">{typeLabels[documentType] || "Office Document"}</span>
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
+        <span className="dark:text-gray-300 text-gray-600 text-sm">{typeLabels[documentType] || "Office Document"}</span>
         {onEdit && (
-          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
-            <PencilIcon className="h-4 w-4" />
+          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
+            <PencilIcon className="ui-icon-4" />
             Edit Metadata
           </button>
         )}
       </div>
-      <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
-        <div className="text-center p-8">
-          <DocumentIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Preview not available for this file type.</p>
-          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
-            <ArrowDownTrayIcon className="h-5 w-5" />
+      <div className="bg-white dark:bg-gray-900 flex flex-1 items-center justify-center">
+        <div className="p-1 text-center">
+          <DocumentIcon className="h-16 mb-4 mx-auto text-gray-400 w-16" />
+          <p className="dark:text-gray-400 mb-4 text-gray-600">Preview not available for this file type.</p>
+          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+            <ArrowDownTrayIcon className="ui-icon-5" />
             Download to View
           </a>
         </div>
@@ -318,24 +318,24 @@ function TextViewer({ document, onEdit }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <span className="text-sm text-gray-600 dark:text-gray-300">Text File</span>
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
+        <span className="dark:text-gray-300 text-gray-600 text-sm">Text File</span>
         {onEdit && (
-          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
-            <PencilIcon className="h-4 w-4" />
+          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
+            <PencilIcon className="ui-icon-4" />
             Edit Metadata
           </button>
         )}
       </div>
-      <div className="flex-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 w-full">
+      <div className="bg-white dark:bg-gray-900 flex-1 min-h-0 overflow-auto w-full">
         {loading && (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <div className="flex h-full items-center justify-center">
+            <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
           </div>
         )}
-        {error && <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded m-4">{error}</div>}
+        {error && <div className="bg-red-50 dark:bg-red-900/20 m-4 p-1 rounded text-red-600">{error}</div>}
         {!loading && !error && (
-          <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 dark:text-gray-200 w-full" style={{ margin: 0, padding: "1rem", boxSizing: "border-box", height: "100%", overflowY: "auto" }}>
+          <pre className="dark:text-gray-200 font-mono text-gray-800 text-sm w-full whitespace-pre-wrap" style={{ margin: 0, padding: "1rem", boxSizing: "border-box", height: "100%", overflowY: "auto" }}>
             {content}
           </pre>
         )}
@@ -348,22 +348,22 @@ function TextViewer({ document, onEdit }) {
 function UnknownViewer({ document, onEdit }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <span className="text-sm text-gray-600 dark:text-gray-300">File</span>
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
+        <span className="dark:text-gray-300 text-gray-600 text-sm">File</span>
         {onEdit && (
-          <button type="button" onClick={onEdit} className="btn btn-primary d-flex align-items-center gap-1">
-            <PencilIcon className="h-4 w-4" />
+          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
+            <PencilIcon className="ui-icon-4" />
             Edit Metadata
           </button>
         )}
       </div>
-      <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
-        <div className="text-center p-8">
-          <DocumentIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 mb-2">{document.original_filename}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">Preview not available for this file type.</p>
-          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
-            <ArrowDownTrayIcon className="h-5 w-5" />
+      <div className="bg-white dark:bg-gray-900 flex flex-1 items-center justify-center">
+        <div className="p-1 text-center">
+          <DocumentIcon className="h-16 mb-4 mx-auto text-gray-400 w-16" />
+          <p className="dark:text-gray-400 mb-2 text-gray-600">{document.original_filename}</p>
+          <p className="dark:text-gray-500 mb-4 text-gray-500 text-sm">Preview not available for this file type.</p>
+          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+            <ArrowDownTrayIcon className="ui-icon-5" />
             Download
           </a>
         </div>
@@ -416,20 +416,20 @@ function EditorArea({ document, documentType }) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading content...</p>
+      <div className="flex flex-col gap-3 h-full items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-10 rounded-full w-10"></div>
+        <p className="dark:text-gray-400 text-gray-500 text-sm">Loading content...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full p-8">
+      <div className="flex h-full items-center justify-center p-1">
         <div className="text-center">
-          <div className="text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded mb-4">{error}</div>
-          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
-            <ArrowDownTrayIcon className="h-5 w-5" />
+          <div className="bg-red-50 dark:bg-red-900/20 mb-4 p-1 rounded text-red-600">{error}</div>
+          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+            <ArrowDownTrayIcon className="ui-icon-5" />
             Download Instead
           </a>
         </div>
@@ -442,8 +442,8 @@ function EditorArea({ document, documentType }) {
       <div className="flex-1 overflow-hidden">
         <Suspense
           fallback={
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <div className="flex h-full items-center justify-center">
+              <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
             </div>
           }
         >
@@ -496,8 +496,8 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
         return (
           <Suspense
             fallback={
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+              <div className="flex h-full items-center justify-center">
+                <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
               </div>
             }
           >
@@ -516,15 +516,15 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
 
   return (
     <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="absolute inset-0 m-2 sm:m-4 lg:m-6 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+      <div className="absolute bg-white dark:bg-gray-800 flex flex-col inset-0 lg:m-6 m-2 overflow-hidden rounded-lg shadow-xl sm:m-4">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-3 min-w-0">
-            <DocumentIcon className="h-6 w-6 text-gray-400 flex-shrink-0" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">{document.original_filename}</h3>
+        <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between px-1 py-0">
+          <div className="flex gap-3 items-center min-w-0">
+            <DocumentIcon className="flex-shrink-0 h-6 text-gray-400 w-6" />
+            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg truncate">{document.original_filename}</h3>
           </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={handleClose} className="btn btn-outline-secondary p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 d-flex align-items-center justify-content-center">
+          <div className="ui-flex-items-gap-2">
+            <button type="button" onClick={handleClose} className="align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 hover:text-gray-600 justify-content-center p-0 text-gray-400">
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
@@ -534,57 +534,57 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
         <div className="flex-1 min-h-0 overflow-hidden">{mode === "edit" ? <EditorArea document={document} documentType={documentType} /> : renderViewer()}</div>
 
         {/* Footer with document info */}
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+        <div className="bg-gray-50 border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 px-1 py-0 text-gray-600 text-sm">
           <div className="flex flex-wrap gap-4">
             <span>Type: {document.content_type || "Unknown"}</span>
             <span>Size: {document.file_size ? formatFileSize(document.file_size) : "Unknown"}</span>
             <span>Uploaded: {document.created_at ? new Date(document.created_at).toLocaleDateString() : "Unknown"}</span>
             {document.description && <span>Description: {document.description}</span>}
             {document.is_signed && (
-              <span className="flex items-center gap-2 ml-auto">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">Signed by {document.signed_by || "Unknown"}</span>
-                {document.signature_image && <img src={document.signature_image} alt="Signature" className="h-5 border rounded" style={{ maxWidth: "80px" }} />}
+              <span className="flex gap-2 items-center ml-auto">
+                <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-0 py-0.5 rounded text-green-700 text-xs">Signed by {document.signed_by || "Unknown"}</span>
+                {document.signature_image && <img src={document.signature_image} alt="Signature" className="border h-5 rounded" style={{ maxWidth: "80px" }} />}
               </span>
             )}
           </div>
 
-          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
+          <div className="border-gray-200 border-t dark:border-gray-700 flex flex-wrap gap-2 items-center mt-2 pt-0">
             {/* View/Edit toggle — only for editable types */}
             {editable && (
               <button
                 onClick={handleToggleEdit}
-                className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded transition-colors ${mode === "edit" ? "bg-primary-600 text-white hover:bg-primary-700" : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                className={`flex items-center gap-1 px-1 py-1.5 text-sm rounded transition-colors ${mode === "edit" ? "bg-primary-600 text-white hover:bg-primary-700" : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
               >
-                <PencilIcon className="h-4 w-4" />
+                <PencilIcon className="ui-icon-4" />
                 {mode === "edit" ? "Editing" : "Edit"}
               </button>
             )}
 
             {document.is_signed ? (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium">Signed</span>
+              <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-1 py-1.5 rounded text-green-700 text-sm">Signed</span>
             ) : (
               onSign && (
-                <button type="button" onClick={() => onSign(document)} className="btn btn-outline-secondary d-flex align-items-center gap-1">
+                <button type="button" onClick={() => onSign(document)} className="align-items-center btn btn-outline-secondary d-flex gap-1">
                   Sign
                 </button>
               )
             )}
 
             {onDelete && (
-              <button type="button" onClick={() => onDelete(document)} className="btn btn-outline-danger d-flex align-items-center gap-1">
-                <XMarkIcon className="h-4 w-4" />
+              <button type="button" onClick={() => onDelete(document)} className="align-items-center btn btn-outline-danger d-flex gap-1">
+                <XMarkIcon className="ui-icon-4" />
                 Delete
               </button>
             )}
 
             {onWorkflow && (
-              <button type="button" onClick={() => onWorkflow(document)} className="btn btn-outline-primary d-flex align-items-center gap-1">
+              <button type="button" onClick={() => onWorkflow(document)} className="align-items-center btn btn-outline-primary d-flex gap-1">
                 Workflow
               </button>
             )}
 
-            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
-              <ArrowDownTrayIcon className="h-4 w-4" />
+            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 flex gap-1 hover:bg-gray-200 items-center px-1 py-1.5 rounded text-gray-700 text-sm">
+              <ArrowDownTrayIcon className="ui-icon-4" />
               Download
             </a>
           </div>

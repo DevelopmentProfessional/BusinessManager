@@ -122,12 +122,12 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white">
+      <div className="bg-white border-2 border-gray-300 dark:border-gray-600 overflow-hidden rounded-lg">
         <canvas
           ref={canvasRef}
           width={width}
           height={height}
-          className="w-full cursor-crosshair touch-none"
+          className="cursor-crosshair touch-none w-full"
           style={{ maxWidth: `${width}px` }}
           onMouseDown={startDrawing}
           onMouseMove={draw}
@@ -138,23 +138,23 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
           onTouchEnd={stopDrawing}
         />
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Draw your signature above using mouse or touch</p>
+      <p className="dark:text-gray-400 text-center text-gray-500 text-xs">Draw your signature above using mouse or touch</p>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={handleUndo} disabled={undoStack.length === 0} className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+        <div className="ui-flex-items-gap-2">
+          <button type="button" onClick={handleUndo} disabled={undoStack.length === 0} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
             Undo
           </button>
-          <button type="button" onClick={handleClear} className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+          <button type="button" onClick={handleClear} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
             Clear
           </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ui-flex-items-gap-2">
           {onCancel && (
-            <button type="button" onClick={onCancel} className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+            <button type="button" onClick={onCancel} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
               Cancel
             </button>
           )}
-          <button type="button" onClick={handleSave} disabled={!hasDrawn} className="px-4 py-1.5 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" onClick={handleSave} disabled={!hasDrawn} className="bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary-700 px-1 py-1.5 rounded text-sm text-white">
             Save
           </button>
         </div>

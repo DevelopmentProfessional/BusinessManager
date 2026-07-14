@@ -86,7 +86,7 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Signature</div>
           <div className="component-header-center"></div>
@@ -95,11 +95,11 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
 
         <div className="component-body">
           <div className="component-body-inner">
-            {signatureMessage && <div className={`alert py-2 small mb-3 ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>}
+            {signatureMessage && <div className={`alert py-0 small mb-3 ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>}
 
             {signatureLoading ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary mb-2" role="status">
+              <div className="py-1 text-center">
+                <div className="mb-2 spinner-border text-primary" role="status">
                   <span className="visually-hidden">Loading...</span>
                 </div>
                 <div className="text-muted">Loading signature...</div>
@@ -111,8 +111,8 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
                 <img src={savedSignature} alt="Saved signature" className="border rounded" style={{ maxWidth: "100%", height: "auto" }} />
               </div>
             ) : (
-              <div className="text-center py-4">
-                <p className="text-muted mb-0">No signature saved yet.</p>
+              <div className="py-1 text-center">
+                <p className="mb-0 text-muted">No signature saved yet.</p>
               </div>
             )}
           </div>
@@ -121,7 +121,7 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
         <div className="component-footer">
           <div className="component-footer-left">{!showSignaturePad && savedSignature && <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />}</div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

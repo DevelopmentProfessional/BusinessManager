@@ -22,14 +22,14 @@ export default function Inventory_RowDetail({ item, priceDisplay, featureNames =
     <td className="main-page-table-data">
       <div className="fw-medium text-wrap-word">{item.name}</div>
       {item.category && (
-        <span className="badge bg-secondary-subtle text-secondary rounded-pill text-xxs" style={{ width: "fit-content" }}>
+        <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs" style={{ width: "fit-content" }}>
           {item.category}
         </span>
       )}
       {(effectivePriceDisplay || costDisplay) && (
         <div className="d-flex flex-wrap gap-2 mt-1">
-          {effectivePriceDisplay && <span className="small text-primary fw-semibold">Price: {effectivePriceDisplay}</span>}
-          {costDisplay && <span className="small text-info fw-semibold">Cost: {costDisplay}</span>}
+          {effectivePriceDisplay && <span className="fw-semibold small text-primary">Price: {effectivePriceDisplay}</span>}
+          {costDisplay && <span className="fw-semibold small text-info">Cost: {costDisplay}</span>}
         </div>
       )}
       {featureNames.length > 0 && (

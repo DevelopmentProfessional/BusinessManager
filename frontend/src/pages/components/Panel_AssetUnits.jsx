@@ -37,7 +37,7 @@ function InlineText({ value, onSave, placeholder = "—" }) {
     return (
       <input
         autoFocus
-        className="form-control form-control-sm"
+        className="form-control ui-control-sm"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -50,7 +50,7 @@ function InlineText({ value, onSave, placeholder = "—" }) {
     );
   }
   return (
-    <span onClick={() => setEditing(true)} title="Click to edit" className="text-muted small" style={{ cursor: "text", userSelect: "none" }}>
+    <span onClick={() => setEditing(true)} title="Click to edit" className="ui-small-muted" style={{ cursor: "text", userSelect: "none" }}>
       {value || <em>{placeholder}</em>}
     </span>
   );
@@ -295,13 +295,13 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
   }, {});
 
   return (
-    <div className="mt-3 mb-2 border rounded p-1">
+    <div className="border mb-2 mt-3 p-1 rounded">
       {/* Header */}
-      <div className="d-flex align-items-center gap-2 mb-2">
-        <h6 className="mb-0 fw-semibold">Asset Units</h6>
+      <div className="align-items-center d-flex gap-2 mb-2">
+        <h6 className="fw-semibold mb-0">Asset Units</h6>
         {loading && <span className="spinner-border spinner-border-sm" role="status" />}
-        <span className="text-muted small">({units.length} total)</span>
-        {unitSearchTerm.trim() && <span className="text-muted small">({filteredUnits.length} shown)</span>}
+        <span className="ui-small-muted">({units.length} total)</span>
+        {unitSearchTerm.trim() && <span className="ui-small-muted">({filteredUnits.length} shown)</span>}
       </div>
 
       {/* State summary badges */}
@@ -314,10 +314,10 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
       </div>
 
       {selectedCount > 0 && (
-        <div className="d-flex flex-wrap align-items-center gap-2 mb-2 p-2 border rounded bg-light-subtle">
-          <span className="small fw-semibold">{selectedCount} selected</span>
+        <div className="align-items-center bg-light-subtle border d-flex flex-wrap gap-2 mb-2 p-0 rounded">
+          <span className="fw-semibold ui-text-sm">{selectedCount} selected</span>
           <select
-            className="form-select form-select-sm"
+            className="form-select ui-control-sm"
             style={{ width: 140 }}
             defaultValue=""
             disabled={saving}
@@ -335,7 +335,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
             ))}
           </select>
           <select
-            className="form-select form-select-sm"
+            className="form-select ui-control-sm"
             style={{ width: 180 }}
             defaultValue=""
             disabled={saving}
@@ -355,7 +355,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
             ))}
           </select>
           <select
-            className="form-select form-select-sm"
+            className="form-select ui-control-sm"
             style={{ width: 180 }}
             defaultValue=""
             disabled={saving}
@@ -374,7 +374,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
               </option>
             ))}
           </select>
-          <button className="btn btn-sm btn-outline-danger" onClick={handleBulkRemove} disabled={saving}>
+          <button className="btn btn-outline-danger btn-sm" onClick={handleBulkRemove} disabled={saving}>
             Remove selected
           </button>
         </div>
@@ -382,8 +382,8 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
 
       {/* Units table */}
       {units.length > 0 && (
-        <div className="table-responsive mb-2">
-          <table className="table table-sm align-middle mb-0" style={{ borderCollapse: "collapse" }}>
+        <div className="mb-2 table-responsive">
+          <table className="align-middle mb-0 table table-sm" style={{ borderCollapse: "collapse" }}>
             <thead className="">
               <tr>
                 <th className="text-center" style={{ width: "3.25rem", borderBottom: "1px solid var(--bs-border-color)", borderTop: "none", borderLeft: "none", borderRight: "none" }}>
@@ -399,7 +399,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
             <tbody>
               {pagedUnits.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-muted small py-3">
+                  <td colSpan={6} className="py-1 small text-muted">
                     No asset units match the current search.
                   </td>
                 </tr>
@@ -411,14 +411,14 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
                     </td>
                     <td style={{ border: "none" }}>
                       <button className="btn btn-circle btn-outline-danger" onClick={() => handleRemove(unit.id)} title="Remove unit">
-                        <XMarkIcon className="h-4 w-4" />
+                        <XMarkIcon className="ui-icon-4" />
                       </button>
                     </td>
                     <td style={{ border: "none" }}>
                       <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
                     </td>
                     <td style={{ border: "none" }}>
-                      <select className="form-select form-select-sm" value={unit.location || "__none__"} onChange={(e) => handleLocationChange(unit.id, e.target.value)}>
+                      <select className="form-select ui-control-sm" value={unit.location || "__none__"} onChange={(e) => handleLocationChange(unit.id, e.target.value)}>
                         <option value="__none__">No location</option>
                         {availableLocations.map((location) => (
                           <option key={location} value={location}>
@@ -428,7 +428,7 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
                       </select>
                     </td>
                     <td style={{ border: "none" }}>
-                      <select className="form-select form-select-sm" value={unit.employee_id || "shared"} onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}>
+                      <select className="form-select ui-control-sm" value={unit.employee_id || "shared"} onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}>
                         <option value="shared">Shared</option>
                         {employees.map((employee) => (
                           <option key={employee.id} value={employee.id}>
@@ -455,30 +455,30 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
       )}
 
       {units.length > 0 && (
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <div className="small text-muted">
+        <div className="align-items-center d-flex justify-content-between mb-2">
+          <div className="ui-small-muted">
             Page {page} of {totalPages}
           </div>
-          <div className="d-flex align-items-center gap-2">
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+          <div className="ui-flex-center-gap-2">
+            <button className="btn ui-btn-outline-secondary-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
               Prev
             </button>
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+            <button className="btn ui-btn-outline-secondary-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
               Next
             </button>
           </div>
         </div>
       )}
 
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-        <button className="btn btn-sm btn-outline-primary" onClick={handleAddUnit} disabled={saving}>
+      <div className="align-items-center d-flex flex-wrap gap-2 justify-content-between mb-1">
+        <button className="btn btn-outline-primary btn-sm" onClick={handleAddUnit} disabled={saving}>
           {isTrainingMode ? (saving ? "Adding..." : "+ Add") : saving ? "..." : "+"}
         </button>
-        <input type="text" className="form-control form-control-sm" style={{ width: "320px", maxWidth: "100%" }} placeholder="Search label, location, assigned, state..." value={unitSearchTerm} onChange={(e) => setUnitSearchTerm(e.target.value)} />
+        <input type="text" className="form-control ui-control-sm" style={{ width: "320px", maxWidth: "100%" }} placeholder="Search label, location, assigned, state..." value={unitSearchTerm} onChange={(e) => setUnitSearchTerm(e.target.value)} />
       </div>
 
       {error && (
-        <div className="text-danger small mt-2">
+        <div className="mt-2 small text-danger">
           {error}{" "}
           <button className="btn btn-link btn-sm p-0 text-danger text-decoration-underline" onClick={() => setError(null)}>
             dismiss

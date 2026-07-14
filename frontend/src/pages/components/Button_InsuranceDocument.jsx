@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../services/api";
 import Modal_Viewer_Document from "./Modal_DocumentView";
@@ -7,7 +7,7 @@ import Modal_Viewer_Document from "./Modal_DocumentView";
  * Opens the shared insurance plan document (prefer immutable plan id or document id).
  * One document reference per plan — not per employee.
  */
-export default function Button_InsuranceDocument({ planId, planName, documentId, insurancePlans = [], className = "", title = "View insurance plan document" }) {
+export default function Button_InsuranceDocument({ planId, planName, documentId, insurancePlans = [], className="", title = "View insurance plan document" }) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerDoc, setViewerDoc] = useState(null);
   const [loading, setLoading] = useState(false);

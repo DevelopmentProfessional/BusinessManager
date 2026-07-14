@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Editor_Toolbar.jsx
  *
@@ -29,7 +29,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 
 // ─── 1 REUSABLE UI PRIMITIVES ──────────────────────────────────────────────────
 
-function ToolButton({ active, onClick, title, children, disabled, className = "" }) {
+function ToolButton({ active, onClick, title, children, disabled, className="" }) {
   return (
     <button
       type="button"
@@ -44,16 +44,16 @@ function ToolButton({ active, onClick, title, children, disabled, className = ""
 }
 
 function Divider() {
-  return <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-0.5 flex-shrink-0" />;
+  return <div className="bg-gray-300 dark:bg-gray-600 flex-shrink-0 h-6 mx-0.5 w-px" />;
 }
 
 function ColorButton({ value, onChange, title, label }) {
   const inputRef = useRef(null);
   return (
-    <button type="button" title={title} onClick={() => inputRef.current?.click()} className="relative flex flex-col items-center px-1.5 py-0.5 text-sm rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
-      <span className="text-xs font-bold">{label}</span>
-      <span className="w-5 h-1 rounded-sm mt-0.5" style={{ backgroundColor: value || "#000000" }} />
-      <input ref={inputRef} type="color" value={value || "#000000"} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" tabIndex={-1} />
+    <button type="button" title={title} onClick={() => inputRef.current?.click()} className="dark:hover:bg-gray-700 dark:text-gray-400 flex flex-col hover:bg-gray-200 items-center px-1.5 py-0.5 relative rounded text-gray-600 text-sm">
+      <span className="font-bold text-xs">{label}</span>
+      <span className="h-1 mt-0.5 rounded-sm w-5" style={{ backgroundColor: value || "#000000" }} />
+      <input ref={inputRef} type="color" value={value || "#000000"} onChange={(e) => onChange(e.target.value)} className="absolute cursor-pointer h-full inset-0 opacity-0 w-full" tabIndex={-1} />
     </button>
   );
 }
@@ -161,12 +161,12 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
   return (
     <div className="flex flex-col gap-1">
       {/* Row 1: Save, Undo/Redo, Font controls, Inline formatting */}
-      <div className="overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-1 flex-nowrap min-w-max pb-1">
+      <div className="no-scrollbar overflow-x-auto">
+        <div className="flex flex-nowrap gap-1 items-center min-w-max pb-1">
           {/* Save */}
           <ToolButton onClick={onSave} disabled={!isDirty || isSaving} title="Save (Ctrl+S)">
             {isSaving ? (
-              <span className="flex items-center gap-1">
+              <span className="ui-flex-items-gap-1">
                 <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -178,12 +178,12 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
             )}
           </ToolButton>
           <ToolButton onClick={onUndo} title="Undo (Ctrl+Z)">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
             </svg>
           </ToolButton>
           <ToolButton onClick={onRedo} title="Redo (Ctrl+Shift+Z)">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
             </svg>
           </ToolButton>
@@ -195,7 +195,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Font Family */}
           <select
-            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 max-w-[120px]"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 max-w-[120px] px-1 py-0.5 rounded text-gray-700 text-xs"
             value={currentFontFamily}
             onChange={(e) => {
               if (e.target.value) {
@@ -215,7 +215,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Font Size */}
           <select
-            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-[65px]"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 px-1 py-0.5 rounded text-gray-700 text-xs w-[65px]"
             value={currentFontSize}
             onChange={(e) => {
               if (e.target.value) {
@@ -276,7 +276,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Clear Formatting */}
           <ToolButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
           </ToolButton>
@@ -284,11 +284,11 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
       </div>
 
       {/* Row 2: Headings, Lists, Indent, Alignment, Line Spacing, HR */}
-      <div className="overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-1 flex-nowrap min-w-max pb-1">
+      <div className="no-scrollbar overflow-x-auto">
+        <div className="flex flex-nowrap gap-1 items-center min-w-max pb-1">
           {/* Heading */}
           <select
-            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 px-1 py-0.5 rounded text-gray-700 text-xs"
             value={editor.isActive("heading", { level: 1 }) ? "1" : editor.isActive("heading", { level: 2 }) ? "2" : editor.isActive("heading", { level: 3 }) ? "3" : "0"}
             onChange={(e) => {
               const level = parseInt(e.target.value);
@@ -310,12 +310,12 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Lists */}
           <ToolButton active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet List">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
             </svg>
           </ToolButton>
           <ToolButton active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Ordered List">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M8 6h13M8 12h13M8 18h13" />
               <text x="1" y="8" fontSize="7" fill="currentColor" fontFamily="sans-serif">
                 1
@@ -333,12 +333,12 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Indent / Outdent */}
           <ToolButton onClick={() => editor.chain().focus().indent().run()} title="Increase Indent (Tab)">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 6h18M9 12h12M9 18h12M3 11l3 1.5L3 14" />
             </svg>
           </ToolButton>
           <ToolButton onClick={() => editor.chain().focus().outdent().run()} title="Decrease Indent (Shift+Tab)">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 6h18M9 12h12M9 18h12M6 11l-3 1.5L6 14" />
             </svg>
           </ToolButton>
@@ -347,22 +347,22 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Text Alignment */}
           <ToolButton active={isAlignmentActive("left")} onClick={() => setHorizontalAlignment("left")} title={isImageSelected ? "Align image left" : "Align Left"}>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 6h18M3 12h10M3 18h14" />
             </svg>
           </ToolButton>
           <ToolButton active={isAlignmentActive("center")} onClick={() => setHorizontalAlignment("center")} title={isImageSelected ? "Align image center" : "Align Center"}>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 6h18M7 12h10M5 18h14" />
             </svg>
           </ToolButton>
           <ToolButton active={isAlignmentActive("right")} onClick={() => setHorizontalAlignment("right")} title={isImageSelected ? "Align image right" : "Align Right"}>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 6h18M11 12h10M7 18h14" />
             </svg>
           </ToolButton>
           <ToolButton active={editor.isActive({ textAlign: "justify" })} onClick={() => editor.chain().focus().setTextAlign("justify").run()} disabled={isImageSelected} title="Justify">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18" />
             </svg>
           </ToolButton>
@@ -371,7 +371,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Line Spacing */}
           <select
-            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-[55px]"
+            className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 px-1 py-0.5 rounded text-gray-700 text-xs w-[55px]"
             value={currentLineHeight}
             onChange={(e) => {
               if (e.target.value) {
@@ -394,7 +394,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Blockquote */}
           <ToolButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="Block Quote">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M8 10h.01M12 10h.01M6 4h12a2 2 0 012 2v8a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z" />
             </svg>
           </ToolButton>
@@ -406,7 +406,7 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
 
           {/* Horizontal Rule */}
           <ToolButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Line">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" d="M3 12h18" />
             </svg>
           </ToolButton>
@@ -449,7 +449,7 @@ function FindTab({ editor }) {
   return (
     <div className="flex flex-col gap-1.5">
       {/* Search row */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex gap-1.5 items-center">
         <input
           ref={searchInputRef}
           type="text"
@@ -466,9 +466,9 @@ function FindTab({ editor }) {
               setReplaceTerm("");
             }
           }}
-          className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-48"
+          className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 px-0 py-1 rounded text-gray-700 text-xs w-48"
         />
-        <span className="text-xs text-gray-500 dark:text-gray-400 min-w-[50px]">{searchTerm ? `${matchCount > 0 ? currentIdx : 0}/${matchCount}` : ""}</span>
+        <span className="dark:text-gray-400 min-w-[50px] text-gray-500 text-xs">{searchTerm ? `${matchCount > 0 ? currentIdx : 0}/${matchCount}` : ""}</span>
         <ToolButton onClick={() => editor?.commands.prevSearchResult()} disabled={matchCount === 0} title="Previous (Shift+Enter)">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -482,7 +482,7 @@ function FindTab({ editor }) {
       </div>
 
       {/* Replace row */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex gap-1.5 items-center">
         <input
           type="text"
           placeholder="Replace..."
@@ -491,7 +491,7 @@ function FindTab({ editor }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") editor?.commands.replaceCurrentResult();
           }}
-          className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-48"
+          className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 px-0 py-1 rounded text-gray-700 text-xs w-48"
         />
         <ToolButton onClick={() => editor?.commands.replaceCurrentResult()} disabled={matchCount === 0} title="Replace">
           Replace
@@ -546,17 +546,17 @@ function DesignTab({ editor }) {
   };
 
   return (
-    <div className="flex items-center gap-2 py-0.5 flex-wrap">
+    <div className="flex flex-wrap gap-2 items-center py-0.5">
       {THEMES.map((theme) => (
         <button
           key={theme.name}
           type="button"
           onClick={() => applyTheme(theme)}
-          className="flex flex-col items-start px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors min-w-[100px]"
+          className="border border-gray-300 dark:border-gray-600 dark:hover:bg-primary-900/20 flex flex-col hover:bg-primary-50 hover:border-primary-400 items-start min-w-[100px] px-1 py-1.5 rounded-md transition-colors"
           title={theme.desc}
         >
           <span
-            className="text-sm font-medium leading-tight"
+            className="font-medium leading-tight text-sm"
             style={{
               fontFamily: theme.font || "inherit",
               color: theme.color || "inherit",
@@ -564,7 +564,7 @@ function DesignTab({ editor }) {
           >
             {theme.name}
           </span>
-          <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">{theme.desc}</span>
+          <span className="dark:text-gray-500 leading-tight text-[10px] text-gray-400">{theme.desc}</span>
         </button>
       ))}
     </div>
@@ -619,10 +619,10 @@ export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onR
   // For code editors, keep the old minimal toolbar
   if (editorType === "code") {
     return (
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-wrap">
+      <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-wrap gap-1 items-center px-1 py-1.5">
         <ToolButton onClick={onSave} disabled={!isDirty || isSaving} title="Save (Ctrl+S)">
           {isSaving ? (
-            <span className="flex items-center gap-1">
+            <span className="ui-flex-items-gap-1">
               <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -634,33 +634,33 @@ export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onR
           )}
         </ToolButton>
         <ToolButton onClick={onUndo} title="Undo (Ctrl+Z)">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
           </svg>
         </ToolButton>
         <ToolButton onClick={onRedo} title="Redo (Ctrl+Shift+Z)">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="ui-icon-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
           </svg>
         </ToolButton>
         <Badge_Status saveStatus={saveStatus} isDirty={isDirty} />
         <Divider />
-        <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">Syntax highlighting active</span>
+        <span className="dark:text-gray-400 ml-1 text-gray-500 text-xs">Syntax highlighting active</span>
       </div>
     );
   }
 
   // Rich text editor: tabbed ribbon
   return (
-    <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+    <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 border-b border-gray-200 dark:border-gray-700 px-2">
+      <div className="border-b border-gray-200 dark:border-gray-700 flex gap-0 items-center px-0">
         {["home", "find", ...(showDesignTab ? ["design"] : [])].map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1 text-xs font-medium capitalize border-b-2 transition-colors ${activeTab === tab ? "border-primary-500 text-primary-700 dark:text-primary-300" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
+            className={`px-1 py-1 text-xs font-medium capitalize border-b-2 transition-colors ${activeTab === tab ? "border-primary-500 text-primary-700 dark:text-primary-300" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"}`}
           >
             {tab === "find" ? "Find & Replace" : tab}
           </button>
@@ -668,7 +668,7 @@ export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onR
       </div>
 
       {/* Tab content */}
-      <div className="px-2 py-1">
+      <div className="px-0 py-1">
         {activeTab === "home" && <HomeTab editor={editor} onSave={onSave} onUndo={onUndo} onRedo={onRedo} isDirty={isDirty} isSaving={isSaving} saveStatus={saveStatus} />}
         {activeTab === "find" && <FindTab editor={editor} />}
         {showDesignTab && activeTab === "design" && <DesignTab editor={editor} />}

@@ -1,4 +1,4 @@
-﻿// FILE: Button_App.jsx
+// FILE: Button_App.jsx
 // unified button replacing Button_Toolbar (icon+label+training mode) and Button_Icon (icon-only+variants)
 // Dimensions: Profile → TextSize + training/compact (frontend/src/constants/buttonTextSize.js)
 import React from "react";
@@ -30,7 +30,7 @@ function adjustTrainingMargins(className) {
     .join(" ");
 }
 
-export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
+export default function Button_App({ icon: Icon, label, onClick, variant, className="", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const training = isTrainingMode && !compact;
   const normalizedLabel = typeof label === "string" ? label.trim() : "";

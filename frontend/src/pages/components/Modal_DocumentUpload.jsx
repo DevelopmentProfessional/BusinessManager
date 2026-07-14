@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { DocumentIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
@@ -55,7 +55,7 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding>
-      <form onSubmit={handleSubmit} className="component h-100 min-h-0">
+      <form onSubmit={handleSubmit} className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">{title}</div>
           <div className="component-header-center"></div>
@@ -65,7 +65,7 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
         <div className="component-body">
           <div className="component-body-inner">
           <div
-            className={`border border-2 border-dashed rounded p-3 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`}
+            className={`border border-2 border-dashed rounded p-1 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`}
             onDragEnter={(e) => {
               e.preventDefault();
               setDragActive(true);
@@ -84,28 +84,28 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
           >
             {file ? (
               <>
-                <p className="small fw-medium mb-1">{file.name}</p>
-                <p className="text-muted small mb-2">{formatFileSize(file.size)}</p>
-                <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setFile(null)}>
+                <p className="fw-medium mb-1 small">{file.name}</p>
+                <p className="mb-2 ui-small-muted">{formatFileSize(file.size)}</p>
+                <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setFile(null)}>
                   Remove
                 </button>
               </>
             ) : (
               <>
-                <DocumentIcon className="mx-auto mb-2 text-muted" style={{ width: 40, height: 40 }} />
-                <p className="small text-muted mb-2">Drag and drop or choose a file</p>
+                <DocumentIcon className="mb-2 mx-auto text-muted" style={{ width: 40, height: 40 }} />
+                <p className="mb-2 ui-small-muted">Drag and drop or choose a file</p>
                 <input type="file" id="modal-doc-upload-file" className="d-none" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-                <label htmlFor="modal-doc-upload-file" className="btn btn-sm btn-outline-primary mb-0">
+                <label htmlFor="modal-doc-upload-file" className="btn btn-outline-primary btn-sm mb-0">
                   Select file
                 </label>
               </>
             )}
           </div>
           <div className="form-floating mt-3">
-            <textarea id="po_doc_desc" className="form-control form-control-sm" style={{ minHeight: 72 }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={uploading} />
+            <textarea id="po_doc_desc" className="form-control ui-control-sm" style={{ minHeight: 72 }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={uploading} />
             <label htmlFor="po_doc_desc">Description (optional)</label>
           </div>
-          {error && <div className="alert alert-danger py-2 small mt-2 mb-0">{error}</div>}
+          {error && <div className="alert alert-danger mb-0 mt-2 py-0 small">{error}</div>}
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
@@ -121,7 +121,7 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
             />
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={handleClose} disabled={uploading} className="btn btn-circle btn-outline-secondary" title="Cancel">
+            <button type="button" onClick={handleClose} disabled={uploading} className="btn ui-btn-circle-outline-secondary" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

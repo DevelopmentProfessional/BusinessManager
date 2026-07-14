@@ -238,7 +238,11 @@ def get_schedule_settings(
     company_id = resolve_company_id(session, current_user)
     settings = get_or_create_settings(session, company_id)
     company = get_company(session, company_id)
-    return _to_settings_response(settings, company)
+    response = _to_settings_response(settings, company)
+    if current_user.role != UserRole.ADMIN:
+        response.stripe_secret_key = None
+        response.stripe_webhook_secret = None
+    return response
 
 
 @router.put("/schedule", response_model=AppSettingsRead)
@@ -253,6 +257,18 @@ def update_schedule_settings(
 
     # Update fields if provided
     update_data = settings_data.model_dump(exclude_unset=True)
+
+    # Only admins can update Stripe credentials/settings.
+    stripe_fields = {
+        "stripe_enabled",
+        "stripe_publishable_key",
+        "stripe_secret_key",
+        "stripe_webhook_secret",
+    }
+    if current_user.role != UserRole.ADMIN:
+        for field in stripe_fields:
+            update_data.pop(field, None)
+
     for field, value in update_data.items():
         setattr(settings, field, value)
 
@@ -266,7 +282,11 @@ def update_schedule_settings(
         raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
     company = get_company(session, company_id)
-    return _to_settings_response(settings, company)
+    response = _to_settings_response(settings, company)
+    if current_user.role != UserRole.ADMIN:
+        response.stripe_secret_key = None
+        response.stripe_webhook_secret = None
+    return response
 
 
 # ─── 2B COMPANY LOGO UPLOAD ────────────────────────────────────────────────────

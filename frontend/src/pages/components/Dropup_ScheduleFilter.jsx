@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Dropup_ScheduleFilter.jsx
  *
@@ -96,7 +96,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="btn-unstyled d-flex align-items-center justify-content-between gap-2 w-100 rounded-pill"
+        className="align-items-center btn-unstyled d-flex gap-2 justify-content-between rounded-pill w-100"
         style={{
           height: "var(--app-input-height, 2rem)",
           minHeight: "var(--app-input-height, 2rem)",
@@ -110,7 +110,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
         <span className="text-truncate">
           {label}
           {selectedCount > 0 && (
-            <span className="badge bg-white text-primary rounded-pill ms-1" style={{ fontSize: "0.65rem" }}>
+            <span className="badge bg-white ms-1 rounded-pill text-primary" style={{ fontSize: "0.65rem" }}>
               {selectedCount}
             </span>
           )}
@@ -122,22 +122,22 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
       {isOpen &&
         createPortal(
           <div
-            className="app-menu-panel bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
+            className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 rounded shadow-lg"
             style={{
               ...panelStyle,
               maxHeight: "300px",
             }}
           >
             {/* Search Input */}
-            <div className="p-2 border-bottom border-gray-200 dark:border-gray-700">
-              <div className="position-relative">
-                <span className="position-absolute top-50 start-0 translate-middle-y ps-2 text-muted">
-                  <MagnifyingGlassIcon className="h-4 w-4" />
+            <div className="border-bottom border-gray-200 dark:border-gray-700 p-0">
+              <div className="ui-pos-rel">
+                <span className="position-absolute ps-0 start-0 text-muted top-50 translate-middle-y">
+                  <MagnifyingGlassIcon className="ui-icon-4" />
                 </span>
-                <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className="form-control form-control-sm ps-5" />
+                <input ref={inputRef} type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={placeholder} className="form-control form-control-sm ps-1" />
               </div>
               {selectedCount > 0 && (
-                <button type="button" onClick={onClear} className="app-menu-action btn-unstyled p-0 text-muted mt-1" style={{ textDecoration: "underline" }}>
+                <button type="button" onClick={onClear} className="app-menu-action btn-unstyled mt-1 p-0 text-muted" style={{ textDecoration: "underline" }}>
                   Clear all ({selectedCount})
                 </button>
               )}
@@ -146,12 +146,12 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
             {/* Options List */}
             <div className="overflow-y-auto" style={{ maxHeight: "200px" }}>
               {filteredOptions.length === 0 ? (
-                <div className="app-menu-empty px-3 py-2 text-gray-500">No matches</div>
+                <div className="app-menu-empty px-1 py-0 text-gray-500">No matches</div>
               ) : (
                 filteredOptions.map((option) => {
                   const isSelected = selectedIds.includes(option.id);
                   return (
-                    <label key={option.id} className={`app-menu-item d-flex align-items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
+                    <label key={option.id} className={`app-menu-item d-flex align-items-center gap-2 px-1 py-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
                       <input type="checkbox" checked={isSelected} onChange={() => onToggle(option.id)} className="form-check-input" />
                       <span>{option.label}</span>
                     </label>
@@ -161,11 +161,11 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
             </div>
 
             {/* Close Button */}
-            <div className="p-2 border-top border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="bg-gray-50 border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 p-0">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="btn-unstyled w-100 rounded-pill"
+                className="btn-unstyled rounded-pill w-100"
                 style={{
                   height: "var(--app-input-height, 2rem)",
                   border: "1px solid var(--bs-border-color)",
@@ -259,7 +259,7 @@ export default function Dropup_ScheduleFilter({ isOpen, onClose, employees, clie
         />
       }
     >
-      <div className="d-flex flex-column gap-3 p-2">
+      <div className="d-flex flex-column gap-3 p-0">
         {/* Employees Dropup */}
         <FilterDropup label="Employees" options={employeeOptions} selectedIds={localFilters.employeeIds} onToggle={(id) => toggleId("employeeIds", id)} onClear={() => clearSection("employeeIds")} placeholder="Search employees..." />
 
@@ -270,7 +270,7 @@ export default function Dropup_ScheduleFilter({ isOpen, onClose, employees, clie
         <FilterDropup label="Services" options={serviceOptions} selectedIds={localFilters.serviceIds} onToggle={(id) => toggleId("serviceIds", id)} onClear={() => clearSection("serviceIds")} placeholder="Search services..." />
 
         {/* Info text */}
-        <div className="text-muted small mt-2">Click a filter to open the selection panel. Use search to find specific items.</div>
+        <div className="mt-2 small text-muted">Click a filter to open the selection panel. Use search to find specific items.</div>
       </div>
     </Modal>
   );

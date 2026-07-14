@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Editor_RichText.jsx
  *
@@ -92,14 +92,14 @@ const Editor_RichText = forwardRef(function Editor_RichText({ content, onChange 
 
   if (!editor) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="flex h-full items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       <EditorContent editor={editor} className="flex-1 min-h-0 overflow-auto tiptap-editor" />
       {/* ─── 2 SCOPED CSS STYLES ─────────────────────────────────────────────── */}
       <style>{`

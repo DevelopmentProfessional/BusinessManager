@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
+import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
 import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "./Utils_TemplateVariables";
 import { documentsAPI } from "../../services/api";
@@ -168,7 +168,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
   // ── Toolbar tab button ───────────────────────────────────────────────────────
   const TabBtn = ({ id, icon: Icon, label }) => (
-    <button type="button" onClick={() => handleTabClick(id)} className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded transition-colors ${activeTab === id ? "bg-primary-600 text-white" : "text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"}`}>
+    <button type="button" onClick={() => handleTabClick(id)} className={`flex items-center gap-1 text-xs px-0 py-0.5 rounded transition-colors ${activeTab === id ? "bg-primary-600 text-white" : "text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"}`}>
       <Icon className="h-3.5 w-3.5" />
       {label}
     </button>
@@ -181,9 +181,9 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     const isOpen = openScope === scope;
     return (
       <div key={scope}>
-        <button type="button" onClick={() => setOpenScope(isOpen ? null : scope)} className="w-full flex items-center justify-between py-0.5 hover:text-primary-600 dark:hover:text-primary-400">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 capitalize">{ctx.label}</span>
+        <button type="button" onClick={() => setOpenScope(isOpen ? null : scope)} className="dark:hover:text-primary-400 flex hover:text-primary-600 items-center justify-between py-0.5 w-full">
+          <div className="flex gap-1.5 items-center">
+            <span className="capitalize dark:text-gray-300 font-semibold text-gray-700 text-xs">{ctx.label}</span>
             {/* Page badges */}
             <div className="flex gap-1">
               {ctx.pages.map((pg) => (
@@ -193,18 +193,18 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               ))}
             </div>
           </div>
-          {isOpen ? <ChevronUpIcon className="h-3 w-3 text-gray-400 flex-shrink-0" /> : <ChevronDownIcon className="h-3 w-3 text-gray-400 flex-shrink-0" />}
+          {isOpen ? <ChevronUpIcon className="flex-shrink-0 h-3 text-gray-400 w-3" /> : <ChevronDownIcon className="flex-shrink-0 h-3 text-gray-400 w-3" />}
         </button>
 
         {isOpen && (
-          <div className="flex flex-wrap gap-1 pl-2 pb-1">
+          <div className="flex flex-wrap gap-1 pb-1 pl-0">
             {vars.map((v) => (
               <button
                 key={v.key}
                 type="button"
                 onClick={() => insertVariable(v.key)}
                 title={v.description}
-                className={`px-2 py-0.5 rounded text-xs border ${
+                className={`px-0 py-0.5 rounded text-xs border ${
                   v.isLayout
                     ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-800/50"
                     : "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-700 hover:bg-primary-200 dark:hover:bg-primary-800/50"
@@ -224,10 +224,10 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
   return (
     <Modal isOpen onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">
-            <DocumentTextIcon className="app-icon text-muted me-1" aria-hidden="true" />
+            <DocumentTextIcon className="app-icon me-1 text-muted" aria-hidden="true" />
             {isNew ? "New Template" : "Edit Template"}
           </div>
           <div className="component-header-center"></div>
@@ -238,16 +238,16 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         <div className="component-body">
           <div className="component-body-inner">
             {/* Error banner */}
-            <div className="flex-shrink-0 px-4 pt-3 pb-2">{error && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">{error}</div>}</div>
+            <div className="flex-shrink-0 pb-0 pt-1 px-1">{error && <div className="bg-red-50 dark:bg-red-900/20 px-0 py-1 rounded text-red-600 text-sm">{error}</div>}</div>
 
             {/* ── Editor area ─────────────────────────────────────────────────── */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden">
               {/* ── Variables panel ─────────────────────────────────────────── */}
               {activeTab === TAB_VARS && (
-                <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-y-auto max-h-52">
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1.5">
+                <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
+                  <p className="dark:text-gray-500 mb-1.5 text-[10px] text-gray-400">
                     Click a variable to insert it. Coloured badges show which page populates it.
-                    <span className="ml-1 text-amber-600 dark:text-amber-400">⊞ table variables</span> render as formatted tables.
+                    <span className="dark:text-amber-400 ml-1 text-amber-600">⊞ table variables</span> render as formatted tables.
                   </p>
                   <div className="space-y-1">{Object.keys(TEMPLATE_VARIABLES).map(renderScopeRow)}</div>
                 </div>
@@ -255,22 +255,22 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
               {/* ── Layouts panel ───────────────────────────────────────────── */}
               {activeTab === TAB_LAYOUTS && (
-                <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-y-auto max-h-52">
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1.5">Pre-built HTML blocks. Click to insert at the cursor. Data is filled when the template is used on the matching page.</p>
-                  <div className="grid grid-cols-2 gap-1.5">
+                <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
+                  <p className="dark:text-gray-500 mb-1.5 text-[10px] text-gray-400">Pre-built HTML blocks. Click to insert at the cursor. Data is filled when the template is used on the matching page.</p>
+                  <div className="gap-1.5 grid grid-cols-2">
                     {LAYOUT_TEMPLATES.map((layout) => (
-                      <button key={layout.id} type="button" onClick={() => insertHtml(layout.html)} className="text-left p-2 rounded border border-gray-200 dark:border-gray-600 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
-                        <div className="flex items-start justify-between gap-1">
-                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">{layout.label}</span>
-                          <div className="flex flex-col gap-0.5 flex-shrink-0">
+                      <button key={layout.id} type="button" onClick={() => insertHtml(layout.html)} className="border border-gray-200 dark:border-gray-600 dark:hover:bg-primary-900/20 hover:bg-primary-50 hover:border-primary-400 p-0 rounded text-left transition-colors">
+                        <div className="flex gap-1 items-start justify-between">
+                          <span className="dark:text-gray-200 font-medium leading-tight text-gray-800 text-xs">{layout.label}</span>
+                          <div className="flex flex-col flex-shrink-0 gap-0.5">
                             {layout.pages.map((pg) => (
-                              <span key={pg} className="text-[9px] px-1 rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 whitespace-nowrap">
+                              <span key={pg} className="bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 px-1 rounded text-[9px] text-primary-700 whitespace-nowrap">
                                 {PAGE_LABEL[pg]}
                               </span>
                             ))}
                           </div>
                         </div>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{layout.description}</p>
+                        <p className="dark:text-gray-400 leading-tight mt-0.5 text-[10px] text-gray-500">{layout.description}</p>
                       </button>
                     ))}
                   </div>
@@ -279,11 +279,11 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
               {/* ── Images panel ────────────────────────────────────────────── */}
               {activeTab === TAB_IMAGES && (
-                <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-y-auto max-h-52">
+                <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   {loadingImgs ? (
-                    <p className="text-xs text-gray-500">Loading images…</p>
+                    <p className="text-gray-500 text-xs">Loading images…</p>
                   ) : images.length === 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">No images found. Upload images in the Documents section first, then return here.</p>
+                    <p className="ui-muted-xs">No images found. Upload images in the Documents section first, then return here.</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {images.map((doc) => (
@@ -292,17 +292,17 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                           type="button"
                           onClick={() => insertImage(doc)}
                           title={`Insert: ${doc.original_filename || doc.filename}`}
-                          className="flex flex-col items-center gap-1 p-1 rounded border border-gray-200 dark:border-gray-600 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                          className="border border-gray-200 dark:border-gray-600 dark:hover:bg-primary-900/20 flex flex-col gap-1 hover:bg-primary-50 hover:border-primary-400 items-center p-1 rounded transition-colors"
                         >
                           <img
                             src={documentsAPI.fileUrl(doc.id)}
                             alt={doc.original_filename || ""}
-                            className="h-16 w-16 object-cover rounded"
+                            className="h-16 object-cover rounded w-16"
                             onError={(e) => {
                               e.target.style.display = "none";
                             }}
                           />
-                          <span className="text-xs text-gray-600 dark:text-gray-400 max-w-[64px] truncate">{doc.original_filename || doc.filename}</span>
+                          <span className="dark:text-gray-400 max-w-[64px] text-gray-600 text-xs truncate">{doc.original_filename || doc.filename}</span>
                         </button>
                       ))}
                     </div>
@@ -311,9 +311,9 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               )}
 
               {/* Rich text editor */}
-              <div className="flex-1 overflow-hidden p-2">
-                <div className="h-full border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
-                  <Suspense fallback={<div className="flex items-center justify-center h-full text-sm text-gray-500">Loading editor…</div>}>
+              <div className="flex-1 overflow-hidden p-0">
+                <div className="border border-gray-300 dark:border-gray-600 h-full overflow-hidden rounded">
+                  <Suspense fallback={<div className="flex h-full items-center justify-center text-gray-500 text-sm">Loading editor…</div>}>
                     <Editor_RichText ref={editorCallbackRef} content={content} onChange={setContent} />
                   </Suspense>
                 </div>
@@ -330,9 +330,9 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           {/* Row 1: editor controls */}
           <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} />
           {/* Row 2: template metadata + dropups */}
-          <div className="px-3 py-2 border-top d-flex align-items-center gap-2 flex-wrap">
-            <div className="d-flex align-items-center gap-1" style={{ minWidth: "240px", flex: "1 1 240px" }}>
-              <div className="d-flex align-items-center gap-1">
+          <div className="align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0">
+            <div className="ui-flex-center-gap-1" style={{ minWidth: "240px", flex: "1 1 240px" }}>
+              <div className="ui-flex-center-gap-1">
                 <input
                   type="text"
                   value={name}
@@ -340,24 +340,24 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                     setName(e.target.value);
                     setSaveStatus("idle");
                   }}
-                  className="form-control form-control-sm"
+                  className="form-control ui-control-sm"
                   style={{ minWidth: "160px", maxWidth: "260px" }}
                   placeholder="Template name"
                 />
-                <div className="position-relative">
-                  <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" onClick={() => setShowDescriptionHelp((prev) => !prev)} title="Template description">
-                    <QuestionMarkCircleIcon className="h-4 w-4" />
+                <div className="ui-pos-rel">
+                  <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" onClick={() => setShowDescriptionHelp((prev) => !prev)} title="Template description">
+                    <QuestionMarkCircleIcon className="ui-icon-4" />
                   </button>
                   {showDescriptionHelp && (
-                    <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ width: "280px", zIndex: 20 }}>
-                      <label className="form-label text-xs mb-1">Template description</label>
+                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ width: "280px", zIndex: 20 }}>
+                      <label className="form-label ui-form-label-xs">Template description</label>
                       <textarea
                         value={description}
                         onChange={(e) => {
                           setDescription(e.target.value);
                           setSaveStatus("idle");
                         }}
-                        className="form-control form-control-sm"
+                        className="form-control ui-control-sm"
                         rows={3}
                         placeholder="Describe this template"
                       />
@@ -372,7 +372,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                   setTemplateType(e.target.value);
                   setSaveStatus("idle");
                 }}
-                className="form-select form-select-sm"
+                className="form-select ui-control-sm"
                 style={{ width: "120px" }}
                 title="Template type"
               >
@@ -383,14 +383,14 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 ))}
               </select>
 
-              <div className="position-relative">
-                <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
+              <div className="ui-pos-rel">
+                <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
                   Pages <ChevronUpIcon className="h-3 w-3" />
                 </button>
                 {showPagesDropup && (
-                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ minWidth: "180px", zIndex: 20 }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>
                     {PAGE_OPTIONS.map((pg) => (
-                      <label key={pg.value} className="app-menu-item d-flex align-items-center gap-2 py-1">
+                      <label key={pg.value} className="align-items-center app-menu-item d-flex gap-2 py-1">
                         <input
                           type="checkbox"
                           checked={accessiblePages.includes(pg.value)}
@@ -406,41 +406,41 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 )}
               </div>
 
-              <div className="position-relative">
-                <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
+              <div className="ui-pos-rel">
+                <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
                   Insert <ChevronUpIcon className="h-3 w-3" />
                 </button>
                 {showInsertDropup && (
-                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow" style={{ minWidth: "180px", zIndex: 20 }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>
                     <button
                       type="button"
-                      className="app-menu-item btn btn-sm w-100 text-start"
+                      className="app-menu-item btn btn-sm text-start w-100"
                       onClick={() => {
                         handleTabClick(TAB_VARS);
                         setShowInsertDropup(false);
                       }}
                     >
-                      <VariableIcon className="h-3.5 w-3.5 me-1" /> Variables
+                      <VariableIcon className="h-3.5 me-1 w-3.5" /> Variables
                     </button>
                     <button
                       type="button"
-                      className="app-menu-item btn btn-sm w-100 text-start"
+                      className="app-menu-item btn btn-sm text-start w-100"
                       onClick={() => {
                         handleTabClick(TAB_LAYOUTS);
                         setShowInsertDropup(false);
                       }}
                     >
-                      <TableCellsIcon className="h-3.5 w-3.5 me-1" /> Layouts
+                      <TableCellsIcon className="h-3.5 me-1 w-3.5" /> Layouts
                     </button>
                     <button
                       type="button"
-                      className="btn btn-sm w-100 text-start"
+                      className="btn btn-sm text-start w-100"
                       onClick={() => {
                         handleTabClick(TAB_IMAGES);
                         setShowInsertDropup(false);
                       }}
                     >
-                      <PhotoIcon className="h-3.5 w-3.5 me-1" /> Images
+                      <PhotoIcon className="h-3.5 me-1 w-3.5" /> Images
                     </button>
                   </div>
                 )}
@@ -449,22 +449,22 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
 
           {/* Row 3: save/cancel */}
-          <div className="d-flex align-items-center gap-1 p-2 border-top">
+          <div className="align-items-center border-top d-flex gap-1 p-0">
             <div className="component-footer-left">
-              <button type="button" onClick={handleSave} className="btn btn-primary btn-sm d-flex align-items-center gap-1" disabled={saving} title="Save Template">
+              <button type="button" onClick={handleSave} className="align-items-center btn btn-primary btn-sm d-flex gap-1" disabled={saving} title="Save Template">
                 {saving ? (
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 ) : (
-                  <CheckIcon className="h-4 w-4 flex-shrink-0" />
+                  <CheckIcon className="flex-shrink-0 h-4 w-4" />
                 )}
                 <span className="d-none d-sm-inline">{saving ? "Saving…" : isNew ? "Add" : "Save"}</span>
               </button>
             </div>
             <div className="component-footer-center">
-              <button type="button" className="btn btn-circle btn-outline-secondary" onClick={onClose} disabled={saving} title="Cancel">
+              <button type="button" className="btn ui-btn-circle-outline-secondary" onClick={onClose} disabled={saving} title="Cancel">
                 <XMarkIcon />
               </button>
             </div>

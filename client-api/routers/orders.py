@@ -12,8 +12,10 @@ GET  /orders/{id}/items — Just the line items
 """
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import List
+from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
@@ -21,6 +23,7 @@ from pydantic import BaseModel as PydanticModel
 from sqlmodel import Session, select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import stripe
 
 import auth as auth_utils
 from database import get_session
@@ -60,7 +63,7 @@ def _parse_optional_uuid(value: str | UUID | None, field_name: str, item_name: s
         return None
 
 
-def _order_to_read(o: ClientOrder) -> OrderRead:
+def _order_to_read(o: ClientOrder, checkout_url: str | None = None, checkout_session_id: str | None = None) -> OrderRead:
     return OrderRead(
         id=o.id,
         client_id=o.client_id,
@@ -74,6 +77,8 @@ def _order_to_read(o: ClientOrder) -> OrderRead:
         paid_at=o.paid_at,
         fulfilled_at=o.fulfilled_at,
         inventory_deducted_at=o.inventory_deducted_at,
+        checkout_url=checkout_url,
+        checkout_session_id=checkout_session_id,
         created_at=o.created_at,
     )
 
@@ -95,6 +100,122 @@ def _normalize_payment_method(value: str | None) -> str:
     if normalized in {"", "pending", "payment_pending"}:
         return "card"
     return normalized
+
+
+def _get_company_stripe_settings(company_id: str | None, session: Session) -> dict:
+    if not company_id:
+        return {
+            "enabled": False,
+            "publishable_key": None,
+            "secret_key": None,
+            "webhook_secret": None,
+        }
+
+    settings = session.exec(
+        select(AppSettings).where(AppSettings.company_id == company_id)
+    ).first()
+
+    return {
+        "enabled": bool(getattr(settings, "stripe_enabled", False)) if settings else False,
+        "publishable_key": (getattr(settings, "stripe_publishable_key", None) or "").strip() if settings else None,
+        "secret_key": (getattr(settings, "stripe_secret_key", None) or "").strip() if settings else None,
+        "webhook_secret": (getattr(settings, "stripe_webhook_secret", None) or "").strip() if settings else None,
+    }
+
+
+def _resolve_checkout_base_url(request: Request) -> str:
+    origin = (request.headers.get("origin") or "").strip()
+    if origin:
+        return origin.rstrip("/")
+
+    referer = (request.headers.get("referer") or "").strip()
+    if referer:
+        parsed = urlparse(referer)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+
+    return os.getenv("CLIENT_PORTAL_URL", "https://clients.vadpivi.com").rstrip("/")
+
+
+def _create_checkout_session_for_order(
+    order: ClientOrder,
+    order_items: list,
+    stripe_secret_key: str,
+    request: Request,
+):
+    stripe.api_key = stripe_secret_key
+    base_url = _resolve_checkout_base_url(request)
+
+    line_items = []
+    for item in order_items:
+        item_name = (getattr(item, "item_name", None) or "Item").strip() or "Item"
+        unit_price = float(getattr(item, "unit_price", 0) or 0)
+        quantity = int(getattr(item, "quantity", 1) or 1)
+        unit_amount = max(1, int(round(unit_price * 100)))
+        line_items.append(
+            {
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": item_name},
+                    "unit_amount": unit_amount,
+                },
+                "quantity": max(1, quantity),
+            }
+        )
+
+    # Preserve explicit tax line to match order totals.
+    if float(order.tax_amount or 0) > 0:
+        line_items.append(
+            {
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": "Tax"},
+                    "unit_amount": max(1, int(round(float(order.tax_amount) * 100))),
+                },
+                "quantity": 1,
+            }
+        )
+
+    return stripe.checkout.Session.create(
+        mode="payment",
+        payment_method_types=["card"],
+        line_items=line_items,
+        client_reference_id=str(order.id),
+        metadata={
+            "order_id": str(order.id),
+            "company_id": str(order.company_id or ""),
+            "client_id": str(order.client_id),
+        },
+        success_url=f"{base_url}/orders?payment=success&order_id={order.id}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{base_url}/cart?payment=cancelled&order_id={order.id}",
+    )
+
+
+def _construct_stripe_event(payload: bytes, stripe_signature: str | None, session: Session):
+    if not stripe_signature:
+        raise HTTPException(status_code=400, detail="Missing Stripe signature header.")
+
+    # Prefer per-company webhook secrets first.
+    settings_rows = session.exec(select(AppSettings)).all()
+    secrets = []
+    for row in settings_rows:
+        secret = (getattr(row, "stripe_webhook_secret", None) or "").strip()
+        if secret and secret not in secrets:
+            secrets.append(secret)
+
+    env_secret = (os.getenv("STRIPE_WEBHOOK_SECRET", "") or "").strip()
+    if env_secret and env_secret not in secrets:
+        secrets.append(env_secret)
+
+    for secret in secrets:
+        try:
+            return stripe.Webhook.construct_event(payload, stripe_signature, secret)
+        except stripe.SignatureVerificationError:
+            continue
+        except Exception:
+            continue
+
+    raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
 
 def _deduct_inventory_for_order(order: ClientOrder, session: Session) -> None:
@@ -334,9 +455,34 @@ def checkout(
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to create order.")
 
+    checkout_url = None
+    checkout_session_id = None
+
+    if _normalize_payment_method(order.payment_method) == "card":
+        stripe_cfg = _get_company_stripe_settings(company_id, session)
+        if stripe_cfg["enabled"]:
+            if not stripe_cfg["secret_key"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Card payments are enabled but Stripe secret key is not configured.",
+                )
+            try:
+                session_obj = _create_checkout_session_for_order(order, body.items, stripe_cfg["secret_key"], request)
+                checkout_url = session_obj.get("url")
+                checkout_session_id = session_obj.get("id")
+                if session_obj.get("payment_intent"):
+                    order.stripe_payment_intent_id = str(session_obj.get("payment_intent"))
+                    session.add(order)
+                    session.commit()
+                    session.refresh(order)
+            except stripe.StripeError as exc:
+                raise HTTPException(status_code=502, detail=f"Stripe checkout creation failed: {str(exc)}")
+
     return {
         "order_id": str(order.id),
         "client_secret": None,
+        "checkout_url": checkout_url,
+        "checkout_session_id": checkout_session_id,
         "total": total,
         "subtotal": round(subtotal, 2),
         "tax_amount": tax_amount,
@@ -382,6 +528,26 @@ def pay_order(
         raise HTTPException(status_code=400, detail=f"Order cannot be paid from '{current_status}' status.")
 
     _validate_order_bookings_for_payment(order, current_client, session)
+
+    stripe_cfg = _get_company_stripe_settings(order.company_id, session)
+    wants_card = _normalize_payment_method(body.payment_method or order.payment_method) == "card"
+    if wants_card and stripe_cfg["enabled"]:
+        if not stripe_cfg["secret_key"]:
+            raise HTTPException(status_code=400, detail="Stripe secret key is not configured for this company.")
+
+        order_items = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)).all()
+        try:
+            session_obj = _create_checkout_session_for_order(order, order_items, stripe_cfg["secret_key"], request)
+            checkout_url = session_obj.get("url")
+            checkout_session_id = session_obj.get("id")
+            if session_obj.get("payment_intent"):
+                order.stripe_payment_intent_id = str(session_obj.get("payment_intent"))
+                session.add(order)
+                session.commit()
+                session.refresh(order)
+            return _order_to_read(order, checkout_url=checkout_url, checkout_session_id=checkout_session_id)
+        except stripe.StripeError as exc:
+            raise HTTPException(status_code=502, detail=f"Stripe checkout creation failed: {str(exc)}")
 
     order.status = "ordered"
     order.paid_at = order.paid_at or _utcnow()
@@ -539,36 +705,46 @@ async def stripe_webhook(
             payment_intent.succeeded   → order.status = 'ordered'
       payment_intent.canceled    → order.status = 'cancelled'
     """
-    import os
-    import stripe
-
-    stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
-    stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     payload = await request.body()
 
     try:
-        event = stripe.Webhook.construct_event(payload, stripe_signature, stripe_webhook_secret)
-    except stripe.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+        event = _construct_stripe_event(payload, stripe_signature, session)
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=400, detail="Webhook parse error.")
 
-    pi = event["data"]["object"]
-    order_id = pi.get("metadata", {}).get("order_id")
+    payload_obj = event["data"]["object"]
+    metadata = payload_obj.get("metadata", {}) if isinstance(payload_obj, dict) else {}
+    order_id = metadata.get("order_id")
+
+    if event["type"] == "checkout.session.completed" and not order_id:
+        # Fallback to client_reference_id when metadata is absent.
+        order_id = payload_obj.get("client_reference_id")
+
     if not order_id:
         return {"received": True}
 
+    try:
+        order_uuid = UUID(str(order_id))
+    except (TypeError, ValueError):
+        return {"received": True}
+
     order = session.exec(
-        select(ClientOrder).where(ClientOrder.id == UUID(order_id))
+        select(ClientOrder).where(ClientOrder.id == order_uuid)
     ).first()
 
     if not order:
         return {"received": True}
 
-    if event["type"] == "payment_intent.succeeded":
+    if event["type"] in {"payment_intent.succeeded", "checkout.session.completed"}:
+        payment_intent_id = payload_obj.get("payment_intent") if event["type"] == "checkout.session.completed" else payload_obj.get("id")
         order.status = "ordered"
         order.paid_at = order.paid_at or _utcnow()
-        order.stripe_charge_id = pi.get("latest_charge")
+        if payment_intent_id:
+            order.stripe_payment_intent_id = str(payment_intent_id)
+        if event["type"] == "payment_intent.succeeded":
+            order.stripe_charge_id = payload_obj.get("latest_charge")
         session.add(order)
         try:
             session.commit()
@@ -586,7 +762,7 @@ async def stripe_webhook(
             logger.exception("Failed to reconcile webhook payment success for order %s", order.id)
             session.rollback()
             raise HTTPException(status_code=500, detail="Failed to reconcile paid order state.")
-    elif event["type"] == "payment_intent.canceled":
+    elif event["type"] in {"payment_intent.canceled", "checkout.session.expired"}:
         order.status = "cancelled"
         session.add(order)
         try:

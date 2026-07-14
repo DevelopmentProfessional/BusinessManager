@@ -67,8 +67,8 @@ export default function Table_Mobile({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex h-32 items-center justify-center">
+        <div className="animate-spin border-b-2 border-blue-600 h-8 rounded-full w-8"></div>
       </div>
     );
   }
@@ -80,19 +80,19 @@ export default function Table_Mobile({
         {processedData.length > 0 ? (
           <div className="min-w-full">
             {processedData.map((item, index) => (
-              <div key={item.id || index} className="bg-white border-b border-gray-200 p-4 flex items-center gap-3">
+              <div key={item.id || index} className="bg-white border-b border-gray-200 flex gap-3 items-center p-1">
                 {/* Delete button - leftmost (optional) */}
                 {onDelete && (
                   <Gate_Permission page={deletePermission?.page} permission={deletePermission?.permission} hide={!deletePermission}>
-                    <Button_Icon icon={XMarkIcon} label="Delete" onClick={() => onDelete(item)} variant="danger" className="flex-shrink-0 !p-2" />
+                    <Button_Icon icon={XMarkIcon} label="Delete" onClick={() => onDelete(item)} variant="danger" className="!p-2 flex-shrink-0" />
                   </Gate_Permission>
                 )}
 
                 {/* Content area - flexible */}
-                <div className="flex-1 grid gap-2 min-w-0" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
+                <div className="flex-1 gap-2 grid min-w-0" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
                   {columns.map((column) => (
                     <div key={column.key} className="min-w-0">
-                      <div className="text-sm text-gray-900 truncate">{column.render ? column.render(item[column.key], item) : item[column.key]}</div>
+                      <div className="text-gray-900 text-sm truncate">{column.render ? column.render(item[column.key], item) : item[column.key]}</div>
                     </div>
                   ))}
                 </div>
@@ -100,7 +100,7 @@ export default function Table_Mobile({
                 {/* Right actions: Edit (optional) + custom */}
                 {onEdit && (
                   <Gate_Permission page={editPermission?.page} permission={editPermission?.permission} hide={!editPermission}>
-                    <Button_Icon icon={PencilIcon} label="Edit" onClick={() => onEdit(item)} variant="ghost" className="flex-shrink-0 !p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30" />
+                    <Button_Icon icon={PencilIcon} label="Edit" onClick={() => onEdit(item)} variant="ghost" className="!p-2 dark:hover:bg-blue-900/30 dark:text-blue-400 flex-shrink-0 hover:bg-blue-50 text-blue-600" />
                   </Gate_Permission>
                 )}
                 {typeof rightActions === "function" ? rightActions(item) : null}
@@ -111,34 +111,34 @@ export default function Table_Mobile({
       </div>
 
       {/* Table footer controls - fixed at bottom, does not scroll */}
-      <footer className="app-footer-shell app-footer-search flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+      <footer className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0">
         <div className="app-footer-padding app-standard-footer">
           <div className="app-footer-stack">
-            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
+            <div className="gap-3 grid" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
               {columns.map((column) => (
                 <div key={column.key} className="min-w-0">
                   {/* Column title with search toggle */}
-                  <button onClick={() => toggleSearch(column.key)} className="w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors mb-1">
+                  <button onClick={() => toggleSearch(column.key)} className="font-medium hover:text-gray-900 mb-1 text-gray-700 text-left text-sm transition-colors w-full">
                     {column.title}
                   </button>
 
                   {/* Search input (when active) */}
                   {activeSearch === column.key && (
-                    <div className="relative mb-2">
+                    <div className="mb-2 relative">
                       <input
                         type="text"
                         placeholder={`Search ${column.title.toLowerCase()}...`}
                         value={searchTerms[column.key] || ""}
                         onChange={(e) => handleSearch(column.key, e.target.value)}
-                        className="app-search-input w-full pl-8 pr-3 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        className="app-search-input border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 pl-1 pr-1 w-full"
                         autoFocus
                       />
-                      <MagnifyingGlassIcon className="absolute left-2 top-1.5 h-4 w-4 text-gray-400" />
+                      <MagnifyingGlassIcon className="absolute h-4 left-2 text-gray-400 top-1.5 w-4" />
                     </div>
                   )}
 
                   {/* Sort toggle */}
-                  <button onClick={() => handleSort(column.key)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                  <button onClick={() => handleSort(column.key)} className="flex gap-1 hover:text-gray-700 items-center text-gray-500 text-xs transition-colors">
                     Sort
                     {sortConfig.key === column.key ? sortConfig.direction === "asc" ? <ChevronUpIcon className="h-3 w-3" /> : <ChevronDownIcon className="h-3 w-3" /> : <div className="h-3 w-3" />}
                   </button>

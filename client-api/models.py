@@ -155,6 +155,10 @@ class AppSettings(BaseModel, table=True):
     portal_footer_text: Optional[str] = Field(default=None)
     portal_primary_color: Optional[str] = Field(default=None)
     portal_secondary_color: Optional[str] = Field(default=None)
+    stripe_enabled: bool = Field(default=False)
+    stripe_publishable_key: Optional[str] = Field(default=None)
+    stripe_secret_key: Optional[str] = Field(default=None)
+    stripe_webhook_secret: Optional[str] = Field(default=None)
 
     company_id: Optional[str] = Field(default=None, index=True)
 
@@ -529,6 +533,8 @@ class OrderRead(SQLModel):
     paid_at: Optional[datetime]
     fulfilled_at: Optional[datetime]
     inventory_deducted_at: Optional[datetime]
+    checkout_url: Optional[str] = None
+    checkout_session_id: Optional[str] = None
     created_at: datetime
 
 
