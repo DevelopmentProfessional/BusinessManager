@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================
  * FILE: Modal_SettingsSchedule.jsx
  *
@@ -149,19 +149,19 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
   }
 
   return (
-    <div className={`rounded-lg shadow-lg p-6 border-t-4 border-blue-600 space-y-6 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
+    <div className={`rounded-lg shadow-lg p-1 border-t-4 border-blue-600 space-y-6 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
       {/* Message Display */}
       {message && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${message.type === "success" ? (isDarkMode ? "bg-green-900 border border-green-700" : "bg-green-50 border border-green-200") : isDarkMode ? "bg-red-900 border border-red-700" : "bg-red-50 border border-red-200"}`}>
+        <div className={`p-1 rounded-lg flex items-center gap-3 ${message.type === "success" ? (isDarkMode ? "bg-green-900 border border-green-700" : "bg-green-50 border border-green-200") : isDarkMode ? "bg-red-900 border border-red-700" : "bg-red-50 border border-red-200"}`}>
           {message.type === "success" ? <CheckIcon className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? "text-green-300" : "text-green-600"}`} /> : <ExclamationTriangleIcon className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? "text-red-300" : "text-red-600"}`} />}
           <p className={`text-sm font-medium ${message.type === "success" ? (isDarkMode ? "text-green-100" : "text-green-800") : isDarkMode ? "text-red-100" : "text-red-800"}`}>{message.text}</p>
         </div>
       )}
 
       {/* Business Hours */}
-      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Business Hours {HelpIcon && <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />}</h4>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="gap-3 grid grid-cols-2">
           <div className="form-floating">
             <input type="time" id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className={`form-control form-control-sm ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : ""}`} placeholder="Start of Day" />
             <label htmlFor="start_of_day" className={isDarkMode ? "text-gray-300" : ""}>
@@ -178,9 +178,9 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       </div>
 
       {/* Days of Operation */}
-      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Days of Operation {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
           {[
             { key: "monday_enabled", label: "Mon", fullLabel: "Monday" },
             { key: "tuesday_enabled", label: "Tue", fullLabel: "Tuesday" },
@@ -190,8 +190,8 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
             { key: "saturday_enabled", label: "Sat", fullLabel: "Saturday" },
             { key: "sunday_enabled", label: "Sun", fullLabel: "Sunday" },
           ].map((day) => (
-            <div key={day.key} className={`flex items-center p-2 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
-              <input type="checkbox" id={day.key} checked={formData[day.key]} onChange={(e) => handleInputChange(day.key, e.target.checked)} className="h-4 w-4 rounded" />
+            <div key={day.key} className={`flex items-center p-0 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
+              <input type="checkbox" id={day.key} checked={formData[day.key]} onChange={(e) => handleInputChange(day.key, e.target.checked)} className="h-4 rounded w-4" />
               <label htmlFor={day.key} className={`ml-2 text-sm font-medium cursor-pointer ${isDarkMode ? "text-gray-200" : ""}`}>
                 <span className="hidden sm:inline">{day.fullLabel}</span>
                 <span className="sm:hidden">{day.label}</span>
@@ -202,15 +202,15 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       </div>
 
       {/* Attendance Check-in */}
-      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Attendance {HelpIcon && <HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" />}</h4>
-        <div className={`flex items-center justify-between p-3 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
-          <div className="flex items-center gap-2">
+        <div className={`flex items-center justify-between p-1 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
+          <div className="ui-flex-items-gap-2">
             <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : ""}`}>Attendance Check-in</span>
             {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="sr-only peer" />
+          <label className="cursor-pointer inline-flex items-center relative">
+            <input type="checkbox" checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="peer sr-only" />
             <div
               className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
             ></div>
@@ -219,9 +219,9 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       </div>
 
       {/* Appointment Reminder Settings */}
-      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Appointment Reminder {HelpIcon && <HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" />}</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="gap-3 grid grid-cols-1 sm:grid-cols-2">
           <div className="form-floating">
             <input
               type="number"
@@ -239,10 +239,10 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
             </label>
           </div>
 
-          <div className={`flex items-center justify-between p-3 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
+          <div className={`flex items-center justify-between p-1 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
             <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : ""}`}>Send Reminder Notification</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="sr-only peer" />
+            <label className="cursor-pointer inline-flex items-center relative">
+              <input type="checkbox" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="peer sr-only" />
               <div
                 className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
               ></div>
@@ -252,23 +252,23 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       </div>
 
       {/* Auto-Accept Toggle */}
-      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gradient-to-r from-blue-900 to-gray-700 border-blue-700" : "bg-gradient-to-r from-blue-50 to-transparent border-blue-200"}`}>
+      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gradient-to-r from-blue-900 to-gray-700 border-blue-700" : "bg-gradient-to-r from-blue-50 to-transparent border-blue-200"}`}>
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h4 className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Auto-Accept Client Bookings</h4>
           </div>
-          <label className="ml-4 flex items-center">
-            <input type="checkbox" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="w-6 h-6 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <label className="flex items-center ml-4">
+            <input type="checkbox" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="border-gray-300 focus:ring-blue-500 h-6 rounded text-blue-600 w-6" />
             <span className={`ml-2 text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{formData.auto_accept_client_bookings ? "Enabled" : "Disabled"}</span>
           </label>
         </div>
 
         {/* Grace Period - only show when auto-accept is enabled */}
         {formData.auto_accept_client_bookings && (
-          <div className={`mt-4 pt-4 border-t ${isDarkMode ? "border-blue-700" : "border-blue-200"}`}>
+          <div className={`mt-4 pt-1 border-t ${isDarkMode ? "border-blue-700" : "border-blue-200"}`}>
             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Grace Period for Pending Requests</label>
             <p className={`text-xs mb-3 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Bookings pending longer than this period will NOT be auto-accepted, requiring manual review. Leave blank for no limit.</p>
-            <div className="flex items-center gap-2">
+            <div className="ui-flex-items-gap-2">
               <input
                 type="number"
                 min="0"
@@ -277,10 +277,10 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
                 value={formData.auto_accept_pending_hours || ""}
                 onChange={(e) => handleGraceHoursChange(e.target.value)}
                 placeholder="e.g., 24"
-                className={`w-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : "border-gray-300"}`}
+                className={`w-24 px-1 py-0 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : "border-gray-300"}`}
               />
               <span className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>hours</span>
-              {formData.auto_accept_pending_hours && <span className={`ml-2 text-xs px-2 py-1 rounded ${isDarkMode ? "bg-blue-700 text-blue-100" : "bg-blue-100 text-blue-700"}`}>Max {formData.auto_accept_pending_hours} hours old</span>}
+              {formData.auto_accept_pending_hours && <span className={`ml-2 text-xs px-0 py-1 rounded ${isDarkMode ? "bg-blue-700 text-blue-100" : "bg-blue-100 text-blue-700"}`}>Max {formData.auto_accept_pending_hours} hours old</span>}
             </div>
             <p className={`text-xs mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Example: Set to 24 to auto-accept only fresh bookings (less than 24 hours old)</p>
           </div>
@@ -289,7 +289,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
 
       {/* Current Status */}
       {settings && (
-        <div className={`rounded-lg p-2 border text-xs ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
+        <div className={`rounded-lg p-0 border text-xs ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
           <p>
             <strong>Last Updated:</strong> {settings.updated_at && !isNaN(new Date(settings.updated_at).getTime()) ? new Date(settings.updated_at).toLocaleString() : "N/A"}
           </p>
@@ -297,11 +297,11 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       )}
 
       {!hideFooter && (
-        <div className={`flex gap-3 pt-4 border-t ${isDarkMode ? "border-gray-600" : ""}`}>
-          <button type="button" onClick={loadScheduleSettings} className={`px-4 py-2 border rounded-lg font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
+        <div className={`flex gap-3 pt-1 border-t ${isDarkMode ? "border-gray-600" : ""}`}>
+          <button type="button" onClick={loadScheduleSettings} className={`px-1 py-0 border rounded-lg font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
             Reset
           </button>
-          <button type="button" onClick={handleSaveSettings} disabled={saving} className="ml-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
+          <button type="button" onClick={handleSaveSettings} disabled={saving} className="bg-blue-600 disabled:opacity-50 font-medium hover:bg-blue-700 ml-auto px-1 py-0 rounded-lg text-white">
             {saving ? "Saving..." : "Save"}
           </button>
         </div>

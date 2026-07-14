@@ -45,13 +45,13 @@ export function showConfirm(message, { confirmLabel = "Delete", cancelLabel = "C
     wrap.innerHTML = `
       <div style="width:100%;max-width:400px;">
         <div class="modal-content shadow border-0 rounded-3">
-          <div class="modal-header ${headerClass} border-0 rounded-top-3 px-4 py-3">
+          <div class="modal-header ${headerClass} border-0 rounded-top-3 px-1 py-1">
             <h6 class="modal-title fw-semibold mb-0">${companyName}</h6>
           </div>
-          <div class="modal-body px-4 py-3">
+          <div class="modal-body px-1 py-1">
             <p class="mb-0">${message}</p>
           </div>
-          <div class="modal-footer border-top-0 px-4 pb-3 pt-1 gap-2 justify-content-end">
+          <div class="modal-footer border-top-0 px-1 pb-1 pt-1 gap-2 justify-content-end">
             <button type="button" class="btn btn-secondary btn-sm" id="__bm_cancel_btn">${compactCancelLabel}</button>
             <button type="button" class="btn ${btnClass} btn-sm" id="__bm_ok_btn">${compactConfirmLabel}</button>
           </div>

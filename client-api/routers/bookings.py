@@ -45,7 +45,16 @@ from models import (
     AssetUnit,
 )
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+def _get_company_stripe_secret(company_id: str | None, session: Session) -> str:
+    if company_id:
+        settings = session.exec(
+            select(AppSettings).where(AppSettings.company_id == company_id)
+        ).first()
+        if settings and getattr(settings, "stripe_enabled", False):
+            secret = (getattr(settings, "stripe_secret_key", None) or "").strip()
+            if secret:
+                return secret
+    return (os.getenv("STRIPE_SECRET_KEY", "") or "").strip()
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 limiter = Limiter(key_func=get_remote_address)
@@ -401,8 +410,10 @@ def cancel_booking(
         booking.refund_amount = refund_amt
         booking.status = "cancelled"
 
-        if booking.stripe_payment_intent_id and stripe.api_key:
+        stripe_secret = _get_company_stripe_secret(current_client.company_id, session)
+        if booking.stripe_payment_intent_id and stripe_secret:
             try:
+                stripe.api_key = stripe_secret
                 stripe.Refund.create(
                     payment_intent=booking.stripe_payment_intent_id,
                     amount=int(refund_amt * 100),   # Stripe uses cents

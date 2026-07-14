@@ -53,7 +53,7 @@ export function applyButtonDimensions(textSize, isTrainingMode) {
   root.style.setProperty("--app-btn-label-font-size", `${labelFontSize}rem`);
   const footerGapBySize = { small: 0.25, medium: 0.25, large: 0.375 };
   root.style.setProperty("--app-footer-btn-gap", `${footerGapBySize[textSize] ?? footerGapBySize.medium}rem`);
-  /* Match bottom-right +Nav inset (Bootstrap p-2 = 0.5rem) on all text sizes */
+  /* Match bottom-right +Nav inset (Bootstrap p-0 = 0.5rem) on all text sizes */
   const footerPaddingBySize = { small: 0.5, medium: 0.5, large: 0.5 };
   root.style.setProperty("--app-footer-padding-y", `${footerPaddingBySize[textSize] ?? footerPaddingBySize.medium}rem`);
   /* Override Profile page footer padding to 0px regardless of text size */

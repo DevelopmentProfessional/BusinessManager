@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Full-screen modal for managing insurance plans and linking shared plan documents.
  */
 import React, { useEffect, useState } from "react";
@@ -80,7 +80,7 @@ export default function Modal_InsurancePlans({
       noPadding
       fullScreen
     >
-      <form onSubmit={onSave} className="component h-100 min-h-0">
+      <form onSubmit={onSave} className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Insurance Plans</div>
           <div className="component-header-center"></div>
@@ -90,28 +90,28 @@ export default function Modal_InsurancePlans({
         <div className="component-body">
           <div className="component-body-inner">
           {insuranceError && (
-            <div className="alert alert-danger alert-sm py-2 px-3 mb-2" style={{ fontSize: "0.8rem" }}>
+            <div className="alert alert-danger alert-sm mb-2 px-1 py-0" style={{ fontSize: "0.8rem" }}>
               {insuranceError}
             </div>
           )}
           {insurancePlansLoading ? (
-            <div className="text-center py-4">
+            <div className="py-1 text-center">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
             </div>
           ) : insurancePlans.length === 0 ? (
-            <p className="text-muted small text-center py-4">No insurance plans yet. Add one below.</p>
+            <p className="py-1 small text-center text-muted">No insurance plans yet. Add one below.</p>
           ) : (
-            <div className="d-flex flex-column gap-2 pb-2">
+            <div className="d-flex flex-column gap-2 pb-0">
               {insurancePlans.map((plan) => (
-                <div key={plan.id} className={`d-flex align-items-center gap-2 p-2 border rounded ${!plan.is_active ? "opacity-60" : ""}`}>
-                  <button type="button" className="btn btn-outline-danger btn-bulk-circle flex-shrink-0" onClick={() => onDelete(plan.id)} title="Delete plan">
+                <div key={plan.id} className={`d-flex align-items-center gap-2 p-0 border rounded ${!plan.is_active ? "opacity-60" : ""}`}>
+                  <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={() => onDelete(plan.id)} title="Delete plan">
                     <XMarkIcon style={{ width: 16, height: 16 }} />
                   </button>
                   {plan.document_id && (
                     <Button_InsuranceDocument documentId={plan.document_id} insurancePlans={insurancePlans} title="View plan document" />
                   )}
-                  <div className="min-w-0 flex-grow-1">
-                    <div className="fw-semibold d-flex align-items-center gap-2 flex-wrap" style={{ fontSize: "0.875rem" }}>
+                  <div className="flex-grow-1 min-w-0">
+                    <div className="align-items-center d-flex flex-wrap fw-semibold gap-2" style={{ fontSize: "0.875rem" }}>
                       {plan.name}
                       <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>
                         {plan.is_active ? "Active" : "Inactive"}
@@ -128,11 +128,11 @@ export default function Modal_InsurancePlans({
                       </div>
                     )}
                   </div>
-                  <div className="d-flex gap-1 flex-shrink-0">
-                    <button type="button" className="btn btn-sm btn-outline-secondary" style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }} onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
+                  <div className="d-flex flex-shrink-0 gap-1">
+                    <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }} onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
                       {plan.is_active ? "Deactivate" : "Activate"}
                     </button>
-                    <button type="button" className="btn btn-outline-secondary btn-bulk-circle" onClick={() => setEditingPlan({ ...plan })} title="Edit plan">
+                    <button type="button" className="btn btn-bulk-circle btn-outline-secondary" onClick={() => setEditingPlan({ ...plan })} title="Edit plan">
                       <PencilSquareIcon style={{ width: 16, height: 16 }} />
                     </button>
                   </div>
@@ -142,15 +142,15 @@ export default function Modal_InsurancePlans({
           )}
 
           {/* ─── Create / Edit Form ───────────────────────────────────────── */}
-          <div className="border-top pt-3 mt-2 d-flex flex-column gap-2">
-            <div className="small fw-semibold text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
-            <div className="row g-2">
+          <div className="border-top d-flex flex-column gap-2 mt-2 pt-1">
+            <div className="fw-semibold small text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
+            <div className="row ui-row-g2">
               <div className="col-6">
                 <div className="form-floating">
                   <input
                     type="text"
                     id="ins_plan_name"
-                    className="form-control form-control-sm"
+                    className="form-control ui-control-sm"
                     placeholder="Plan name"
                     value={editingPlan ? editingPlan.name : newPlan.name}
                     onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, name: e.target.value })) : setNewPlan((prev) => ({ ...prev, name: e.target.value })))}
@@ -164,7 +164,7 @@ export default function Modal_InsurancePlans({
                   <input
                     type="text"
                     id="ins_plan_desc"
-                    className="form-control form-control-sm"
+                    className="form-control ui-control-sm"
                     placeholder="Description"
                     value={editingPlan ? editingPlan.description || "" : newPlan.description}
                     onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, description: e.target.value })) : setNewPlan((prev) => ({ ...prev, description: e.target.value })))}
@@ -174,24 +174,24 @@ export default function Modal_InsurancePlans({
               </div>
             </div>
 
-            <div className="border rounded p-2">
-              <div className="small fw-semibold text-muted mb-2">Plan document (shared by all employees on this plan)</div>
+            <div className="border p-0 rounded">
+              <div className="fw-semibold mb-2 small text-muted">Plan document (shared by all employees on this plan)</div>
               {(editingPlan?.document_id || newPlan?.document_id) ? (
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                  <span className="small text-truncate flex-grow-1">{linkedDocLabel(editingPlan?.document_id || newPlan?.document_id)}</span>
-                  <button type="button" className="btn btn-outline-secondary btn-bulk-circle" onClick={() => openViewer(editingPlan?.document_id || newPlan?.document_id)} title="View document">
+                <div className="align-items-center d-flex flex-wrap gap-2">
+                  <span className="flex-grow-1 small text-truncate">{linkedDocLabel(editingPlan?.document_id || newPlan?.document_id)}</span>
+                  <button type="button" className="btn btn-bulk-circle btn-outline-secondary" onClick={() => openViewer(editingPlan?.document_id || newPlan?.document_id)} title="View document">
                     <DocumentTextIcon style={{ width: 16, height: 16 }} />
                   </button>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setPlanDocumentId(null)}>
+                  <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setPlanDocumentId(null)}>
                     Unlink
                   </button>
                 </div>
               ) : (
-                <p className="small text-muted mb-2">No document linked.</p>
+                <p className="mb-2 ui-small-muted">No document linked.</p>
               )}
-              <div className="d-flex flex-wrap gap-2 align-items-center">
+              <div className="align-items-center d-flex flex-wrap gap-2">
                 <select
-                  className="form-select form-select-sm"
+                  className="form-select ui-control-sm"
                   style={{ maxWidth: "14rem" }}
                   value={editingPlan?.document_id || newPlan?.document_id || ""}
                   onChange={(e) => setPlanDocumentId(e.target.value || null)}
@@ -205,7 +205,7 @@ export default function Modal_InsurancePlans({
                 </select>
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                  className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1"
                   disabled={!editingPlan?.id}
                   onClick={() => setShowDocUpload(true)}
                   title={editingPlan?.id ? "Upload and link a new document" : "Save the plan first, then edit to upload"}
@@ -214,7 +214,7 @@ export default function Modal_InsurancePlans({
                   Link
                 </button>
               </div>
-              {!editingPlan?.id && <p className="small text-muted mb-0 mt-1">Save a new plan before uploading a document.</p>}
+              {!editingPlan?.id && <p className="mb-0 mt-1 small text-muted">Save a new plan before uploading a document.</p>}
             </div>
 
           </div>{/* /create-edit form */}
@@ -229,7 +229,7 @@ export default function Modal_InsurancePlans({
             <button
               type="button"
               onClick={editingPlan ? () => setEditingPlan(null) : onClose}
-              className="btn btn-circle btn-outline-secondary"
+              className="btn ui-btn-circle-outline-secondary"
               title={editingPlan ? "Cancel edit" : "Close"}
             >
               <XMarkIcon />

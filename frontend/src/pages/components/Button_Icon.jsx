@@ -1,4 +1,4 @@
-﻿// FILE: Button_Icon.jsx
+// FILE: Button_Icon.jsx
 // re-exports Button_App configured as icon-only; use Button_App for new code
 import React from "react";
 import Button_App from "./Button_App";
@@ -11,7 +11,7 @@ const ICON_VARIANT_CLASS = {
   ghost: "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800",
 };
 
-export default function Button_Icon({ icon, label, onClick, type = "button", className = "", disabled = false, variant = "secondary", ...rest }) {
+export default function Button_Icon({ icon, label, onClick, type = "button", className="", disabled = false, variant = "secondary", ...rest }) {
   const variantClass = ICON_VARIANT_CLASS[variant] || ICON_VARIANT_CLASS.secondary;
   return (
     <Button_App

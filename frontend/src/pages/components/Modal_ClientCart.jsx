@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Modal_ClientCart.jsx
  * =====================
  * Full-screen modal showing a client's persistent shopping cart stored in the
@@ -228,7 +228,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">
             <ShoppingCartIcon style={{ width: 18, height: 18 }} className="me-1" />
@@ -241,29 +241,29 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
         <div className="component-body">
           <div className="component-body-inner">
             {loading ? (
-              <div className="d-flex justify-content-center py-5">
+              <div className="d-flex justify-content-center py-1">
                 <div className="spinner-border spinner-border-sm text-primary" role="status" />
               </div>
             ) : orderCreated ? (
-              <div className="text-center py-5 px-3">
+              <div className="px-1 py-1 text-center">
                 <CheckCircleIcon style={{ width: 48, height: 48, color: "#22c55e", margin: "0 auto 12px" }} />
                 <div className="fw-semibold mb-1">Order Created</div>
-                <div className="small text-muted mb-1">
+                <div className="mb-1 small text-muted">
                   Order #
                   {String(orderCreated.id || "")
                     .split("-")[0]
                     .toUpperCase()}{" "}
                   is now in the queue.
                 </div>
-                <div className="small text-muted">
+                <div className="ui-small-muted">
                   Status: <strong>{orderCreated.status || "payment_pending"}</strong>
                 </div>
               </div>
             ) : cartItems.length === 0 ? (
-              <div className="text-center text-muted py-5">
+              <div className="py-1 text-center text-muted">
                 <ShoppingCartIcon style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: 0.4 }} />
                 <div className="fw-medium mb-1">Cart is empty</div>
-                <div className="small text-muted">Tap "Sales" below to add items</div>
+                <div className="ui-small-muted">Tap "Sales" below to add items</div>
               </div>
             ) : (
               <>
@@ -280,23 +280,23 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
                   return (
                     <div key={item.cartKey} className="border-bottom border-gray-100 dark:border-gray-700">
                       {/* ── Main row ── */}
-                      <div className="d-flex align-items-center gap-2 py-2 px-3">
+                      <div className="align-items-center d-flex gap-2 px-1 py-0">
                         <div className="flex-grow-1 min-w-0">
                           <div className="fw-medium text-truncate">{item.name}</div>
                           <div className="small text-muted text-truncate">{getSecondLineText(item)}</div>
 
-                          <div className="d-flex align-items-center gap-1 flex-wrap mt-1">
+                          <div className="align-items-center d-flex flex-wrap gap-1 mt-1">
                             <span className="badge bg-primary-subtle text-primary">${(item.price || 0).toFixed(2)}</span>
                             <span className={`badge ${isService ? "bg-primary-subtle text-primary" : "bg-secondary-subtle text-secondary"} text-capitalize`}>{item.itemType}</span>
 
                             {/* Qty controls */}
-                            <button type="button" onClick={() => updateQty(item.cartKey, -1)} className="btn btn-circle btn-outline-secondary" title="Decrease quantity">
+                            <button type="button" onClick={() => updateQty(item.cartKey, -1)} className="btn ui-btn-circle-outline-secondary" title="Decrease quantity">
                               <MinusIcon style={{ width: 14, height: 14 }} />
                             </button>
                             <span className="fw-semibold" style={{ minWidth: 24, textAlign: "center" }}>
                               {item.quantity}
                             </span>
-                            <button type="button" onClick={() => updateQty(item.cartKey, 1)} className="btn btn-circle btn-outline-secondary" title="Increase quantity">
+                            <button type="button" onClick={() => updateQty(item.cartKey, 1)} className="btn ui-btn-circle-outline-secondary" title="Increase quantity">
                               <PlusIcon style={{ width: 14, height: 14 }} />
                             </button>
 
@@ -315,25 +315,25 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
 
                       {/* ── Expanded panel ── */}
                       {isExpanded && (
-                        <div className="px-3 pb-3 bg-gray-50 dark:bg-gray-800">
+                        <div className="bg-gray-50 dark:bg-gray-800 pb-1 px-1">
                           {isService ? (
                             /* ── Service: appointment date picker ── */
                             <div>
-                              <div className="small fw-semibold text-muted mb-1">Appointment Date &amp; Time</div>
-                              <input type="datetime-local" className="form-control form-control-sm" value={scheduledDate ? scheduledDate.slice(0, 16) : ""} onChange={(e) => handleSetScheduledDate(item.cartKey, e.target.value || null)} />
+                              <div className="fw-semibold mb-1 small text-muted">Appointment Date &amp; Time</div>
+                              <input type="datetime-local" className="form-control ui-control-sm" value={scheduledDate ? scheduledDate.slice(0, 16) : ""} onChange={(e) => handleSetScheduledDate(item.cartKey, e.target.value || null)} />
                               {scheduledDate && (
-                                <button type="button" className="btn btn-link btn-sm text-danger p-0 mt-1" style={{ fontSize: "0.75rem" }} onClick={() => handleSetScheduledDate(item.cartKey, null)}>
+                                <button type="button" className="btn btn-link btn-sm mt-1 p-0 text-danger" style={{ fontSize: "0.75rem" }} onClick={() => handleSetScheduledDate(item.cartKey, null)}>
                                   Clear date
                                 </button>
                               )}
                             </div>
                           ) : /* ── Product: feature option picker ── */
                           loadingFeat ? (
-                            <div className="d-flex justify-content-center py-2">
+                            <div className="d-flex justify-content-center py-0">
                               <div className="spinner-border spinner-border-sm text-secondary" role="status" />
                             </div>
                           ) : features.length === 0 ? (
-                            <div className="small text-muted py-1">No configurable options for this item.</div>
+                            <div className="py-1 small text-muted">No configurable options for this item.</div>
                           ) : (
                             <div className="d-flex flex-column gap-2 pt-1">
                               {features.map((feature) => {
@@ -341,7 +341,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
                                 if (enabledOptions.length === 0) return null;
                                 return (
                                   <div key={feature.feature_id}>
-                                    <div className="small fw-semibold text-muted mb-1">{feature.feature_name}</div>
+                                    <div className="fw-semibold mb-1 small text-muted">{feature.feature_name}</div>
                                     <div className="d-flex flex-wrap gap-1">
                                       {enabledOptions.map((opt) => {
                                         const isSelected = selectedFeatureMap[feature.feature_id] === opt.option_id;
@@ -371,7 +371,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
                 })}
 
                 {/* Total */}
-                <div className="d-flex justify-content-between fw-semibold py-3 px-3">
+                <div className="d-flex fw-semibold justify-content-between px-1 py-1">
                   <span>{cartItems.reduce((s, i) => s + i.quantity, 0)} item(s)</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
@@ -385,10 +385,10 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
         <div className="component-footer" style={{ position: "relative" }}>
           <div className="component-footer-left">
             {!orderCreated && (
-              <div className="d-flex align-items-center gap-1">
+              <div className="ui-flex-center-gap-1">
                 <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
                 {cartItems.length > 0 && (
-                  <button type="button" onClick={handleCreateOrder} disabled={creating} className="btn btn-success btn-sm d-flex align-items-center gap-1 px-3" title="Create portal order from cart">
+                  <button type="button" onClick={handleCreateOrder} disabled={creating} className="align-items-center btn btn-sm btn-success d-flex gap-1 px-1" title="Create portal order from cart">
                     <CheckCircleIcon style={{ width: 16, height: 16 }} />
                     {creating ? "…" : "Order"}
                   </button>
@@ -397,7 +397,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
             )}
           </div>
           <div className="component-footer-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

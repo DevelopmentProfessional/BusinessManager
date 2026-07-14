@@ -1,10 +1,10 @@
-﻿import React from "react";
+import React from "react";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
 
 /** Standard settings footer: Save (left), Close (center). */
-export default function Footer_Settings({ onSave, onClose, saveLabel = "Save", saving = false, saveDisabled = false, className = "" }) {
+export default function Footer_Settings({ onSave, onClose, saveLabel = "Save", saving = false, saveDisabled = false, className="" }) {
   return (
     <footer className={`app-footer-shell flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 app-footer-padding app-form-footer app-standard-footer ${className}`.trim()}>
       <Footer_Actions

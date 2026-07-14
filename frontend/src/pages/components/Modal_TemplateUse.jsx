@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 import { templatesAPI, clientsAPI, clientCartAPI } from "../../services/api";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
@@ -418,25 +418,25 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const visibleTemplates = filterType ? templates.filter((t) => t.template_type === filterType) : templates;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900">
+    <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0 z-50">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Use Template</h2>
+      <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center justify-between px-1 py-1">
+        <h2 className="dark:text-white font-semibold text-base text-gray-900">Use Template</h2>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Left: template list */}
-        <div className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ width: "200px" }}>
+        <div className="border-gray-200 border-r dark:border-gray-700 flex-shrink-0 overflow-y-auto" style={{ width: "200px" }}>
           {loading ? (
-            <div className="p-4 text-sm text-gray-500">Loading...</div>
+            <div className="p-1 text-gray-500 text-sm">Loading...</div>
           ) : visibleTemplates.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500">No templates available for this page.</div>
+            <div className="p-1 text-gray-500 text-sm">No templates available for this page.</div>
           ) : (
             <ul className="py-1">
               {visibleTemplates.map((tpl) => (
                 <li key={tpl.id}>
-                  <button type="button" onClick={() => setSelected(tpl)} className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${selected?.id === tpl.id ? "bg-primary-50 dark:bg-primary-900/20 border-r-2 border-primary-500" : ""}`}>
-                    <div className="font-medium text-gray-900 dark:text-white text-xs leading-tight">{tpl.name}</div>
+                  <button type="button" onClick={() => setSelected(tpl)} className={`w-full text-left px-1 py-0 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${selected?.id === tpl.id ? "bg-primary-50 dark:bg-primary-900/20 border-r-2 border-primary-500" : ""}`}>
+                    <div className="dark:text-white font-medium leading-tight text-gray-900 text-xs">{tpl.name}</div>
                     <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom}`}>{tpl.template_type}</span>
                   </button>
                 </li>
@@ -446,50 +446,50 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         </div>
 
         {/* Right: preview */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           {selected ? (
             <>
               {/* Preview title bar */}
-              <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1 truncate">{selected.name}</span>
+              <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 gap-2 items-center px-1 py-0">
+                <span className="dark:text-gray-300 flex-1 font-medium text-gray-700 text-xs truncate">{selected.name}</span>
                 <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>{selected.template_type}</span>
               </div>
 
               {/* Live HTML preview in iframe — same content used by Print */}
-              <div className="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-800 p-3">
-                <div className="h-full rounded shadow-sm overflow-hidden bg-white">
-                  <iframe ref={printIframeRef} srcDoc={iframeContent} className="w-full h-full border-0" title="Template preview" sandbox="allow-same-origin allow-modals" />
+              <div className="bg-gray-100 dark:bg-gray-800 flex-1 overflow-hidden p-1">
+                <div className="bg-white h-full overflow-hidden rounded shadow-sm">
+                  <iframe ref={printIframeRef} srcDoc={iframeContent} className="border-0 h-full w-full" title="Template preview" sandbox="allow-same-origin allow-modals" />
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Select a template to preview</div>
+            <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">Select a template to preview</div>
           )}
         </div>
       </div>
 
       {/* Footer actions */}
-      <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="position-relative d-flex align-items-center" style={{ minHeight: "3rem" }}>
+      <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 px-1 py-1">
+        <div className="align-items-center d-flex position-relative" style={{ minHeight: "3rem" }}>
           <div className="d-flex gap-2">
-            <button type="button" onClick={onClose} className="btn btn-outline-secondary d-flex align-items-center gap-1">
-              <XMarkIcon className="h-4 w-4" />
+            <button type="button" onClick={onClose} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+              <XMarkIcon className="ui-icon-4" />
               Close
             </button>
-            <button type="button" onClick={() => setIsEditorOpen(true)} disabled={!selected} className="btn btn-outline-secondary d-flex align-items-center gap-1">
-              <PencilSquareIcon className="h-4 w-4" />
+            <button type="button" onClick={() => setIsEditorOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+              <PencilSquareIcon className="ui-icon-4" />
               Edit
             </button>
-            <button type="button" onClick={handlePrint} disabled={!selected} className="btn btn-primary d-flex align-items-center gap-1">
-              <PrinterIcon className="h-4 w-4" />
+            <button type="button" onClick={handlePrint} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
+              <PrinterIcon className="ui-icon-4" />
               Print
             </button>
-            <button type="button" onClick={handleDownloadPdf} disabled={!selected || isDownloadingPdf} className="btn btn-outline-primary d-flex align-items-center gap-1">
-              <ArrowDownTrayIcon className="h-4 w-4" />
+            <button type="button" onClick={handleDownloadPdf} disabled={!selected || isDownloadingPdf} className="align-items-center btn btn-outline-primary d-flex gap-1">
+              <ArrowDownTrayIcon className="ui-icon-4" />
               {isDownloadingPdf ? "…" : "PDF"}
             </button>
-            <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="btn btn-outline-secondary d-flex align-items-center gap-1">
-              <EnvelopeIcon className="h-4 w-4" />
+            <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+              <EnvelopeIcon className="ui-icon-4" />
               Email
             </button>
           </div>
@@ -499,39 +499,39 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
 
       {isEmailPreviewOpen && selected && (
-        <div className="fixed inset-0 z-[60] d-flex align-items-center justify-content-center bg-black/50 px-3">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded w-100" style={{ maxWidth: "760px" }}>
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0">Email Preview</h3>
+        <div className="align-items-center bg-black/50 d-flex fixed inset-0 justify-content-center px-1 z-[60]">
+          <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded w-100" style={{ maxWidth: "760px" }}>
+            <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
+              <h3 className="dark:text-white font-semibold mb-0 text-gray-900 text-sm">Email Preview</h3>
             </div>
 
-            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-bottom border-gray-200 dark:border-gray-700">
-              <div className="small text-gray-500 mb-1">To</div>
-              <div className="text-sm text-gray-900 dark:text-white">{recipientEmail || "No client email available"}</div>
+            <div className="bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
+              <div className="mb-1 small text-gray-500">To</div>
+              <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No client email available"}</div>
 
-              <div className="small text-gray-500 mt-3 mb-1">Subject</div>
-              <div className="text-sm text-gray-900 dark:text-white">{emailSubject}</div>
+              <div className="mb-1 mt-3 small text-gray-500">Subject</div>
+              <div className="dark:text-white text-gray-900 text-sm">{emailSubject}</div>
 
-              <div className="small text-gray-500 mt-3 mb-1">Attachment</div>
-              <div className="text-sm text-gray-900 dark:text-white">{pdfFileName} (generated on send)</div>
+              <div className="mb-1 mt-3 small text-gray-500">Attachment</div>
+              <div className="dark:text-white text-gray-900 text-sm">{pdfFileName} (generated on send)</div>
             </div>
 
-            <div className="px-4 py-3 bg-white dark:bg-gray-900" style={{ maxHeight: "42vh", overflowY: "auto" }}>
-              <div className="small text-gray-500 mb-2">Body</div>
-              <pre className="m-0 text-sm text-gray-800 dark:text-gray-200" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
+            <div className="bg-white dark:bg-gray-900 px-1 py-1" style={{ maxHeight: "42vh", overflowY: "auto" }}>
+              <div className="mb-2 small text-gray-500">Body</div>
+              <pre className="dark:text-gray-200 m-0 text-gray-800 text-sm" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
                 {emailBody}
               </pre>
             </div>
 
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div className="position-relative d-flex align-items-center" style={{ minHeight: "2.5rem" }}>
-                <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="btn btn-primary d-flex align-items-center gap-1">
-                  <EnvelopeIcon className="h-4 w-4" />
+            <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
+              <div className="align-items-center d-flex position-relative" style={{ minHeight: "2.5rem" }}>
+                <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
+                  <EnvelopeIcon className="ui-icon-4" />
                   Email
                 </button>
 
-                <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="btn btn-outline-secondary d-flex align-items-center gap-1 position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }}>
-                  <XMarkIcon className="h-4 w-4" />
+                <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="align-items-center btn btn-outline-secondary d-flex gap-1 position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }}>
+                  <XMarkIcon className="ui-icon-4" />
                   Close
                 </button>
               </div>

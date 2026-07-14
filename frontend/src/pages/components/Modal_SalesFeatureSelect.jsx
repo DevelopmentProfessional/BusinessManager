@@ -134,7 +134,7 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">{item.name}</div>
           <div className="component-header-center"></div>
@@ -143,19 +143,19 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
 
         <div className="component-body">
           <div className="component-body-inner">
-            {!loading && features.length === 0 && <div className="small text-muted mb-2">No variants available</div>}
+            {!loading && features.length === 0 && <div className="mb-2 ui-small-muted">No variants available</div>}
 
             {loading ? (
-              <div className="text-center py-3 text-muted small">Loading options…</div>
+              <div className="py-1 small text-center text-muted">Loading options…</div>
             ) : (
               <>
             {/* Feature option pickers */}
             {features.map((f) => (
               <div key={f.feature_id} className="mb-3">
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <span className="fw-semibold small">{f.feature_name}</span>
+                <div className="align-items-center d-flex gap-2 mb-2">
+                  <span className="fw-semibold ui-text-sm">{f.feature_name}</span>
                   {f.affects_price && (
-                    <span className="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle" style={{ fontSize: "0.65rem" }}>
+                    <span className="badge bg-primary-subtle border border-primary-subtle text-primary-emphasis" style={{ fontSize: "0.65rem" }}>
                       Sets Price
                     </span>
                   )}
@@ -180,28 +180,28 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
             ))}
 
             {/* Quantity selector */}
-            <div className="d-flex align-items-center justify-content-between py-2 border-top border-bottom mb-3">
+            <div className="align-items-center border-bottom border-top d-flex justify-content-between mb-3 py-0">
               <span className="fw-medium small">Quantity</span>
-              <div className="d-flex align-items-center gap-2">
-                <button type="button" className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center"  onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1}>
-                  <MinusIcon className="h-4 w-4" />
+              <div className="ui-flex-center-gap-2">
+                <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-0 rounded-circle"  onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1}>
+                  <MinusIcon className="ui-icon-4" />
                 </button>
                 <span className="fw-semibold" style={{ minWidth: 28, textAlign: "center" }}>
                   {quantity}
                 </span>
-                <button type="button" className="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center"  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))} disabled={maxQty <= 0 || quantity >= maxQty}>
-                  <PlusIcon className="h-4 w-4" />
+                <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-0 rounded-circle"  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))} disabled={maxQty <= 0 || quantity >= maxQty}>
+                  <PlusIcon className="ui-icon-4" />
                 </button>
               </div>
             </div>
 
             {allSelected && (
-              <div className="small text-muted mb-3">
+              <div className="mb-3 small text-muted">
                 Remaining inventory for this combination: <strong>{Math.max(0, maxQty - quantity)}</strong>
               </div>
             )}
 
-            {features.length > 0 && !allSelected && <div className="text-muted small text-center mt-2">Select an option for each feature to continue</div>}
+            {features.length > 0 && !allSelected && <div className="mt-2 small text-center text-muted">Select an option for each feature to continue</div>}
           </>
         )}
           </div>{/* /component-body-inner */}
@@ -210,18 +210,18 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
         <div className="component-footer">
           <div className="component-footer-left">
             <div className="me-2">
-              <div className="small text-muted">Total</div>
+              <div className="ui-small-muted">Total</div>
               <div className="fw-bold text-primary" style={{ fontSize: "1.25rem" }}>
                 ${(resolvedPrice * quantity).toFixed(2)}
               </div>
             </div>
-            <button type="button" className="btn btn-primary d-flex align-items-center justify-content-center gap-2" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0}>
-              <ShoppingCartIcon className="h-5 w-5" />
+            <button type="button" className="align-items-center btn btn-primary d-flex gap-2 justify-content-center" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0}>
+              <ShoppingCartIcon className="ui-icon-5" />
               Add
             </button>
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

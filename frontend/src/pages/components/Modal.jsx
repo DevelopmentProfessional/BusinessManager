@@ -38,12 +38,12 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
  *   showClose?: boolean — header X button (default true)
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalHeader({ title, onClose, showClose = true, className = "" }) {
+export function ModalHeader({ title, onClose, showClose = true, className="" }) {
   return (
     <div className={`d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`}>
-      <h3 className="h5 mb-0 text-body d-flex align-items-center">{title}</h3>
+      <h3 className="align-items-center d-flex h5 mb-0 text-body">{title}</h3>
       {showClose && onClose ? (
-        <button type="button" onClick={onClose} title="Close" aria-label="Close" className="btn btn-outline-secondary text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 d-flex align-items-center justify-content-center flex-shrink-0 p-0">
+        <button type="button" onClick={onClose} title="Close" aria-label="Close" className="align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
           <XMarkIcon className="h-6 w-6" />
         </button>
       ) : null}
@@ -61,7 +61,7 @@ export function ModalHeader({ title, onClose, showClose = true, className = "" }
  *   children: ReactNode
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalFooter({ children, className = "" }) {
+export function ModalFooter({ children, className="" }) {
   return <div className={`app-modal-footer app-form-footer app-standard-footer border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 ${className}`}>{children}</div>;
 }
 
@@ -77,14 +77,14 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
-  const Overlay = <div className="fixed inset-0 bg-gray-500 dark:bg-gray-900 dark:bg-opacity-75 bg-opacity-75 transition-opacity" onClick={onClose} />;
+  const Overlay = <div className="bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" onClick={onClose} />;
 
   // ─── 2 FULLSCREEN VARIANT ──────────────────────────────────────────────────────
   if (fullScreen) {
     return (
       <div className="fixed inset-0" style={modalLayerStyle}>
         {Overlay}
-        <div className="fixed inset-0 flex flex-col bg-white dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
           <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
@@ -100,12 +100,12 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     return (
       <div className="fixed inset-0" style={modalLayerStyle}>
         {Overlay}
-        <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
+        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="text-gray-900 dark:text-gray-100">{children}</div>}
+            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
           </div>
-          {footer && <ModalFooter className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700">{footer}</ModalFooter>}
+          {footer && <ModalFooter className="border-gray-200 border-t dark:border-gray-700 flex-shrink-0">{footer}</ModalFooter>}
         </div>
       </div>
     );
@@ -116,10 +116,10 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     <div className="fixed inset-0 overflow-y-auto" style={modalLayerStyle}>
       <div className="flex items-end justify-center min-h-screen">
         {Overlay}
-        <div className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-gray-800 rounded-t-lg text-left overflow-hidden shadow-xl transform transition-all border-t border-gray-200 dark:border-gray-700 max-h-screen flex flex-col">
+        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-screen overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="text-gray-900 dark:text-gray-100">{children}</div>}
+            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
           </div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>

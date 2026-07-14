@@ -73,7 +73,7 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
           <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
           <ul id={menuIdRef.current} role="menu" style={getMenuStyle()} className="list-unstyled mb-0 py-1">
             <li>
-              <button type="button" role="menuitem" className="dropdown-item text-muted small" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
+              <button type="button" role="menuitem" className="dropdown-item small text-muted" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
             </li>
             {options.map(opt => (
               <li key={opt}>
@@ -91,7 +91,7 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
 export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleViewAllToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Manage Permissions</div>
           <div className="component-header-center"></div>
@@ -102,9 +102,9 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
           <div className="component-body-inner">
           {/* ─── 2 ADD NEW PERMISSION FORM ──────────────────────────────────────── */}
           {/* Add New Permission Form */}
-          <form onSubmit={onCreatePermission} className="mb-4 p-3 border rounded">
+          <form onSubmit={onCreatePermission} className="border mb-4 p-1 rounded">
             <h5 className={`mb-3 ${isDarkMode ? "text-light" : "text-dark"}`}>Add New Permission</h5>
-            <div className="row g-3">
+            <div className="g-3 row">
               <div className="col-md-6">
                 <DropupSelect
                   value={newPermission.page}
@@ -133,7 +133,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
           {/* ─── 3 SCHEDULE SPECIAL PERMISSIONS ─────────────────────────────────── */}
           {/* Schedule Special Permissions */}
           {newPermission.page === "schedule" && (
-            <div className="mt-4 p-3 border rounded-lg bg-light">
+            <div className="bg-light border mt-4 p-1 rounded-lg">
               <h5 className={`text-sm font-medium mb-2 ${isDarkMode ? "text-light" : "text-dark"}`}>Schedule Special Permissions</h5>
               <div className="space-y-2">
                 <div className="flex items-center space-x-4">
@@ -143,13 +143,13 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                       id="viewAllSchedules"
                       checked={userPermissions.some((p) => p.page === "schedule" && p.permission === "write" && p.granted)}
                       onChange={(e) => onScheduleViewAllToggle(e.target.checked)}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="border-gray-300 focus:ring-indigo-500 h-4 rounded text-indigo-600 w-4"
                     />
                     <label htmlFor="viewAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? "text-light" : "text-dark"}`}>
                       View All Employee Schedules
                     </label>
                   </div>
-                  <div className="text-xs text-muted">Allows viewing schedules of all employees, not just their own</div>
+                  <div className="text-muted text-xs">Allows viewing schedules of all employees, not just their own</div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center">
@@ -158,13 +158,13 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                       id="writeAllSchedules"
                       checked={userPermissions.some((p) => p.page === "schedule" && p.permission === "write" && p.granted)}
                       onChange={(e) => onScheduleWriteAllToggle(e.target.checked)}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="border-gray-300 focus:ring-indigo-500 h-4 rounded text-indigo-600 w-4"
                     />
                     <label htmlFor="writeAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? "text-light" : "text-dark"}`}>
                       Write All Employee Schedules
                     </label>
                   </div>
-                  <div className="text-xs text-muted">Allows creating/editing appointments for any employee, not just themselves</div>
+                  <div className="text-muted text-xs">Allows creating/editing appointments for any employee, not just themselves</div>
                 </div>
               </div>
             </div>
@@ -193,8 +193,8 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                         <span className={`badge ${permission.granted ? "bg-success" : "bg-danger"}`}>{permission.granted ? "Granted" : "Denied"}</span>
                       </td>
                       <td>
-                        <div className="d-flex align-items-center gap-1">
-                          <button onClick={() => onDeletePermission(permission.id)} className="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center" title="Delete Permission" type="button">
+                        <div className="ui-flex-center-gap-1">
+                          <button onClick={() => onDeletePermission(permission.id)} className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" title="Delete Permission" type="button">
                             <XMarkIcon style={{ width: 16, height: 16 }} />
                           </button>
                           <button
@@ -220,7 +220,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
         <div className="component-footer">
           <div className="component-footer-left"></div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Inventory.jsx
  *
@@ -544,19 +544,19 @@ export default function Inventory() {
   // ─── 9 RENDER ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
 
   return (
     <PageLayout title="Inventory" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
-      <div className="flex-grow-1 d-flex flex-column min-h-0 overflow-hidden">
+      <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-        <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+        <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
           {sortedAndFiltered.length > 0 ? (
-            <table className="table table-borderless table-hover mb-0">
+            <table className="mb-0 table table-borderless table-hover">
               <colgroup>
                 <col style={{ width: "40px" }} />
                 <col />
@@ -571,7 +571,7 @@ export default function Inventory() {
                         <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                       ) : (
                         <button className="btn btn-circle btn-outline-danger" title="Delete item" onClick={() => handleDeleteItem(inv.id)}>
-                          <XMarkIcon className="h-4 w-4" />
+                          <XMarkIcon className="ui-icon-4" />
                         </button>
                       )}
                     </td>
@@ -591,14 +591,14 @@ export default function Inventory() {
               </tbody>
             </table>
           ) : (
-            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
           )}
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
-            <div className="d-flex align-items-center gap-2">
-              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+          <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="ui-flex-center-gap-2">
+              <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
@@ -628,7 +628,7 @@ export default function Inventory() {
           onSearch={setSearchTerm}
           searchPlaceholder="Search by name or SKU..."
           beforeSearch={
-            <div className="app-footer-toolbar d-flex align-items-center">
+            <div className="align-items-center app-footer-toolbar d-flex">
               <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
               <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
             </div>
@@ -644,7 +644,7 @@ export default function Inventory() {
           </Gate_Permission>
 
           {/* Type Filter */}
-          <div className="position-relative">
+          <div className="ui-pos-rel">
             <Button_Toolbar
               icon={TagIcon}
               label="Type"
@@ -657,7 +657,7 @@ export default function Inventory() {
               data-active={typeFilter !== "all"}
             />
             {isTypeFilterOpen && (
-              <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
+              <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
                 {typeFilterOptions.map((option, index) => {
                   const isLast = index === typeFilterOptions.length - 1;
                   const isSelected = typeFilter === option.value;
@@ -671,17 +671,17 @@ export default function Inventory() {
                           setIsTypeFilterOpen(false);
                           setTypeFilterHelpKey(null);
                         }}
-                        className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                        className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                       >
                         {option.label}
                       </button>
 
                       {isTrainingMode && (
-                        <div className="position-relative flex-shrink-0">
+                        <div className="flex-shrink-0 position-relative">
                           <button
                             type="button"
                             aria-label={`${option.label} help`}
-                            className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                            className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
                             onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                             onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             onMouseDown={(e) => {
@@ -695,13 +695,13 @@ export default function Inventory() {
 
                           {isHelpOpen && (
                             <div
-                              className="app-menu-panel position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
                               style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                               onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                               onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             >
-                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                              <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
+                              <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
                             </div>
                           )}
                         </div>
@@ -714,7 +714,7 @@ export default function Inventory() {
           </div>
 
           {/* Stock Filter */}
-          <div className="position-relative">
+          <div className="ui-pos-rel">
             <Button_Toolbar
               icon={CircleStackIcon}
               label="Stock"
@@ -727,7 +727,7 @@ export default function Inventory() {
               data-active={stockFilter !== "all"}
             />
             {isStockFilterOpen && (
-              <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min">
+              <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
                 {stockFilterOptions.map((option, index) => {
                   const isLast = index === stockFilterOptions.length - 1;
                   const isSelected = stockFilter === option.value;
@@ -741,17 +741,17 @@ export default function Inventory() {
                           setIsStockFilterOpen(false);
                           setStockFilterHelpKey(null);
                         }}
-                        className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                        className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                       >
                         {option.label}
                       </button>
 
                       {isTrainingMode && (
-                        <div className="position-relative flex-shrink-0">
+                        <div className="flex-shrink-0 position-relative">
                           <button
                             type="button"
                             aria-label={`${option.label} help`}
-                            className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                            className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
                             onMouseEnter={() => setStockFilterHelpKey(option.value)}
                             onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             onMouseDown={(e) => {
@@ -765,13 +765,13 @@ export default function Inventory() {
 
                           {isHelpOpen && (
                             <div
-                              className="position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                              className="bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
                               style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                               onMouseEnter={() => setStockFilterHelpKey(option.value)}
                               onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             >
-                              <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                              <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                              <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
+                              <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
                             </div>
                           )}
                         </div>
@@ -824,13 +824,13 @@ export default function Inventory() {
       <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls">
-        <div className="small text-muted">Use these controls to manage inventory views and actions.</div>
+        <div className="ui-small-muted">Use these controls to manage inventory views and actions.</div>
         <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
         <div className="d-flex flex-column gap-1">
-          <label htmlFor="inventory-asset-units-per-page" className="small fw-semibold mb-0">
+          <label htmlFor="inventory-asset-units-per-page" className="fw-semibold mb-0 small">
             Asset Units per page
           </label>
-          <select id="inventory-asset-units-per-page" className="form-select form-select-sm" value={assetUnitsPerPage} onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}>
+          <select id="inventory-asset-units-per-page" className="form-select ui-control-sm" value={assetUnitsPerPage} onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}>
             {ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
                 {size}

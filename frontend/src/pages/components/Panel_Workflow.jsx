@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================
  * FILE: Panel_Workflow.jsx
  *
@@ -56,16 +56,16 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Assign Workflow</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <XMarkIcon className="w-6 h-6" />
+    <div className="bg-black/50 fixed flex inset-0 items-center justify-center p-1 z-50">
+      <div className="bg-white max-w-lg rounded-lg shadow-xl w-full">
+        <div className="border-b flex items-center justify-between p-1">
+          <h2 className="font-semibold text-gray-900 text-xl">Assign Workflow</h2>
+          <button onClick={onClose} className="hover:text-gray-700 text-gray-500">
+            <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-1">
           {loading ? (
             <p className="text-gray-600">Loading workflows...</p>
           ) : workflows.length === 0 ? (
@@ -73,11 +73,11 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
           ) : (
             <div className="space-y-3">
               {workflows.map((wf) => (
-                <label key={wf.id} className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label key={wf.id} className="border cursor-pointer flex gap-3 hover:bg-gray-50 items-start p-1 rounded-lg">
                   <input type="radio" name="workflow" value={wf.id} checked={selectedWorkflow?.id === wf.id} onChange={() => setSelectedWorkflow(wf)} className="mt-1" />
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{wf.name}</h3>
-                    <p className="text-sm text-gray-600">{wf.description}</p>
+                    <p className="text-gray-600 text-sm">{wf.description}</p>
                   </div>
                 </label>
               ))}
@@ -85,11 +85,11 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
           )}
         </div>
 
-        <div className="flex gap-3 justify-end p-6 border-t bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100">
+        <div className="bg-gray-50 border-t flex gap-3 justify-end p-1">
+          <button onClick={onClose} className="border border-gray-300 hover:bg-gray-100 px-1 py-0 rounded-lg text-gray-700">
             Cancel
           </button>
-          <button onClick={handleAssignWorkflow} disabled={!selectedWorkflow} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button onClick={handleAssignWorkflow} disabled={!selectedWorkflow} className="bg-blue-600 disabled:opacity-50 hover:bg-blue-700 px-1 py-0 rounded-lg text-white">
             Assign Workflow
           </button>
         </div>
@@ -127,9 +127,9 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+      <div className="bg-blue-50 flex items-center justify-between p-1 rounded-lg">
         <h3 className="font-semibold text-gray-900">Workflow Progress</h3>
-        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{workflow.status}</span>
+        <span className="bg-blue-100 font-medium px-1 py-1 rounded-full text-blue-700 text-sm">{workflow.status}</span>
       </div>
 
       <div className="space-y-3">
@@ -140,20 +140,20 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${step.action === "approved" ? "bg-green-600" : step.action === "rejected" ? "bg-red-600" : step.action === "pending" ? "bg-yellow-600" : "bg-gray-400"}`}>
                 {step.action === "approved" ? "✓" : step.action === "rejected" ? "✕" : step.action === "pending" ? "⏱" : "○"}
               </div>
-              {idx < steps.length - 1 && <div className="w-0.5 h-8 bg-gray-300 mt-1"></div>}
+              {idx < steps.length - 1 && <div className="bg-gray-300 h-8 mt-1 w-0.5"></div>}
             </div>
 
             {/* Step details */}
             <div className="flex-1">
               <h4 className="font-medium text-gray-900">{step.stage_name}</h4>
-              <p className="text-sm text-gray-600">Assigned to {step.assigned_to_user_id}</p>
-              {step.assigned_at && <p className="text-xs text-gray-500">Assigned {formatDateTime(step.assigned_at)}</p>}
+              <p className="text-gray-600 text-sm">Assigned to {step.assigned_to_user_id}</p>
+              {step.assigned_at && <p className="text-gray-500 text-xs">Assigned {formatDateTime(step.assigned_at)}</p>}
               {step.action_at && (
-                <p className="text-xs text-gray-500">
+                <p className="text-gray-500 text-xs">
                   {step.action === "approved" ? "Approved" : "Rejected"} {formatDateTime(step.action_at)}
                 </p>
               )}
-              {step.action_reason && <p className="text-sm text-red-900 mt-1">Reason: {step.action_reason}</p>}
+              {step.action_reason && <p className="mt-1 text-red-900 text-sm">Reason: {step.action_reason}</p>}
               {step.action === "pending" && currentUserId && String(step.assigned_to_user_id) === String(currentUserId) && (
                 <div className="mt-3">
                   <ApprovalActions
@@ -171,18 +171,18 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
       </div>
 
       {workflow.status === "approved" && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex gap-2">
-          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-          <p className="text-sm text-green-900">Document workflow approved</p>
+        <div className="bg-green-50 border border-green-200 flex gap-2 p-1 rounded-lg">
+          <CheckCircleIcon className="flex-shrink-0 h-5 text-green-600 w-5" />
+          <p className="text-green-900 text-sm">Document workflow approved</p>
         </div>
       )}
 
       {workflow.status === "rejected" && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-          <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
+        <div className="bg-red-50 border border-red-200 flex gap-2 p-1 rounded-lg">
+          <ExclamationTriangleIcon className="flex-shrink-0 h-5 text-red-600 w-5" />
           <div>
-            <p className="text-sm text-red-900 font-medium">Document rejected</p>
-            {workflow.rejection_reason && <p className="text-sm text-red-800">Reason: {workflow.rejection_reason}</p>}
+            <p className="font-medium text-red-900 text-sm">Document rejected</p>
+            {workflow.rejection_reason && <p className="text-red-800 text-sm">Reason: {workflow.rejection_reason}</p>}
           </div>
         </div>
       )}
@@ -225,24 +225,24 @@ export const ApprovalActions = ({ stepId, onApprovalComplete }) => {
 
   return (
     <div className="flex gap-3">
-      <button onClick={() => handleApprove()} disabled={loading} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+      <button onClick={() => handleApprove()} disabled={loading} className="bg-green-600 disabled:opacity-50 flex-1 hover:bg-green-700 px-1 py-0 rounded-lg text-white">
         ✓ Approve
       </button>
 
-      <button onClick={() => setShowRejectModal(true)} disabled={loading} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+      <button onClick={() => setShowRejectModal(true)} disabled={loading} className="bg-red-600 disabled:opacity-50 flex-1 hover:bg-red-700 px-1 py-0 rounded-lg text-white">
         ✕ Reject
       </button>
 
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reject Document</h3>
-            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason for rejection..." className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 h-24" />
+        <div className="bg-black/50 fixed flex inset-0 items-center justify-center z-50">
+          <div className="bg-white max-w-sm p-1 rounded-lg shadow-xl">
+            <h3 className="font-semibold mb-4 text-gray-900 text-lg">Reject Document</h3>
+            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason for rejection..." className="border border-gray-300 h-24 mb-4 px-1 py-0 rounded-lg w-full" />
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100">
+              <button onClick={() => setShowRejectModal(false)} className="border border-gray-300 hover:bg-gray-100 px-1 py-0 rounded-lg text-gray-700">
                 Cancel
               </button>
-              <button onClick={handleReject} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              <button onClick={handleReject} className="bg-red-600 hover:bg-red-700 px-1 py-0 rounded-lg text-white">
                 Reject
               </button>
             </div>

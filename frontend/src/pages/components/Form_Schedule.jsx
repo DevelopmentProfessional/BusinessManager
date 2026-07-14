@@ -537,21 +537,21 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const formTitle = appointment ? (formData.appointment_type === "meeting" ? "Edit Meeting" : formData.appointment_type === "task" ? "Edit Task" : "Edit Appointment") : formData.appointment_type === "meeting" ? "New Meeting" : formData.appointment_type === "task" ? "New Task" : "New Appointment";
 
   return (
-    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+    <div className="ui-page-shell">
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center bg-white dark:bg-gray-900">
-        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{formTitle}</h6>
+      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
+        <h6 className="ui-heading-strong">{formTitle}</h6>
       </div>
 
       {/* ─── 6 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable body — content floats to bottom */}
-      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 d-flex flex-column">
+      <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto px-1 text-gray-900">
         <div className="flex-grow-1" />
-        <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 pt-3 pb-2">
+        <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 pb-0 pt-1">
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
             <>
               {/* [Event Type][Event Status] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <Dropdown_Custom
                     name="appointment_type"
@@ -574,7 +574,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               </div>
 
               {/* [Select Clients][Select Employees] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   {typeConfig.needsClient && (
                     <Dropdown_Custom
@@ -631,14 +631,14 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         openUpward
                         closeOnSelect={!employeeMultiMode}
                       />
-                      {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
+                      {(isWriteOnly || employees.length === 1) && <p className="mt-1 text-gray-500 text-xs">You can only schedule for yourself</p>}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* [Select Service][Date/time] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   {typeConfig.needsService && (
                     <Dropdown_Custom
@@ -659,7 +659,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -671,7 +671,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {formData.appointment_type === "meeting" && (
             <>
               {/* [Event Type][Event Status] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <Dropdown_Custom name="appointment_type" value={formData.appointment_type} onChange={handleChange} options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))} placeholder="Select event type" required label="Event Type" openUpward closeOnSelect />
                 </div>
@@ -681,10 +681,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               </div>
 
               {/* [Meeting Title][Attendees] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control form-control-sm" required />
+                    <input type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control ui-control-sm" required />
                     <label htmlFor="meeting_title">Meeting Title</label>
                   </div>
                 </div>
@@ -715,14 +715,14 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         openUpward
                         closeOnSelect={!employeeMultiMode}
                       />
-                      {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
+                      {(isWriteOnly || employees.length === 1) && <p className="mt-1 text-gray-500 text-xs">You can only schedule for yourself</p>}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* [Duration][Date/Time] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <Dropdown_Custom
                     name="duration_minutes"
@@ -735,11 +735,11 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                     openUpward
                     closeOnSelect
                   />
-                  {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
+                  {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -751,7 +751,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {formData.appointment_type === "task" && (
             <>
               {/* [Event Type][Appointment Status] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <Dropdown_Custom name="appointment_type" value={formData.appointment_type} onChange={handleChange} options={APPOINTMENT_TYPES.map((type) => ({ value: type.value, label: type.label }))} placeholder="Select event type" required label="Event Type" openUpward closeOnSelect />
                 </div>
@@ -761,7 +761,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               </div>
 
               {/* [Link Task][Assigned to] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <Dropdown_Custom
                     name="parent_schedule_id"
@@ -809,14 +809,14 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         openUpward
                         closeOnSelect={!employeeMultiMode}
                       />
-                      {(isWriteOnly || employees.length === 1) && <p className="text-xs text-gray-500 mt-1">You can only schedule for yourself</p>}
+                      {(isWriteOnly || employees.length === 1) && <p className="mt-1 text-gray-500 text-xs">You can only schedule for yourself</p>}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* [Duration][Date & Time] */}
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-6">
                   <Dropdown_Custom
                     name="duration_minutes"
@@ -829,11 +829,11 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                     openUpward
                     closeOnSelect
                   />
-                  {durationError && <p className="text-red-500 text-xs mt-1">{durationError}</p>}
+                  {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control form-control-sm" placeholder="Date and time" />
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -842,7 +842,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
               {/* [Task Description — full width textarea] */}
               <div className="form-floating">
-                <textarea id="task_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm" placeholder="Task details" style={{ minHeight: "4rem", resize: "vertical" }} />
+                <textarea id="task_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control ui-control-sm" placeholder="Task details" style={{ minHeight: "4rem", resize: "vertical" }} />
                 <label htmlFor="task_notes">Task Description</label>
               </div>
             </>
@@ -850,13 +850,13 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
           {/* Resource Consumption Panel */}
           {typeConfig.needsService && serviceResources.length > 0 && (
-            <div className="border rounded p-2" style={{ fontSize: "0.78rem" }}>
-              <p className="mb-1 fw-semibold text-gray-600 dark:text-gray-400">Resources Consumed</p>
+            <div className="border p-0 rounded" style={{ fontSize: "0.78rem" }}>
+              <p className="dark:text-gray-400 fw-semibold mb-1 text-gray-600">Resources Consumed</p>
               <div className="d-flex flex-column gap-1">
                 {serviceResources.map((r) => (
-                  <div key={r.id} className="d-flex justify-content-between align-items-center">
-                    <span className="text-gray-800 dark:text-gray-200">{inventoryMap[r.inventory_id] || r.inventory_id.slice(0, 8)}</span>
-                    <div className="d-flex gap-2 align-items-center">
+                  <div key={r.id} className="align-items-center d-flex justify-content-between">
+                    <span className="dark:text-gray-200 text-gray-800">{inventoryMap[r.inventory_id] || r.inventory_id.slice(0, 8)}</span>
+                    <div className="ui-flex-center-gap-2">
                       <span className="badge bg-secondary">{r.quantity} units</span>
                       {r.consumption_rate_pct != null && <span className="badge bg-info text-dark">{r.consumption_rate_pct}%</span>}
                     </div>
@@ -883,14 +883,14 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
               {formData.recurrence_end_type === "date" && (
                 <div className="form-floating">
-                  <input type="date" id="recurrence_end_date" name="recurrence_end_date" value={formData.recurrence_end_date} onChange={handleChange} className="form-control form-control-sm" placeholder="End Date" min={appointmentDateOnly || undefined} />
+                  <input type="date" id="recurrence_end_date" name="recurrence_end_date" value={formData.recurrence_end_date} onChange={handleChange} className="form-control ui-control-sm" placeholder="End Date" min={appointmentDateOnly || undefined} />
                   <label htmlFor="recurrence_end_date">Repeat until</label>
                 </div>
               )}
 
               {formData.recurrence_end_type === "count" && (
                 <div className="form-floating">
-                  <input type="number" id="recurrence_count" name="recurrence_count" value={formData.recurrence_count} onChange={handleChange} className="form-control form-control-sm" placeholder="Occurrences" min="1" max="365" />
+                  <input type="number" id="recurrence_count" name="recurrence_count" value={formData.recurrence_count} onChange={handleChange} className="form-control ui-control-sm" placeholder="Occurrences" min="1" max="365" />
                   <label htmlFor="recurrence_count">Number of occurrences</label>
                 </div>
               )}
@@ -900,15 +900,15 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {/* Notes — shown for appointment/series types */}
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
             <div className="form-floating">
-              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Notes" />
+              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
               <label htmlFor="notes">Notes (optional)</label>
             </div>
           )}
 
           {/* Attendee status panel — only when editing an existing meeting */}
           {appointment?.id && formData.appointment_type === "meeting" && attendees.length > 0 && (
-            <div className="border rounded p-2" style={{ fontSize: "0.8rem" }}>
-              <p className="mb-1 fw-semibold text-gray-700 dark:text-gray-300">Attendees</p>
+            <div className="border p-0 rounded" style={{ fontSize: "0.8rem" }}>
+              <p className="dark:text-gray-300 fw-semibold mb-1 text-gray-700">Attendees</p>
               <div className="d-flex flex-column gap-1">
                 {attendees.map((att) => {
                   const emp = att.user_id ? employees.find((e) => e.id === att.user_id) : null;
@@ -916,8 +916,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   const name = emp ? `${emp.first_name} ${emp.last_name}`.trim() : cli ? cli.name : "Unknown";
                   const style = ATTENDEE_STATUS_STYLE[att.attendance_status] || ATTENDEE_STATUS_STYLE.pending;
                   return (
-                    <div key={att.id} className="d-flex align-items-center justify-content-between gap-2">
-                      <span className="text-gray-800 dark:text-gray-200">{name}</span>
+                    <div key={att.id} className="align-items-center d-flex gap-2 justify-content-between">
+                      <span className="dark:text-gray-200 text-gray-800">{name}</span>
                       <span
                         style={{
                           backgroundColor: style.bg,
@@ -939,7 +939,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           )}
 
           {appointment?.id && onDelete && (
-            <div className="row mt-3">
+            <div className="mt-3 row">
               <div className="col-12 d-flex justify-content-center">
                 <Button_Toolbar icon={XMarkIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" />
               </div>
@@ -947,7 +947,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           )}
 
           {submitError && (
-            <div className="alert alert-danger py-2 mb-0" role="alert" style={{ fontSize: "0.8rem" }}>
+            <div className="alert alert-danger mb-0 py-0" role="alert" style={{ fontSize: "0.8rem" }}>
               {submitError}
             </div>
           )}
@@ -956,7 +956,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
       {/* ─── 7 RENDER: FOOTER ───────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}

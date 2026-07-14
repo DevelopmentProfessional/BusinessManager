@@ -86,61 +86,61 @@ export default function Widget_Attendance({ compact = false }) {
   if (compact) {
     // Compact version for embedding in other pages
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-3">
+      <div className="bg-white border dark:bg-gray-800 p-1 rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="ui-flex-items-gap-2">
             <ClockIcon className={`h-5 w-5 ${isClockedIn ? "text-green-500" : "text-gray-400"}`} />
             <div>
-              <div className="text-sm font-medium">{isClockedIn ? "Clocked In" : "Clocked Out"}</div>
-              {isClockedIn && currentRecord && <div className="text-xs text-gray-500">Since {formatTime(currentRecord.clock_in)}</div>}
+              <div className="font-medium text-sm">{isClockedIn ? "Clocked In" : "Clocked Out"}</div>
+              {isClockedIn && currentRecord && <div className="text-gray-500 text-xs">Since {formatTime(currentRecord.clock_in)}</div>}
             </div>
           </div>
-          <button onClick={handleClockAction} disabled={clockActionLoading} className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 ${isClockedIn ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-green-100 text-green-700 hover:bg-green-200"} disabled:opacity-50`}>
+          <button onClick={handleClockAction} disabled={clockActionLoading} className={`px-1 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 ${isClockedIn ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-green-100 text-green-700 hover:bg-green-200"} disabled:opacity-50`}>
             {clockActionLoading ? (
-              <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+              <span className="animate-spin border-2 border-current border-t-transparent h-4 rounded-full w-4" />
             ) : isClockedIn ? (
               <>
-                <StopIcon className="h-4 w-4" />
+                <StopIcon className="ui-icon-4" />
                 Out
               </>
             ) : (
               <>
-                <PlayIcon className="h-4 w-4" />
+                <PlayIcon className="ui-icon-4" />
                 In
               </>
             )}
           </button>
         </div>
-        {error && <div className="text-xs text-red-500 mt-2">{error}</div>}
+        {error && <div className="mt-2 text-red-500 text-xs">{error}</div>}
       </div>
     );
   }
 
   // Full version
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow border p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <ClockIcon className="h-6 w-6 text-primary" />
-        <h3 className="text-lg font-semibold">Time Tracking</h3>
+    <div className="bg-white border dark:bg-gray-800 p-1 rounded-lg shadow">
+      <div className="flex gap-2 items-center mb-4">
+        <ClockIcon className="h-6 text-primary w-6" />
+        <h3 className="font-semibold text-lg">Time Tracking</h3>
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-4 text-sm">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 mb-4 px-1 py-0 rounded text-red-700 text-sm">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div className="text-2xl font-bold text-primary">{isClockedIn ? formatHours(getElapsedTime()) : "--"}</div>
-          <div className="text-xs text-gray-500">Current Session</div>
+      <div className="gap-4 grid grid-cols-2 mb-4">
+        <div className="bg-gray-50 dark:bg-gray-700 p-1 rounded-lg text-center">
+          <div className="font-bold text-2xl text-primary">{isClockedIn ? formatHours(getElapsedTime()) : "--"}</div>
+          <div className="text-gray-500 text-xs">Current Session</div>
         </div>
-        <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div className="text-2xl font-bold text-green-600">{formatHours(todayHours)}</div>
-          <div className="text-xs text-gray-500">Today's Total</div>
+        <div className="bg-gray-50 dark:bg-gray-700 p-1 rounded-lg text-center">
+          <div className="font-bold text-2xl text-green-600">{formatHours(todayHours)}</div>
+          <div className="text-gray-500 text-xs">Today's Total</div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
+      <div className="bg-gray-50 dark:bg-gray-700 flex items-center justify-between mb-4 p-1 rounded-lg">
         <div>
           <div className={`text-sm font-medium ${isClockedIn ? "text-green-600" : "text-gray-500"}`}>Status: {isClockedIn ? "Clocked In" : "Clocked Out"}</div>
-          {isClockedIn && currentRecord && <div className="text-xs text-gray-500">Since {formatTime(currentRecord.clock_in)}</div>}
+          {isClockedIn && currentRecord && <div className="text-gray-500 text-xs">Since {formatTime(currentRecord.clock_in)}</div>}
         </div>
         <div className={`w-3 h-3 rounded-full ${isClockedIn ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
       </div>
@@ -148,21 +148,21 @@ export default function Widget_Attendance({ compact = false }) {
       <button
         onClick={handleClockAction}
         disabled={clockActionLoading}
-        className={`w-full py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${isClockedIn ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"} disabled:opacity-50`}
+        className={`w-full py-0 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${isClockedIn ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"} disabled:opacity-50`}
       >
         {clockActionLoading ? (
           <>
-            <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+            <span className="animate-spin border-2 border-t-transparent border-white h-5 rounded-full w-5" />
             …
           </>
         ) : isClockedIn ? (
           <>
-            <StopIcon className="h-5 w-5" />
+            <StopIcon className="ui-icon-5" />
             Clock Out
           </>
         ) : (
           <>
-            <PlayIcon className="h-5 w-5" />
+            <PlayIcon className="ui-icon-5" />
             Clock In
           </>
         )}

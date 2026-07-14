@@ -29,7 +29,7 @@ import Button_Toolbar from "./Button_Toolbar";
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Manage Roles</div>
           <div className="component-header-center"></div>
@@ -39,21 +39,21 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
         <div className="component-body">
           <div className="component-body-inner">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-              <div className="text-sm text-red-700">{error}</div>
+            <div className="bg-red-50 border border-red-200 mb-4 p-1 rounded-md">
+              <div className="text-red-700 text-sm">{error}</div>
             </div>
           )}
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
-              <div className="text-sm text-green-700">{success}</div>
+            <div className="bg-green-50 border border-green-200 mb-4 p-1 rounded-md">
+              <div className="text-green-700 text-sm">{success}</div>
             </div>
           )}
 
           {/* ─── 3 CREATE NEW ROLE FORM ─────────────────────────────────────────── */}
           {/* Create New Role Form */}
-          <form onSubmit={onCreateRole} className="mb-4 p-3 border rounded">
+          <form onSubmit={onCreateRole} className="border mb-4 p-1 rounded">
             <h5 className={`mb-3 ${isDarkMode ? "text-light" : "text-dark"}`}>Create New Role</h5>
-            <div className="row g-3">
+            <div className="g-3 row">
               <div className="col-md-5">
                 <input type="text" value={newRole.name} onChange={(e) => setNewRole({ ...newRole, name: e.target.value })} className="form-control" placeholder="Role Name" required />
               </div>
@@ -77,8 +77,8 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
             ) : (
               <div className="space-y-4">
                 {availableRoles.map((role) => (
-                  <div key={role.id} className="border rounded p-3">
-                    <div className="d-flex justify-content-between align-items-start mb-2">
+                  <div key={role.id} className="border p-1 rounded">
+                    <div className="align-items-start d-flex justify-content-between mb-2">
                       <div>
                         <h6 className={`mb-1 ${isDarkMode ? "text-light" : "text-dark"}`}>
                           {role.name}
@@ -87,7 +87,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                         {role.description && <small className="text-muted">{role.description}</small>}
                       </div>
                       {!role.is_system && (
-                        <button type="button" onClick={() => onDeleteRole(role.id)} className="btn btn-sm btn-outline-danger" title="Delete Role">
+                        <button type="button" onClick={() => onDeleteRole(role.id)} className="btn btn-outline-danger btn-sm" title="Delete Role">
                           Delete
                         </button>
                       )}
@@ -101,7 +101,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                       <div className="d-flex flex-wrap gap-1 mb-2">
                         {role.role_permissions?.length > 0 ? (
                           role.role_permissions.map((perm) => (
-                            <span key={perm.id} className="badge bg-secondary d-flex align-items-center gap-1">
+                            <span key={perm.id} className="align-items-center badge bg-secondary d-flex gap-1">
                               {perm.page}:{perm.permission}
                               <button type="button" onClick={() => onRemoveRolePermission(role.id, perm.id)} className="btn-close btn-close-white ms-1" style={{ fontSize: "0.5rem" }} title="Remove permission" />
                             </span>
@@ -119,7 +119,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                             setEditingRole(role.id);
                             setNewRolePermission({ ...newRolePermission, page: e.target.value });
                           }}
-                          className="form-select form-select-sm"
+                          className="form-select ui-control-sm"
                           style={{ maxWidth: "150px" }}
                         >
                           <option value="">Page...</option>
@@ -135,7 +135,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                             setEditingRole(role.id);
                             setNewRolePermission({ ...newRolePermission, permission: e.target.value });
                           }}
-                          className="form-select form-select-sm"
+                          className="form-select ui-control-sm"
                           style={{ maxWidth: "150px" }}
                         >
                           <option value="">Permission...</option>
@@ -145,8 +145,8 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                             </option>
                           ))}
                         </select>
-                        <button type="button" onClick={() => onAddRolePermission(role.id)} className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}>
-                          <PlusIcon className="h-4 w-4" />
+                        <button type="button" onClick={() => onAddRolePermission(role.id)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}>
+                          <PlusIcon className="ui-icon-4" />
                           <span>Add</span>
                         </button>
                       </div>
@@ -163,7 +163,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
         <div className="component-footer">
           <div className="component-footer-left"></div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

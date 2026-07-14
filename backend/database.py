@@ -1195,6 +1195,33 @@ def _ensure_client_membership_fk_cascade_if_needed():
             "FOREIGN KEY (membership_id) REFERENCES membership(id) ON DELETE CASCADE"
         ))
         print("  + Updated client_membership.membership_id FK to ON DELETE CASCADE")
+        
+def _ensure_app_settings_stripe_columns_if_needed() -> None:
+    """Ensure Stripe configuration columns exist on app_settings."""
+    with engine.begin() as conn:
+        existing_cols = {
+            row[0]
+            for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='app_settings'"
+            )).fetchall()
+        }
+
+        if "stripe_enabled" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_enabled BOOLEAN NOT NULL DEFAULT FALSE"))
+            print("  + Added app_settings.stripe_enabled")
+
+        if "stripe_publishable_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_publishable_key VARCHAR"))
+            print("  + Added app_settings.stripe_publishable_key")
+
+        if "stripe_secret_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_secret_key VARCHAR"))
+            print("  + Added app_settings.stripe_secret_key")
+
+        if "stripe_webhook_secret" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_webhook_secret VARCHAR"))
+            print("  + Added app_settings.stripe_webhook_secret")
 
 
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
@@ -1266,6 +1293,7 @@ def create_db_and_tables():
     _ensure_company_registration_columns_if_needed()
     _ensure_client_auth_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()
+    _ensure_app_settings_stripe_columns_if_needed()
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()

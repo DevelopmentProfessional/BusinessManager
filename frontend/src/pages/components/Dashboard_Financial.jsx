@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================
  * FILE: Dashboard_Financial.jsx
  *
@@ -36,70 +36,70 @@ const Dashboard_Financial = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading financial data...</div>;
+  if (loading) return <div className="p-1 text-center">Loading financial data...</div>;
 
   return (
     <div className="space-y-6">
       {/* Top KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="gap-4 grid grid-cols-1 md:grid-cols-3">
         {/* Cash Position */}
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-600">
+        <div className="bg-white border-blue-600 border-l-4 p-1 rounded-lg shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm">Cash Position</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">${((arData?.total_outstanding || 0) - (apData?.total_payable || 0)).toFixed(2)}</p>
+              <p className="font-bold mt-2 text-3xl text-gray-900">${((arData?.total_outstanding || 0) - (apData?.total_payable || 0)).toFixed(2)}</p>
             </div>
-            <CurrencyDollarIcon className="w-8 h-8 text-blue-600" />
+            <CurrencyDollarIcon className="h-8 text-blue-600 w-8" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">AR - AP</p>
+          <p className="mt-2 text-gray-500 text-xs">AR - AP</p>
         </div>
 
         {/* Accounts Receivable */}
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-600">
+        <div className="bg-white border-green-600 border-l-4 p-1 rounded-lg shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm">Total AR</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">${(arData?.total_outstanding || 0).toFixed(2)}</p>
+              <p className="font-bold mt-2 text-3xl text-gray-900">${(arData?.total_outstanding || 0).toFixed(2)}</p>
             </div>
-            <ArrowTrendingUpIcon className="w-8 h-8 text-green-600" />
+            <ArrowTrendingUpIcon className="h-8 text-green-600 w-8" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">Money owed TO you</p>
+          <p className="mt-2 text-gray-500 text-xs">Money owed TO you</p>
         </div>
 
         {/* Accounts Payable */}
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-600">
+        <div className="bg-white border-l-4 border-red-600 p-1 rounded-lg shadow">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-gray-600 text-sm">Total AP</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">${(apData?.total_payable || 0).toFixed(2)}</p>
+              <p className="font-bold mt-2 text-3xl text-gray-900">${(apData?.total_payable || 0).toFixed(2)}</p>
             </div>
-            <ArrowTrendingDownIcon className="w-8 h-8 text-red-600" />
+            <ArrowTrendingDownIcon className="h-8 text-red-600 w-8" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">Money you OWE</p>
+          <p className="mt-2 text-gray-500 text-xs">Money you OWE</p>
         </div>
       </div>
 
       {/* AR Aging */}
       {arData && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Accounts Receivable Aging</h3>
-          <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white p-1 rounded-lg shadow">
+          <h3 className="font-semibold mb-4 text-gray-900 text-lg">Accounts Receivable Aging</h3>
+          <div className="gap-4 grid grid-cols-4">
             {[
               { label: "Current", count: arData.by_age?.current || 0, color: "bg-green-100 text-green-700" },
               { label: "30 Days", count: arData.by_age?.["30_days"] || 0, color: "bg-yellow-100 text-yellow-700" },
               { label: "60 Days", count: arData.by_age?.["60_days"] || 0, color: "bg-orange-100 text-orange-700" },
               { label: "90+ Days", count: arData.by_age?.["90_plus"] || 0, color: "bg-red-100 text-red-700" },
             ].map((item) => (
-              <div key={item.label} className={`${item.color} rounded-lg p-4 text-center`}>
-                <p className="text-2xl font-bold">{item.count}</p>
-                <p className="text-sm font-medium">{item.label}</p>
+              <div key={item.label} className={`${item.color} rounded-lg p-1 text-center`}>
+                <p className="font-bold text-2xl">{item.count}</p>
+                <p className="font-medium text-sm">{item.label}</p>
               </div>
             ))}
           </div>
           {arData.by_age?.["90_plus"] > 0 && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <p className="text-sm text-red-800">{arData.by_age["90_plus"]} invoices are 90+ days overdue. Consider collections action.</p>
+            <div className="bg-red-50 border border-red-200 flex gap-2 mt-4 p-1 rounded-lg">
+              <ExclamationTriangleIcon className="flex-shrink-0 h-5 text-red-600 w-5" />
+              <p className="text-red-800 text-sm">{arData.by_age["90_plus"]} invoices are 90+ days overdue. Consider collections action.</p>
             </div>
           )}
         </div>
@@ -107,18 +107,18 @@ const Dashboard_Financial = () => {
 
       {/* AP Aging */}
       {apData && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Accounts Payable Aging</h3>
-          <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white p-1 rounded-lg shadow">
+          <h3 className="font-semibold mb-4 text-gray-900 text-lg">Accounts Payable Aging</h3>
+          <div className="gap-4 grid grid-cols-4">
             {[
               { label: "Current", count: apData.by_age?.current || 0, color: "bg-green-100 text-green-700" },
               { label: "30 Days", count: apData.by_age?.["30_days"] || 0, color: "bg-yellow-100 text-yellow-700" },
               { label: "60 Days", count: apData.by_age?.["60_days"] || 0, color: "bg-orange-100 text-orange-700" },
               { label: "90+ Days", count: apData.by_age?.["90_plus"] || 0, color: "bg-red-100 text-red-700" },
             ].map((item) => (
-              <div key={item.label} className={`${item.color} rounded-lg p-4 text-center`}>
-                <p className="text-2xl font-bold">{item.count}</p>
-                <p className="text-sm font-medium">{item.label}</p>
+              <div key={item.label} className={`${item.color} rounded-lg p-1 text-center`}>
+                <p className="font-bold text-2xl">{item.count}</p>
+                <p className="font-medium text-sm">{item.label}</p>
               </div>
             ))}
           </div>
@@ -127,32 +127,32 @@ const Dashboard_Financial = () => {
 
       {/* Low Stock Alerting */}
       {inventoryCosts && inventoryCosts.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
+        <div className="bg-white p-1 rounded-lg shadow">
+          <h3 className="flex font-semibold gap-2 items-center mb-4 text-gray-900 text-lg">
+            <ExclamationTriangleIcon className="h-5 text-orange-600 w-5" />
             Low Stock Items - Action Needed
           </h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-gray-50">
+            <table className="text-sm w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Item</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Qty</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Reorder Point</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Qty to Order</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Days Until Empty</th>
+                  <th className="font-medium px-1 py-0 text-gray-600 text-left">Item</th>
+                  <th className="font-medium px-1 py-0 text-gray-600 text-left">Qty</th>
+                  <th className="font-medium px-1 py-0 text-gray-600 text-left">Reorder Point</th>
+                  <th className="font-medium px-1 py-0 text-gray-600 text-left">Qty to Order</th>
+                  <th className="font-medium px-1 py-0 text-gray-600 text-left">Days Until Empty</th>
                 </tr>
               </thead>
               <tbody>
                 {inventoryCosts.map((item) => (
                   <tr key={item.inventory_id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3">{item.inventory_name}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded ${item.current_quantity <= item.reorder_point ? "bg-red-100 text-red-700 font-bold" : "bg-gray-100 text-gray-700"}`}>{item.current_quantity}</span>
+                    <td className="px-1 py-1">{item.inventory_name}</td>
+                    <td className="px-1 py-1">
+                      <span className={`px-0 py-1 rounded ${item.current_quantity <= item.reorder_point ? "bg-red-100 text-red-700 font-bold" : "bg-gray-100 text-gray-700"}`}>{item.current_quantity}</span>
                     </td>
-                    <td className="px-4 py-3">{item.reorder_point}</td>
-                    <td className="px-4 py-3 font-medium">{item.reorder_quantity}</td>
-                    <td className="px-4 py-3">{item.estimated_days_until_stockout?.toFixed(1) || "N/A"} days</td>
+                    <td className="px-1 py-1">{item.reorder_point}</td>
+                    <td className="font-medium px-1 py-1">{item.reorder_quantity}</td>
+                    <td className="px-1 py-1">{item.estimated_days_until_stockout?.toFixed(1) || "N/A"} days</td>
                   </tr>
                 ))}
               </tbody>
@@ -162,13 +162,13 @@ const Dashboard_Financial = () => {
       )}
 
       {/* Quick Actions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h4 className="font-semibold text-gray-900 mb-3">Quick Actions</h4>
+      <div className="bg-blue-50 border border-blue-200 p-1 rounded-lg">
+        <h4 className="font-semibold mb-3 text-gray-900">Quick Actions</h4>
         <div className="flex flex-wrap gap-2">
-          <button className="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Invoice</button>
-          <button className="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Order</button>
-          <button className="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Ledger</button>
-          <button className="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Remind</button>
+          <button className="bg-white border border-blue-300 hover:bg-blue-50 px-1 py-0 rounded-lg text-blue-700">Invoice</button>
+          <button className="bg-white border border-blue-300 hover:bg-blue-50 px-1 py-0 rounded-lg text-blue-700">Order</button>
+          <button className="bg-white border border-blue-300 hover:bg-blue-50 px-1 py-0 rounded-lg text-blue-700">Ledger</button>
+          <button className="bg-white border border-blue-300 hover:bg-blue-50 px-1 py-0 rounded-lg text-blue-700">Remind</button>
         </div>
       </div>
     </div>

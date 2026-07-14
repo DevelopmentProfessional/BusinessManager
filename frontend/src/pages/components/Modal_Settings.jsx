@@ -1,4 +1,4 @@
-﻿// FILE: Modal_Settings.jsx
+// FILE: Modal_Settings.jsx
 // Renders the personal settings accordion panel: dark mode, theme color, footer alignment, signature, training mode toggle, and logout.
 
 import React from "react";
@@ -84,8 +84,8 @@ const Modal_Settings = ({
 
   return (
     <div className={embedded ? "" : "accordion-popup"} style={containerStyle}>
-      <div className="d-flex align-items-center flex-wrap gap-1 mb-2">
-        <span className="text-muted small me-1">Environment</span>
+      <div className="align-items-center d-flex flex-wrap gap-1 mb-2">
+        <span className="me-1 small text-muted">Environment</span>
         {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
           const isCurrent = key === currentDbEnvironment;
           return (
@@ -94,7 +94,7 @@ const Modal_Settings = ({
               role="radio"
               aria-checked={isCurrent}
               tabIndex={0}
-              className={`badge rounded-pill px-3 py-2 ${isCurrent ? "bg-primary text-white" : "bg-transparent text-secondary border"}`}
+              className={`badge rounded-pill px-1 py-0 ${isCurrent ? "bg-primary text-white" : "bg-transparent text-secondary border"}`}
               style={{ cursor: isCurrent || dbLoading ? "default" : "pointer", fontSize: "0.8rem", transition: "all 0.15s ease", userSelect: "none" }}
               onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
               onKeyDown={(e) => {
@@ -114,12 +114,12 @@ const Modal_Settings = ({
           </div>
         )}
       </div>
-      {dbMessage && <div className="small text-success mt-1">{dbMessage}</div>}
-      {dbError && <div className="small text-danger mt-1">{dbError}</div>}
+      {dbMessage && <div className="mt-1 small text-success">{dbMessage}</div>}
+      {dbError && <div className="mt-1 small text-danger">{dbError}</div>}
 
       {!embedded && <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }}></div>}
 
-      <div className="d-flex align-items-center justify-content-start gap-1 mb-3 flex-wrap" style={{ minHeight: "3rem" }}>
+      <div className="align-items-center d-flex flex-wrap gap-1 justify-content-start mb-3" style={{ minHeight: "3rem" }}>
         <Button_Toolbar icon={isDarkMode ? MoonIcon : SunIcon} label={isDarkMode ? "Light" : "Dark"} onClick={toggleDarkMode} className={`settings-accordion-btn ${isDarkMode ? "text-white" : ""}`} style={{ backgroundColor: isDarkMode ? "#3B82F6" : "#F59E0B", border: "none" }} />
 
         <Button_Toolbar
@@ -149,9 +149,9 @@ const Modal_Settings = ({
           message={colorMessage}
         />
 
-        <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="settings-accordion-btn btn-outline-secondary" title="Cycle footer alignment" />
+        <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="btn-outline-secondary settings-accordion-btn" title="Cycle footer alignment" />
 
-        <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Sign" onClick={() => setSignatureModalOpen(true)} className="settings-accordion-btn btn-outline-secondary" title="Signature" />
+        <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Sign" onClick={() => setSignatureModalOpen(true)} className="btn-outline-secondary settings-accordion-btn" title="Signature" />
 
         <Button_Toolbar
           icon={isTrainingMode ? Squares2X2Icon : BookOpenIcon}
@@ -168,13 +168,13 @@ const Modal_Settings = ({
               } catch (_) {}
             }
           }}
-          className="settings-accordion-btn btn-outline-secondary"
+          className="btn-outline-secondary settings-accordion-btn"
           title={isTrainingMode ? "Switch to compact mode" : "Switch to training mode"}
         />
 
-        <Button_Toolbar icon={AdjustmentsHorizontalIcon} label="Size" onClick={cycleButtonTextSize} className="settings-accordion-btn btn-outline-secondary" title={`Text size: ${buttonTextSize}`} />
+        <Button_Toolbar icon={AdjustmentsHorizontalIcon} label="Size" onClick={cycleButtonTextSize} className="btn-outline-secondary settings-accordion-btn" title={`Text size: ${buttonTextSize}`} />
 
-        <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="settings-accordion-btn btn-outline-secondary" title="Log out" />
+        <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="btn-outline-secondary settings-accordion-btn" title="Log out" />
       </div>
 
       {onClose && <Footer_Settings onSave={onSave || onClose} onClose={onClose} />}

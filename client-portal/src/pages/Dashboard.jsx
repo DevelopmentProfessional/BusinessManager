@@ -121,7 +121,7 @@ export default function Dashboard() {
         {/* Search */}
         <div className="relative flex-1 min-w-48">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input className="form-input pl-9" placeholder="Search products & services…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="form-input pl-1" placeholder="Search products & services…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
         {/* Tab filter */}
@@ -131,7 +131,7 @@ export default function Dashboard() {
             ["products", "Products"],
             ["services", "Services"],
           ].map(([val, label]) => (
-            <button key={val} onClick={() => setActiveTab(val)} className={`px-4 py-2 transition-colors ${activeTab === val ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>
+            <button key={val} onClick={() => setActiveTab(val)} className={`px-1 py-0 transition-colors ${activeTab === val ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>
               {label}
             </button>
           ))}

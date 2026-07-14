@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Clients.jsx
  *
@@ -458,7 +458,7 @@ export default function Clients() {
   // ─── [8] RENDER ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center">
+      <div className="align-items-center d-flex justify-content-center">
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -472,15 +472,15 @@ export default function Clients() {
       error={error}
       contentGravity="bottom"
       headerRight={
-        <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
+        <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
           <Cog6ToothIcon style={{ width: 18, height: 18 }} />
         </button>
       }
     >
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-      <div ref={scrollRef} className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+      <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
         {sortedAndFiltered.length > 0 ? (
-          <table className="table table-borderless table-hover mb-0 w-100">
+          <table className="mb-0 table table-borderless table-hover w-100">
             <colgroup>
               <col style={{ width: "56px" }} />
               <col />
@@ -496,7 +496,7 @@ export default function Clients() {
                     ) : (
                       <Gate_Permission page="clients" permission="delete">
                         <button className="btn btn-circle btn-outline-danger" title="Delete client" onClick={() => handleDeleteClient(client.id)}>
-                          <XMarkIcon className="h-4 w-4" />
+                          <XMarkIcon className="ui-icon-4" />
                         </button>
                       </Gate_Permission>
                     )}
@@ -530,12 +530,12 @@ export default function Clients() {
 
                   {/* Membership + template */}
                   <td className="main-page-table-data">
-                    <div className="d-flex align-items-center gap-1">
+                    <div className="ui-flex-center-gap-1">
                       <Badge variant={tierVariant(client.membership_tier || "none")} pill label={getTierLabel(client)} />
                     </div>
                   </td>
                   <td className="main-page-table-data p-0 text-center">
-                    <button type="button" onClick={handleOpenTemplate(client)} className="btn btn-sm border-0 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded d-flex align-items-center justify-content-center" title="Use template">
+                    <button type="button" onClick={handleOpenTemplate(client)} className="align-items-center border-0 btn btn-sm d-flex dark:hover:bg-blue-900/20 hover:bg-blue-50 justify-content-center rounded text-blue-600" title="Use template">
                       <EnvelopeIcon className="h-6 w-6" />
                     </button>
                   </td>
@@ -544,14 +544,14 @@ export default function Clients() {
             </tbody>
           </table>
         ) : (
-          <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
         )}
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
-          <div className="d-flex align-items-center gap-2">
-            <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+        <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="ui-flex-center-gap-2">
+            <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected clients" onClick={() => setShowMultiEdit(true)}>
@@ -606,7 +606,7 @@ export default function Clients() {
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Client Page Controls">
-        <div className="small text-muted">Use these controls to manage the Clients page view.</div>
+        <div className="ui-small-muted">Use these controls to manage the Clients page view.</div>
         <div className="small">Subscription filter and search are available in the footer controls.</div>
         <Button_Toolbar
           icon={TicketIcon}
@@ -631,12 +631,12 @@ export default function Clients() {
         contentGravity="top"
       >
         <div className="d-flex flex-column gap-3">
-          <div className="border rounded p-2 d-flex flex-column gap-2">
-            <input type="text" className="form-control form-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
-            <textarea className="form-control form-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
+          <div className="border d-flex flex-column gap-2 p-0 rounded">
+            <input type="text" className="form-control ui-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
+            <textarea className="form-control ui-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
             <div className="d-flex gap-2">
-              <input type="number" min="0" step="0.01" className="form-control form-control-sm" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
-              <select className="form-select form-select-sm" value={membershipForm.billing_frequency} onChange={(e) => setMembershipForm((p) => ({ ...p, billing_frequency: e.target.value }))}>
+              <input type="number" min="0" step="0.01" className="form-control ui-control-sm" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
+              <select className="form-select ui-control-sm" value={membershipForm.billing_frequency} onChange={(e) => setMembershipForm((p) => ({ ...p, billing_frequency: e.target.value }))}>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -644,26 +644,26 @@ export default function Clients() {
               </select>
             </div>
             <div className="d-flex gap-2">
-              <input type="number" min="0" className="form-control form-control-sm" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
-              <select className="form-select form-select-sm" value={membershipForm.lock_term_unit} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_unit: e.target.value }))}>
+              <input type="number" min="0" className="form-control ui-control-sm" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
+              <select className="form-select ui-control-sm" value={membershipForm.lock_term_unit} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_unit: e.target.value }))}>
                 <option value="days">Days</option>
                 <option value="weeks">Weeks</option>
                 <option value="months">Months</option>
                 <option value="years">Years</option>
               </select>
             </div>
-            <label className="small d-flex align-items-center gap-2">
+            <label className="align-items-center d-flex gap-2 small">
               <input type="checkbox" checked={membershipForm.is_active} onChange={(e) => setMembershipForm((p) => ({ ...p, is_active: e.target.checked }))} />
               Active
             </label>
             <div className="d-flex gap-2">
-              <button type="button" className="btn btn-sm btn-primary d-flex align-items-center gap-2" onClick={handleSaveMembership}>
-                <CheckCircleIcon className="h-4 w-4" />
+              <button type="button" className="align-items-center btn btn-primary btn-sm d-flex gap-2" onClick={handleSaveMembership}>
+                <CheckCircleIcon className="ui-icon-4" />
                 <span>{editingMembershipId ? "Update" : "Create"}</span>
               </button>
               {editingMembershipId && (
-                <button type="button" className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2" onClick={resetMembershipForm}>
-                  <XCircleIcon className="h-4 w-4" />
+                <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2" onClick={resetMembershipForm}>
+                  <XCircleIcon className="ui-icon-4" />
                   <span>Cancel</span>
                 </button>
               )}
@@ -672,25 +672,25 @@ export default function Clients() {
 
           <div className="d-flex flex-column gap-2" style={{ maxHeight: "220px", overflowY: "auto" }}>
             {memberships.map((membership) => (
-              <div key={membership.id} className="border rounded p-2 d-flex justify-content-between align-items-start gap-2">
+              <div key={membership.id} className="align-items-start border d-flex gap-2 justify-content-between p-0 rounded">
                 <div className="small">
                   <div className="fw-semibold">{membership.name}</div>
                   <div className="text-muted">{`$${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</div>
                   <div className="text-muted">{`Lock: ${membership.lock_term_count || 0} ${membership.lock_term_unit || "months"}`}</div>
                 </div>
                 <div className="d-flex gap-1">
-                  <button type="button" className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" onClick={() => handleEditMembership(membership)}>
-                    <PencilIcon className="h-4 w-4" />
+                  <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" onClick={() => handleEditMembership(membership)}>
+                    <PencilIcon className="ui-icon-4" />
                     <span>Edit</span>
                   </button>
-                  <button type="button" className="btn btn-sm btn-outline-danger d-flex align-items-center gap-2" onClick={() => handleDeleteMembership(membership.id)}>
-                    <XMarkIcon className="h-4 w-4" />
+                  <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex gap-2" onClick={() => handleDeleteMembership(membership.id)}>
+                    <XMarkIcon className="ui-icon-4" />
                     <span>Delete</span>
                   </button>
                 </div>
               </div>
             ))}
-            {memberships.length === 0 && <div className="small text-muted">No subscriptions yet.</div>}
+            {memberships.length === 0 && <div className="ui-small-muted">No subscriptions yet.</div>}
           </div>
         </div>
       </Modal>

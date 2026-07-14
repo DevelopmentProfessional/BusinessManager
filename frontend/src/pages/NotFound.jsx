@@ -34,22 +34,22 @@ const NotFound = () => {
 
   // ─── [3] RENDER ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+    <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center min-h-screen px-1">
+      <div className="bg-white dark:bg-gray-800 max-w-md p-1 rounded-lg shadow-lg text-center w-full">
         <div className="flex justify-center mb-4">
-          <ExclamationTriangleIcon className="h-16 w-16 text-yellow-500" />
+          <ExclamationTriangleIcon className="h-16 text-yellow-500 w-16" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Page Not Found</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-3">The page you're looking for doesn't exist, has moved, or the site is redeploying.</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Try reloading, then return to the main site.</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button onClick={reloadPage} className="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors">
+        <h1 className="dark:text-white font-bold mb-2 text-2xl text-gray-900">Page Not Found</h1>
+        <p className="dark:text-gray-400 mb-3 text-gray-600">The page you're looking for doesn't exist, has moved, or the site is redeploying.</p>
+        <p className="dark:text-gray-400 mb-6 text-gray-500 text-sm">Try reloading, then return to the main site.</p>
+        <div className="flex flex-col gap-3 justify-center sm:flex-row">
+          <button onClick={reloadPage} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white font-medium hover:bg-gray-300 px-1 py-0 rounded-lg text-gray-900 transition-colors">
             Reload
           </button>
-          <button onClick={goToRoot} className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors">
+          <button onClick={goToRoot} className="bg-primary-600 font-medium hover:bg-primary-700 px-1 py-0 rounded-lg text-white transition-colors">
             Home
           </button>
-          <button onClick={goToLogin} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+          <button onClick={goToLogin} className="bg-indigo-600 font-medium hover:bg-indigo-700 px-1 py-0 rounded-lg text-white transition-colors">
             Login
           </button>
         </div>

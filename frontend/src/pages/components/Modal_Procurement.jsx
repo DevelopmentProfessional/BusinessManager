@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Procurement order management — embedded in supplier accordion (Inventory → Suppliers).
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
@@ -193,27 +193,27 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
   };
 
   const renderCreateForm = () => (
-    <div className="d-flex flex-column min-h-0 flex-grow-1">
-      <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-shrink-0">
-        <span className="small fw-semibold text-muted">Create purchase order</span>
-        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }}>
+    <div className="d-flex flex-column flex-grow-1 min-h-0">
+      <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-between mb-2">
+        <span className="fw-semibold small text-muted">Create purchase order</span>
+        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }}>
           Cancel
         </button>
       </div>
-      <div className="flex-grow-1 overflow-auto min-h-0 pe-1">
-        <div className="form-floating mb-2">
+      <div className="flex-grow-1 min-h-0 overflow-auto pe-1">
+        <div className="form-floating ui-form-floating-mb2">
           <input
             type="date"
             id={`po_expected_delivery_${supplierId}`}
-            className="form-control form-control-sm"
+            className="form-control ui-control-sm"
             value={formData.expected_delivery_date}
             onChange={(e) => setFormData((p) => ({ ...p, expected_delivery_date: e.target.value }))}
           />
           <label htmlFor={`po_expected_delivery_${supplierId}`}>Expected delivery date</label>
         </div>
 
-        <div className="table-responsive border rounded mb-2">
-          <table className="table table-sm mb-0">
+        <div className="border mb-2 rounded table-responsive">
+          <table className="mb-0 table table-sm">
             <thead className="table-light">
               <tr>
                 <th>Item</th>
@@ -229,7 +229,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
               {formData.line_items.map((item, idx) => (
                 <tr key={idx}>
                   <td>
-                    <select className="form-select form-select-sm" value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}>
+                    <select className="form-select ui-control-sm" value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}>
                       <option value="">Select…</option>
                       {inventoryItems.map((inv) => (
                         <option key={inv.id} value={inv.id}>
@@ -239,15 +239,15 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                     </select>
                   </td>
                   <td>
-                    <input type="number" min="1" className="form-control form-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
+                    <input type="number" min="1" className="form-control ui-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
                   </td>
                   <td>
-                    <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
+                    <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
                   </td>
-                  <td className="text-end small fw-medium">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
+                  <td className="fw-medium small text-end">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
                   <td>
                     {formData.line_items.length > 1 && (
-                      <button type="button" className="btn btn-sm btn-outline-danger btn-bulk-circle p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
+                      <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
                         <XMarkIcon style={{ width: 14, height: 14 }} />
                       </button>
                     )}
@@ -257,56 +257,56 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="text-end small text-muted">
+                <td colSpan={3} className="small text-end text-muted">
                   Subtotal
                 </td>
-                <td className="text-end small fw-medium">{formatCurrency(lineSubtotal)}</td>
+                <td className="fw-medium small text-end">{formatCurrency(lineSubtotal)}</td>
                 <td />
               </tr>
               <tr>
-                <td colSpan={2} className="text-end small">
+                <td colSpan={2} className="small text-end">
                   Import tax
                 </td>
                 <td>
-                  <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
+                  <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
                 </td>
                 <td colSpan={2} />
               </tr>
               <tr>
-                <td colSpan={2} className="text-end small">
+                <td colSpan={2} className="small text-end">
                   Shipping
                 </td>
                 <td>
-                  <input type="number" min="0" step="0.01" className="form-control form-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
+                  <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
                 </td>
                 <td colSpan={2} />
               </tr>
               <tr className="table-light">
-                <td colSpan={3} className="text-end fw-semibold small">
+                <td colSpan={3} className="fw-semibold small text-end">
                   Sum
                 </td>
-                <td className="text-end fw-bold small">{formatCurrency(orderTotal)}</td>
+                <td className="fw-bold small text-end">{formatCurrency(orderTotal)}</td>
                 <td />
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <button type="button" onClick={handleAddLineItem} className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 mb-2">
+        <button type="button" onClick={handleAddLineItem} className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1 mb-2">
           <PlusIcon style={{ width: 14, height: 14 }} />
           <span>Add line</span>
         </button>
 
-        <div className="form-floating mb-2">
-          <textarea className="form-control form-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
+        <div className="form-floating ui-form-floating-mb2">
+          <textarea className="form-control ui-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
           <label htmlFor={`po_notes_${supplierId}`}>Notes</label>
         </div>
       </div>
-      <div className="flex-shrink-0 pt-2 border-top d-flex gap-2 justify-content-end">
-        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }} disabled={loading}>
+      <div className="border-top d-flex flex-shrink-0 gap-2 justify-content-end pt-0">
+        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }} disabled={loading}>
           Cancel
         </button>
-        <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={handleCreatePO} disabled={loading || formData.line_items.every((i) => !i.inventory_id)}>
+        <button type="button" className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1" onClick={handleCreatePO} disabled={loading || formData.line_items.every((i) => !i.inventory_id)}>
           <CheckIcon style={{ width: 14, height: 14 }} />
           <span>{loading ? "Saving…" : "Save"}</span>
         </button>
@@ -316,7 +316,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
 
   const renderPoList = () => (
     <>
-      <div className="d-flex align-items-center justify-content-end gap-2 mb-2 flex-shrink-0">
+      <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-end mb-2">
         <button
           type="button"
           onClick={() => {
@@ -324,21 +324,21 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
             setShowCreate(true);
             setDetailPoId(null);
           }}
-          className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+          className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1"
         >
           <PlusIcon style={{ width: 14, height: 14 }} />
           <span>New</span>
         </button>
       </div>
 
-      <div className="flex-grow-1 overflow-auto min-h-0">
-        <table className="table table-sm table-hover mb-0 align-middle">
-          <thead className="table-light sticky-top">
+      <div className="flex-grow-1 min-h-0 overflow-auto">
+        <table className="align-middle mb-0 table table-hover table-sm">
+          <thead className="sticky-top table-light">
             <tr>
-              <th className="ps-1 pe-1">PO#</th>
+              <th className="pe-1 ps-1">PO#</th>
               <th className="px-1">Date</th>
-              <th className="text-end px-1">Sum</th>
-              <th className="text-end pe-1" style={{ width: 44 }}>
+              <th className="px-1 text-end">Sum</th>
+              <th className="pe-1 text-end" style={{ width: 44 }}>
                 <span className="visually-hidden">View</span>
               </th>
             </tr>
@@ -346,18 +346,18 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
           <tbody>
             {purchaseOrders.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center text-muted small py-3 ps-1">
+                <td colSpan={4} className="ps-1 py-1 small text-center text-muted">
                   No purchase orders yet.
                 </td>
               </tr>
             ) : (
               purchaseOrders.map((po) => (
                 <tr key={po.id}>
-                  <td className="ps-1 pe-1 font-monospace small">{po.po_number}</td>
+                  <td className="font-monospace pe-1 ps-1 small">{po.po_number}</td>
                   <td className="px-1 small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
-                  <td className="text-end px-1 small fw-medium">{formatCurrency(po.total_amount)}</td>
-                  <td className="text-end pe-1">
-                    <button type="button" className="btn btn-sm btn-outline-secondary btn-bulk-circle p-0" title="View purchase order" onClick={() => openDetail(po)}>
+                  <td className="fw-medium px-1 small text-end">{formatCurrency(po.total_amount)}</td>
+                  <td className="pe-1 text-end">
+                    <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" title="View purchase order" onClick={() => openDetail(po)}>
                       <EyeIcon style={{ width: 14, height: 14 }} />
                     </button>
                   </td>
@@ -375,16 +375,16 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
       {showCreate ? renderCreateForm() : renderPoList()}
 
       <Modal isOpen={!!detailPoId} onClose={() => { setDetailPoId(null); setDetailPo(null); }} fullScreen noPadding>
-        <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
-          <div className="flex-shrink-0 p-2 border-bottom">
-            <h6 className="mb-0 fw-semibold">{detailPo?.po_number || "Purchase order"}</h6>
+        <div className="ui-page-shell">
+          <div className="border-bottom flex-shrink-0 p-0">
+            <h6 className="fw-semibold mb-0">{detailPo?.po_number || "Purchase order"}</h6>
           </div>
-          <div className="flex-grow-1 overflow-auto p-3 min-h-0">
+          <div className="flex-grow-1 min-h-0 overflow-auto p-1">
             {detailLoading ? (
-              <div className="text-center py-4 text-muted small">Loading…</div>
+              <div className="py-1 small text-center text-muted">Loading…</div>
             ) : detailPo ? (
               <>
-                <div className="row g-2 mb-3 small">
+                <div className="g-2 mb-3 row small">
                   <div className="col-6">
                     <span className="text-muted">Date</span>
                     <div>{detailPo.order_date ? new Date(detailPo.order_date).toLocaleDateString() : "—"}</div>
@@ -399,8 +399,8 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                   </div>
                 </div>
                 {detailPo.line_items?.length > 0 && (
-                  <div className="table-responsive border rounded mb-3">
-                    <table className="table table-sm mb-0">
+                  <div className="border mb-3 rounded table-responsive">
+                    <table className="mb-0 table table-sm">
                       <thead className="table-light">
                         <tr>
                           <th>Item</th>
@@ -422,22 +422,22 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                     </table>
                   </div>
                 )}
-                <div className="border-top pt-3">
-                  <div className="d-flex align-items-center justify-content-between mb-2">
-                    <span className="fw-semibold small">Documents</span>
-                    <button type="button" className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onClick={() => setShowDocUpload(true)}>
+                <div className="border-top pt-1">
+                  <div className="align-items-center d-flex justify-content-between mb-2">
+                    <span className="fw-semibold ui-text-sm">Documents</span>
+                    <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1" onClick={() => setShowDocUpload(true)}>
                       <DocumentPlusIcon style={{ width: 14, height: 14 }} />
                       <span>Attach</span>
                     </button>
                   </div>
                   {linkedDocs.length === 0 ? (
-                    <p className="text-muted small mb-0">No documents linked.</p>
+                    <p className="mb-0 ui-small-muted">No documents linked.</p>
                   ) : (
                     <ul className="list-group list-group-flush small">
                       {linkedDocs.map((doc) => (
-                        <li key={doc.id} className="list-group-item px-0 d-flex justify-content-between align-items-center">
-                          <span className="text-truncate me-2">{doc.original_filename || doc.filename}</span>
-                          <a href={documentsAPI.fileUrl(doc.id)} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-link flex-shrink-0">
+                        <li key={doc.id} className="align-items-center d-flex justify-content-between list-group-item px-0">
+                          <span className="me-2 text-truncate">{doc.original_filename || doc.filename}</span>
+                          <a href={documentsAPI.fileUrl(doc.id)} target="_blank" rel="noopener noreferrer" className="btn btn-link btn-sm flex-shrink-0">
                             Open
                           </a>
                         </li>
@@ -447,10 +447,10 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                 </div>
               </>
             ) : (
-              <p className="text-muted small">Could not load purchase order.</p>
+              <p className="ui-small-muted">Could not load purchase order.</p>
             )}
           </div>
-          <div className="flex-shrink-0 border-top app-footer-padding app-form-footer app-standard-footer">
+          <div className="app-footer-padding app-form-footer app-standard-footer border-top flex-shrink-0">
             <Footer_Actions
               center={
                 <Button_Toolbar

@@ -46,15 +46,15 @@ const defaultOptions = {
 const Chart_Report = ({ data, type, title, loading }) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="flex h-full items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
       </div>
     );
   }
 
   if (!data || !data.datasets || data.datasets.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 text-lg">No data available</p>
           <p className="text-gray-400 text-sm">Try adjusting your filters</p>

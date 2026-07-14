@@ -974,64 +974,64 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
   // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+      <div className="ui-page-shell">
         {/* Header */}
-        <div className="flex-shrink-0 px-3 py-2 border-bottom border-gray-200 dark:border-gray-700 d-flex align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <CalculatorIcon className="h-5 w-5 text-blue-600" />
-            <h5 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">Forecaster</h5>
+        <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 flex-shrink-0 px-1 py-0">
+          <div className="ui-flex-center-gap-2">
+            <CalculatorIcon className="h-5 text-blue-600 w-5" />
+            <h5 className="ui-heading-strong">Forecaster</h5>
           </div>
         </div>
 
         {/* Main Content: Chart (pinned) + Scrollable Inputs */}
-        <div className="flex-grow-1 d-flex flex-column px-3 py-2" style={{ minHeight: 0 }}>
+        <div className="d-flex flex-column flex-grow-1 px-1 py-0" style={{ minHeight: 0 }}>
           {/* Chart */}
-          <div className="flex-shrink-0 mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <div className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 mb-3 p-1 rounded-lg">
             <Line ref={chartRef} data={forecastData} options={chartOptions} />
           </div>
 
           {/* Summary Cards (Accordion) */}
-          <div className="flex-shrink-0 mb-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <div role="button" tabIndex={0} onClick={() => setShowSummarySection((prev) => !prev)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSummarySection((prev) => !prev); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-              <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Forecast Summary</span>
-              {showSummarySection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+          <div className="border border-gray-200 dark:border-gray-700 flex-shrink-0 mb-3 rounded-lg">
+            <div role="button" tabIndex={0} onClick={() => setShowSummarySection((prev) => !prev)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowSummarySection((prev) => !prev); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+              <span className="ui-label-strong-sm">Forecast Summary</span>
+              {showSummarySection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
             </div>
             {showSummarySection && (
-              <div className="p-2 border-top border-gray-200 dark:border-gray-700 d-flex gap-2 flex-wrap">
-                <div className="flex-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                  <div className="text-sm fw-bold text-green-700 dark:text-green-300">${summary.finalCumulativeProfit.toLocaleString()}</div>
-                  <div className="text-xs text-green-600 dark:text-green-400">Total Profit</div>
+              <div className="border-gray-200 border-top d-flex dark:border-gray-700 flex-wrap gap-2 p-0">
+                <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                  <div className="dark:text-green-300 fw-bold text-green-700 text-sm">${summary.finalCumulativeProfit.toLocaleString()}</div>
+                  <div className="dark:text-green-400 text-green-600 text-xs">Total Profit</div>
                 </div>
-                <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                  <div className="text-sm fw-bold text-blue-700 dark:text-blue-300">${Math.round(summary.avgProfit).toLocaleString()}</div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400">Avg Profit/Period</div>
+                <div className="bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                  <div className="dark:text-blue-300 fw-bold text-blue-700 text-sm">${Math.round(summary.avgProfit).toLocaleString()}</div>
+                  <div className="dark:text-blue-400 text-blue-600 text-xs">Avg Profit/Period</div>
                 </div>
-                <div className="flex-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                  <div className="text-sm fw-bold text-purple-700 dark:text-purple-300">${summary.lastPeriodRevenue.toLocaleString()}</div>
-                  <div className="text-xs text-purple-600 dark:text-purple-400">Final Revenue</div>
+                <div className="bg-purple-50 border border-purple-200 dark:bg-purple-900/20 dark:border-purple-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                  <div className="dark:text-purple-300 fw-bold text-purple-700 text-sm">${summary.lastPeriodRevenue.toLocaleString()}</div>
+                  <div className="dark:text-purple-400 text-purple-600 text-xs">Final Revenue</div>
                 </div>
-                <div className="flex-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                  <div className="text-sm fw-bold text-orange-700 dark:text-orange-300">${summary.lastPeriodProfit.toLocaleString()}</div>
-                  <div className="text-xs text-orange-600 dark:text-orange-400">Final Profit</div>
+                <div className="bg-orange-50 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                  <div className="dark:text-orange-300 fw-bold text-orange-700 text-sm">${summary.lastPeriodProfit.toLocaleString()}</div>
+                  <div className="dark:text-orange-400 text-orange-600 text-xs">Final Profit</div>
                 </div>
-                <div className="flex-1 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                  <div className="text-sm fw-bold text-cyan-700 dark:text-cyan-300">${summary.npv.toLocaleString()}</div>
-                  <div className="text-xs text-cyan-600 dark:text-cyan-400">NPV ({discountRate}%)</div>
+                <div className="bg-cyan-50 border border-cyan-200 dark:bg-cyan-900/20 dark:border-cyan-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                  <div className="dark:text-cyan-300 fw-bold text-cyan-700 text-sm">${summary.npv.toLocaleString()}</div>
+                  <div className="dark:text-cyan-400 text-cyan-600 text-xs">NPV ({discountRate}%)</div>
                 </div>
-                <div className="flex-1 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                  <div className="text-sm fw-bold text-teal-700 dark:text-teal-300">${summary.finalCashFlow.toLocaleString()}</div>
-                  <div className="text-xs text-teal-600 dark:text-teal-400">Cash Flow</div>
+                <div className="bg-teal-50 border border-teal-200 dark:bg-teal-900/20 dark:border-teal-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                  <div className="dark:text-teal-300 fw-bold text-sm text-teal-700">${summary.finalCashFlow.toLocaleString()}</div>
+                  <div className="dark:text-teal-400 text-teal-600 text-xs">Cash Flow</div>
                 </div>
                 {summary.roi !== null && (
-                  <div className="flex-1 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                    <div className="text-sm fw-bold text-indigo-700 dark:text-indigo-300">{summary.roi}%</div>
-                    <div className="text-xs text-indigo-600 dark:text-indigo-400">ROI</div>
+                  <div className="bg-indigo-50 border border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                    <div className="dark:text-indigo-300 fw-bold text-indigo-700 text-sm">{summary.roi}%</div>
+                    <div className="dark:text-indigo-400 text-indigo-600 text-xs">ROI</div>
                   </div>
                 )}
                 {summary.breakEvenPeriod !== null && (
-                  <div className="flex-1 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-lg px-2 py-1" style={{ minWidth: "8rem" }}>
-                    <div className="text-sm fw-bold text-pink-700 dark:text-pink-300">Period {summary.breakEvenPeriod + 1}</div>
-                    <div className="text-xs text-pink-600 dark:text-pink-400">Break-even</div>
+                  <div className="bg-pink-50 border border-pink-200 dark:bg-pink-900/20 dark:border-pink-800 flex-1 px-0 py-1 rounded-lg" style={{ minWidth: "8rem" }}>
+                    <div className="dark:text-pink-300 fw-bold text-pink-700 text-sm">Period {summary.breakEvenPeriod + 1}</div>
+                    <div className="dark:text-pink-400 text-pink-600 text-xs">Break-even</div>
                   </div>
                 )}
               </div>
@@ -1039,33 +1039,33 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
           </div>
 
           {/* Scrollable Inputs */}
-          <div className="flex-grow-1 overflow-auto no-scrollbar" style={{ minHeight: 0 }}>
+          <div className="flex-grow-1 no-scrollbar overflow-auto" style={{ minHeight: 0 }}>
             {/* Parameters */}
-            <div className="row g-2">
+            <div className="row ui-row-g2">
               {/* Calculated Base Values Display */}
               <div className="col-12">
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-                  <h6 className="text-sm fw-bold text-blue-700 dark:text-blue-300 mb-2">Calculated Base Values</h6>
-                  <div className="row g-2">
+                <div className="bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700 p-1 rounded-lg">
+                  <h6 className="dark:text-blue-300 fw-bold mb-2 text-blue-700 text-sm">Calculated Base Values</h6>
+                  <div className="row ui-row-g2">
                     <div className="col-md-4">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Base Revenue (from components)</div>
-                      <div className="text-lg fw-bold text-green-600 dark:text-green-400">${forecastData.baseRevenue.toLocaleString()}</div>
+                      <div className="dark:text-gray-400 mb-1 text-gray-600 text-xs">Base Revenue (from components)</div>
+                      <div className="dark:text-green-400 fw-bold text-green-600 text-lg">${forecastData.baseRevenue.toLocaleString()}</div>
                     </div>
                     <div className="col-md-4">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Base Expenses (from components)</div>
-                      <div className="text-lg fw-bold text-red-600 dark:text-red-400">${forecastData.baseExpenses.toLocaleString()}</div>
+                      <div className="dark:text-gray-400 mb-1 text-gray-600 text-xs">Base Expenses (from components)</div>
+                      <div className="dark:text-red-400 fw-bold text-lg text-red-600">${forecastData.baseExpenses.toLocaleString()}</div>
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label text-xs mb-1">Revenue Growth Rate (%)</label>
-                      <input type="number" step="0.1" value={revenueGrowthRate} onChange={(e) => setRevenueGrowthRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                      <label className="form-label ui-form-label-xs">Revenue Growth Rate (%)</label>
+                      <input type="number" step="0.1" value={revenueGrowthRate} onChange={(e) => setRevenueGrowthRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label text-xs mb-1">Discount Rate (% for NPV)</label>
-                      <input type="number" step="0.1" value={discountRate} onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                      <label className="form-label ui-form-label-xs">Discount Rate (% for NPV)</label>
+                      <input type="number" step="0.1" value={discountRate} onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label text-xs mb-1">Initial Investment ($)</label>
-                      <input type="number" step="100" value={initialInvestment} onChange={(e) => setInitialInvestment(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                      <label className="form-label ui-form-label-xs">Initial Investment ($)</label>
+                      <input type="number" step="100" value={initialInvestment} onChange={(e) => setInitialInvestment(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                     </div>
                   </div>
                 </div>
@@ -1073,32 +1073,32 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Revenue Components Section */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowRevenueSection(!showRevenueSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowRevenueSection(!showRevenueSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Revenue Components</span>
-                    {showRevenueSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowRevenueSection(!showRevenueSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowRevenueSection(!showRevenueSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Revenue Components</span>
+                    {showRevenueSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showRevenueSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Product Price ($)</label>
-                          <input type="number" step="0.01" value={productPrice} onChange={(e) => setProductPrice(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Product Price ($)</label>
+                          <input type="number" step="0.01" value={productPrice} onChange={(e) => setProductPrice(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Units Sold per Period</label>
-                          <input type="number" value={unitsPerPeriod} onChange={(e) => setUnitsPerPeriod(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Units Sold per Period</label>
+                          <input type="number" value={unitsPerPeriod} onChange={(e) => setUnitsPerPeriod(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Service Revenue ($)</label>
-                          <input type="number" value={serviceRevenue} onChange={(e) => setServiceRevenue(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Service Revenue ($)</label>
+                          <input type="number" value={serviceRevenue} onChange={(e) => setServiceRevenue(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Recurring Revenue ($)</label>
-                          <input type="number" value={recurringRevenue} onChange={(e) => setRecurringRevenue(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Recurring Revenue ($)</label>
+                          <input type="number" value={recurringRevenue} onChange={(e) => setRecurringRevenue(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">Total: ${(productPrice * unitsPerPeriod + serviceRevenue + recurringRevenue).toLocaleString()}</div>
+                      <div className="dark:text-gray-400 mt-2 text-gray-600 text-xs">Total: ${(productPrice * unitsPerPeriod + serviceRevenue + recurringRevenue).toLocaleString()}</div>
                     </div>
                   )}
                 </div>
@@ -1106,29 +1106,29 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Cost of Goods / Shipping Section */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowCostSection(!showCostSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCostSection(!showCostSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Cost of Goods & Shipping</span>
-                    {showCostSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowCostSection(!showCostSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCostSection(!showCostSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Cost of Goods & Shipping</span>
+                    {showCostSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showCostSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">COGS per Unit ($)</label>
-                          <input type="number" step="0.01" value={cogsPerUnit} onChange={(e) => setCogsPerUnit(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">COGS per Unit ($)</label>
+                          <input type="number" step="0.01" value={cogsPerUnit} onChange={(e) => setCogsPerUnit(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Units per Batch</label>
-                          <input type="number" value={unitsPerBatch} onChange={(e) => setUnitsPerBatch(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Units per Batch</label>
+                          <input type="number" value={unitsPerBatch} onChange={(e) => setUnitsPerBatch(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Shipping per Batch ($)</label>
-                          <input type="number" value={shippingPerBatch} onChange={(e) => setShippingPerBatch(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Shipping per Batch ($)</label>
+                          <input type="number" value={shippingPerBatch} onChange={(e) => setShippingPerBatch(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Batches per Period</label>
-                          <input type="number" value={batchFrequency} onChange={(e) => setBatchFrequency(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Batches per Period</label>
+                          <input type="number" value={batchFrequency} onChange={(e) => setBatchFrequency(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1138,29 +1138,29 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Marketing Section */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowMarketingSection(!showMarketingSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMarketingSection(!showMarketingSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Marketing & Advertising</span>
-                    {showMarketingSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowMarketingSection(!showMarketingSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMarketingSection(!showMarketingSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Marketing & Advertising</span>
+                    {showMarketingSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showMarketingSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Marketing Budget/Period ($)</label>
-                          <input type="number" value={marketingBudget} onChange={(e) => setMarketingBudget(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Marketing Budget/Period ($)</label>
+                          <input type="number" value={marketingBudget} onChange={(e) => setMarketingBudget(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Cost per 1000 Views ($)</label>
-                          <input type="number" step="0.1" value={costPerThousandViews} onChange={(e) => setCostPerThousandViews(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Cost per 1000 Views ($)</label>
+                          <input type="number" step="0.1" value={costPerThousandViews} onChange={(e) => setCostPerThousandViews(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Engagement → Sale Rate (%)</label>
-                          <input type="number" step="0.1" value={engagementToSaleRate} onChange={(e) => setEngagementToSaleRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Engagement → Sale Rate (%)</label>
+                          <input type="number" step="0.1" value={engagementToSaleRate} onChange={(e) => setEngagementToSaleRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Avg Revenue per Sale ($)</label>
-                          <input type="number" value={avgRevenuePerSale} onChange={(e) => setAvgRevenuePerSale(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Avg Revenue per Sale ($)</label>
+                          <input type="number" value={avgRevenuePerSale} onChange={(e) => setAvgRevenuePerSale(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1170,33 +1170,33 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Customer Behavior Section */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowCustomerSection(!showCustomerSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCustomerSection(!showCustomerSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Customer Behavior</span>
-                    {showCustomerSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowCustomerSection(!showCustomerSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowCustomerSection(!showCustomerSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Customer Behavior</span>
+                    {showCustomerSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showCustomerSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Walk-in Customers/Period</label>
-                          <input type="number" value={walkInCustomersPerPeriod} onChange={(e) => setWalkInCustomersPerPeriod(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Walk-in Customers/Period</label>
+                          <input type="number" value={walkInCustomersPerPeriod} onChange={(e) => setWalkInCustomersPerPeriod(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-xs mb-1">Walk-in Conversion Rate (%)</label>
-                          <input type="number" step="0.1" value={walkInConversionRate} onChange={(e) => setWalkInConversionRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Walk-in Conversion Rate (%)</label>
+                          <input type="number" step="0.1" value={walkInConversionRate} onChange={(e) => setWalkInConversionRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-2">
-                          <label className="form-label text-xs mb-1">Buy-back Rate (%)</label>
-                          <input type="number" step="0.1" value={customerBuyBackRate} onChange={(e) => setCustomerBuyBackRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Buy-back Rate (%)</label>
+                          <input type="number" step="0.1" value={customerBuyBackRate} onChange={(e) => setCustomerBuyBackRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-2">
-                          <label className="form-label text-xs mb-1">Buy-back Frequency</label>
-                          <input type="number" value={buyBackFrequency} onChange={(e) => setBuyBackFrequency(parseFloat(e.target.value) || 1)} className="form-control form-control-sm" placeholder="periods" />
+                          <label className="form-label ui-form-label-xs">Buy-back Frequency</label>
+                          <input type="number" value={buyBackFrequency} onChange={(e) => setBuyBackFrequency(parseFloat(e.target.value) || 1)} className="form-control ui-control-sm" placeholder="periods" />
                         </div>
                         <div className="col-md-2">
-                          <label className="form-label text-xs mb-1">Retention Rate (%)</label>
-                          <input type="number" step="0.1" value={customerRetentionRate} onChange={(e) => setCustomerRetentionRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Retention Rate (%)</label>
+                          <input type="number" step="0.1" value={customerRetentionRate} onChange={(e) => setCustomerRetentionRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1206,21 +1206,21 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Economic Factors Section */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowEconomicSection(!showEconomicSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowEconomicSection(!showEconomicSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Economic Factors</span>
-                    {showEconomicSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowEconomicSection(!showEconomicSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowEconomicSection(!showEconomicSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Economic Factors</span>
+                    {showEconomicSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showEconomicSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         <div className="col-md-6">
-                          <label className="form-label text-xs mb-1">Inflation Rate (% per year)</label>
-                          <input type="number" step="0.1" value={inflationRate} onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Inflation Rate (% per year)</label>
+                          <input type="number" step="0.1" value={inflationRate} onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-6">
-                          <label className="form-label text-xs mb-1">Depreciation Rate (% per year)</label>
-                          <input type="number" step="0.1" value={depreciationRate} onChange={(e) => setDepreciationRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Depreciation Rate (% per year)</label>
+                          <input type="number" step="0.1" value={depreciationRate} onChange={(e) => setDepreciationRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1230,43 +1230,43 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Operational Costs Section */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowOperationalSection(!showOperationalSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowOperationalSection(!showOperationalSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Operational Costs</span>
-                    {showOperationalSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowOperationalSection(!showOperationalSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowOperationalSection(!showOperationalSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Operational Costs</span>
+                    {showOperationalSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showOperationalSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
                       {/* Fixed Monthly Costs */}
                       <div className="mb-3">
-                        <label className="form-label text-xs mb-1">Fixed Monthly Costs ($)</label>
-                        <input type="number" value={fixedMonthlyCosts} onChange={(e) => setFixedMonthlyCosts(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" placeholder="Rent, utilities, salaries..." />
+                        <label className="form-label ui-form-label-xs">Fixed Monthly Costs ($)</label>
+                        <input type="number" value={fixedMonthlyCosts} onChange={(e) => setFixedMonthlyCosts(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" placeholder="Rent, utilities, salaries..." />
                       </div>
 
                       {/* One-time Payments */}
                       <div className="mb-3">
-                        <label className="form-label text-xs fw-bold mb-1">One-Time Payments</label>
-                        <div className="row g-2 mb-2">
+                        <label className="form-label fw-bold mb-1 text-xs">One-Time Payments</label>
+                        <div className="g-2 mb-2 row">
                           <div className="col-md-4">
-                            <input type="text" value={newOneTimeLabel} onChange={(e) => setNewOneTimeLabel(e.target.value)} className="form-control form-control-sm" placeholder="Label (e.g., Equipment)" />
+                            <input type="text" value={newOneTimeLabel} onChange={(e) => setNewOneTimeLabel(e.target.value)} className="form-control ui-control-sm" placeholder="Label (e.g., Equipment)" />
                           </div>
                           <div className="col-md-3">
-                            <input type="number" value={newOneTimeAmount} onChange={(e) => setNewOneTimeAmount(e.target.value)} className="form-control form-control-sm" placeholder="Amount" />
+                            <input type="number" value={newOneTimeAmount} onChange={(e) => setNewOneTimeAmount(e.target.value)} className="form-control ui-control-sm" placeholder="Amount" />
                           </div>
                           <div className="col-md-3">
-                            <input type="number" value={newOneTimePeriod} onChange={(e) => setNewOneTimePeriod(e.target.value)} className="form-control form-control-sm" placeholder="Period #" />
+                            <input type="number" value={newOneTimePeriod} onChange={(e) => setNewOneTimePeriod(e.target.value)} className="form-control ui-control-sm" placeholder="Period #" />
                           </div>
                           <div className="col-md-2">
-                            <button onClick={addOneTimePayment} className="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+                            <button onClick={addOneTimePayment} className="align-items-center btn btn-primary btn-sm d-flex gap-1 justify-content-center w-100">
                               <PlusIcon className="h-3 w-3" />
                               <span>Add</span>
                             </button>
                           </div>
                         </div>
                         {oneTimePayments.length > 0 && (
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded p-2">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-0 rounded">
                             {oneTimePayments.map((payment, idx) => (
-                              <div key={idx} className="d-flex justify-content-between align-items-center text-xs mb-1">
+                              <div key={idx} className="align-items-center d-flex justify-content-between mb-1 text-xs">
                                 <span>
                                   {payment.label}: ${payment.amount.toLocaleString()} @ Period {payment.period}
                                 </span>
@@ -1281,28 +1281,28 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
                       {/* Recurring Payments */}
                       <div>
-                        <label className="form-label text-xs fw-bold mb-1">Recurring Payments</label>
-                        <div className="row g-2 mb-2">
+                        <label className="form-label fw-bold mb-1 text-xs">Recurring Payments</label>
+                        <div className="g-2 mb-2 row">
                           <div className="col-md-5">
-                            <input type="text" value={newRecurringLabel} onChange={(e) => setNewRecurringLabel(e.target.value)} className="form-control form-control-sm" placeholder="Label (e.g., Software License)" />
+                            <input type="text" value={newRecurringLabel} onChange={(e) => setNewRecurringLabel(e.target.value)} className="form-control ui-control-sm" placeholder="Label (e.g., Software License)" />
                           </div>
                           <div className="col-md-3">
-                            <input type="number" value={newRecurringAmount} onChange={(e) => setNewRecurringAmount(e.target.value)} className="form-control form-control-sm" placeholder="Amount" />
+                            <input type="number" value={newRecurringAmount} onChange={(e) => setNewRecurringAmount(e.target.value)} className="form-control ui-control-sm" placeholder="Amount" />
                           </div>
                           <div className="col-md-2">
-                            <input type="number" value={newRecurringFreq} onChange={(e) => setNewRecurringFreq(e.target.value)} className="form-control form-control-sm" placeholder="Every N" />
+                            <input type="number" value={newRecurringFreq} onChange={(e) => setNewRecurringFreq(e.target.value)} className="form-control ui-control-sm" placeholder="Every N" />
                           </div>
                           <div className="col-md-2">
-                            <button onClick={addRecurringPayment} className="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+                            <button onClick={addRecurringPayment} className="align-items-center btn btn-primary btn-sm d-flex gap-1 justify-content-center w-100">
                               <PlusIcon className="h-3 w-3" />
                               <span>Add</span>
                             </button>
                           </div>
                         </div>
                         {recurringPayments.length > 0 && (
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded p-2">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-0 rounded">
                             {recurringPayments.map((payment, idx) => (
-                              <div key={idx} className="d-flex justify-content-between align-items-center text-xs mb-1">
+                              <div key={idx} className="align-items-center d-flex justify-content-between mb-1 text-xs">
                                 <span>
                                   {payment.label}: ${payment.amount.toLocaleString()} / {payment.frequency} periods
                                 </span>
@@ -1321,14 +1321,14 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Advanced Factors Section (Phase 2) */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowAdvancedSection(!showAdvancedSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAdvancedSection(!showAdvancedSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Advanced Factors</span>
-                    {showAdvancedSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowAdvancedSection(!showAdvancedSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAdvancedSection(!showAdvancedSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Advanced Factors</span>
+                    {showAdvancedSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showAdvancedSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         {/* Seasonality */}
                         <div className="col-12">
                           <div className="form-check mb-2">
@@ -1341,8 +1341,8 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
                         {seasonalityEnabled && (
                           <div className="col-12">
-                            <label className="form-label text-xs mb-1">Monthly Multipliers (Jan-Dec)</label>
-                            <div className="d-flex gap-1 flex-wrap">
+                            <label className="form-label ui-form-label-xs">Monthly Multipliers (Jan-Dec)</label>
+                            <div className="d-flex flex-wrap gap-1">
                               {seasonalityMultipliers.map((mult, idx) => (
                                 <input
                                   key={idx}
@@ -1354,7 +1354,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                                     newMults[idx] = parseFloat(e.target.value) || 1.0;
                                     setSeasonalityMultipliers(newMults);
                                   }}
-                                  className="form-control form-control-sm"
+                                  className="form-control ui-control-sm"
                                   style={{ width: "4rem" }}
                                   placeholder={["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][idx]}
                                 />
@@ -1365,45 +1365,45 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
                         {/* CAC & LTV */}
                         <div className="col-md-4">
-                          <label className="form-label text-xs mb-1">Customer Acquisition Cost (CAC $)</label>
-                          <input type="number" step="1" value={cac} onChange={(e) => setCac(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Customer Acquisition Cost (CAC $)</label>
+                          <input type="number" step="1" value={cac} onChange={(e) => setCac(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-4">
-                          <label className="form-label text-xs mb-1">Avg Customer Lifetime (months)</label>
-                          <input type="number" step="1" value={avgCustomerLifetimeMonths} onChange={(e) => setAvgCustomerLifetimeMonths(parseFloat(e.target.value) || 12)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Avg Customer Lifetime (months)</label>
+                          <input type="number" step="1" value={avgCustomerLifetimeMonths} onChange={(e) => setAvgCustomerLifetimeMonths(parseFloat(e.target.value) || 12)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-4">
-                          <label className="form-label text-xs mb-1">LTV Estimate</label>
-                          <div className="form-control form-control-sm bg-light text-muted">${Math.round(avgRevenuePerSale * (avgCustomerLifetimeMonths / 12)).toLocaleString()}</div>
+                          <label className="form-label ui-form-label-xs">LTV Estimate</label>
+                          <div className="bg-light form-control form-control-sm text-muted">${Math.round(avgRevenuePerSale * (avgCustomerLifetimeMonths / 12)).toLocaleString()}</div>
                         </div>
 
                         {/* Churn Rate */}
                         <div className="col-md-6">
-                          <label className="form-label text-xs mb-1">Churn Rate (% per period)</label>
-                          <input type="number" step="0.1" value={churnRate} onChange={(e) => setChurnRate(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Churn Rate (% per period)</label>
+                          <input type="number" step="0.1" value={churnRate} onChange={(e) => setChurnRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
 
                         {/* Variable Labor Cost */}
                         <div className="col-md-6">
-                          <label className="form-label text-xs mb-1">Variable Labor Cost (% of Revenue)</label>
-                          <input type="number" step="0.1" value={variableLaborCostPercent} onChange={(e) => setVariableLaborCostPercent(parseFloat(e.target.value) || 0)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Variable Labor Cost (% of Revenue)</label>
+                          <input type="number" step="0.1" value={variableLaborCostPercent} onChange={(e) => setVariableLaborCostPercent(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
 
                         {/* CapEx Manager */}
                         <div className="col-12">
-                          <label className="form-label text-xs mb-2 fw-bold">Capital Expenditures (CapEx)</label>
-                          <div className="row g-2 mb-2">
+                          <label className="form-label fw-bold mb-2 text-xs">Capital Expenditures (CapEx)</label>
+                          <div className="g-2 mb-2 row">
                             <div className="col-md-3">
-                              <input type="number" placeholder="Amount ($)" value={newCapexAmount} onChange={(e) => setNewCapexAmount(e.target.value)} className="form-control form-control-sm" />
+                              <input type="number" placeholder="Amount ($)" value={newCapexAmount} onChange={(e) => setNewCapexAmount(e.target.value)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-2">
-                              <input type="number" placeholder="Period" value={newCapexPeriod} onChange={(e) => setNewCapexPeriod(parseInt(e.target.value) || 0)} className="form-control form-control-sm" />
+                              <input type="number" placeholder="Period" value={newCapexPeriod} onChange={(e) => setNewCapexPeriod(parseInt(e.target.value) || 0)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-2">
-                              <input type="number" placeholder="Dep. Years" value={newCapexDepYears} onChange={(e) => setNewCapexDepYears(parseInt(e.target.value) || 5)} className="form-control form-control-sm" />
+                              <input type="number" placeholder="Dep. Years" value={newCapexDepYears} onChange={(e) => setNewCapexDepYears(parseInt(e.target.value) || 5)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-3">
-                              <input type="text" placeholder="Label" value={newCapexLabel} onChange={(e) => setNewCapexLabel(e.target.value)} className="form-control form-control-sm" />
+                              <input type="text" placeholder="Label" value={newCapexLabel} onChange={(e) => setNewCapexLabel(e.target.value)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-2">
                               <button
@@ -1431,9 +1431,9 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                             </div>
                           </div>
                           {capexItems.length > 0 && (
-                            <div className="bg-gray-50 dark:bg-gray-800 rounded p-2">
+                            <div className="bg-gray-50 dark:bg-gray-800 p-0 rounded">
                               {capexItems.map((capex, idx) => (
-                                <div key={idx} className="d-flex justify-content-between align-items-center text-xs mb-1">
+                                <div key={idx} className="align-items-center d-flex justify-content-between mb-1 text-xs">
                                   <span>
                                     {capex.label}: ${capex.amount.toLocaleString()} @ Period {capex.period} ({capex.depreciationYears}yr dep.)
                                   </span>
@@ -1459,14 +1459,14 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Risk & Scenario Modeling Section (Phase 3) */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowRiskSection(!showRiskSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowRiskSection(!showRiskSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Risk & Scenario Modeling</span>
-                    {showRiskSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowRiskSection(!showRiskSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowRiskSection(!showRiskSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Risk & Scenario Modeling</span>
+                    {showRiskSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showRiskSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         {/* Scenario Bands */}
                         <div className="col-12">
                           <div className="form-check mb-2">
@@ -1479,8 +1479,8 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
                         {scenarioEnabled && (
                           <div className="col-md-6">
-                            <label className="form-label text-xs mb-1">Variance (±%)</label>
-                            <input type="number" step="1" value={variancePercent} onChange={(e) => setVariancePercent(parseFloat(e.target.value) || 20)} className="form-control form-control-sm" />
+                            <label className="form-label ui-form-label-xs">Variance (±%)</label>
+                            <input type="number" step="1" value={variancePercent} onChange={(e) => setVariancePercent(parseFloat(e.target.value) || 20)} className="form-control ui-control-sm" />
                           </div>
                         )}
 
@@ -1497,14 +1497,14 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {monteCarloEnabled && (
                           <>
                             <div className="col-md-6">
-                              <label className="form-label text-xs mb-1">Simulation Runs</label>
-                              <input type="number" step="10" value={monteCarloRuns} onChange={(e) => setMonteCarloRuns(parseInt(e.target.value) || 100)} className="form-control form-control-sm" />
+                              <label className="form-label ui-form-label-xs">Simulation Runs</label>
+                              <input type="number" step="10" value={monteCarloRuns} onChange={(e) => setMonteCarloRuns(parseInt(e.target.value) || 100)} className="form-control ui-control-sm" />
                             </div>
                             {monteCarloResults && (
                               <div className="col-12">
-                                <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
-                                  <div className="text-xs fw-bold mb-2">Monte Carlo Results ({monteCarloRuns} runs)</div>
-                                  <div className="row g-2 text-xs">
+                                <div className="bg-gray-50 dark:bg-gray-800 p-1 rounded">
+                                  <div className="fw-bold mb-2 text-xs">Monte Carlo Results ({monteCarloRuns} runs)</div>
+                                  <div className="g-2 row text-xs">
                                     <div className="col-4">Min: ${monteCarloResults.min.toLocaleString()}</div>
                                     <div className="col-4">P25: ${monteCarloResults.p25.toLocaleString()}</div>
                                     <div className="col-4">Median: ${monteCarloResults.median.toLocaleString()}</div>
@@ -1530,8 +1530,8 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
                         {sensitivityEnabled && sensitivityAnalysis && (
                           <div className="col-12">
-                            <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
-                              <div className="text-xs fw-bold mb-2">Sensitivity: Impact of 1% Change on Final Profit</div>
+                            <div className="bg-gray-50 dark:bg-gray-800 p-1 rounded">
+                              <div className="fw-bold mb-2 text-xs">Sensitivity: Impact of 1% Change on Final Profit</div>
                               <div className="text-xs">
                                 {sensitivityAnalysis.map((item, idx) => (
                                   <div key={idx} className="d-flex justify-content-between mb-1">
@@ -1554,33 +1554,33 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
               {/* Reporting & Export Section (Phase 4) */}
               <div className="col-12">
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div role="button" tabIndex={0} onClick={() => setShowExportSection(!showExportSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowExportSection(!showExportSection); } }} className="w-100 d-flex align-items-center justify-content-between p-2" style={{ cursor: "pointer" }}>
-                    <span className="text-sm fw-semibold text-gray-700 dark:text-gray-300">Reporting & Export</span>
-                    {showExportSection ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+                <div className="ui-card-border">
+                  <div role="button" tabIndex={0} onClick={() => setShowExportSection(!showExportSection)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowExportSection(!showExportSection); } }} className="ui-row-between-p2" style={{ cursor: "pointer" }}>
+                    <span className="ui-label-strong-sm">Reporting & Export</span>
+                    {showExportSection ? <ChevronUpIcon className="ui-icon-4" /> : <ChevronDownIcon className="ui-icon-4" />}
                   </div>
                   {showExportSection && (
-                    <div className="p-3 border-top border-gray-200 dark:border-gray-700">
-                      <div className="row g-2">
+                    <div className="border-gray-200 border-top dark:border-gray-700 p-1">
+                      <div className="row ui-row-g2">
                         <div className="col-md-6">
-                          <label className="form-label text-xs mb-1">Scenario Name</label>
-                          <input type="text" value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} className="form-control form-control-sm" />
+                          <label className="form-label ui-form-label-xs">Scenario Name</label>
+                          <input type="text" value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} className="form-control ui-control-sm" />
                         </div>
-                        <div className="col-md-6 d-flex align-items-end gap-2">
-                          <button type="button" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" onClick={exportForecastCsv}>
-                            <ArrowDownTrayIcon className="h-4 w-4" />
+                        <div className="align-items-end col-md-6 d-flex gap-2">
+                          <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" onClick={exportForecastCsv}>
+                            <ArrowDownTrayIcon className="ui-icon-4" />
                             <span>CSV</span>
                           </button>
-                          <button type="button" className="btn btn-outline-success btn-sm d-flex align-items-center gap-2" onClick={exportScenarioJson}>
-                            <CodeBracketIcon className="h-4 w-4" />
+                          <button type="button" className="align-items-center btn btn-outline-success btn-sm d-flex gap-2" onClick={exportScenarioJson}>
+                            <CodeBracketIcon className="ui-icon-4" />
                             <span>JSON</span>
                           </button>
-                          <button type="button" className="btn btn-outline-dark btn-sm d-flex align-items-center gap-2" onClick={exportPdfReport}>
-                            <DocumentTextIcon className="h-4 w-4" />
+                          <button type="button" className="align-items-center btn btn-outline-dark btn-sm d-flex gap-2" onClick={exportPdfReport}>
+                            <DocumentTextIcon className="ui-icon-4" />
                             <span>PDF</span>
                           </button>
-                          <button type="button" className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" onClick={() => importInputRef.current?.click()}>
-                            <DocumentArrowUpIcon className="h-4 w-4" />
+                          <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2" onClick={() => importInputRef.current?.click()}>
+                            <DocumentArrowUpIcon className="ui-icon-4" />
                             <span>Import</span>
                           </button>
                           <input ref={importInputRef} type="file" accept="application/json" onChange={importScenarioJson} style={{ display: "none" }} />
@@ -1588,14 +1588,14 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
                         {exportStatus && (
                           <div className="col-12">
-                            <div className="text-xs text-gray-600 dark:text-gray-300">Status: {exportStatus}</div>
+                            <div className="dark:text-gray-300 text-gray-600 text-xs">Status: {exportStatus}</div>
                           </div>
                         )}
 
                         <div className="col-12">
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
-                            <div className="text-xs fw-bold mb-2">Assumptions Snapshot</div>
-                            <div className="row g-2 text-xs">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-1 rounded">
+                            <div className="fw-bold mb-2 text-xs">Assumptions Snapshot</div>
+                            <div className="g-2 row text-xs">
                               <div className="col-md-3">View: {assumptionsSnapshot.timeView}</div>
                               <div className="col-md-3">Growth: {assumptionsSnapshot.revenueGrowthRate}%</div>
                               <div className="col-md-3">Discount: {assumptionsSnapshot.discountRate}%</div>
@@ -1609,8 +1609,8 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         </div>
 
                         <div className="col-12">
-                          <div className="bg-gray-50 dark:bg-gray-800 rounded p-3">
-                            <div className="text-xs fw-bold mb-2">Audit Trail (Latest 10)</div>
+                          <div className="bg-gray-50 dark:bg-gray-800 p-1 rounded">
+                            <div className="fw-bold mb-2 text-xs">Audit Trail (Latest 10)</div>
                             <div className="text-xs" style={{ maxHeight: "10rem", overflowY: "auto" }}>
                               {auditTrail.length === 0 && <div className="text-muted">No changes tracked yet.</div>}
                               {auditTrail
@@ -1634,7 +1634,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
           <Footer_Actions
             start={
               <div className="btn-group btn-group-sm" role="group">

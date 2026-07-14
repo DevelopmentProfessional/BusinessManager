@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Employees.jsx
  *
@@ -1014,29 +1014,29 @@ export default function Employees() {
 
   // ─── [21] LOADING GUARD ─────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-4">{S.loading}</div>;
+    return <div className="p-1">{S.loading}</div>;
   }
 
   // ─── [22] RENDER / JSX ──────────────────────────────────────────────────────
   return (
-    <div className="d-flex flex-column vh-100 min-h-0 overflow-hidden bg-body">
+    <div className="bg-body d-flex flex-column min-h-0 overflow-hidden vh-100">
       {/* Header - sticky on mobile */}
-      <div className="flex-shrink-0 border-bottom p-2 bg-body d-flex justify-content-between" style={{ position: "sticky", top: 0, zIndex: 5 }}>
-        <h1 className="h-4 mb-0 fw-bold text-body-emphasis">Employees</h1>
+      <div className="bg-body border-bottom d-flex flex-shrink-0 justify-content-between p-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
+        <h1 className="fw-bold h-4 mb-0 text-body-emphasis">Employees</h1>
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       </div>
 
       {/* Error / Success Alerts */}
-      {error && <div className="flex-shrink-0 alert alert-danger border-0 rounded-0 m-0">{error}</div>}
+      {error && <div className="alert alert-danger border-0 flex-shrink-0 m-0 rounded-0">{error}</div>}
 
-      {success && <div className="flex-shrink-0 alert alert-success border-0 rounded-0 m-0">{success}</div>}
+      {success && <div className="alert alert-success border-0 flex-shrink-0 m-0 rounded-0">{success}</div>}
 
       {/* Main upside-down table container */}
-      <div className="flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
+      <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom */}
-        <div className="flex-grow-1 min-h-0 overflow-auto d-flex flex-column-reverse bg-white dark:bg-gray-900 no-scrollbar" style={{ background: "var(--bs-body-bg)" }}>
+        <div className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
           {sortedAndFiltered.length > 0 ? (
-            <table className="table table-borderless table-hover mb-0">
+            <table className="mb-0 table table-borderless table-hover">
               <colgroup>
                 <col style={{ width: "56px" }} />
                 <col />
@@ -1062,7 +1062,7 @@ export default function Employees() {
                       ) : (
                         <Gate_Permission page="employees" permission="delete">
                           <button className="btn btn-circle btn-outline-danger" title="Delete employee" onClick={() => handleDelete(employee.id)}>
-                            <XMarkIcon className="h-4 w-4" />
+                            <XMarkIcon className="ui-icon-4" />
                           </button>
                         </Gate_Permission>
                       )}
@@ -1076,15 +1076,15 @@ export default function Employees() {
                       {employee.department_id &&
                         (() => {
                           const dept = departments.find((d) => d.id === employee.department_id);
-                          return dept ? <span className="badge bg-info-subtle text-info rounded-pill text-xxs">{dept.name}</span> : null;
+                          return dept ? <span className="badge bg-info-subtle rounded-pill text-info text-xxs">{dept.name}</span> : null;
                         })()}
                     </td>
 
                     {/* Lock icon — admin only, only visible when account is locked */}
                     {isAdmin && (
-                      <td className="main-page-table-data text-center p-0">
+                      <td className="main-page-table-data p-0 text-center">
                         {employee.is_locked && employee.id !== currentUser?.id && (
-                          <button type="button" onClick={(e) => handleToggleLock(e, employee)} className="btn btn-outline-danger m-0 d-flex align-items-center justify-content-center" title="Account locked — click to unlock">
+                          <button type="button" onClick={(e) => handleToggleLock(e, employee)} className="align-items-center btn btn-outline-danger d-flex justify-content-center m-0" title="Account locked — click to unlock">
                             <LockClosedIcon style={{ width: 22, height: 22 }} />
                           </button>
                         )}
@@ -1097,7 +1097,7 @@ export default function Employees() {
                     </td>
 
                     {/* Chat */}
-                    <td className="main-page-table-data text-center p-0">
+                    <td className="main-page-table-data p-0 text-center">
                       {employee.id !== currentUser?.id && (
                         <button
                           type="button"
@@ -1116,7 +1116,7 @@ export default function Employees() {
                         >
                           <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
                           {!!unreadCounts[employee.id] && (
-                            <span className="badge bg-danger rounded-pill position-absolute" style={{ top: 2, right: 2, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
+                            <span className="badge bg-danger position-absolute rounded-pill" style={{ top: 2, right: 2, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
                               {unreadCounts[employee.id] > 9 ? "9+" : unreadCounts[employee.id]}
                             </span>
                           )}
@@ -1128,14 +1128,14 @@ export default function Employees() {
               </tbody>
             </table>
           ) : (
-            <div className="d-flex align-items-center justify-content-center flex-grow-1 text-muted">{S.noResults}</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
           )}
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="flex-shrink-0 d-flex align-items-center px-3 py-1 border-top position-relative" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
-            <div className="d-flex align-items-center gap-2">
-              <span className="small fw-semibold" style={{ color: "var(--app-active-color)" }}>
+          <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="ui-flex-center-gap-2">
+              <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected employees" onClick={() => setShowMultiEdit(true)}>
@@ -1167,7 +1167,7 @@ export default function Employees() {
           searchPlaceholder="Search by name, email, or role..."
           beforeSearch={
             hasPermission("employees", "admin") || hasPermission("employees", "write") ? (
-              <div className="app-footer-toolbar d-flex align-items-center">
+              <div className="align-items-center app-footer-toolbar d-flex">
                 <Button_Toolbar
                   icon={ClipboardDocumentListIcon}
                   label="Requests"
@@ -1176,7 +1176,7 @@ export default function Employees() {
                   title="Review requests"
                   badge={
                     allRequests.filter((r) => r.status === "pending").length > 0 ? (
-                      <span className="badge bg-danger rounded-pill position-absolute" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
+                      <span className="badge bg-danger position-absolute rounded-pill" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
                         {allRequests.filter((r) => r.status === "pending").length > 9 ? "9+" : allRequests.filter((r) => r.status === "pending").length}
                       </span>
                     ) : null
@@ -1353,37 +1353,37 @@ export default function Employees() {
 
       {/* System Info Display */}
       {systemInfo && (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-          <h3 className="text-lg font-medium text-blue-900 mb-3">System Information</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="bg-blue-50 border border-blue-200 mt-6 p-1 rounded-md">
+          <h3 className="font-medium mb-3 text-blue-900 text-lg">System Information</h3>
+          <div className="gap-4 grid grid-cols-2 mb-4 md:grid-cols-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_clients}</div>
-              <div className="text-sm text-blue-700">Clients</div>
+              <div className="font-bold text-2xl text-blue-600">{systemInfo.total_clients}</div>
+              <div className="text-blue-700 text-sm">Clients</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_services}</div>
-              <div className="text-sm text-blue-700">Services</div>
+              <div className="font-bold text-2xl text-blue-600">{systemInfo.total_services}</div>
+              <div className="text-blue-700 text-sm">Services</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_employees}</div>
-              <div className="text-sm text-blue-700">Employees</div>
+              <div className="font-bold text-2xl text-blue-600">{systemInfo.total_employees}</div>
+              <div className="text-blue-700 text-sm">Employees</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{systemInfo.total_appointments}</div>
-              <div className="text-sm text-blue-700">Appointments</div>
+              <div className="font-bold text-2xl text-blue-600">{systemInfo.total_appointments}</div>
+              <div className="text-blue-700 text-sm">Appointments</div>
             </div>
           </div>
 
           {systemInfo.sample_appointments && systemInfo.sample_appointments.length > 0 && (
             <div>
-              <h4 className="text-md font-medium text-blue-900 mb-2">Sample Appointments:</h4>
+              <h4 className="font-medium mb-2 text-blue-900 text-md">Sample Appointments:</h4>
               <div className="space-y-2">
                 {systemInfo.sample_appointments.map((apt, index) => (
-                  <div key={index} className="bg-white p-3 rounded border">
+                  <div key={index} className="bg-white border p-1 rounded">
                     <div className="font-medium">
                       {apt.client_name} - {apt.service_name}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-gray-600 text-sm">
                       {apt.employee_name} • {formatDateTime(apt.appointment_date)} • {apt.status}
                     </div>
                   </div>
@@ -1430,7 +1430,7 @@ export default function Employees() {
       {showWagesModal && <Modal_Wages employees={employees} onClose={() => setShowWagesModal(false)} />}
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Employee Page Controls">
-        <div className="small text-muted">Use these controls to manage employee views and actions.</div>
+        <div className="ui-small-muted">Use these controls to manage employee views and actions.</div>
         <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
       </PageControlsModal>
 

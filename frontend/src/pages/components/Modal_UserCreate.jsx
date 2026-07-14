@@ -26,7 +26,7 @@ import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser, onSubmit, loading, roles }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Create User</div>
           <div className="component-header-center"></div>
@@ -57,7 +57,7 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
                 <label htmlFor="createUserLastName">Last Name</label>
               </div>
               <div className="form-floating mb-3">
-                <select id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select form-select-sm">
+                <select id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select ui-control-sm">
                   {roles.map((role) => (
                     <option key={role} value={role}>
                       {role}
@@ -72,13 +72,13 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
 
         <div className="component-footer">
           <div className="component-footer-left">
-            <button type="submit" form="create-user-form" disabled={loading} className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" title="Create user">
+            <button type="submit" form="create-user-form" disabled={loading} className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-1" title="Create user">
               <CheckIcon style={{ width: 16, height: 16 }} />
               Create
             </button>
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Cancel">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

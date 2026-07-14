@@ -1,4 +1,4 @@
-﻿// FILE: Dropdown_Filter.jsx
+// FILE: Dropdown_Filter.jsx
 // Reusable filter dropdown with per-option help popovers.
 // Replaces repeated inline filter + help-popover pattern in Clients, Employees, Documents.
 import React, { useState } from "react";
@@ -35,11 +35,11 @@ export default function Dropdown_Filter({
   };
 
   return (
-    <div className="position-relative">
+    <div className="ui-pos-rel">
       <Button_Toolbar icon={Icon} label={compactButtonLabel(label)} title={label} onClick={handleToggle} className={`border-0 shadow-lg transition-all ${isActive ? activeClass : inactiveClass}`} data-active={isActive} />
 
       {isOpen && (
-        <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-2 z-50 app-dropdown--min" style={dropdownStyle}>
+        <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={dropdownStyle}>
           {options.map((option, index) => {
             const isLast = index === options.length - 1;
             const isSelected = value === option.value;
@@ -53,17 +53,17 @@ export default function Dropdown_Filter({
                     setIsOpen(false);
                     setHelpKey(null);
                   }}
-                  className={`app-menu-item d-block w-100 text-start px-3 py-2 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                  className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                 >
                   {option.label}
                 </button>
 
                 {showHelp && option.description && (
-                  <div className="position-relative flex-shrink-0">
+                  <div className="flex-shrink-0 position-relative">
                     <button
                       type="button"
                       aria-label={`${option.label} help`}
-                      className="app-menu-action btn btn-sm text-gray-600 dark:text-gray-300 d-flex align-items-center justify-content-center app-label--bold"
+                      className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
                       onMouseEnter={() => setHelpKey(option.value)}
                       onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
                       onMouseDown={(e) => {
@@ -77,13 +77,13 @@ export default function Dropdown_Filter({
 
                     {isHelpOpen && (
                       <div
-                        className="app-menu-panel position-absolute start-50 bottom-100 mb-2 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-start"
+                        className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
                         style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                         onMouseEnter={() => setHelpKey(option.value)}
                         onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
                       >
-                        <div className="fw-semibold text-gray-900 dark:text-gray-100 mb-1">{option.label}</div>
-                        <div className="small text-gray-700 dark:text-gray-300">{option.description}</div>
+                        <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
+                        <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
                       </div>
                     )}
                   </div>

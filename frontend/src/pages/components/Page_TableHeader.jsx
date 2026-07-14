@@ -20,8 +20,8 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
   };
 
   return (
-    <div className="flex-shrink-0 border-bottom bg-gray-100 dark:bg-gray-700" style={{ zIndex: 5 }}>
-      <table className="table table-borderless mb-0 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+    <div className="bg-gray-100 border-bottom dark:bg-gray-700 flex-shrink-0" style={{ zIndex: 5 }}>
+      <table className="bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900">
         <colgroup>
           {columns.map((col, i) => (
             <col key={i} style={col.width ? { width: col.width } : undefined} />
@@ -37,7 +37,7 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
               return (
                 <th key={i} className={["text-start", col.className, isSortable ? "user-select-none" : ""].filter(Boolean).join(" ")} style={isSortable ? { cursor: "pointer" } : undefined} onClick={() => handleHeaderClick(col.sortKey)} title={isSortable ? "Click to sort" : undefined}>
                   {isString && isSortable ? (
-                    <span className="d-inline-flex align-items-center gap-2">
+                    <span className="align-items-center d-inline-flex gap-2">
                       {col.label}
                       <span className="d-inline-flex" style={{ fontSize: "0.75rem", opacity: isActive ? 1 : 0.4, transition: "opacity 0.15s" }}>
                         {isActive ? sortAsc ? <ArrowUpIcon style={{ width: 14, height: 14 }} /> : <ArrowDownIcon style={{ width: 14, height: 14 }} /> : <ArrowUpIcon style={{ width: 14, height: 14 }} />}

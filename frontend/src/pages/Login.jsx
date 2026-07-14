@@ -284,75 +284,75 @@ const Login = () => {
 
   // ─── [9] RENDER ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-gray-100 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-2 px-1 sm:px-1 lg:px-1">
-      <div className="max-w-md w-full space-y-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded-3xl shadow-xl max-h-[calc(100vh-1rem)] overflow-y-auto">
+    <div className="bg-gradient-to-br dark:from-gray-900 dark:to-gray-900 dark:via-gray-800 flex from-gray-100 items-center justify-center lg:px-1 min-h-screen px-1 py-0 sm:px-1 to-gray-100 via-white">
+      <div className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 max-h-[calc(100vh-1rem)] max-w-md overflow-y-auto p-0 rounded-3xl shadow-xl space-y-1 w-full">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">login</h2>
-          {import.meta.env.VITE_BUILD_TIME && <p className="text-xs text-gray-400 dark:text-gray-500">Updated on: {import.meta.env.VITE_BUILD_TIME}</p>}
+          <h2 className="dark:text-white font-bold mb-1 text-3xl text-gray-900">login</h2>
+          {import.meta.env.VITE_BUILD_TIME && <p className="dark:text-gray-500 text-gray-400 text-xs">Updated on: {import.meta.env.VITE_BUILD_TIME}</p>}
         </div>
 
         {!showPasswordReset ? (
           <form className="mt-1 space-y-1" onSubmit={handleLogin}>
             {/* Success Message */}
             {success && (
-              <div className="rounded-lg bg-green-900/30 border border-green-700 p-4">
+              <div className="bg-green-900/30 border border-green-700 p-1 rounded-lg">
                 <div className="flex">
-                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 text-green-400 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <p className="ml-3 text-sm font-medium text-green-300">{success}</p>
+                  <p className="font-medium ml-3 text-green-300 text-sm">{success}</p>
                 </div>
               </div>
             )}
 
             {/* Error Message */}
             {error && (
-              <div className="rounded-lg bg-red-900/30 border border-red-700 p-4">
+              <div className="bg-red-900/30 border border-red-700 p-1 rounded-lg">
                 <div className="flex">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 text-red-400 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
-                  <p className="ml-3 text-sm font-medium text-red-300">{error}</p>
+                  <p className="font-medium ml-3 text-red-300 text-sm">{error}</p>
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
               {/* Company ID Field */}
-              <div className="form-floating mb-2">
+              <div className="form-floating ui-form-floating-mb2">
                 <input id="company_id" name="company_id" type="text" required className={`form-control ${validationErrors.company_id ? "is-invalid" : ""}`} placeholder="Company ID" value={formData.company_id} onChange={handleInputChange} />
                 <label htmlFor="company_id">Company ID</label>
-                {validationErrors.company_id && <p className="mt-1 text-sm text-red-400">{validationErrors.company_id}</p>}
+                {validationErrors.company_id && <p className="mt-1 text-red-400 text-sm">{validationErrors.company_id}</p>}
               </div>
 
               {/* Username Field */}
-              <div className="form-floating mb-2">
+              <div className="form-floating ui-form-floating-mb2">
                 <input id="username" name="username" type="text" required className={`form-control ${validationErrors.username ? "is-invalid" : ""}`} placeholder="Username" value={formData.username} onChange={handleInputChange} />
                 <label htmlFor="username">Username</label>
-                {validationErrors.username && <p className="mt-1 text-sm text-red-400">{validationErrors.username}</p>}
+                {validationErrors.username && <p className="mt-1 text-red-400 text-sm">{validationErrors.username}</p>}
               </div>
 
               {/* Password Field */}
               <div className="form-floating mb-2 position-relative">
                 <input id="password" name="password" type={showPassword ? "text" : "password"} required className={`form-control ${validationErrors.password ? "is-invalid" : ""}`} placeholder="Password" value={formData.password} onChange={handleInputChange} style={{ paddingRight: "3rem" }} />
                 <label htmlFor="password">Password</label>
-                <button type="button" onClick={togglePasswordVisibility} className="btn btn-unstyled position-absolute text-gray-400 hover:text-gray-300 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
-                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                <button type="button" onClick={togglePasswordVisibility} className="btn btn-unstyled hover:text-gray-300 position-absolute text-gray-400 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
+                  {showPassword ? <EyeSlashIcon className="ui-icon-5" /> : <EyeIcon className="ui-icon-5" />}
                 </button>
-                {validationErrors.password && <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>}
+                {validationErrors.password && <p className="mt-1 text-red-400 text-sm">{validationErrors.password}</p>}
               </div>
             </div>
 
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input id="remember_me" name="remember_me" type="checkbox" className="h-4 w-4 mb-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700 rounded" checked={formData.remember_me} onChange={handleInputChange} />
-                <label htmlFor="remember_me" className="ml-2 mb-4 block text-sm text-gray-200 dark:text-gray-200">
+                <input id="remember_me" name="remember_me" type="checkbox" className="bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-500 focus:ring-indigo-500 h-4 mb-4 rounded text-indigo-600 w-4" checked={formData.remember_me} onChange={handleInputChange} />
+                <label htmlFor="remember_me" className="block dark:text-gray-200 mb-4 ml-2 text-gray-200 text-sm">
                   Remember me for 30 days
                 </label>
               </div>
 
-              <button type="button" onClick={() => setShowPasswordReset(true)} className="text-sm font-medium mb-4 text-indigo-400 hover:text-indigo-300 transition-colors">
+              <button type="button" onClick={() => setShowPasswordReset(true)} className="font-medium hover:text-indigo-300 mb-4 text-indigo-400 text-sm transition-colors">
                 Forgot password?
               </button>
             </div>
@@ -361,11 +361,11 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="bg-indigo-600 border border-transparent disabled:cursor-not-allowed disabled:opacity-50 duration-200 flex focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium group hover:bg-indigo-700 hover:shadow-xl justify-center px-1 py-0 relative rounded-full shadow-lg text-sm text-white transition-all w-full"
             >
               {loading ? (
                 <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="-ml-1 animate-spin h-5 mr-3 text-white w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -379,38 +379,38 @@ const Login = () => {
         ) : (
           <div className="mt-8">
             <div className="mb-6 text-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reset Password</h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Enter your username and new password</p>
+              <h3 className="dark:text-white font-medium text-gray-900 text-lg">Reset Password</h3>
+              <p className="dark:text-gray-300 mt-1 text-gray-600 text-sm">Enter your username and new password</p>
             </div>
 
             <form className="space-y-1" onSubmit={handlePasswordReset}>
               {/* Error Message */}
               {error && (
-                <div className="rounded-lg bg-red-900/30 border border-red-700 p-4">
+                <div className="bg-red-900/30 border border-red-700 p-1 rounded-lg">
                   <div className="flex">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-5 text-red-400 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
-                    <p className="ml-3 text-sm font-medium text-red-300">{error}</p>
+                    <p className="font-medium ml-3 text-red-300 text-sm">{error}</p>
                   </div>
                 </div>
               )}
 
               <div className="space-y-2">
                 {/* Username Field */}
-                <div className="form-floating mb-2">
+                <div className="form-floating ui-form-floating-mb2">
                   <input id="reset-username" name="username" type="text" required className="form-control" placeholder="Username" value={resetData.username} onChange={handleResetInputChange} />
                   <label htmlFor="reset-username">Username</label>
                 </div>
 
                 {/* New Password Field */}
-                <div className="form-floating mb-2">
+                <div className="form-floating ui-form-floating-mb2">
                   <input id="new-password" name="new_password" type="password" required className="form-control" placeholder="New Password" value={resetData.new_password} onChange={handleResetInputChange} />
                   <label htmlFor="new-password">New Password</label>
                 </div>
 
                 {/* Confirm Password Field */}
-                <div className="form-floating mb-2">
+                <div className="form-floating ui-form-floating-mb2">
                   <input id="confirm-password" name="confirm_password" type="password" required className="form-control" placeholder="Confirm Password" value={resetData.confirm_password} onChange={handleResetInputChange} />
                   <label htmlFor="confirm-password">Confirm Password</label>
                 </div>
@@ -425,18 +425,18 @@ const Login = () => {
                     setError("");
                     setResetData({ username: "", new_password: "", confirm_password: "" });
                   }}
-                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium hover:bg-gray-200 px-1 py-0 rounded-lg shadow-sm text-gray-700 text-sm transition-colors"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="bg-indigo-600 border border-transparent disabled:cursor-not-allowed disabled:opacity-50 duration-200 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium hover:bg-indigo-700 px-1 py-0 rounded-lg shadow-sm text-sm text-white transition-all"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="-ml-1 animate-spin h-5 mr-3 text-white w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>

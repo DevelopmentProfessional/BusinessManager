@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Reports.jsx
  *
@@ -945,8 +945,8 @@ export default function Reports() {
 
   if (loading && !selectedReport) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
@@ -956,9 +956,9 @@ export default function Reports() {
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
 
       {!fullScreenMode && (
-        <div className="p-1 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Reports</h1>
-          <div className="d-flex align-items-center gap-2">
+        <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 justify-content-between p-1">
+          <h1 className="dark:text-gray-100 font-bold mb-1 text-gray-900 text-xl">Reports</h1>
+          <div className="ui-flex-center-gap-2">
             <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
             <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
             <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
@@ -967,13 +967,13 @@ export default function Reports() {
       )}
 
       <div className={`flex-grow-1 reports-page__chart-area ${fullScreenMode ? "overflow-hidden p-1 d-flex flex-column" : "overflow-auto p-1"}`} style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {error && <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">{error}</div>}
+        {error && <div className="bg-red-50 border border-red-200 mb-3 px-1 py-0 rounded text-red-700">{error}</div>}
 
         {!selectedReport ? (
-          <div className="text-center py-12">
-            <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No reports available</h3>
-            <p className="mt-1 text-sm text-gray-500">You don't have permissions to view reports.</p>
+          <div className="py-1 text-center">
+            <ChartBarIcon className="h-12 mx-auto text-gray-400 w-12" />
+            <h3 className="font-medium mt-2 text-gray-900 text-sm">No reports available</h3>
+            <p className="mt-1 text-gray-500 text-sm">You don't have permissions to view reports.</p>
           </div>
         ) : (
           <>
@@ -983,10 +983,10 @@ export default function Reports() {
                 {kpis
                   .filter((kpi) => kpiVisibility[kpi.label] !== false)
                   .map((kpi) => (
-                    <div key={kpi.label} className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-center" style={{ minWidth: "6rem" }}>
-                      <div className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{kpi.value}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{kpi.label}</div>
-                      {kpi.sub && <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{kpi.sub}</div>}
+                    <div key={kpi.label} className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-1 px-1 py-0 rounded-lg text-center" style={{ minWidth: "6rem" }}>
+                      <div className="dark:text-white font-bold leading-tight text-gray-900 text-lg">{kpi.value}</div>
+                      <div className="ui-muted-xs">{kpi.label}</div>
+                      {kpi.sub && <div className="dark:text-gray-500 text-gray-400 text-xs truncate">{kpi.sub}</div>}
                     </div>
                   ))}
               </div>
@@ -994,10 +994,10 @@ export default function Reports() {
 
             <div
               id="report-export-section"
-              className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3"}
+              className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-0 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1"}
             >
               <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
-                <div className="position-absolute top-0 end-0" style={{ zIndex: 12 }}>
+                <div className="end-0 position-absolute top-0" style={{ zIndex: 12 }}>
                   <button
                     type="button"
                     onClick={() => setFullScreenMode((v) => !v)}
@@ -1014,11 +1014,11 @@ export default function Reports() {
 
             {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
             {!fullScreenMode && (
-              <div className="mt-3 d-flex align-items-center justify-content-center gap-2">
+              <div className="align-items-center d-flex gap-2 justify-content-center mt-3">
                 <button
                   type="button"
                   onClick={() => handleNavigatePeriod(1)}
-                  className="btn btn-sm border-0 p-1"
+                  className="border-0 btn btn-sm p-1"
                   style={{
                     backgroundColor: branding.primaryColor || "var(--color-primary)",
                     color: "#fff",
@@ -1027,12 +1027,12 @@ export default function Reports() {
                   title="Previous period"
                   aria-label="Previous period"
                 >
-                  <ChevronLeftIcon className="h-4 w-4" />
+                  <ChevronLeftIcon className="ui-icon-4" />
                 </button>
 
                 {reportData?.labels?.length > 0 && (
-                  <button type="button" onClick={() => setShowDataTable((v) => !v)} className="btn btn-outline-secondary d-flex align-items-center gap-1" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
-                    <ChevronUpDownIcon className="h-4 w-4" />
+                  <button type="button" onClick={() => setShowDataTable((v) => !v)} className="align-items-center btn btn-outline-secondary d-flex gap-1" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
+                    <ChevronUpDownIcon className="ui-icon-4" />
                     {showDataTable ? "Hide" : "Show"}
                   </button>
                 )}
@@ -1041,7 +1041,7 @@ export default function Reports() {
                   type="button"
                   onClick={() => handleNavigatePeriod(-1)}
                   disabled={currentPeriodOffset <= 0}
-                  className="btn btn-sm border-0 p-1"
+                  className="border-0 btn btn-sm p-1"
                   style={{
                     backgroundColor: branding.primaryColor || "var(--color-primary)",
                     color: "#fff",
@@ -1051,18 +1051,18 @@ export default function Reports() {
                   title="Next period"
                   aria-label="Next period"
                 >
-                  <ChevronRightIcon className="h-4 w-4" />
+                  <ChevronRightIcon className="ui-icon-4" />
                 </button>
               </div>
             )}
             {!fullScreenMode && showDataTable && reportData?.labels?.length > 0 && (
-              <div className="mt-2 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700" style={{ maxHeight: "16rem" }}>
-                <table className="table table-sm mb-0">
-                  <thead className="sticky-top bg-white dark:bg-gray-900">
+              <div className="border border-gray-200 dark:border-gray-700 mt-2 overflow-auto rounded-lg" style={{ maxHeight: "16rem" }}>
+                <table className="mb-0 table table-sm">
+                  <thead className="bg-white dark:bg-gray-900 sticky-top">
                     <tr>
-                      <th className="text-xs text-gray-600 dark:text-gray-400 fw-semibold">Period</th>
+                      <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Period</th>
                       {(reportData.datasets || []).map((dataset, idx) => (
-                        <th key={`col-${idx}`} className="text-xs text-gray-600 dark:text-gray-400 fw-semibold text-end">
+                        <th key={`col-${idx}`} className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">
                           {dataset?.label || `Value ${idx + 1}`}
                         </th>
                       ))}
@@ -1071,9 +1071,9 @@ export default function Reports() {
                   <tbody>
                     {reportData.labels.map((label, i) => (
                       <tr key={i}>
-                        <td className="text-sm text-gray-700 dark:text-gray-300">{label}</td>
+                        <td className="dark:text-gray-300 text-gray-700 text-sm">{label}</td>
                         {(reportData.datasets || []).map((dataset, idx) => (
-                          <td key={`row-${i}-col-${idx}`} className="text-sm text-gray-900 dark:text-white text-end font-medium">
+                          <td key={`row-${i}-col-${idx}`} className="dark:text-white font-medium text-end text-gray-900 text-sm">
                             {dataset?.data?.[i] ?? "—"}
                           </td>
                         ))}
@@ -1093,7 +1093,7 @@ export default function Reports() {
           searchTerm=""
           onSearch={() => {}}
           beforeSearch={
-            <div className="d-flex flex-wrap align-items-center gap-2 w-100">
+            <div className="align-items-center d-flex flex-wrap gap-2 w-100">
               <Button_Toolbar
                 icon={showReportControls ? EyeSlashIcon : EyeIcon}
                 label={isTrainingMode ? (showReportControls ? "Hide" : "Show") : ""}
@@ -1110,7 +1110,7 @@ export default function Reports() {
 
               {showReportControls && (
                 <>
-                  <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
+                  <select className="form-select ui-control-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
                     {DATE_RANGE_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
@@ -1118,7 +1118,7 @@ export default function Reports() {
                     ))}
                   </select>
 
-                  <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.groupBy} onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}>
+                  <select className="form-select ui-control-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.groupBy} onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}>
                     {GROUP_BY_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
@@ -1126,7 +1126,7 @@ export default function Reports() {
                     ))}
                   </select>
 
-                  <select className="form-select form-select-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.chartType} onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}>
+                  <select className="form-select ui-control-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.chartType} onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}>
                     {selectedReport.chartTypes.map((chartType) => (
                       <option key={chartType} value={chartType}>
                         {chartType === "doughnut" ? "Ring" : chartType}
@@ -1135,7 +1135,7 @@ export default function Reports() {
                   </select>
 
                   {canUseStatus && (
-                    <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.status} onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}>
+                    <select className="form-select ui-control-sm" style={INLINE_SELECT_STYLE} value={reportFilters.status} onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}>
                       {FILTER_CONFIG.status.options.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
@@ -1145,7 +1145,7 @@ export default function Reports() {
                   )}
 
                   {canUseService && (
-                    <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.serviceId} onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}>
+                    <select className="form-select ui-control-sm" style={INLINE_SELECT_STYLE} value={reportFilters.serviceId} onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}>
                       <option value="all">{FILTER_CONFIG.service.allLabel}</option>
                       {services.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -1156,7 +1156,7 @@ export default function Reports() {
                   )}
 
                   {canUseEmployee && (
-                    <select className="form-select form-select-sm" style={INLINE_SELECT_STYLE} value={reportFilters.employeeId} onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}>
+                    <select className="form-select ui-control-sm" style={INLINE_SELECT_STYLE} value={reportFilters.employeeId} onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}>
                       <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
                       {employees.map((e) => (
                         <option key={e.id} value={e.id}>
@@ -1167,21 +1167,21 @@ export default function Reports() {
                   )}
 
                   {canUseEventType && (
-                    <div className="position-relative" ref={eventTypeRef}>
+                    <div className="ui-pos-rel" ref={eventTypeRef}>
                       <button
                         type="button"
                         onClick={() => setEventTypeMenuOpen((v) => !v)}
                         onKeyDown={handleEventTypeKeyDown}
                         aria-haspopup="listbox"
                         aria-expanded={eventTypeMenuOpen}
-                        className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                        className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-2"
                         style={{ whiteSpace: "nowrap", minWidth: "11rem" }}
                       >
-                        <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                        <CalendarIcon className="flex-shrink-0 h-4 w-4" />
                         <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
                       </button>
                       {eventTypeMenuOpen && (
-                        <div className="app-menu-panel position-absolute bottom-100 start-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm overflow-auto" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
+                        <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 overflow-auto position-absolute rounded-3 shadow-sm start-0" style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }} role="listbox">
                           {FILTER_CONFIG.eventType.options.map((o) => {
                             const OptionIcon = o.icon;
                             return (
@@ -1209,12 +1209,12 @@ export default function Reports() {
                                   }
                                 }}
                                 tabIndex={0}
-                                className={`app-menu-item px-3 py-2 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                                className={`app-menu-item px-1 py-0 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
                                 style={{ cursor: "pointer", width: "100%", margin: 0, userSelect: "none" }}
                                 role="option"
                                 aria-selected={reportFilters.eventType === o.value}
                               >
-                                {OptionIcon && <OptionIcon className="h-4 w-4 flex-shrink-0" />}
+                                {OptionIcon && <OptionIcon className="flex-shrink-0 h-4 w-4" />}
                                 <span className="text-nowrap">{o.label}</span>
                               </div>
                             );
@@ -1228,34 +1228,34 @@ export default function Reports() {
 
               {/* Time Navigation */}
               {currentPeriodOffset !== 0 && (
-                <button type="button" onClick={handleResetPeriod} className="btn btn-sm btn-outline-secondary" title="Reset to current period">
+                <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
                   Today
                 </button>
               )}
             </div>
           }
         >
-          <div className="d-flex justify-content-between align-items-center w-100 position-relative">
+          <div className="align-items-center d-flex justify-content-between position-relative w-100">
             {/* Left: Save + Filter */}
-            <div className="d-flex align-items-center gap-1">
+            <div className="ui-flex-center-gap-1">
               <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
               {/* Saved Filters Dropup */}
-              <div className="position-relative">
+              <div className="ui-pos-rel">
                 <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
                 {savedFiltersMenuOpen && (
-                  <div className="app-menu-panel position-absolute bottom-100 start-0 mb-2 border border-gray-200 dark:border-gray-700 rounded-3 shadow-sm bg-white dark:bg-gray-900 p-1" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-2 p-1 position-absolute rounded-3 shadow-sm start-0" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
                     {savedFilters.filter((f) => f.report_id === selectedReport?.id).length === 0 ? (
-                      <div className="app-menu-empty px-3 py-2 text-gray-500">No saved filters</div>
+                      <div className="app-menu-empty px-1 py-0 text-gray-500">No saved filters</div>
                     ) : (
                       savedFilters
                         .filter((f) => f.report_id === selectedReport?.id)
                         .map((filter) => (
-                          <div key={filter.id} className="d-flex align-items-center justify-content-between gap-2 px-2 py-1">
-                            <button type="button" onClick={() => handleLoadFilter(filter)} className="app-menu-item btn btn-sm btn-outline-secondary flex-grow-1 text-start text-truncate">
+                          <div key={filter.id} className="align-items-center d-flex gap-2 justify-content-between px-0 py-1">
+                            <button type="button" onClick={() => handleLoadFilter(filter)} className="app-menu-item btn btn-outline-secondary btn-sm flex-grow-1 text-start text-truncate">
                               {filter.name}
                             </button>
-                            <button type="button" onClick={() => handleDeleteFilter(filter.id)} className="app-menu-action btn btn-sm btn-outline-danger" title="Delete">
+                            <button type="button" onClick={() => handleDeleteFilter(filter.id)} className="app-menu-action btn btn-outline-danger btn-sm" title="Delete">
                               ×
                             </button>
                           </div>
@@ -1270,7 +1270,7 @@ export default function Reports() {
             <Report_SelectorDropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
 
             {/* Right: Spacer for balanced layout */}
-            <div className="d-flex align-items-center" style={{ minWidth: "6rem" }} />
+            <div className="align-items-center d-flex" style={{ minWidth: "6rem" }} />
           </div>
         </PageTableFooter>
       )}
@@ -1312,8 +1312,8 @@ export default function Reports() {
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Report Page Controls">
-        <div className="small text-muted mb-2">Configure report display and export options.</div>
-        <div className="fw-semibold small mb-1">Summary Cards</div>
+        <div className="mb-2 ui-small-muted">Configure report display and export options.</div>
+        <div className="fw-semibold mb-1 small">Summary Cards</div>
         {Object.keys(kpiVisibility).map((label) => (
           <div key={label} className="form-check mb-1">
             <input type="checkbox" id={`kpi-vis-${label}`} className="form-check-input" checked={kpiVisibility[label]} onChange={(e) => setKpiVisibility((prev) => ({ ...prev, [label]: e.target.checked }))} />
@@ -1326,7 +1326,7 @@ export default function Reports() {
 
       {/* Save Filter Modal */}
       <Modal isOpen={showSaveFilterModal} onClose={() => setShowSaveFilterModal(false)} title="Save Filter" contentGravity="top">
-        <div className="p-3">
+        <div className="p-1">
           <label className="form-label">Filter Name</label>
           <input
             type="text"
@@ -1341,7 +1341,7 @@ export default function Reports() {
             }}
             autoFocus
           />
-          <div className="d-flex justify-content-end gap-2 mt-3">
+          <div className="d-flex gap-2 justify-content-end mt-3">
             <button
               type="button"
               className="btn btn-outline-secondary"

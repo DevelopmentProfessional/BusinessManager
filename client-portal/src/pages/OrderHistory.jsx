@@ -240,6 +240,10 @@ export default function OrderHistory() {
     setPayingOrderId(orderId);
     try {
       const updated = await ordersAPI.pay(orderId, { payment_method: "card" });
+      if (updated?.checkout_url) {
+        window.location.href = updated.checkout_url;
+        return;
+      }
       setOrders((current) => current.map((order) => (order.id === orderId ? updated : order)));
       markSyncedNow();
       addToast("Payment recorded. Your order is now in the ordered queue.", "success");
@@ -265,7 +269,7 @@ export default function OrderHistory() {
 
   return (
     <Layout>
-      <div className="p-3" style={{ paddingBottom: "5rem" }}>
+      <div className="p-1" style={{ paddingBottom: "5rem" }}>
         <div className="d-flex align-items-center justify-content-between mb-4">
           <div>
             <h5 className="fw-bold mb-0">History</h5>
@@ -307,7 +311,7 @@ export default function OrderHistory() {
             {tab === "orders" && (
               <div>
                 {orders.length === 0 && (
-                  <div className="text-center text-muted py-5">
+                  <div className="text-center text-muted py-1">
                     <ClipboardDocumentListIcon style={{ width: 48, height: 48, opacity: 0.2, margin: "0 auto 12px" }} />
                     <p className="fw-medium">No orders yet</p>
                   </div>
@@ -339,7 +343,7 @@ export default function OrderHistory() {
             {tab === "bookings" && (
               <div>
                 {bookings.length === 0 && (
-                  <div className="text-center text-muted py-5">
+                  <div className="text-center text-muted py-1">
                     <ClipboardDocumentListIcon style={{ width: 48, height: 48, opacity: 0.2, margin: "0 auto 12px" }} />
                     <p className="fw-medium">No bookings yet</p>
                   </div>
@@ -384,10 +388,10 @@ function OrderItems({ order, clientName, onPay, isPaying = false }) {
       .catch(() => setItems([]));
   }, [order.id]);
 
-  if (!items) return <div className="px-3 pb-3 small text-muted">Loading items…</div>;
+  if (!items) return <div className="px-1 pb-1 small text-muted">Loading items…</div>;
 
   return (
-    <div className="px-3 pb-3 border-top pt-3">
+    <div className="px-1 pb-1 border-top pt-1">
       <div className="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
         <div className="small text-muted">
           <div>Payment Method: {order.payment_method || "card"}</div>
@@ -406,7 +410,7 @@ function OrderItems({ order, clientName, onPay, isPaying = false }) {
         </div>
       </div>
       {items.map((item) => (
-        <div key={item.id} className="border rounded px-3 py-2 mb-2 small">
+        <div key={item.id} className="border rounded px-1 py-0 mb-2 small">
           <div className="d-flex justify-content-between gap-3">
             <div>
               <div className="fw-medium text-dark">{item.item_name}</div>
@@ -429,7 +433,7 @@ function OrderItems({ order, clientName, onPay, isPaying = false }) {
           </div>
         </div>
       ))}
-      <div className="d-flex justify-content-end pt-2 border-top mt-3">
+      <div className="d-flex justify-content-end pt-0 border-top mt-3">
         <div className="small" style={{ minWidth: 220 }}>
           <div className="d-flex justify-content-between mb-1">
             <span className="text-muted">Subtotal</span>

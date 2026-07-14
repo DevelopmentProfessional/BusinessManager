@@ -130,10 +130,10 @@ export default function Manager_DatabaseConnection() {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Database Connections</h3>
-        <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm d-flex align-items-center gap-1">
-          <PlusIcon className="h-4 w-4" />
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="dark:text-white font-medium text-gray-900 text-lg">Database Connections</h3>
+        <button onClick={() => setShowAddModal(true)} className="align-items-center btn btn-primary btn-sm d-flex gap-1">
+          <PlusIcon className="ui-icon-4" />
           Add
         </button>
       </div>
@@ -144,7 +144,7 @@ export default function Manager_DatabaseConnection() {
 
       {/* Loading State */}
       {loading && !connections.length ? (
-        <div className="text-center py-8">
+        <div className="py-1 text-center">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
@@ -155,27 +155,27 @@ export default function Manager_DatabaseConnection() {
       {!loading && (
         <div className="space-y-2">
           {connections.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">No database connections configured. Click "Add Connection" to create one.</div>
+            <div className="dark:text-gray-400 py-1 text-center text-gray-500">No database connections configured. Click "Add Connection" to create one.</div>
           ) : (
             connections.map((conn) => (
-              <div key={conn.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div key={conn.id} className="border border-gray-200 dark:border-gray-700 overflow-hidden rounded-lg">
                 {/* Accordion Header */}
-                <div className="bg-gray-50 dark:bg-gray-800 p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors" onClick={() => handleToggleExpand(conn.id)}>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div className="d-flex align-items-center gap-2 flex-grow-1">
-                      {expandedId === conn.id ? <ChevronUpIcon className="h-4 w-4 text-gray-500" /> : <ChevronDownIcon className="h-4 w-4 text-gray-500" />}
-                      <span className="font-medium text-gray-900 dark:text-white">{conn.name}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getEnvironmentBadgeColor(conn.environment)}`}>{conn.environment}</span>
-                      {!conn.is_active && <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">Inactive</span>}
+                <div className="bg-gray-50 cursor-pointer dark:bg-gray-800 dark:hover:bg-gray-750 hover:bg-gray-100 p-1 transition-colors" onClick={() => handleToggleExpand(conn.id)}>
+                  <div className="align-items-center d-flex justify-content-between">
+                    <div className="align-items-center d-flex flex-grow-1 gap-2">
+                      {expandedId === conn.id ? <ChevronUpIcon className="h-4 text-gray-500 w-4" /> : <ChevronDownIcon className="h-4 text-gray-500 w-4" />}
+                      <span className="dark:text-white font-medium text-gray-900">{conn.name}</span>
+                      <span className={`px-0 py-0.5 rounded text-xs font-medium ${getEnvironmentBadgeColor(conn.environment)}`}>{conn.environment}</span>
+                      {!conn.is_active && <span className="bg-gray-200 dark:bg-gray-700 dark:text-gray-400 font-medium px-0 py-0.5 rounded text-gray-600 text-xs">Inactive</span>}
                     </div>
 
                     {/* Visibility Toggle */}
-                    <div className="d-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="ui-flex-center-gap-2" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => handleToggleVisibility(conn.id)} className={`btn btn-sm ${conn.visible_to_users ? "btn-success" : "btn-outline-secondary"}`} title={conn.visible_to_users ? "Visible to users" : "Hidden from users"}>
-                        {conn.visible_to_users ? <EyeIcon className="h-4 w-4" /> : <EyeSlashIcon className="h-4 w-4" />}
+                        {conn.visible_to_users ? <EyeIcon className="ui-icon-4" /> : <EyeSlashIcon className="ui-icon-4" />}
                       </button>
-                      <button onClick={() => handleDelete(conn.id)} className="btn btn-sm btn-outline-danger" title="Delete connection">
-                        <XMarkIcon className="h-4 w-4" />
+                      <button onClick={() => handleDelete(conn.id)} className="btn btn-outline-danger btn-sm" title="Delete connection">
+                        <XMarkIcon className="ui-icon-4" />
                       </button>
                     </div>
                   </div>
@@ -183,42 +183,42 @@ export default function Manager_DatabaseConnection() {
 
                 {/* Accordion Body */}
                 {expandedId === conn.id && (
-                  <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="bg-white border-gray-200 border-t dark:bg-gray-900 dark:border-gray-700 p-1">
+                    <div className="gap-3 grid grid-cols-1 md:grid-cols-2 text-sm">
                       <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Host:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{conn.host}</span>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Host:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.host}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Port:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{conn.port}</span>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Port:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.port}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Database:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{conn.database_name}</span>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Database:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.database_name}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Username:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{conn.username}</span>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Username:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.username}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">SSL Mode:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{conn.ssl_mode}</span>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">SSL Mode:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.ssl_mode}</span>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Pool Size:</span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">{conn.pool_size}</span>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Pool Size:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.pool_size}</span>
                       </div>
                       {conn.description && (
                         <div className="col-span-2">
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Description:</span>
-                          <p className="mt-1 text-gray-600 dark:text-gray-400">{conn.description}</p>
+                          <span className="dark:text-gray-300 font-medium text-gray-700">Description:</span>
+                          <p className="dark:text-gray-400 mt-1 text-gray-600">{conn.description}</p>
                         </div>
                       )}
                       {conn.external_url && (
                         <div className="col-span-2">
-                          <span className="font-medium text-gray-700 dark:text-gray-300">External URL:</span>
-                          <p className="mt-1 text-gray-600 dark:text-gray-400 font-mono text-xs break-all">{conn.external_url}</p>
+                          <span className="dark:text-gray-300 font-medium text-gray-700">External URL:</span>
+                          <p className="break-all dark:text-gray-400 font-mono mt-1 text-gray-600 text-xs">{conn.external_url}</p>
                         </div>
                       )}
                     </div>
@@ -232,8 +232,8 @@ export default function Manager_DatabaseConnection() {
 
       {/* Add Connection Modal */}
       {showAddModal && (
-        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-lg modal-dialog-scrollable">
+        <div className="d-block modal show" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-scrollable modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Add Database Connection</h5>
@@ -241,11 +241,11 @@ export default function Manager_DatabaseConnection() {
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="modal-body">
-                  <div className="row g-3">
+                  <div className="g-3 row">
                     {/* Name */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="conn_name" className="form-control form-control-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Connection Name" required />
+                        <input type="text" id="conn_name" className="form-control ui-control-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Connection Name" required />
                         <label htmlFor="conn_name">Connection Name *</label>
                       </div>
                     </div>
@@ -253,7 +253,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Environment */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <select id="conn_environment" className="form-select form-select-sm" value={formData.environment} onChange={(e) => setFormData({ ...formData, environment: e.target.value })} required>
+                        <select id="conn_environment" className="form-select ui-control-sm" value={formData.environment} onChange={(e) => setFormData({ ...formData, environment: e.target.value })} required>
                           <option value="production">Production</option>
                         </select>
                         <label htmlFor="conn_environment">Environment *</label>
@@ -263,7 +263,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Host */}
                     <div className="col-md-8">
                       <div className="form-floating">
-                        <input type="text" id="conn_host" className="form-control form-control-sm" value={formData.host} onChange={(e) => setFormData({ ...formData, host: e.target.value })} placeholder="Host" required />
+                        <input type="text" id="conn_host" className="form-control ui-control-sm" value={formData.host} onChange={(e) => setFormData({ ...formData, host: e.target.value })} placeholder="Host" required />
                         <label htmlFor="conn_host">Host *</label>
                       </div>
                     </div>
@@ -271,7 +271,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Port */}
                     <div className="col-md-4">
                       <div className="form-floating">
-                        <input type="number" id="conn_port" className="form-control form-control-sm" value={formData.port} onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })} placeholder="Port" required />
+                        <input type="number" id="conn_port" className="form-control ui-control-sm" value={formData.port} onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })} placeholder="Port" required />
                         <label htmlFor="conn_port">Port *</label>
                       </div>
                     </div>
@@ -279,7 +279,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Database Name */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="conn_database_name" className="form-control form-control-sm" value={formData.database_name} onChange={(e) => setFormData({ ...formData, database_name: e.target.value })} placeholder="Database Name" required />
+                        <input type="text" id="conn_database_name" className="form-control ui-control-sm" value={formData.database_name} onChange={(e) => setFormData({ ...formData, database_name: e.target.value })} placeholder="Database Name" required />
                         <label htmlFor="conn_database_name">Database Name *</label>
                       </div>
                     </div>
@@ -287,7 +287,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Username */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="conn_username" className="form-control form-control-sm" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Username" required />
+                        <input type="text" id="conn_username" className="form-control ui-control-sm" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Username" required />
                         <label htmlFor="conn_username">Username *</label>
                       </div>
                     </div>
@@ -295,7 +295,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Password */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <input type="password" id="conn_password" className="form-control form-control-sm" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Password" required />
+                        <input type="password" id="conn_password" className="form-control ui-control-sm" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Password" required />
                         <label htmlFor="conn_password">Password *</label>
                       </div>
                     </div>
@@ -303,7 +303,7 @@ export default function Manager_DatabaseConnection() {
                     {/* SSL Mode */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <select id="conn_ssl_mode" className="form-select form-select-sm" value={formData.ssl_mode} onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}>
+                        <select id="conn_ssl_mode" className="form-select ui-control-sm" value={formData.ssl_mode} onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}>
                           <option value="require">Require</option>
                           <option value="prefer">Prefer</option>
                           <option value="disable">Disable</option>
@@ -315,7 +315,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Pool Size */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="number" id="conn_pool_size" className="form-control form-control-sm" value={formData.pool_size} onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })} placeholder="Pool Size" />
+                        <input type="number" id="conn_pool_size" className="form-control ui-control-sm" value={formData.pool_size} onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })} placeholder="Pool Size" />
                         <label htmlFor="conn_pool_size">Pool Size</label>
                       </div>
                     </div>
@@ -323,7 +323,7 @@ export default function Manager_DatabaseConnection() {
                     {/* External URL (Render) */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <input type="text" id="conn_external_url" className="form-control form-control-sm font-monospace" value={formData.external_url} onChange={(e) => setFormData({ ...formData, external_url: e.target.value })} placeholder="External URL" />
+                        <input type="text" id="conn_external_url" className="font-monospace form-control form-control-sm" value={formData.external_url} onChange={(e) => setFormData({ ...formData, external_url: e.target.value })} placeholder="External URL" />
                         <label htmlFor="conn_external_url">External URL (Optional - Render)</label>
                       </div>
                     </div>
@@ -331,7 +331,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Description */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <textarea id="conn_description" className="form-control form-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
+                        <textarea id="conn_description" className="form-control ui-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
                         <label htmlFor="conn_description">Description</label>
                       </div>
                     </div>

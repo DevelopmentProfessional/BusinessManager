@@ -43,6 +43,7 @@ def create_client_tables():
     SQLModel.metadata.create_all(engine)
     _ensure_client_order_workflow_columns()
     _ensure_company_profile_columns()
+    _ensure_app_settings_stripe_columns()
 
 
 def _ensure_columns(conn, table: str, columns: list[tuple[str, str]]):
@@ -114,3 +115,17 @@ def _ensure_company_profile_columns():
             ])
     except Exception as exc:
         logger.exception("Best-effort company profile migration failed: %s", exc)
+
+
+def _ensure_app_settings_stripe_columns():
+    """Ensure app_settings has Stripe configuration columns for runtime payment processing."""
+    try:
+        with engine.begin() as conn:
+            _ensure_columns(conn, "app_settings", [
+                ("stripe_enabled", "BOOLEAN NOT NULL DEFAULT FALSE"),
+                ("stripe_publishable_key", "VARCHAR"),
+                ("stripe_secret_key", "VARCHAR"),
+                ("stripe_webhook_secret", "VARCHAR"),
+            ])
+    except Exception as exc:
+        logger.exception("Best-effort app_settings Stripe migration failed: %s", exc)

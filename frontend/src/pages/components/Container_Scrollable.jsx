@@ -28,7 +28,7 @@ import React from "react";
 
 // ─── 1 SCROLLABLE CONTAINER RENDER ────────────────────────────────────────────
 
-export default function Container_Scrollable({ children, className = "", as: Tag = "div", ...rest }) {
+export default function Container_Scrollable({ children, className="", as: Tag = "div", ...rest }) {
   return (
     <Tag className={`overflow-scroll-container ${className}`} {...rest}>
       {children}

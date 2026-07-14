@@ -1,4 +1,4 @@
-﻿// FILE: Panel_WageHistory.jsx
+// FILE: Panel_WageHistory.jsx
 // Embedded wage history for Profile → Wage accordion (scrollable list + bottom filters).
 
 import React, { useMemo, useState } from "react";
@@ -46,20 +46,20 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
 
   return (
     <div
-      className="profile-wage-history d-flex flex-column min-h-0"
+      className="d-flex flex-column min-h-0 profile-wage-history"
       style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight, minHeight: "10rem" }}
     >
-      <div className="profile-wage-history__list flex-grow-1 min-h-0 overflow-auto px-2 pt-2">
+      <div className="flex-grow-1 min-h-0 overflow-auto profile-wage-history__list pt-0 px-0">
         {paySlipsLoading ? (
-          <div className="text-center py-4">
+          <div className="py-1 text-center">
             <div className="spinner-border spinner-border-sm text-primary" role="status" />
           </div>
         ) : filteredSlips.length === 0 ? (
-          <p className="text-muted small mb-0 py-2">{paySlips.length === 0 ? "No pay slips on record." : "No pay slips match your filters."}</p>
+          <p className="mb-0 py-0 small text-muted">{paySlips.length === 0 ? "No pay slips on record." : "No pay slips match your filters."}</p>
         ) : (
           <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-            <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
-              <thead className="table-light sticky-top">
+            <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
+              <thead className="sticky-top table-light">
                 <tr>
                   <th>Period</th>
                   <th className="text-end">Gross</th>
@@ -73,10 +73,10 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
                   <tr key={slip.id}>
                     <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
                     <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="text-danger text-end">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="fw-semibold text-end">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td>
-                      <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2" style={{ fontSize: "0.75rem" }} onClick={() => setSelectedSlip(slip)}>
+                      <button type="button" className="btn btn-outline-secondary btn-sm px-0 py-0" style={{ fontSize: "0.75rem" }} onClick={() => setSelectedSlip(slip)}>
                         View
                       </button>
                     </td>
@@ -88,17 +88,17 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
         )}
       </div>
 
-      <div className="profile-wage-history__filters flex-shrink-0 border-top bg-body px-2 py-2">
-        <div className="d-flex flex-wrap align-items-center gap-2">
+      <div className="bg-body border-top flex-shrink-0 profile-wage-history__filters px-0 py-0">
+        <div className="align-items-center d-flex flex-wrap gap-2">
           <input
             type="text"
-            className="app-search-input form-control form-control-sm flex-grow-1"
+            className="app-search-input flex-grow-1 form-control form-control-sm"
             placeholder="Search period, notes, amount…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search pay history"
           />
-          <select className="form-select form-select-sm flex-shrink-0" style={{ width: "5.75rem" }} value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} aria-label="Filter by year">
+          <select className="flex-shrink-0 form-select form-select-sm" style={{ width: "5.75rem" }} value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} aria-label="Filter by year">
             <option value="all">All years</option>
             {years.map((y) => (
               <option key={y} value={String(y)}>

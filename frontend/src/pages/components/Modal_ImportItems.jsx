@@ -517,17 +517,17 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
   return (
     <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding contentGravity="top">
       <div className="d-flex flex-column h-100 min-h-0" onPaste={handleGlobalPaste}>
-        <div className="border-bottom border-gray-200 dark:border-gray-700 px-3 py-2 d-flex justify-content-between align-items-center">
+        <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 justify-content-between px-1 py-0">
           <div>
             <div className="fw-semibold">Bulk Add Items</div>
           </div>
-          <div className="d-flex align-items-center gap-2">
-            <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
+          <div className="ui-flex-center-gap-2">
+            <button type="button" className="btn btn-bulk-circle btn-outline-secondary" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
               <ArrowUpIcon style={{ width: 16, height: 16 }} />
             </button>
             <div className="bulk-import-add-row-wrap">
-              <input type="number" className="form-control form-control-sm" min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
-              <button type="button" className="btn btn-outline-secondary bulk-import-add-overlay d-inline-flex align-items-center justify-content-center gap-1" onClick={handleAddRows} disabled={isSaving}>
+              <input type="number" className="form-control ui-control-sm" min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+              <button type="button" className="align-items-center btn btn-outline-secondary bulk-import-add-overlay d-inline-flex gap-1 justify-content-center" onClick={handleAddRows} disabled={isSaving}>
                 <PlusIcon style={{ width: 14, height: 14 }} />
                 <span>Add</span>
               </button>
@@ -535,8 +535,8 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
           </div>
         </div>
 
-        <div ref={scrollContainerRef} className="flex-grow-1 min-h-0 overflow-auto bulk-import-grid-scroll" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
-          <table className="table table-sm table-bordered align-middle mb-0" style={{ minWidth: Math.max(900, columns.length * 150) }}>
+        <div ref={scrollContainerRef} className="bulk-import-grid-scroll flex-grow-1 min-h-0 overflow-auto" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
+          <table className="align-middle mb-0 table table-bordered table-sm" style={{ minWidth: Math.max(900, columns.length * 150) }}>
             <colgroup>
               <col style={{ width: 56 }} />
               {columns.map((col) => (
@@ -546,7 +546,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
             <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 3 }}>
               <tr>
                 <th style={{ width: 56 }}>
-                  <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Reset column mappings to defaults" onClick={handleResetMappings}>
+                  <button type="button" className="btn btn-bulk-circle btn-outline-secondary" title="Reset column mappings to defaults" onClick={handleResetMappings}>
                     <ArrowPathIcon style={{ width: 14, height: 14 }} />
                   </button>
                 </th>
@@ -561,12 +561,12 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                     onDragOver={(e) => handleColDragOver(e, colIndex)}
                     onDrop={() => handleColDrop(colIndex)}
                   >
-                    <div className="d-flex align-items-center gap-1">
-                      <button type="button" className="btn btn-outline-secondary btn-bulk-circle" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
+                    <div className="ui-flex-center-gap-1">
+                      <button type="button" className="btn btn-bulk-circle btn-outline-secondary" title="Clear this column" onClick={() => handleClearColumn(colIndex)}>
                         <XMarkIcon style={{ width: 12, height: 12 }} />
                       </button>
 
-                      <select className="form-select form-select-sm border-0 shadow-none" style={{ backgroundColor: "transparent" }} value={mappings[colIndex] || "name"} onChange={(e) => setMapping(colIndex, e.target.value)}>
+                      <select className="border-0 form-select form-select-sm shadow-none" style={{ backgroundColor: "transparent" }} value={mappings[colIndex] || "name"} onChange={(e) => setMapping(colIndex, e.target.value)}>
                         {FIELD_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
                             {opt.label}
@@ -599,9 +599,9 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
             <tbody>
               {rows.map((row, rowIndex) => (
                 <tr key={`r_${rowIndex}`}>
-                  <td className="text-muted small text-center align-middle">
-                    <div className="d-flex align-items-center justify-content-center gap-1">
-                      <button type="button" className="btn btn-outline-danger btn-bulk-circle" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
+                  <td className="align-middle small text-center text-muted">
+                    <div className="align-items-center d-flex gap-1 justify-content-center">
+                      <button type="button" className="btn btn-bulk-circle btn-outline-danger" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
                         <XMarkIcon style={{ width: 12, height: 12 }} />
                       </button>
                       <span>{rowIndex + 1}</span>
@@ -610,7 +610,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
                   {columns.map((col, colIndex) => (
                     <td key={`${col.id}_${rowIndex}`}>
                       <input
-                        className="form-control form-control-sm border-0 shadow-none"
+                        className="border-0 form-control form-control-sm shadow-none"
                         style={{ backgroundColor: "transparent" }}
                         value={row[colIndex] || ""}
                         onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
@@ -629,11 +629,11 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
           </table>
         </div>
 
-        <div className="flex-shrink-0 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          {status.message && <div className={`px-4 pt-2 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
+        <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 py-1">
+          {status.message && <div className={`px-1 pt-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
 
-          <div className="d-flex align-items-center justify-content-between px-3 py-2 gap-2">
-            <div className="d-flex align-items-center gap-2">
+          <div className="align-items-center d-flex gap-2 justify-content-between px-1 py-0">
+            <div className="ui-flex-center-gap-2">
               <Button_Toolbar icon={ArrowDownTrayIcon} label={isSaving ? "Saving…" : "Save"} onClick={handleImport} className="btn-primary" disabled={isSaving} title="Import items" />
               <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" disabled={isSaving} title="Close" />
             </div>

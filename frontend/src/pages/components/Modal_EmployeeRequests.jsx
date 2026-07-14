@@ -27,7 +27,7 @@ import Button_Toolbar from "./Button_Toolbar";
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">Requests</div>
           <div className="component-header-center"></div>
@@ -37,11 +37,11 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
         <div className="component-body">
           <div className="component-body-inner">
           {requestsLoading ? (
-            <div className="text-center py-4">
+            <div className="py-1 text-center">
               <div className="spinner-border text-primary" role="status" />
             </div>
           ) : allRequests.length === 0 ? (
-            <p className="text-muted text-center py-4">No requests found.</p>
+            <p className="py-1 text-center text-muted">No requests found.</p>
           ) : (
             <div className="d-flex flex-column gap-2">
               {["approved", "denied", "pending"].map((statusGroup) => {
@@ -59,29 +59,29 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                 if (grouped.length === 0) return null;
                 return (
                   <div key={statusGroup}>
-                    <h6 className="text-capitalize mb-2 text-muted">
+                    <h6 className="mb-2 text-capitalize text-muted">
                       {statusGroup} ({grouped.length})
                     </h6>
                     {grouped.map((req) => {
                       const emp = employees.find((e) => e.id === req.user_id);
                       return (
                         <div key={req.id} className="card mb-2">
-                          <div className="card-body py-2 px-3">
-                            <div className="d-flex justify-content-between align-items-start">
+                          <div className="card-body px-1 py-0">
+                            <div className="align-items-start d-flex justify-content-between">
                               <div>
                                 <div className="fw-semibold">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Employee"}</div>
-                                <div className="small text-muted">
+                                <div className="ui-small-muted">
                                   <span className="badge bg-secondary me-1">{req._typeLabel}</span>
                                   {req._dateInfo}
                                 </div>
-                                {req.notes && <div className="small text-muted fst-italic">{req.notes}</div>}
+                                {req.notes && <div className="fst-italic small text-muted">{req.notes}</div>}
                               </div>
                               {req.status === "pending" && (
                                 <div className="d-flex gap-1">
-                                  <button className="btn btn-sm btn-outline-secondary" onClick={() => onRequestAction(req, "approved")}>
+                                  <button className="btn ui-btn-outline-secondary-sm" onClick={() => onRequestAction(req, "approved")}>
                                     Approve
                                   </button>
-                                  <button className="btn btn-sm btn-outline-secondary" onClick={() => onRequestAction(req, "denied")}>
+                                  <button className="btn ui-btn-outline-secondary-sm" onClick={() => onRequestAction(req, "denied")}>
                                     Deny
                                   </button>
                                 </div>
@@ -133,7 +133,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
             </select>
           </div>
           <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-circle btn-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
           </div>

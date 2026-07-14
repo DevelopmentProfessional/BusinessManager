@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Editor_Code.jsx
  *
@@ -85,7 +85,7 @@ const Editor_Code = forwardRef(function Editor_Code({ content, onChange, languag
   );
 
   return (
-    <div className="h-full min-h-0 overflow-hidden code-editor-wrapper">
+    <div className="code-editor-wrapper h-full min-h-0 overflow-hidden">
       <CodeMirror
         ref={viewRef}
         value={content || ""}

@@ -165,7 +165,7 @@ export default function Catalog() {
           <div className="flex gap-3 mb-5">
             <div className="relative flex-1">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input className="form-input pl-9" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input className="form-input pl-1" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm font-medium">
               {[
@@ -173,7 +173,7 @@ export default function Catalog() {
                 ["products", "Products"],
                 ["services", "Services"],
               ].map(([v, l]) => (
-                <button key={v} onClick={() => setTab(v)} className={`px-4 py-2 transition-colors ${tab === v ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>
+                <button key={v} onClick={() => setTab(v)} className={`px-1 py-0 transition-colors ${tab === v ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}>
                   {l}
                 </button>
               ))}

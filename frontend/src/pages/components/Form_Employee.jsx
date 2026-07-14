@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Form_Employee.jsx
  *
@@ -601,64 +601,64 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   ];
 
   return (
-    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+    <div className="ui-page-shell">
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
-        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{employee ? "Edit Employee" : "Add Employee"}</h6>
+      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+        <h6 className="ui-heading-strong">{employee ? "Edit Employee" : "Add Employee"}</h6>
       </div>
 
       {/* ─── 9 RENDER: TAB PANES ────────────────────────────────────────────────── */}
       {/* Scrollable Body */}
-      <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
         <form id="employee-form" onSubmit={handleSubmit}>
           {/* ===== DETAILS TAB ===== */}
           {activeTab === "details" && (
             <div className="tab-pane">
-              <div className="row g-2">
+              <div className="row ui-row-g2">
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Username" required />
+                    <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Username" required />
                     <label htmlFor="username">Username *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Password" required={!employee} />
+                    <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Password" required={!employee} />
                     <label htmlFor="password">{employee ? "Password (blank = keep current)" : "Password *"}</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="form-control form-control-sm" placeholder="First Name" required />
+                    <input type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="First Name" required />
                     <label htmlFor="first_name">First Name *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Last Name" required />
+                    <input type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Last Name" required />
                     <label htmlFor="last_name">Last Name *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Email" />
+                    <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Email" />
                     <label htmlFor="email">Email</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Phone" />
+                    <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Phone" />
                     <label htmlFor="phone">Phone</label>
                   </div>
                 </div>
                 {!selfEdit && (
                   <>
                     <div className="col-md-6">
-                      <div className="position-relative">
+                      <div className="ui-pos-rel">
                         <label htmlFor="role" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
                           Role
                         </label>
-                        <div className="position-relative">
+                        <div className="ui-pos-rel">
                           <button
                             type="button"
                             onClick={() => {
@@ -666,7 +666,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               setIsRoleDropdownOpen(nextOpen);
                               if (!nextOpen) setRoleHelpKey(null);
                             }}
-                            className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                            className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                             style={{ cursor: "pointer" }}
                           >
                             <span>{roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role"}</span>
@@ -675,11 +675,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             </svg>
                           </button>
                           {isRoleDropdownOpen && (
-                            <div className="app-menu-panel position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                            <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
                               {roleOptions.map((option, index) => {
                                 const isHelpOpen = roleHelpKey === option.value;
                                 return (
-                                  <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                                  <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -687,14 +687,14 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                         setIsRoleDropdownOpen(false);
                                         setRoleHelpKey(null);
                                       }}
-                                      className="app-menu-item btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                      className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
                                     >
                                       {option.label}
                                     </button>
                                     <div className="flex-shrink-0">
                                       <button
                                         type="button"
-                                        className="app-menu-action btn btn-link btn-sm p-0 text-primary border-0"
+                                        className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
                                         aria-label={`${option.label} help`}
                                         onMouseEnter={(e) => {
                                           const rect = e.currentTarget.getBoundingClientRect();
@@ -727,12 +727,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               return (
                                 <div
                                   style={{ position: "fixed", top: roleHelpPos.top, left: roleHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                  className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                  className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
                                 >
                                   <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                                     {opt.label}
                                   </div>
-                                  <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                                  <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
                                 </div>
                               );
                             })()}
@@ -741,13 +741,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Hire Date" />
+                        <input type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Hire Date" />
                         <label htmlFor="hire_date">Hire Date</label>
                       </div>
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <select id="reports_to" name="reports_to" value={formData.reports_to} onChange={handleInputChange} className="form-select form-select-sm">
+                        <select id="reports_to" name="reports_to" value={formData.reports_to} onChange={handleInputChange} className="form-select ui-control-sm">
                           <option value="">No Manager (Top Level)</option>
                           {managerOptions.map((mgr) => (
                             <option key={mgr.id} value={mgr.id}>
@@ -760,7 +760,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <select id="role_id" name="role_id" value={formData.role_id} onChange={handleInputChange} className="form-select form-select-sm" disabled={rolesLoading}>
+                        <select id="role_id" name="role_id" value={formData.role_id} onChange={handleInputChange} className="form-select ui-control-sm" disabled={rolesLoading}>
                           <option value="">No Role Assigned</option>
                           {roles.map((role) => (
                             <option key={role.id} value={role.id}>
@@ -771,7 +771,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                         <label htmlFor="role_id">Assigned Role</label>
                       </div>
                       {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
-                        <div className="mt-2 p-2 border rounded bg-body-secondary" style={{ fontSize: "0.8rem" }}>
+                        <div className="bg-body-secondary border mt-2 p-0 rounded" style={{ fontSize: "0.8rem" }}>
                           <strong>Role Permissions:</strong>
                           <div className="d-flex flex-wrap gap-1 mt-1">
                             {roles
@@ -787,22 +787,22 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="iod_number" name="iod_number" value={formData.iod_number} onChange={handleInputChange} className="form-control form-control-sm" placeholder="IOD Number" />
+                        <input type="text" id="iod_number" name="iod_number" value={formData.iod_number} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="IOD Number" />
                         <label htmlFor="iod_number">IOD Number</label>
                       </div>
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Location" />
+                        <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Location" />
                         <label htmlFor="location">Location</label>
                       </div>
                     </div>
 
                     {/* Department */}
                     <div className="col-12">
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="form-floating flex-grow-1">
-                          <select id="department_id" name="department_id" value={formData.department_id} onChange={handleInputChange} className="form-select form-select-sm">
+                      <div className="ui-flex-center-gap-2">
+                        <div className="flex-grow-1 form-floating">
+                          <select id="department_id" name="department_id" value={formData.department_id} onChange={handleInputChange} className="form-select ui-control-sm">
                             <option value="">— None —</option>
                             {departments.map((d) => (
                               <option key={d.id} value={d.id}>
@@ -820,7 +820,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             setNewDeptName("");
                             setNewDeptDesc("");
                           }}
-                          className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                          className="btn btn-outline-secondary btn-sm flex-shrink-0"
                           style={{ height: "3.2rem", width: "2.6rem", fontSize: "1rem" }}
                         >
                           {showNewDept ? "×" : "+"}
@@ -828,8 +828,8 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
 
                       {showNewDept && (
-                        <div className="mt-2 p-2 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                          <p className="small text-muted mb-2">Create a new department</p>
+                        <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 mt-2 p-0 rounded">
+                          <p className="mb-2 ui-small-muted">Create a new department</p>
                           <div className="d-flex flex-column gap-1">
                             <input
                               type="text"
@@ -837,7 +837,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               onChange={(e) => setNewDeptName(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
                               placeholder="Department name (required)"
-                              className="form-control form-control-sm"
+                              className="form-control ui-control-sm"
                               style={{ fontSize: "0.82rem" }}
                               autoFocus
                             />
@@ -847,10 +847,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               onChange={(e) => setNewDeptDesc(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
                               placeholder="Description (optional)"
-                              className="form-control form-control-sm"
+                              className="form-control ui-control-sm"
                               style={{ fontSize: "0.82rem" }}
                             />
-                            <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="btn btn-sm btn-outline-primary align-self-start px-3" style={{ fontSize: "0.8rem" }}>
+                            <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="align-self-start btn btn-outline-primary btn-sm px-1" style={{ fontSize: "0.8rem" }}>
                               {deptCreating ? "…" : "Add"}
                             </button>
                           </div>
@@ -873,7 +873,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     )}
 
                     <div className="col-12">
-                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_active: !prev.is_active }))} className={`btn btn-sm rounded-pill px-3 pb-2 ${formData.is_active ? "btn-success" : "btn-outline-secondary"}`}>
+                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_active: !prev.is_active }))} className={`btn btn-sm rounded-pill px-1 pb-0 ${formData.is_active ? "btn-success" : "btn-outline-secondary"}`}>
                         Active
                       </button>
                     </div>
@@ -886,16 +886,16 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {/* ===== BENEFITS TAB ===== */}
           {activeTab === "benefits" && (
             <div className="tab-pane">
-              <div className="row g-3">
+              <div className="g-3 row">
                 {/* Insurance */}
                 <div className="col-12 mt-3">
-                  <h6 className="text-muted text-uppercase small mb-0">Insurance</h6>
-                  <hr className="mt-1 mb-2" />
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Insurance</h6>
+                  <hr className="mb-2 mt-1" />
                 </div>
                 <div className="col-md-6">
-                  <div className="d-flex align-items-stretch gap-2">
-                    <div className="form-floating flex-grow-1">
-                      <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select form-select-sm">
+                  <div className="align-items-stretch d-flex gap-2">
+                    <div className="flex-grow-1 form-floating">
+                      <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select ui-control-sm">
                         <option value="">No Plan Selected</option>
                         {insurancePlans.map((plan) => (
                           <option key={plan.id} value={plan.name}>
@@ -905,7 +905,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </select>
                       <label htmlFor="insurance_plan">Insurance Plan</label>
                     </div>
-                    <div className="d-flex align-items-center flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
+                    <div className="align-items-center d-flex flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
                       <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
                     </div>
                   </div>
@@ -913,30 +913,30 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                 {/* Leave */}
                 <div className="col-12 mt-3">
-                  <h6 className="text-muted text-uppercase small mb-0">Leave</h6>
-                  <hr className="mt-1 mb-2" />
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Leave</h6>
+                  <hr className="mb-2 mt-1" />
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="vacation_days" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Total" min="0" />
+                    <input type="number" id="vacation_days" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Total" min="0" />
                     <label htmlFor="vacation_days">Vacation Days</label>
                   </div>
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="vacation_days_used" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Used" min="0" />
+                    <input type="number" id="vacation_days_used" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Used" min="0" />
                     <label htmlFor="vacation_days_used">Vacation Used</label>
                   </div>
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="sick_days" name="sick_days" value={formData.sick_days} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Total" min="0" />
+                    <input type="number" id="sick_days" name="sick_days" value={formData.sick_days} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Total" min="0" />
                     <label htmlFor="sick_days">Sick Days</label>
                   </div>
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="sick_days_used" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange} className="form-control form-control-sm" placeholder="Used" min="0" />
+                    <input type="number" id="sick_days_used" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Used" min="0" />
                     <label htmlFor="sick_days_used">Sick Used</label>
                   </div>
                 </div>
@@ -944,7 +944,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 {/* Leave summary bar */}
                 {(formData.vacation_days || formData.sick_days) && (
                   <div className="col-12 mt-2">
-                    <div className="row g-2">
+                    <div className="row ui-row-g2">
                       {formData.vacation_days && (
                         <div className="col-md-6">
                           <small className="text-muted">
@@ -952,7 +952,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </small>
                           <div className="progress">
                             <div
-                              className="progress-bar bg-primary"
+                              className="bg-primary progress-bar"
                               style={{
                                 width: `${Math.min(100, ((formData.vacation_days_used || 0) / formData.vacation_days) * 100)}%`,
                               }}
@@ -967,7 +967,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </small>
                           <div className="progress">
                             <div
-                              className="progress-bar bg-warning"
+                              className="bg-warning progress-bar"
                               style={{
                                 width: `${Math.min(100, ((formData.sick_days_used || 0) / formData.sick_days) * 100)}%`,
                               }}
@@ -986,15 +986,15 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {activeTab === "signature" && (
             <div className="tab-pane">
               {employee ? (
-                <div className="row g-3">
+                <div className="g-3 row">
                   {signatureMessage && (
                     <div className="col-12">
-                      <div className={`alert py-2 small ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>
+                      <div className={`alert py-0 small ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>
                     </div>
                   )}
 
                   {signatureLoading ? (
-                    <div className="col-12 text-center py-4">
+                    <div className="col-12 py-1 text-center">
                       <div className="spinner-border spinner-border-sm text-primary" role="status">
                         <span className="visually-hidden">Loading...</span>
                       </div>
@@ -1005,13 +1005,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                   ) : savedSignature ? (
                     <div className="col-12 text-center">
-                      <div className="border rounded p-3 bg-body d-inline-block">
+                      <div className="bg-body border d-inline-block p-1 rounded">
                         <img src={savedSignature} alt="Saved signature" style={{ maxWidth: "400px", maxHeight: "150px" }} />
                       </div>
                     </div>
                   ) : (
-                    <div className="col-12 text-center py-4">
-                      <p className="text-muted mb-0">No signature saved yet.</p>
+                    <div className="col-12 py-1 text-center">
+                      <p className="mb-0 text-muted">No signature saved yet.</p>
                     </div>
                   )}
 
@@ -1019,7 +1019,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   <input type="file" ref={signatureFileRef} accept="image/*" style={{ display: "none" }} onChange={handleSignatureUpload} />
                 </div>
               ) : (
-                <div className="text-center p-4">
+                <div className="p-1 text-center">
                   <p className="text-muted">Create the employee first, then add a signature.</p>
                 </div>
               )}
@@ -1034,7 +1034,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   {/* Current Permissions Table */}
                   {userPermissions.length > 0 ? (
                     <div className="table-responsive">
-                      <table className="table table-sm mb-0">
+                      <table className="mb-0 table table-sm">
                         <thead>
                           <tr>
                             <th style={{ width: "70px" }}>Actions</th>
@@ -1048,7 +1048,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             <tr key={perm.id}>
                               <td>
                                 <div className="d-flex gap-1">
-                                  <button type="button" onClick={() => handleDeletePermission(perm.id)} className="btn btn-sm btn-outline-danger p-1" title="Delete">
+                                  <button type="button" onClick={() => handleDeletePermission(perm.id)} className="btn btn-outline-danger btn-sm p-1" title="Delete">
                                     <XMarkIcon style={{ width: 12, height: 12 }} />
                                   </button>
                                   <button type="button" onClick={() => handleTogglePermission(perm.id, !perm.granted)} className={`btn btn-sm p-1 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`} title={perm.granted ? "Deny" : "Grant"}>
@@ -1067,12 +1067,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </table>
                     </div>
                   ) : (
-                    <p className="text-muted text-center py-2">No permissions assigned yet.</p>
+                    <p className="py-0 text-center text-muted">No permissions assigned yet.</p>
                   )}
 
                   {/* Role inherited permissions */}
                   {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
-                    <div className="mt-3 p-2 border rounded bg-light" style={{ fontSize: "0.8rem" }}>
+                    <div className="bg-light border mt-3 p-0 rounded" style={{ fontSize: "0.8rem" }}>
                       <strong>Inherited from Role:</strong>
                       <div className="d-flex flex-wrap gap-1 mt-1">
                         {roles
@@ -1087,7 +1087,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   )}
                 </>
               ) : (
-                <div className="text-center p-4">
+                <div className="p-1 text-center">
                   <p className="text-muted">Create the employee first, then manage permissions.</p>
                 </div>
               )}
@@ -1098,24 +1098,24 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {activeTab === "performance" && (
             <div className="tab-pane">
               {employee ? (
-                <div className="row g-3">
+                <div className="g-3 row">
                   {/* Task Statistics */}
                   <div className="col-12">
-                    <h6 className="text-muted text-uppercase small mb-0">Task Statistics</h6>
-                    <hr className="mt-1 mb-2" />
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Task Statistics</h6>
+                    <hr className="mb-2 mt-1" />
                   </div>
                   <div className="col-md-6">
                     <div className="card">
-                      <div className="card-body text-center py-3">
-                        <div className="text-muted small">Scheduled Appointments</div>
+                      <div className="card-body py-1 text-center">
+                        <div className="ui-small-muted">Scheduled Appointments</div>
                         <div className="fs-4 fw-bold">{employee.schedules?.length ?? "—"}</div>
                       </div>
                     </div>
                   </div>
                   <div className="col-md-6">
                     <div className="card">
-                      <div className="card-body text-center py-3">
-                        <div className="text-muted small">Attendance Records</div>
+                      <div className="card-body py-1 text-center">
+                        <div className="ui-small-muted">Attendance Records</div>
                         <div className="fs-4 fw-bold">{employee.attendance_records?.length ?? "—"}</div>
                       </div>
                     </div>
@@ -1123,27 +1123,27 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                   {/* Review History placeholder */}
                   <div className="col-12 mt-2">
-                    <h6 className="text-muted text-uppercase small mb-0">Review History</h6>
-                    <hr className="mt-1 mb-2" />
-                    <p className="text-muted text-center py-2 mb-0">No reviews recorded yet.</p>
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Review History</h6>
+                    <hr className="mb-2 mt-1" />
+                    <p className="mb-0 py-0 text-center text-muted">No reviews recorded yet.</p>
                   </div>
 
                   {/* Goals placeholder */}
                   <div className="col-12">
-                    <h6 className="text-muted text-uppercase small mb-0">Goals</h6>
-                    <hr className="mt-1 mb-2" />
-                    <p className="text-muted text-center py-2 mb-0">No goals set.</p>
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Goals</h6>
+                    <hr className="mb-2 mt-1" />
+                    <p className="mb-0 py-0 text-center text-muted">No goals set.</p>
                   </div>
 
                   {/* Feedback placeholder */}
                   <div className="col-12">
-                    <h6 className="text-muted text-uppercase small mb-0">Feedback</h6>
-                    <hr className="mt-1 mb-2" />
-                    <p className="text-muted text-center py-2 mb-0">No feedback entries.</p>
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Feedback</h6>
+                    <hr className="mb-2 mt-1" />
+                    <p className="mb-0 py-0 text-center text-muted">No feedback entries.</p>
                   </div>
                 </div>
               ) : (
-                <div className="text-center p-4">
+                <div className="p-1 text-center">
                   <p className="text-muted">Create the employee first to view performance data.</p>
                 </div>
               )}
@@ -1153,18 +1153,18 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {activeTab === "pay_settings" && (
             <div className="tab-pane">
               {employee ? (
-                <div className="row g-3">
+                <div className="g-3 row">
                   <div className="col-12">
-                    <h6 className="text-muted text-uppercase small mb-0">Compensation</h6>
-                    <hr className="mt-1 mb-2" />
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Compensation</h6>
+                    <hr className="mb-2 mt-1" />
                   </div>
 
                   <div className="col-md-6">
-                    <div className="position-relative">
+                    <div className="ui-pos-rel">
                       <label htmlFor="employment_type" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
                         Employment Type
                       </label>
-                      <div className="position-relative">
+                      <div className="ui-pos-rel">
                         <button
                           type="button"
                           onClick={() => {
@@ -1172,7 +1172,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             setIsEmploymentTypeDropdownOpen(nextOpen);
                             if (!nextOpen) setEmploymentTypeHelpKey(null);
                           }}
-                          className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                          className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                           style={{ cursor: "pointer" }}
                         >
                           <span>{employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type"}</span>
@@ -1181,9 +1181,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </svg>
                         </button>
                         {isEmploymentTypeDropdownOpen && (
-                          <div className="app-menu-panel position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                          <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
                             {employmentTypeOptions.map((option) => (
-                              <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                              <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1191,14 +1191,14 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                     setIsEmploymentTypeDropdownOpen(false);
                                     setEmploymentTypeHelpKey(null);
                                   }}
-                                  className="app-menu-item btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                  className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
                                 >
                                   {option.label}
                                 </button>
                                 <div className="flex-shrink-0">
                                   <button
                                     type="button"
-                                    className="app-menu-action btn btn-link btn-sm p-0 text-primary border-0"
+                                    className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
                                     aria-label={`${option.label} help`}
                                     onMouseEnter={(e) => {
                                       const rect = e.currentTarget.getBoundingClientRect();
@@ -1229,12 +1229,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             return (
                               <div
                                 style={{ position: "fixed", top: employmentTypeHelpPos.top, left: employmentTypeHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
                               >
                                 <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                                   {opt.label}
                                 </div>
-                                <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                                <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
                               </div>
                             );
                           })()}
@@ -1243,11 +1243,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   </div>
 
                   <div className="col-md-6">
-                    <div className="position-relative">
+                    <div className="ui-pos-rel">
                       <label htmlFor="pay_frequency" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
                         Pay Frequency
                       </label>
-                      <div className="position-relative">
+                      <div className="ui-pos-rel">
                         <button
                           type="button"
                           onClick={() => {
@@ -1255,7 +1255,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             setIsPayFrequencyDropdownOpen(nextOpen);
                             if (!nextOpen) setPayFrequencyHelpKey(null);
                           }}
-                          className="form-select form-select-sm text-start d-flex align-items-center justify-content-between"
+                          className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                           style={{ cursor: "pointer" }}
                         >
                           <span>{payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency"}</span>
@@ -1264,9 +1264,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </svg>
                         </button>
                         {isPayFrequencyDropdownOpen && (
-                          <div className="app-menu-panel position-absolute w-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
+                          <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
                             {payFrequencyOptions.map((option) => (
-                              <div key={option.value} className="d-flex align-items-center gap-1 px-2 py-1 border-bottom border-gray-100 dark:border-gray-700">
+                              <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1277,14 +1277,14 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                       setEmployeePaySchedule((p) => ({ ...p, frequency: option.value }));
                                     }
                                   }}
-                                  className="app-menu-item btn btn-link text-start p-1 flex-grow-1 text-decoration-none text-gray-900 dark:text-gray-100"
+                                  className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
                                 >
                                   {option.label}
                                 </button>
                                 <div className="flex-shrink-0">
                                   <button
                                     type="button"
-                                    className="app-menu-action btn btn-link btn-sm p-0 text-primary border-0"
+                                    className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
                                     aria-label={`${option.label} help`}
                                     onMouseEnter={(e) => {
                                       const rect = e.currentTarget.getBoundingClientRect();
@@ -1315,12 +1315,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             return (
                               <div
                                 style={{ position: "fixed", top: payFrequencyHelpPos.top, left: payFrequencyHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                className="p-2 rounded-lg shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                                className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
                               >
                                 <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                                   {opt.label}
                                 </div>
-                                <div className="small text-gray-600 dark:text-gray-300">{opt.description}</div>
+                                <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
                               </div>
                             );
                           })()}
@@ -1333,7 +1333,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <div className="form-floating">
-                          <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                          <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
                           <label htmlFor="salary">Annual Salary</label>
                         </div>
                       </div>
@@ -1344,7 +1344,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <div className="form-floating">
-                          <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control form-control-sm" placeholder="0.00" step="0.01" min="0" />
+                          <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
                           <label htmlFor="hourly_rate">Hourly Rate</label>
                         </div>
                       </div>
@@ -1352,41 +1352,41 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   )}
 
                   <div className="col-12 mt-3">
-                    <h6 className="text-muted text-uppercase small mb-0">Pay Schedule</h6>
-                    <hr className="mt-1 mb-2" />
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Pay Schedule</h6>
+                    <hr className="mb-2 mt-1" />
                   </div>
 
                   {!employeePayScheduleLoading && employeePayScheduleError && (
                     <div className="col-12">
-                      <div className="alert alert-danger py-2 px-3 small mb-0">{employeePayScheduleError}</div>
+                      <div className="alert alert-danger mb-0 px-1 py-0 small">{employeePayScheduleError}</div>
                     </div>
                   )}
                   {!employeePayScheduleLoading && employeePayScheduleSuccess && (
                     <div className="col-12">
-                      <div className="alert alert-success py-2 px-3 small mb-0">{employeePayScheduleSuccess}</div>
+                      <div className="alert alert-success mb-0 px-1 py-0 small">{employeePayScheduleSuccess}</div>
                     </div>
                   )}
 
                   {employeePayScheduleLoading ? (
                     <div className="col-12">
-                      <div className="text-center py-3">
+                      <div className="py-1 text-center">
                         <div className="spinner-border spinner-border-sm text-primary" role="status" />
                       </div>
                     </div>
                   ) : !employeePaySchedule ? (
                     <div className="col-12">
-                      <div className="text-muted small">Unable to load pay schedule.</div>
+                      <div className="ui-small-muted">Unable to load pay schedule.</div>
                     </div>
                   ) : !["weekly", "biweekly", "monthly"].includes(String(formData.pay_frequency || "").toLowerCase()) ? (
                     <div className="col-12">
-                      <div className="text-muted small">Select Weekly, Bi-weekly, or Monthly pay frequency to configure payday and pay timing.</div>
+                      <div className="ui-small-muted">Select Weekly, Bi-weekly, or Monthly pay frequency to configure payday and pay timing.</div>
                     </div>
                   ) : (
                     <>
                       {(String(formData.pay_frequency || "").toLowerCase() === "weekly" || String(formData.pay_frequency || "").toLowerCase() === "biweekly") && (
                         <>
                           <div className="col-12">
-                            <div className="fw-semibold small mb-2">Work Days</div>
+                            <div className="fw-semibold mb-2 ui-text-sm">Work Days</div>
                             <div className="d-flex flex-wrap gap-2">
                               {PAY_SCHEDULE_DAYS.map((d) => {
                                 const workDays = parsePayScheduleWorkDays(employeePaySchedule.work_days);
@@ -1411,7 +1411,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </div>
 
                           <div className="col-12">
-                            <div className="fw-semibold small mb-2">Payday</div>
+                            <div className="fw-semibold mb-2 ui-text-sm">Payday</div>
                             <div className="d-flex flex-wrap gap-2">
                               {PAY_SCHEDULE_DAYS.map((d) => (
                                 <button
@@ -1428,8 +1428,8 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </div>
 
                           <div className="col-md-6">
-                            <div className="fw-semibold small mb-2">Cycle Start Date</div>
-                            <input type="date" className="form-control form-control-sm" style={{ maxWidth: 220 }} value={employeePaySchedule.cycle_anchor_date || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, cycle_anchor_date: e.target.value || null }))} />
+                            <div className="fw-semibold mb-2 ui-text-sm">Cycle Start Date</div>
+                            <input type="date" className="form-control ui-control-sm" style={{ maxWidth: 220 }} value={employeePaySchedule.cycle_anchor_date || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, cycle_anchor_date: e.target.value || null }))} />
                           </div>
                         </>
                       )}
@@ -1437,8 +1437,8 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       {String(formData.pay_frequency || "").toLowerCase() === "monthly" && (
                         <>
                           <div className="col-12">
-                            <div className="fw-semibold small mb-2">Payday</div>
-                            <div className="d-flex gap-2 mb-3 flex-wrap">
+                            <div className="fw-semibold mb-2 ui-text-sm">Payday</div>
+                            <div className="d-flex flex-wrap gap-2 mb-3">
                               {[
                                 { value: "date", label: "Specific date" },
                                 { value: "weekday", label: "Weekday of month" },
@@ -1458,13 +1458,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                           {employeePaySchedule.monthly_payday_type === "date" && (
                             <div className="col-12">
-                              <div className="d-flex align-items-center gap-2 flex-wrap">
-                                <label className="form-label small fw-semibold mb-0">Day of month</label>
+                              <div className="align-items-center d-flex flex-wrap gap-2">
+                                <label className="form-label fw-semibold mb-0 small">Day of month</label>
                                 <input
                                   type="number"
                                   min={1}
                                   max={31}
-                                  className="form-control form-control-sm"
+                                  className="form-control ui-control-sm"
                                   style={{ width: 80 }}
                                   value={employeePaySchedule.monthly_payday_date || ""}
                                   onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_date: parseInt(e.target.value) || null }))}
@@ -1475,9 +1475,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                           {employeePaySchedule.monthly_payday_type === "weekday" && (
                             <div className="col-12">
-                              <div className="d-flex flex-wrap align-items-center gap-2">
-                                <label className="form-label small fw-semibold mb-0">The</label>
-                                <select className="form-select form-select-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_week ?? ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_week: parseInt(e.target.value) || null }))}>
+                              <div className="align-items-center d-flex flex-wrap gap-2">
+                                <label className="form-label fw-semibold mb-0 small">The</label>
+                                <select className="form-select ui-control-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_week ?? ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_week: parseInt(e.target.value) || null }))}>
                                   <option value="">—</option>
                                   {PAY_SCHEDULE_WEEK_OPTS.map((w) => (
                                     <option key={w.value} value={w.value}>
@@ -1485,7 +1485,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                     </option>
                                   ))}
                                 </select>
-                                <select className="form-select form-select-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_weekday || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_weekday: e.target.value || null }))}>
+                                <select className="form-select ui-control-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_weekday || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_weekday: e.target.value || null }))}>
                                   <option value="">— day —</option>
                                   {PAY_SCHEDULE_DAYS.map((d) => (
                                     <option key={d.key} value={d.key}>
@@ -1493,7 +1493,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                     </option>
                                   ))}
                                 </select>
-                                <span className="text-muted small">of the month</span>
+                                <span className="ui-small-muted">of the month</span>
                               </div>
                             </div>
                           )}
@@ -1501,7 +1501,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       )}
 
                       <div className="col-12">
-                        <div className="fw-semibold small mb-2">Pay Timing</div>
+                        <div className="fw-semibold mb-2 ui-text-sm">Pay Timing</div>
                         <div className="d-flex flex-column gap-2">
                           {[
                             { value: "arrears", label: "Arrears — pay after work is done" },
@@ -1510,10 +1510,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             <div
                               key={opt.value}
                               onClick={() => setEmployeePaySchedule((p) => ({ ...p, pay_timing: opt.value }))}
-                              className={`p-3 rounded border ${employeePaySchedule.pay_timing === opt.value ? "border-primary bg-primary bg-opacity-10" : "border-secondary-subtle"}`}
+                              className={`p-1 rounded border ${employeePaySchedule.pay_timing === opt.value ? "border-primary bg-primary bg-opacity-10" : "border-secondary-subtle"}`}
                               style={{ cursor: "pointer" }}
                             >
-                              <div className="d-flex align-items-center gap-2 mb-1">
+                              <div className="align-items-center d-flex gap-2 mb-1">
                                 <input type="radio" readOnly checked={employeePaySchedule.pay_timing === opt.value} className="form-check-input mt-0" />
                                 <span className="fw-medium small">{opt.label}</span>
                               </div>
@@ -1525,7 +1525,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       <div className="col-12">
                         <button
                           type="button"
-                          className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                          className="align-items-center btn btn-primary d-flex gap-2 justify-content-center w-100"
                           onClick={async () => {
                             if (!employee?.id) return;
                             const payFreq = String(formData.pay_frequency || "").toLowerCase();
@@ -1556,7 +1556,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           }}
                           disabled={employeePayScheduleSaving}
                         >
-                          <CheckCircleIcon className="h-4 w-4" />
+                          <CheckCircleIcon className="ui-icon-4" />
                           <span>{employeePayScheduleSaving ? "Saving…" : "Save Pay settings"}</span>
                         </button>
                       </div>
@@ -1564,7 +1564,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   )}
                 </div>
               ) : (
-                <div className="text-center p-4">
+                <div className="p-1 text-center">
                   <p className="text-muted">Create the employee first to configure pay settings.</p>
                 </div>
               )}
@@ -1576,17 +1576,17 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             <div className="tab-pane">
               {employee ? (
                 <>
-                  <h6 className="text-muted text-uppercase small mb-0">Wage History</h6>
-                  <hr className="mt-1 mb-2" />
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Wage History</h6>
+                  <hr className="mb-2 mt-1" />
                   {paySlipsLoading ? (
-                    <div className="text-center py-4">
+                    <div className="py-1 text-center">
                       <div className="spinner-border spinner-border-sm text-primary" role="status" />
                     </div>
                   ) : paySlips.length === 0 ? (
-                    <p className="text-muted small text-center py-3">No pay slips on record.</p>
+                    <p className="py-1 small text-center text-muted">No pay slips on record.</p>
                   ) : (
                     <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                      <table className="table table-sm table-hover mb-0" style={{ fontSize: "0.8rem" }}>
+                      <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
                         <thead className="table-light">
                           <tr>
                             <th>Period</th>
@@ -1601,10 +1601,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             <tr key={slip.id}>
                               <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
                               <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                              <td className="text-end text-danger">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                              <td className="text-end fw-semibold">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                              <td className="text-danger text-end">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                              <td className="fw-semibold text-end">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                               <td>
-                                <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1" style={{ fontSize: "0.7rem" }} onClick={() => setSelectedSlip(slip)}>
+                                <button type="button" className="btn btn-outline-secondary btn-sm px-1 py-0" style={{ fontSize: "0.7rem" }} onClick={() => setSelectedSlip(slip)}>
                                   View
                                 </button>
                               </td>
@@ -1616,7 +1616,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   )}
                 </>
               ) : (
-                <div className="text-center p-4">
+                <div className="p-1 text-center">
                   <p className="text-muted">Create the employee first to view payment history.</p>
                 </div>
               )}
@@ -1627,12 +1627,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
       {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
       {/* Footer */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-footer-padding app-form-footer app-standard-footer">
+      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
         {/* Tab Navigation */}
-        <ul className="nav nav-tabs mb-2">
+        <ul className="mb-2 nav nav-tabs">
           {tabs.map((tab) => (
             <li key={tab.key} className="nav-item">
-              <button className={`nav-link ${activeTab === tab.key ? "active" : ""} px-2 py-1 px-md-3 py-md-2`} onClick={() => setActiveTab(tab.key)} type="button" disabled={tab.disabled} style={{ fontSize: "clamp(0.75rem, 2vw, 1rem)" }}>
+              <button className={`nav-link ${activeTab === tab.key ? "active" : ""} px-0 py-1 px-md-3 py-md-2`} onClick={() => setActiveTab(tab.key)} type="button" disabled={tab.disabled} style={{ fontSize: "clamp(0.75rem, 2vw, 1rem)" }}>
                 {tab.label}
               </button>
             </li>
@@ -1641,11 +1641,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
         {/* Signature tab footer controls */}
         {activeTab === "signature" && employee && !showSignaturePad && !signatureLoading && (
-          <div className="d-flex gap-2 mb-2 justify-content-center">
-            <button type="button" onClick={() => signatureFileRef.current?.click()} className="btn btn-outline-secondary btn-sm rounded-pill px-3">
+          <div className="d-flex gap-2 justify-content-center mb-2">
+            <button type="button" onClick={() => signatureFileRef.current?.click()} className="btn btn-outline-secondary btn-sm px-1 rounded-pill">
               Upload
             </button>
-            <button type="button" onClick={() => setShowSignaturePad(true)} className="btn btn-primary btn-sm rounded-pill px-3" title={savedSignature ? "Replace signature" : "Create signature"}>
+            <button type="button" onClick={() => setShowSignaturePad(true)} className="btn btn-primary btn-sm px-1 rounded-pill" title={savedSignature ? "Replace signature" : "Create signature"}>
               {savedSignature ? "Replace" : "Sign"}
             </button>
           </div>
@@ -1654,11 +1654,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         {/* Permissions tab footer controls */}
         {activeTab === "permissions" && employee && (
           <div className="mb-2">
-            {permError && <div className="alert alert-danger py-1 small mb-2">{permError}</div>}
-            {permSuccess && <div className="alert alert-success py-1 small mb-2">{permSuccess}</div>}
-            <div className="row g-2 align-items-center">
+            {permError && <div className="alert alert-danger mb-2 py-1 small">{permError}</div>}
+            {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
+            <div className="align-items-center g-2 row">
               <div className="col">
-                <select value={newPermission.page} onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))} className="form-select form-select-sm">
+                <select value={newPermission.page} onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))} className="form-select ui-control-sm">
                   <option value="">Select Page</option>
                   {PAGE_OPTION_GROUPS.map((group) => (
                     <optgroup key={group.label} label={group.label}>
@@ -1672,7 +1672,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 </select>
               </div>
               <div className="col">
-                <select value={newPermission.permission} onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))} className="form-select form-select-sm">
+                <select value={newPermission.permission} onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))} className="form-select ui-control-sm">
                   <option value="">Select Permission</option>
                   {PERMISSION_TYPES.map((p) => (
                     <option key={p} value={p}>
@@ -1693,7 +1693,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         {/* Payments tab footer controls */}
         {activeTab === "payments" && employee && hasPermission("employees", "write") && (
           <div className="d-flex justify-content-center mb-2">
-            <button type="button" className="btn btn-outline-secondary btn-sm rounded-pill px-4" onClick={() => setShowPayModal(true)}>
+            <button type="button" className="btn btn-outline-secondary btn-sm px-1 rounded-pill" onClick={() => setShowPayModal(true)}>
               Pay
             </button>
           </div>
@@ -1746,7 +1746,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       {/* Pay Slip Detail Modal */}
       {selectedSlip && (
         <div
-          className="modal d-block"
+          className="d-block modal"
           tabIndex="-1"
           style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 2000 }}
           onClick={(e) => {
@@ -1755,70 +1755,70 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         >
           <div className="modal-dialog modal-dialog-centered modal-sm">
             <div className="modal-content" id="pay-slip-print-area-emp">
-              <div className="modal-header py-2">
-                <h6 className="modal-title mb-0">Pay Slip</h6>
+              <div className="modal-header py-0">
+                <h6 className="mb-0 modal-title">Pay Slip</h6>
                 <button type="button" className="btn-close" onClick={() => setSelectedSlip(null)} />
               </div>
               <div className="modal-body" style={{ fontSize: "0.85rem" }}>
-                <div className="text-center mb-3">
-                  <div className="fw-bold fs-6">
+                <div className="mb-3 text-center">
+                  <div className="fs-6 fw-bold">
                     {employee?.first_name} {employee?.last_name}
                   </div>
-                  <div className="text-muted small">{employee?.role}</div>
+                  <div className="ui-small-muted">{employee?.role}</div>
                 </div>
                 <hr className="my-2" />
-                <div className="row g-1 mb-2">
-                  <div className="col-6 text-muted">Pay Period</div>
-                  <div className="col-6 text-end">
+                <div className="g-1 mb-2 row">
+                  <div className="col-6 ui-text-muted">Pay Period</div>
+                  <div className="col-6 ui-text-end">
                     {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
                   </div>
-                  <div className="col-6 text-muted">Type</div>
-                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                  <div className="col-6 ui-text-muted">Type</div>
+                  <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
                     {selectedSlip.employment_type || "—"}
                   </div>
                   {selectedSlip.employment_type === "hourly" && (
                     <>
-                      <div className="col-6 text-muted">Hours</div>
-                      <div className="col-6 text-end">{selectedSlip.hours_worked ?? "—"}</div>
-                      <div className="col-6 text-muted">Rate</div>
-                      <div className="col-6 text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                      <div className="col-6 ui-text-muted">Hours</div>
+                      <div className="col-6 ui-text-end">{selectedSlip.hours_worked ?? "—"}</div>
+                      <div className="col-6 ui-text-muted">Rate</div>
+                      <div className="col-6 ui-text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
                     </>
                   )}
-                  <div className="col-6 text-muted">Pay Frequency</div>
-                  <div className="col-6 text-end" style={{ textTransform: "capitalize" }}>
+                  <div className="col-6 ui-text-muted">Pay Frequency</div>
+                  <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
                     {selectedSlip.pay_frequency || "—"}
                   </div>
                 </div>
                 <hr className="my-2" />
-                <div className="row g-1">
-                  <div className="col-6 text-muted">Gross Pay</div>
-                  <div className="col-6 text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                <div className="g-1 row">
+                  <div className="col-6 ui-text-muted">Gross Pay</div>
+                  <div className="col-6 ui-text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                   {selectedSlip.insurance_plan_name && (
                     <>
-                      <div className="col-6 text-muted small">Insurance ({selectedSlip.insurance_plan_name})</div>
-                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                      <div className="col-6 small text-muted">Insurance ({selectedSlip.insurance_plan_name})</div>
+                      <div className="col-6 small text-danger text-end">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </>
                   )}
                   {(selectedSlip.other_deductions ?? 0) > 0 && (
                     <>
-                      <div className="col-6 text-muted small">Other Deductions</div>
-                      <div className="col-6 text-end text-danger small">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                      <div className="col-6 small text-muted">Other Deductions</div>
+                      <div className="col-6 small text-danger text-end">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                     </>
                   )}
-                  <div className="col-6 fw-bold border-top pt-1 mt-1">Net Pay</div>
-                  <div className="col-6 fw-bold text-end border-top pt-1 mt-1 text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="border-top col-6 fw-bold mt-1 pt-1">Net Pay</div>
+                  <div className="border-top col-6 fw-bold mt-1 pt-1 text-end text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                 </div>
-                {selectedSlip.notes && <div className="mt-2 text-muted small">Notes: {selectedSlip.notes}</div>}
+                {selectedSlip.notes && <div className="mt-2 small text-muted">Notes: {selectedSlip.notes}</div>}
               </div>
-              <div className="modal-footer py-2">
+              <div className="modal-footer py-0">
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
+                  className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2"
                   onClick={() => {
                     const el = document.getElementById("pay-slip-print-area-emp");
                     if (el) {
                       const w = window.open("", "_blank");
-                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-3">' + el.innerHTML + "</body></html>");
+                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-1">' + el.innerHTML + "</body></html>");
                       w.document.close();
                       w.focus();
                       setTimeout(() => {
@@ -1827,11 +1827,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     }
                   }}
                 >
-                  <PrinterIcon className="h-4 w-4" />
+                  <PrinterIcon className="ui-icon-4" />
                   <span>Print</span>
                 </button>
-                <button type="button" className="btn btn-sm btn-secondary d-flex align-items-center gap-2" onClick={() => setSelectedSlip(null)}>
-                  <CheckCircleIcon className="h-4 w-4" />
+                <button type="button" className="align-items-center btn btn-secondary btn-sm d-flex gap-2" onClick={() => setSelectedSlip(null)}>
+                  <CheckCircleIcon className="ui-icon-4" />
                   <span>Close</span>
                 </button>
               </div>

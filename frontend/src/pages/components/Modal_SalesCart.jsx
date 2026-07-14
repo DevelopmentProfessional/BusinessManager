@@ -67,12 +67,12 @@ function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew
     <div
       role="listbox"
       data-client-search-dropup
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-y-auto"
+      className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-y-auto rounded-xl shadow-lg"
       style={panelStyle}
     >
       {clients.length === 0 ? (
-        <button type="button" onClick={onAddNew} className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-primary-600 dark:text-primary-400 flex items-center gap-1 border-0 bg-transparent">
-          <PlusIcon className="h-4 w-4" />
+        <button type="button" onClick={onAddNew} className="bg-transparent border-0 dark:hover:bg-gray-700 dark:text-primary-400 flex gap-1 hover:bg-gray-50 items-center px-1 py-0 text-left text-primary-600 text-sm w-full">
+          <PlusIcon className="ui-icon-4" />
           New customer
         </button>
       ) : (
@@ -82,12 +82,12 @@ function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew
             type="button"
             role="option"
             onClick={() => onSelect(c)}
-            className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white border-0 bg-transparent"
+            className="bg-transparent border-0 dark:hover:bg-gray-700 dark:text-white hover:bg-gray-50 px-1 py-0 text-gray-900 text-left text-sm w-full"
             style={{ width: "100%", margin: 0 }}
           >
             <p className="font-medium mb-0">{c.name}</p>
             {(c.email || c.phone) && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0">
+              <p className="dark:text-gray-400 mb-0 text-gray-500 text-xs">
                 {[c.email, c.phone].filter(Boolean).join(" · ")}
               </p>
             )}
@@ -110,15 +110,15 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   const mixSummary = isMix && item.mixSelections?.length > 0 ? item.mixSelections.map((s) => `${s.quantity}× ${s.product_name}`).join(", ") : null;
 
   return (
-    <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div className="bg-gray-50 dark:bg-gray-800 flex gap-1 items-center rounded-lg">
       {/* Delete button — leftmost */}
-      <div className="px-1 flex-shrink-0">
+      <div className="flex-shrink-0 px-1">
         <button
           onClick={() => onRemove(item.cartKey)}
-          className="w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/50 flex items-center justify-center transition-colors"
+          className="bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/50 flex h-7 hover:bg-red-200 items-center justify-center rounded-full transition-colors w-7"
           title="Remove item"
         >
-          <XMarkIcon className="h-4 w-4 text-red-500 dark:text-red-400" />
+          <XMarkIcon className="dark:text-red-400 h-4 text-red-500 w-4" />
         </button>
       </div>
 
@@ -128,7 +128,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
           <img
             src={imageUrl}
             alt={item.name}
-            className="w-full h-full object-cover object-center"
+            className="h-full object-center object-cover w-full"
             onError={(e) => {
               e.target.style.display = "none";
               const fallback = e.target.nextElementSibling;
@@ -136,36 +136,36 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
             }}
           />
         ) : null}
-        <div className={`w-full h-full flex items-center justify-center ${imageUrl ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="h-6 w-6 text-primary-500" /> : <CubeIcon className={`h-6 w-6 ${isBundle ? "text-orange-500" : isMix ? "text-pink-500" : "text-secondary-500"}`} />}</div>
+        <div className={`w-full h-full flex items-center justify-center ${imageUrl ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="h-6 text-primary-500 w-6" /> : <CubeIcon className={`h-6 w-6 ${isBundle ? "text-orange-500" : isMix ? "text-pink-500" : "text-secondary-500"}`} />}</div>
       </div>
 
       {/* Item Info */}
       <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">{item.name}</h4>
+        <h4 className="dark:text-white font-medium text-gray-900 text-sm truncate">{item.name}</h4>
         {mixSummary && (
-          <p className="text-xs text-pink-600 dark:text-pink-400 truncate" title={mixSummary}>
+          <p className="dark:text-pink-400 text-pink-600 text-xs truncate" title={mixSummary}>
             {mixSummary}
           </p>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="ui-muted-xs">
           ${item.price?.toFixed(2)} × {item.quantity}
         </p>
       </div>
 
       {/* Quantity Controls */}
-      <div className="flex items-center gap-1">
-        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors">
-          <MinusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+      <div className="ui-flex-items-gap-1">
+        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
+          <MinusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
         </button>
-        <span className="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">{item.quantity}</span>
-        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)} className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors">
-          <PlusIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+        <span className="dark:text-white font-medium text-center text-gray-900 text-sm w-8">{item.quantity}</span>
+        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
+          <PlusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
         </button>
       </div>
 
       {/* Total */}
-      <div className="px-1 flex-shrink-0 text-right">
-        <p className="p-1 font-semibold text-sm text-gray-900 dark:text-white">${(item.price * item.quantity).toFixed(2)}</p>
+      <div className="flex-shrink-0 px-1 text-right">
+        <p className="dark:text-white font-semibold p-1 text-gray-900 text-sm">${(item.price * item.quantity).toFixed(2)}</p>
       </div>
     </div>
   );
@@ -232,7 +232,7 @@ export default function Modal_Cart_Sales({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} contentGravity="bottom">
-      <div className="component h-100 min-h-0">
+      <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">
             <ShoppingCartIcon className="app-icon me-1" />
@@ -243,10 +243,10 @@ export default function Modal_Cart_Sales({
             {cart.length > 0 && (
               <button
                 onClick={() => setCart([])}
-                className="btn btn-sm btn-outline-danger btn-circle"
+                className="btn btn-circle btn-outline-danger btn-sm"
                 title="Clear cart"
               >
-                <XMarkIcon className="h-4 w-4" />
+                <XMarkIcon className="ui-icon-4" />
               </button>
             )}
           </div>
@@ -255,30 +255,30 @@ export default function Modal_Cart_Sales({
         <div className="component-body">
           <div className="component-body-inner">
         {cart.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-1 text-center">
-            <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-2">
-              <ShoppingCartIcon className="h-10 w-10 text-gray-400" />
+          <div className="flex flex-1 flex-col items-center justify-center p-1 text-center">
+            <div className="bg-gray-100 dark:bg-gray-700 flex h-20 items-center justify-center mb-2 rounded-full w-20">
+              <ShoppingCartIcon className="h-10 text-gray-400 w-10" />
             </div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-1">Cart is empty</h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Add items to get started</p>
+            <h4 className="dark:text-white font-medium mb-1 text-gray-900">Cart is empty</h4>
+            <p className="dark:text-gray-400 text-gray-500 text-sm">Add items to get started</p>
           </div>
         ) : (
           <>
             {/* ─── 4 CLIENT SELECTION ─────────────────────────────────────── */}
             {/* Client Selection */}
-            <div className="flex-shrink-0 p-1 border-b border-gray-200 dark:border-gray-700">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <UserIcon className="h-4 w-4 inline mr-1" />
+            <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 p-1">
+              <label className="block dark:text-gray-300 font-medium mb-1 text-gray-700 text-sm">
+                <UserIcon className="h-4 inline mr-1 w-4" />
                 Customer (optional)
               </label>
               {selectedClient ? (
-                <div className="flex items-center justify-between p-1 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
+                <div className="bg-primary-50 dark:bg-primary-900/30 flex items-center justify-between p-1 rounded-xl">
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white text-sm">{selectedClient.name}</p>
-                    {selectedClient.email && <p className="text-xs text-gray-500 dark:text-gray-400">{selectedClient.email}</p>}
+                    <p className="dark:text-white font-medium text-gray-900 text-sm">{selectedClient.name}</p>
+                    {selectedClient.email && <p className="ui-muted-xs">{selectedClient.email}</p>}
                   </div>
-                  <button onClick={() => setSelectedClient(null)} className="p-1 hover:bg-primary-100 dark:hover:bg-primary-800 rounded-lg transition-colors">
-                    <XMarkIcon className="h-4 w-4 text-gray-500" />
+                  <button onClick={() => setSelectedClient(null)} className="dark:hover:bg-primary-800 hover:bg-primary-100 p-1 rounded-lg transition-colors">
+                    <XMarkIcon className="h-4 text-gray-500 w-4" />
                   </button>
                 </div>
               ) : (
@@ -296,7 +296,7 @@ export default function Modal_Cart_Sales({
                         loadClients();
                         setShowClientDropdown(true);
                       }}
-                      className="app-search-input flex-1 px-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="app-search-input bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white flex-1 focus:border-transparent focus:ring-2 focus:ring-primary-500 placeholder-gray-400 px-0 rounded-xl text-gray-900"
                       autoComplete="off"
                       aria-expanded={showClientDropdown}
                       aria-haspopup="listbox"
@@ -304,10 +304,10 @@ export default function Modal_Cart_Sales({
                     <button
                       type="button"
                       onClick={handleAddNewClient}
-                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                      className="bg-primary-600 flex flex-shrink-0 h-10 hover:bg-primary-700 items-center justify-center rounded-xl text-white transition-colors w-10"
                       title="Add new customer"
                     >
-                      <PlusIcon className="h-5 w-5" />
+                      <PlusIcon className="ui-icon-5" />
                     </button>
                   </div>
                   <ClientSearchDropupPortal
@@ -327,7 +327,7 @@ export default function Modal_Cart_Sales({
 
             {/* ─── 5 CART ITEMS LIST ──────────────────────────────────────── */}
             {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto p-1 space-y-1 max-h-[35vh]">
+            <div className="flex-1 max-h-[35vh] overflow-y-auto p-1 space-y-1">
               {cart.map((item) => (
                 <CartItem key={item.cartKey} item={item} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} />
               ))}
@@ -335,29 +335,29 @@ export default function Modal_Cart_Sales({
 
             {/* ─── 6 CART SUMMARY & ACTIONS ───────────────────────────────── */}
             {/* Cart Summary & Checkout */}
-            <div className="flex-shrink-0 p-1 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div className="space-y-1 mb-1">
+            <div className="bg-gray-50 border-gray-200 border-t dark:bg-gray-800/50 dark:border-gray-700 flex-shrink-0 p-1">
+              <div className="mb-1 space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartItemCount} items)</span>
-                  <span className="text-gray-900 dark:text-white">${cartTotal.toFixed(2)}</span>
+                  <span className="dark:text-gray-400 text-gray-500">Subtotal ({cartItemCount} items)</span>
+                  <span className="dark:text-white text-gray-900">${cartTotal.toFixed(2)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600 dark:text-emerald-400">Discount</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">-${discountAmount.toFixed(2)}</span>
+                    <span className="dark:text-emerald-400 text-emerald-600">Discount</span>
+                    <span className="dark:text-emerald-400 text-emerald-600">-${discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {taxRate > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
-                    <span className="text-gray-900 dark:text-white">${taxAmount.toFixed(2)}</span>
+                    <span className="dark:text-gray-400 text-gray-500">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
+                    <span className="dark:text-white text-gray-900">${taxAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {/* Tip */}
-                <div className="flex items-center justify-between text-sm gap-2">
-                  <span className="text-gray-500 dark:text-gray-400">Tip</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-400 dark:text-gray-500 text-sm">$</span>
+                <div className="flex gap-2 items-center justify-between text-sm">
+                  <span className="dark:text-gray-400 text-gray-500">Tip</span>
+                  <div className="ui-flex-items-gap-1">
+                    <span className="dark:text-gray-500 text-gray-400 text-sm">$</span>
                     <input
                       type="number"
                       min="0"
@@ -365,13 +365,13 @@ export default function Modal_Cart_Sales({
                       placeholder="0.00"
                       value={tipAmount}
                       onChange={(e) => setTipAmount(e.target.value)}
-                      className="w-24 text-right text-sm px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 px-0 py-1 rounded-lg text-gray-900 text-right text-sm w-24"
                     />
                   </div>
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-1">
-                  <span className="text-gray-900 dark:text-white">Total</span>
-                  <span className="text-secondary-600 dark:text-secondary-400">${grandTotal.toFixed(2)}</span>
+                <div className="border-gray-200 border-t dark:border-gray-700 flex font-bold justify-between pt-1 text-lg">
+                  <span className="dark:text-white text-gray-900">Total</span>
+                  <span className="dark:text-secondary-400 text-secondary-600">${grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

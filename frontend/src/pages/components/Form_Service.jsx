@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  * FILE: Form_Service.jsx
  *
@@ -363,12 +363,12 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   // ── Layout: flex column filling the modal body ───────────────────
   return (
-    <div className="d-flex flex-column h-100 min-h-0 bg-white dark:bg-gray-900">
+    <div className="ui-page-shell">
       {/* Header */}
-      <div className="flex-shrink-0 p-2 border-bottom border-gray-200 dark:border-gray-700 d-flex justify-content-between align-items-center bg-white dark:bg-gray-900">
-        <h6 className="mb-0 fw-semibold text-gray-900 dark:text-gray-100">{service ? "Edit Service" : "Add Service"}</h6>
+      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+        <h6 className="ui-heading-strong">{service ? "Edit Service" : "Add Service"}</h6>
         {!service && onBulkImport && (
-          <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm p-1 text-gray-500 dark:text-gray-400" style={{ lineHeight: 1 }}>
+          <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm dark:text-gray-400 p-1 text-gray-500" style={{ lineHeight: 1 }}>
             <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
           </button>
         )}
@@ -390,21 +390,21 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
       {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onClose={() => setIsCameraOpen(false)} />}
 
       {/* ── Tab content area – no scroll here, each tab manages its own ── */}
-      <div className="flex-grow-1 overflow-hidden d-flex flex-column">
+      <div className="d-flex flex-column flex-grow-1 overflow-hidden">
         {/* Tab error */}
-        {tabError && <div className="alert alert-danger py-1 px-2 mx-3 mt-2 mb-0 small flex-shrink-0">{tabError}</div>}
+        {tabError && <div className="alert alert-danger flex-shrink-0 mb-0 mt-2 mx-3 px-0 py-1 small">{tabError}</div>}
 
         {/* ── Details ── */}
         {activeTab === "details" && (
-          <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <div className="px-3 d-flex flex-column" style={{ minHeight: "100%", justifyContent: "flex-end" }}>
+          <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
+            <div className="d-flex flex-column px-1" style={{ minHeight: "100%", justifyContent: "flex-end" }}>
               <form id="service-details-form" onSubmit={handleSubmit}>
                 {/* Top Section: Image (left) + Core fields (right) */}
                 <div className="d-flex gap-3 mb-2" style={{ minHeight: "180px" }}>
                   {/* Image area */}
                   <div className="flex-shrink-0" style={{ width: "45%" }}>
                     {/* Preview */}
-                    <div className="position-relative" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", width: "100%", aspectRatio: "1" }}>
+                    <div className="ui-pos-rel" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", width: "100%", aspectRatio: "1" }}>
                       {pendingPhotoUrl ? (
                         <img src={pendingPhotoUrl} alt="Captured" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                       ) : formData.image_url ? (
@@ -423,9 +423,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       )}
                     </div>
                     {/* Camera button */}
-                    <div className="mt-1 d-flex align-items-center gap-1">
+                    <div className="align-items-center d-flex gap-1 mt-1">
                       {addImageMode === null && (
-                        <button type="button" onClick={() => setAddImageMode("camera")} className="btn btn-outline-secondary d-flex align-items-center justify-content-center flex-shrink-0" title="Add photo">
+                        <button type="button" onClick={() => setAddImageMode("camera")} className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center" title="Add photo">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                             <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -435,8 +435,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     </div>
                     {/* Camera/URL panel */}
                     {addImageMode !== null && (
-                      <div className="mt-1 p-2 border rounded bg-light dark:bg-gray-800 dark:border-gray-700">
-                        <div className="d-flex align-items-center gap-2 mb-2">
+                      <div className="bg-light border dark:bg-gray-800 dark:border-gray-700 mt-1 p-0 rounded">
+                        <div className="align-items-center d-flex gap-2 mb-2">
                           <div className="btn-group btn-group-sm">
                             <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
                               Camera
@@ -445,18 +445,18 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                               URL
                             </button>
                           </div>
-                          <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-link btn-sm p-0 ms-auto" style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}>
+                          <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-link btn-sm ms-auto p-0" style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}>
                             ✕
                           </button>
                         </div>
                         {addImageMode === "camera" && (
-                          <button type="button" onClick={() => setIsCameraOpen(true)} className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" style={{ fontSize: "0.8rem" }}>
+                          <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
                             {pendingPhotoUrl ? "Retake" : "Cam"}
                           </button>
                         )}
                         {addImageMode === "url" && (
                           <div className="d-flex gap-1">
-                            <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control form-control-sm" style={{ fontSize: "0.8rem" }} />
+                            <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
                             <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">
                               OK
                             </button>
@@ -467,39 +467,39 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   </div>
 
                   {/* Core fields on the right */}
-                  <div className="flex-grow-1 d-flex flex-column gap-1">
+                  <div className="d-flex flex-column flex-grow-1 gap-1">
                     <div className="form-floating">
-                      <input type="text" id="name" name="name" required value={formData.name} onChange={handleChange} className="form-control form-control-sm" placeholder="Service Name" />
+                      <input type="text" id="name" name="name" required value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Service Name" />
                       <label htmlFor="name">Name *</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control form-control-sm" placeholder="Category" />
+                      <input type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control ui-control-sm" placeholder="Category" />
                       <label htmlFor="category">Category</label>
                     </div>
                     <div className="form-floating">
-                      <input type="number" id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} className="form-control form-control-sm" placeholder="0.00" />
+                      <input type="number" id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="0.00" />
                       <label htmlFor="price">Price *</label>
                     </div>
                     <div className="form-floating">
-                      <input type="number" id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} className="form-control form-control-sm" placeholder="60" />
+                      <input type="number" id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} className="form-control ui-control-sm" placeholder="60" />
                       <label htmlFor="duration_minutes">Duration (min) *</label>
                     </div>
                   </div>
                 </div>
 
                 {/* Description at the bottom */}
-                <div className="form-floating mb-2">
-                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="form-control form-control-sm border-0" placeholder="Description" />
+                <div className="form-floating ui-form-floating-mb2">
+                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Description" />
                   <label htmlFor="description">Description</label>
                 </div>
               </form>
 
               {/* ── Recipe Section (edit mode only) ── */}
               {service?.id && (
-                <div className="border rounded mb-3" style={{ fontSize: "0.85rem" }}>
+                <div className="border mb-3 rounded" style={{ fontSize: "0.85rem" }}>
                   {/* Toggle header */}
-                  <div className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-light dark:bg-gray-800 rounded-top">
-                    <span className="fw-semibold text-gray-800 dark:text-gray-200">Recipe / Production</span>
+                  <div className="align-items-center bg-light border-bottom d-flex dark:bg-gray-800 justify-content-between px-1 py-0 rounded-top">
+                    <span className="dark:text-gray-200 fw-semibold text-gray-800">Recipe / Production</span>
                     <div className="form-check form-switch mb-0">
                       <input className="form-check-input" type="checkbox" id="recipe-toggle" checked={recipe?.is_produced ?? false} onChange={(e) => handleRecipeToggle(e.target.checked)} />
                       <label className="form-check-label small text-muted" htmlFor="recipe-toggle">
@@ -509,26 +509,26 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   </div>
 
                   {recipe?.is_produced && (
-                    <div className="px-3 pt-2 pb-3">
+                    <div className="pb-1 pt-0 px-1">
                       {/* Batch fields */}
                       <div className="d-flex gap-2 mb-3">
                         <div className="flex-grow-1">
-                          <label className="form-label small mb-1 text-muted">Batch Size (units)</label>
-                          <input type="number" min="1" step="1" className="form-control form-control-sm" defaultValue={recipe?.batch_size ?? 1} onBlur={(e) => handleRecipeField("batch_size", e.target.value)} />
+                          <label className="form-label mb-1 small text-muted">Batch Size (units)</label>
+                          <input type="number" min="1" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_size ?? 1} onBlur={(e) => handleRecipeField("batch_size", e.target.value)} />
                         </div>
                         <div className="flex-grow-1">
-                          <label className="form-label small mb-1 text-muted">Batch Duration (min)</label>
-                          <input type="number" min="0" step="1" className="form-control form-control-sm" defaultValue={recipe?.batch_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleRecipeField("batch_duration_minutes", e.target.value)} />
+                          <label className="form-label mb-1 small text-muted">Batch Duration (min)</label>
+                          <input type="number" min="0" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleRecipeField("batch_duration_minutes", e.target.value)} />
                         </div>
                       </div>
 
                       {/* Resources consumed */}
                       <div className="mb-2">
-                        <div className="small fw-semibold text-muted mb-1">Resources consumed per batch</div>
+                        <div className="fw-semibold mb-1 small text-muted">Resources consumed per batch</div>
                         {resources.length === 0 ? (
-                          <div className="small fst-italic text-muted">No resources linked — add them in the Resources tab.</div>
+                          <div className="fst-italic small text-muted">No resources linked — add them in the Resources tab.</div>
                         ) : (
-                          <table className="table table-sm mb-0" style={{ fontSize: "0.8rem" }}>
+                          <table className="mb-0 table table-sm" style={{ fontSize: "0.8rem" }}>
                             <thead>
                               <tr>
                                 <th>Resource</th>
@@ -542,7 +542,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                     {inventoryName(r.inventory_id)}
                                   </td>
                                   <td>
-                                    <input type="number" min="0" step="0.01" className="form-control form-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
+                                    <input type="number" min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
                                   </td>
                                 </tr>
                               ))}
@@ -553,11 +553,11 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
                       {/* Assets used */}
                       <div>
-                        <div className="small fw-semibold text-muted mb-1">Assets used per batch</div>
+                        <div className="fw-semibold mb-1 small text-muted">Assets used per batch</div>
                         {assets.length === 0 ? (
-                          <div className="small fst-italic text-muted">No assets linked — add them in the Assets tab.</div>
+                          <div className="fst-italic small text-muted">No assets linked — add them in the Assets tab.</div>
                         ) : (
-                          <table className="table table-sm mb-0" style={{ fontSize: "0.8rem" }}>
+                          <table className="mb-0 table table-sm" style={{ fontSize: "0.8rem" }}>
                             <thead>
                               <tr>
                                 <th>Asset</th>
@@ -571,7 +571,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                     {inventoryName(a.inventory_id)}
                                   </td>
                                   <td>
-                                    <input type="number" min="0" step="1" className="form-control form-control-sm" defaultValue={a.asset_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} style={{ width: 80 }} />
+                                    <input type="number" min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} style={{ width: 80 }} />
                                   </td>
                                 </tr>
                               ))}
@@ -589,17 +589,17 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Resources ── */}
         {activeTab === "resources" && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
             {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
+            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
               {relLoading ? (
-                <div className="text-center py-3">
+                <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
                 </div>
               ) : resources.length === 0 ? (
-                <div className="text-muted small fst-italic py-2">No resources linked yet.</div>
+                <div className="fst-italic py-0 small text-muted">No resources linked yet.</div>
               ) : (
-                <table className="table table-sm mb-0">
+                <table className="mb-0 table table-sm">
                   <thead>
                     <tr>
                       <th style={{ width: 52 }}></th>
@@ -612,7 +612,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     {resources.map((r) => (
                       <tr key={r.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" onClick={() => handleRemoveResource(r.id)}>
+                          <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => handleRemoveResource(r.id)}>
                             <XMarkIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
@@ -620,10 +620,10 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                           {inventoryName(r.inventory_id)}
                         </td>
                         <td>
-                          <input type="number" min="0" step="0.01" className="form-control form-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
+                          <input type="number" min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
                         </td>
                         <td>
-                          <input type="number" min="0" max="100" step="0.1" className="form-control form-control-sm" defaultValue={r.consumption_rate_pct ?? ""} onBlur={(e) => handleUpdateResourceRate(r.id, e.target.value)} placeholder="—" style={{ width: 72 }} />
+                          <input type="number" min="0" max="100" step="0.1" className="form-control ui-control-sm" defaultValue={r.consumption_rate_pct ?? ""} onBlur={(e) => handleUpdateResourceRate(r.id, e.target.value)} placeholder="—" style={{ width: 72 }} />
                         </td>
                       </tr>
                     ))}
@@ -632,8 +632,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
               )}
             </div>
             {/* Sticky add row */}
-            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
-              <div className="d-flex gap-2 align-items-center">
+            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+              <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   name="inventory_id"
                   value={newResource.inventory_id}
@@ -646,9 +646,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   createButtonTitle="Add item"
                   className="flex-grow-1"
                 />
-                <input type="number" min="0.01" step="0.01" className="form-control form-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
-                <input type="number" min="0" max="100" step="0.1" className="form-control form-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddResource}>
+                <input type="number" min="0.01" step="0.01" className="form-control ui-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
+                <input type="number" min="0" max="100" step="0.1" className="form-control ui-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddResource}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -658,17 +658,17 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Assets ── */}
         {activeTab === "assets" && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
             {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
+            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
               {relLoading ? (
-                <div className="text-center py-3">
+                <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
                 </div>
               ) : assets.length === 0 ? (
-                <div className="text-muted small fst-italic py-2">No assets linked yet.</div>
+                <div className="fst-italic py-0 small text-muted">No assets linked yet.</div>
               ) : (
-                <table className="table table-sm mb-0">
+                <table className="mb-0 table table-sm">
                   <thead>
                     <tr>
                       <th style={{ width: 52 }}></th>
@@ -680,7 +680,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     {assets.map((a) => (
                       <tr key={a.id} className="align-middle">
                         <td>
-                          <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center" onClick={() => handleRemoveAsset(a.id)}>
+                          <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => handleRemoveAsset(a.id)}>
                             <XMarkIcon style={{ width: 18, height: 18 }} />
                           </button>
                         </td>
@@ -688,7 +688,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                           {inventoryName(a.inventory_id)}
                         </td>
                         <td>
-                          <input type="number" min="0" step="1" className="form-control form-control-sm" defaultValue={a.asset_duration_minutes ?? ""} onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} placeholder="—" style={{ width: 80 }} />
+                          <input type="number" min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} placeholder="—" style={{ width: 80 }} />
                         </td>
                       </tr>
                     ))}
@@ -697,8 +697,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
               )}
             </div>
             {/* Sticky add row */}
-            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
-              <div className="d-flex gap-2 align-items-center">
+            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+              <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   name="inventory_id"
                   value={newAsset.inventory_id}
@@ -711,7 +711,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   createButtonTitle="Add asset"
                   className="flex-grow-1"
                 />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddAsset}>
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddAsset}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -721,23 +721,23 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Employees ── */}
         {activeTab === "employees" && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
             {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
+            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
               {relLoading ? (
-                <div className="text-center py-3">
+                <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
                 </div>
               ) : svcEmployees.length === 0 ? (
-                <div className="text-muted small fst-italic py-2">No employees linked yet.</div>
+                <div className="fst-italic py-0 small text-muted">No employees linked yet.</div>
               ) : (
                 <ul className="list-group list-group-flush mb-0">
                   {svcEmployees.map((se) => (
-                    <li key={se.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" onClick={() => handleRemoveEmployee(se.id)}>
+                    <li key={se.id} className="align-items-center d-flex gap-2 list-group-item px-0">
+                      <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex flex-shrink-0 justify-content-center" onClick={() => handleRemoveEmployee(se.id)}>
                         <XMarkIcon style={{ width: 18, height: 18 }} />
                       </button>
-                      <span className="rounded-circle flex-shrink-0" style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: "inline-block" }} />
+                      <span className="flex-shrink-0 rounded-circle" style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: "inline-block" }} />
                       <span className="text-truncate">{employeeName(se.user_id)}</span>
                     </li>
                   ))}
@@ -745,9 +745,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
               )}
             </div>
             {/* Sticky add row */}
-            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
-              <div className="d-flex gap-2 align-items-center">
-                <select className="form-select form-select-sm flex-grow-1" value={newEmployee.user_id} onChange={(e) => setNewEmployee({ user_id: e.target.value })}>
+            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+              <div className="ui-flex-center-gap-2">
+                <select className="flex-grow-1 form-select form-select-sm" value={newEmployee.user_id} onChange={(e) => setNewEmployee({ user_id: e.target.value })}>
                   <option value="">— Select employee —</option>
                   {employees
                     .filter((e) => e.is_active && !linkedEmployeeIds.has(e.id))
@@ -757,7 +757,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       </option>
                     ))}
                 </select>
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddEmployee}>
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddEmployee}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -767,20 +767,20 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Locations ── */}
         {activeTab === "locations" && service && (
-          <div className="flex-grow-1 d-flex flex-column overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
             {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="flex-grow-1 min-h-0 overflow-auto no-scrollbar px-3 pt-2 d-flex flex-column">
+            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
               {relLoading ? (
-                <div className="text-center py-3">
+                <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
                 </div>
               ) : locations.length === 0 ? (
-                <div className="text-muted small fst-italic py-2">No locations linked yet.</div>
+                <div className="fst-italic py-0 small text-muted">No locations linked yet.</div>
               ) : (
                 <ul className="list-group list-group-flush mb-0">
                   {locations.map((loc) => (
-                    <li key={loc.id} className="list-group-item d-flex align-items-center gap-2 px-0">
-                      <button type="button" className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center flex-shrink-0" onClick={() => handleRemoveLocation(loc.id)}>
+                    <li key={loc.id} className="align-items-center d-flex gap-2 list-group-item px-0">
+                      <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex flex-shrink-0 justify-content-center" onClick={() => handleRemoveLocation(loc.id)}>
                         <XMarkIcon style={{ width: 18, height: 18 }} />
                       </button>
                       <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
@@ -790,8 +790,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
               )}
             </div>
             {/* Sticky add row */}
-            <div className="flex-shrink-0 px-3 py-2 border-top border-gray-200 dark:border-gray-700">
-              <div className="d-flex gap-2 align-items-center">
+            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+              <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   name="inventory_id"
                   value={newLocation.inventory_id}
@@ -804,7 +804,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   createButtonTitle="Add location"
                   className="flex-grow-1"
                 />
-                <button type="button" className="btn btn-primary btn-sm d-flex align-items-center justify-content-center" onClick={handleAddLocation}>
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddLocation}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
               </div>
@@ -814,10 +814,10 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
       </div>
 
       {/* ── Footer (sticky, always visible) ──────────────────────── */}
-      <div className="flex-shrink-0 border-top border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 app-form-footer app-standard-footer">
+      <div className="app-form-footer app-standard-footer bg-white border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 flex-shrink-0">
         {/* Row 1: Tab navigation — only when editing */}
         {service && (
-          <div className="px-2 pt-2 pb-1 d-flex gap-1 overflow-auto flex-nowrap">
+          <div className="d-flex flex-nowrap gap-1 overflow-auto pb-1 pt-0 px-0">
             {TABS.map((tab) => {
               const count = tab === "resources" ? resources.length : tab === "assets" ? assets.length : tab === "employees" ? svcEmployees.length : tab === "locations" ? locations.length : 0;
               return (
