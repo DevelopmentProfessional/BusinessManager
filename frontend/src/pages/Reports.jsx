@@ -74,6 +74,7 @@ import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import PageTableFooter from "./components/Page_TableFooter";
 import Dashboard_Financial from "./components/Dashboard_Financial";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 const AVAILABLE_REPORTS = [
   {
@@ -789,8 +790,8 @@ export default function Reports() {
     const loadOptions = async () => {
       try {
         const [empRes, svcRes] = await Promise.all([employeesAPI.getAll(), servicesAPI.getAll()]);
-        setEmployees(empRes.data || []);
-        setServices(svcRes.data || []);
+        setEmployees(sortItemsAlphabetically(empRes.data || [], ["first_name", "last_name", "name", "email"]));
+        setServices(sortItemsAlphabetically(svcRes.data || [], ["name", "category"]));
       } catch {
         setEmployees([]);
         setServices([]);

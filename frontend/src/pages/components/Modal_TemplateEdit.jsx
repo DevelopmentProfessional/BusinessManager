@@ -4,6 +4,7 @@ import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "./Util
 import { documentsAPI } from "../../services/api";
 import Editor_Toolbar from "./editors/Editor_Toolbar";
 import Modal from "./Modal";
+import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 const Editor_RichText = lazy(() => import("./editors/Editor_RichText"));
 
@@ -83,6 +84,10 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     }
   }, [template?.accessible_pages]);
   const isDirty = name !== (template?.name || "") || description !== (template?.description || "") || templateType !== (template?.template_type || "custom") || JSON.stringify([...accessiblePages].sort()) !== JSON.stringify([...originalPages].sort()) || content !== (template?.content || "");
+  const sortedTemplateTypes = useMemo(() => sortItemsAlphabetically(TEMPLATE_TYPES, ["label"]), []);
+  const sortedPageOptions = useMemo(() => sortItemsAlphabetically(PAGE_OPTIONS, ["label"]), []);
+  const sortedLayoutTemplates = useMemo(() => sortItemsAlphabetically(LAYOUT_TEMPLATES, ["label"]), []);
+  const sortedImages = useMemo(() => sortItemsAlphabetically(images, ["original_filename", "filename"]), [images]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -117,7 +122,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     try {
       const res = await documentsAPI.getAll();
       const docs = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-      setImages(docs.filter((d) => (d.content_type || "").startsWith("image/")));
+      setImages(sortItemsAlphabetically(docs.filter((d) => (d.content_type || "").startsWith("image/")), ["original_filename", "filename"]));
     } catch {
       setImages([]);
     } finally {
@@ -176,7 +181,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
   // ── Scope row in Variables panel ─────────────────────────────────────────────
   const renderScopeRow = (scope) => {
-    const vars = TEMPLATE_VARIABLES[scope] || [];
+    const vars = sortItemsAlphabetically(TEMPLATE_VARIABLES[scope] || [], ["key", "description"]);
     const ctx = SCOPE_PAGE_CONTEXT[scope] || { label: scope, pages: [], color: "gray" };
     const isOpen = openScope === scope;
     return (
@@ -248,7 +253,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                     Click a variable to insert it. Coloured badges show which page populates it.
                     <span className="dark:text-amber-400 ml-1 text-amber-600">⊞ table variables</span> render as formatted tables.
                   </p>
-                  <div className="space-y-1">{Object.keys(TEMPLATE_VARIABLES).map(renderScopeRow)}</div>
+                  <div className="space-y-1">{sortItemsAlphabetically(Object.keys(TEMPLATE_VARIABLES)).map(renderScopeRow)}</div>
                 </div>
               )}
 
@@ -257,7 +262,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   <p className="dark:text-gray-500 mb-1.5 text-[10px] text-gray-400">Pre-built HTML blocks. Click to insert at the cursor. Data is filled when the template is used on the matching page.</p>
                   <div className="gap-1.5 grid grid-cols-2">
-                    {LAYOUT_TEMPLATES.map((layout) => (
+                    {sortedLayoutTemplates.map((layout) => (
                       <button key={layout.id} type="button" onClick={() => insertHtml(layout.html)} className="border border-gray-200 dark:border-gray-600 dark:hover:bg-primary-900/20 hover:bg-primary-50 hover:border-primary-400 p-0 rounded text-left transition-colors">
                         <div className="flex gap-1 items-start justify-between">
                           <span className="dark:text-gray-200 font-medium leading-tight text-gray-800 text-xs">{layout.label}</span>
@@ -281,11 +286,11 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   {loadingImgs ? (
                     <p className="text-gray-500 text-xs">Loading images…</p>
-                  ) : images.length === 0 ? (
+                  ) : sortedImages.length === 0 ? (
                     <p className="ui-muted-xs">No images found. Upload images in the Documents section first, then return here.</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {images.map((doc) => (
+                      {sortedImages.map((doc) => (
                         <button
                           key={doc.id}
                           type="button"
@@ -375,7 +380,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 style={{ width: "120px" }}
                 title="Template type"
               >
-                {TEMPLATE_TYPES.map((t) => (
+                {sortedTemplateTypes.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
                   </option>
@@ -388,7 +393,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 </button>
                 {showPagesDropup && (
                   <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>
-                    {PAGE_OPTIONS.map((pg) => (
+                    {sortedPageOptions.map((pg) => (
                       <label key={pg.value} className="align-items-center app-menu-item d-flex gap-2 py-1">
                         <input
                           type="checkbox"

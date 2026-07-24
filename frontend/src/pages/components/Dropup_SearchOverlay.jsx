@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { matchesWildcardText } from "../../utils/searchableSelect";
+import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 const PANEL_SIDE_MARGIN = 12;
 const PANEL_GAP = 8;
@@ -113,7 +114,8 @@ export default function Dropup_SearchOverlay() {
   }, []);
 
   const filteredOptions = useMemo(() => {
-    return options.filter((option) => matchesWildcardText(searchTerm, option.label, option.value));
+    const matches = options.filter((option) => matchesWildcardText(searchTerm, option.label, option.value));
+    return sortItemsAlphabetically(matches, ["label"]);
   }, [options, searchTerm]);
 
   useEffect(() => {

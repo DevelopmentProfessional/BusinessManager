@@ -48,6 +48,7 @@ import Widget_Signature from "./Widget_Signature";
 import Modal_Pay_Employee from "./Modal_EmployeePay";
 import useStore from "../../services/useStore";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
+import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const PAGE_OPTION_GROUPS = [
@@ -227,7 +228,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       try {
         const response = await rolesAPI.getAll();
         const rolesData = response?.data ?? response;
-        if (Array.isArray(rolesData)) setRoles(rolesData);
+        if (Array.isArray(rolesData)) setRoles(sortItemsAlphabetically(rolesData, ["name", "id"]));
       } catch (err) {
         console.error("Failed to load roles:", err);
       } finally {
@@ -243,7 +244,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       .getAll()
       .then((res) => {
         const d = res?.data ?? res;
-        if (Array.isArray(d)) setDepartments(d);
+        if (Array.isArray(d)) setDepartments(sortItemsAlphabetically(d, ["name", "id"]));
       })
       .catch(() => {});
   }, []);
@@ -254,7 +255,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       try {
         const response = await insurancePlansAPI.getAll();
         const data = response?.data ?? response;
-        if (Array.isArray(data)) setInsurancePlans(data.filter((p) => p.is_active));
+        if (Array.isArray(data)) setInsurancePlans(sortItemsAlphabetically(data.filter((p) => p.is_active), ["name", "id"]));
       } catch (err) {
         console.error("Failed to load insurance plans:", err);
       }
@@ -265,7 +266,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   // Load employees list
   useEffect(() => {
     if (employeesProp.length > 0) {
-      setEmployeesList(employeesProp);
+      setEmployeesList(sortItemsAlphabetically(employeesProp, ["first_name", "last_name", "username", "email"]));
       return;
     }
     let cancelled = false;
@@ -273,7 +274,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       try {
         const response = await isudAPI.employees.getAll();
         const data = response?.data ?? response;
-        if (!cancelled && Array.isArray(data)) setEmployeesList(data);
+        if (!cancelled && Array.isArray(data)) setEmployeesList(sortItemsAlphabetically(data, ["first_name", "last_name", "username", "email"]));
       } catch (err) {
         if (!cancelled) console.error("Form_Employee failed to load employees", err);
       }
@@ -432,17 +433,23 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     // Build a set of employee IDs that already have at least one supervisee,
     // but exclude any supervisor who is ALREADY assigned to the current employee.
     const alreadySupervisingOther = new Set(employeesList.filter((e) => e.reports_to && e.id !== employee?.id && e.reports_to !== employee?.id).map((e) => e.reports_to));
-    return employeesList.filter((e) => {
+    return sortItemsAlphabetically(
+      employeesList.filter((e) => {
       if (e.id === employee?.id) return false; // can't supervise yourself
       if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
       return true;
-    });
+      }),
+      ["first_name", "last_name", "username", "email"]
+    );
   }, [employeesList, employee?.id]);
 
   // Direct reports for this employee
   const directReports = useMemo(() => {
     if (!employee?.id) return [];
-    return employeesList.filter((e) => e.reports_to === employee.id);
+    return sortItemsAlphabetically(
+      employeesList.filter((e) => e.reports_to === employee.id),
+      ["first_name", "last_name", "username", "email"]
+    );
   }, [employeesList, employee?.id]);
 
   // ─── 5 HANDLERS: CORE ────────────────────────────────────────────────────────

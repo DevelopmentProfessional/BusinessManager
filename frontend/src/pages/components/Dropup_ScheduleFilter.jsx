@@ -30,6 +30,7 @@ import { XMarkIcon, CheckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/o
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Modal from "./Modal";
+import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 // ─── FILTER DROPUP SUB-COMPONENT ────────────────────────────────────────────
 function FilterDropup({ label, options, selectedIds, onToggle, onClear, placeholder = "Search..." }) {
@@ -87,6 +88,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
         return haystack.includes(searchTerm.toLowerCase());
       })
     : options;
+  const sortedFilteredOptions = sortItemsAlphabetically(filteredOptions, ["label"]);
 
   const selectedCount = selectedIds.length;
 
@@ -145,10 +147,10 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
 
             {/* Options List */}
             <div className="overflow-y-auto" style={{ maxHeight: "200px" }}>
-              {filteredOptions.length === 0 ? (
+              {sortedFilteredOptions.length === 0 ? (
                 <div className="app-menu-empty px-1 py-0 text-gray-500">No matches</div>
               ) : (
-                filteredOptions.map((option) => {
+                sortedFilteredOptions.map((option) => {
                   const isSelected = selectedIds.includes(option.id);
                   return (
                     <label key={option.id} className={`app-menu-item d-flex align-items-center gap-2 px-1 py-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
@@ -228,23 +230,32 @@ export default function Dropup_ScheduleFilter({ isOpen, onClose, employees, clie
   };
 
   // Prepare options for dropups
-  const employeeOptions = employees.map((e) => ({
+  const employeeOptions = sortItemsAlphabetically(
+    employees.map((e) => ({
     id: e.id,
     label: `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
     searchText: [e.first_name, e.last_name, e.username, e.email, e.role].filter(Boolean).join(" "),
-  }));
+    })),
+    ["label"]
+  );
 
-  const clientOptions = clients.map((c) => ({
+  const clientOptions = sortItemsAlphabetically(
+    clients.map((c) => ({
     id: c.id,
     label: c.name,
     searchText: [c.name, c.email, c.phone].filter(Boolean).join(" "),
-  }));
+    })),
+    ["label"]
+  );
 
-  const serviceOptions = services.map((s) => ({
+  const serviceOptions = sortItemsAlphabetically(
+    services.map((s) => ({
     id: s.id,
     label: s.name,
     searchText: [s.name, s.category, s.description].filter(Boolean).join(" "),
-  }));
+    })),
+    ["label"]
+  );
 
   return (
     <Modal

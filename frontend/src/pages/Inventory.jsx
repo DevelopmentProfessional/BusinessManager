@@ -60,6 +60,7 @@ import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 const ASSET_UNITS_PAGE_SIZE_KEY = "inventory_asset_units_page_size";
 const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -191,6 +192,24 @@ export default function Inventory() {
       description: "Shows items currently above minimum stock level and considered stocked.",
     },
   ];
+
+  const sortedTypeFilterOptions = useMemo(() => {
+    const pinned = typeFilterOptions.find((option) => option.value === "all");
+    const rest = sortItemsAlphabetically(
+      typeFilterOptions.filter((option) => option.value !== "all"),
+      ["label"]
+    );
+    return pinned ? [pinned, ...rest] : rest;
+  }, []);
+
+  const sortedStockFilterOptions = useMemo(() => {
+    const pinned = stockFilterOptions.find((option) => option.value === "all");
+    const rest = sortItemsAlphabetically(
+      stockFilterOptions.filter((option) => option.value !== "all"),
+      ["label"]
+    );
+    return pinned ? [pinned, ...rest] : rest;
+  }, []);
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   useFetchOnce(() => loadInventoryData());
@@ -678,8 +697,8 @@ export default function Inventory() {
             />
             {isTypeFilterOpen && (
               <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
-                {typeFilterOptions.map((option, index) => {
-                  const isLast = index === typeFilterOptions.length - 1;
+                {sortedTypeFilterOptions.map((option, index) => {
+                  const isLast = index === sortedTypeFilterOptions.length - 1;
                   const isSelected = typeFilter === option.value;
                   const isHelpOpen = typeFilterHelpKey === option.value;
 
@@ -748,8 +767,8 @@ export default function Inventory() {
             />
             {isStockFilterOpen && (
               <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
-                {stockFilterOptions.map((option, index) => {
-                  const isLast = index === stockFilterOptions.length - 1;
+                {sortedStockFilterOptions.map((option, index) => {
+                  const isLast = index === sortedStockFilterOptions.length - 1;
                   const isSelected = stockFilter === option.value;
                   const isHelpOpen = stockFilterHelpKey === option.value;
 

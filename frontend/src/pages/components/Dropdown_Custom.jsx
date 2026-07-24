@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../utils/searchableSelect";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
+import { sortOptionsByLabel } from "../../utils/displaySort";
 
 export default function Dropdown_Custom({
   value,
@@ -67,9 +68,10 @@ export default function Dropdown_Custom({
     }
   }, [isOpen]);
 
+  const sortedOptions = sortOptionsByLabel(options);
   const normalizedValue = multiSelect ? (Array.isArray(value) ? value : value ? [value] : []) : value;
-  const selectedOptions = multiSelect ? options.filter((option) => normalizedValue.includes(option.value)) : [];
-  const selectedOption = !multiSelect ? options.find((option) => option.value === value) : null;
+  const selectedOptions = multiSelect ? sortedOptions.filter((option) => normalizedValue.includes(option.value)) : [];
+  const selectedOption = !multiSelect ? sortedOptions.find((option) => option.value === value) : null;
   const displayValue = multiSelect
     ? useCountLabelForMultiSelect
       ? `${selectedOptions.length} selected`
@@ -112,7 +114,7 @@ export default function Dropdown_Custom({
   };
 
   // Filter options based on search term
-  const filteredOptions = searchable && searchTerm ? options.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : options;
+  const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
 
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>

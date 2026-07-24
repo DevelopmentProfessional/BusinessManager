@@ -65,6 +65,7 @@ import { WorkflowModal, WorkflowStatusTracker } from "./components/Panel_Workflo
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -304,6 +305,8 @@ export default function Documents() {
     return Array.from(new Set(types)).sort();
   }, [documents]);
 
+  const sortedCategories = useMemo(() => sortItemsAlphabetically(categories, ["name"]), [categories]);
+
   const getStatusFilterButtonClass = () => {
     if (statusFilter === "signed") return "bg-green-600 text-white";
     if (statusFilter === "unsigned") return "bg-red-600 text-white";
@@ -332,7 +335,7 @@ export default function Documents() {
     });
   }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById, docTagMap]);
 
-  const docMultiEditFields = useMemo(() => [{ key: "category_id", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, ...categories.map((c) => ({ value: c.id, label: c.name }))] }], [categories]);
+  const docMultiEditFields = useMemo(() => [{ key: "category_id", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, ...sortedCategories.map((c) => ({ value: c.id, label: c.name }))] }], [sortedCategories]);
 
   const toggleSelectDoc = (id) =>
     setSelectedIds((prev) => {
@@ -410,7 +413,7 @@ export default function Documents() {
     setTemplatesLoading(true);
     try {
       const res = await templatesAPI.getAll();
-      setTemplates(res.data || []);
+      setTemplates(sortItemsAlphabetically(res.data || [], ["name", "template_type"]));
     } catch (err) {
       console.warn("Failed to load templates", err);
     } finally {
@@ -431,10 +434,10 @@ export default function Documents() {
   const handleSaveTemplate = async (data) => {
     if (editingTemplate?.id) {
       const res = await templatesAPI.update(editingTemplate.id, data);
-      setTemplates((prev) => prev.map((t) => (t.id === editingTemplate.id ? res.data : t)));
+      setTemplates((prev) => sortItemsAlphabetically(prev.map((t) => (t.id === editingTemplate.id ? res.data : t)), ["name", "template_type"]));
     } else {
       const res = await templatesAPI.create(data);
-      setTemplates((prev) => [...prev, res.data]);
+      setTemplates((prev) => sortItemsAlphabetically([...prev, res.data], ["name", "template_type"]));
     }
     setIsTemplateEditorOpen(false);
     setEditingTemplate(null);
@@ -486,7 +489,7 @@ export default function Documents() {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const res = await documentCategoriesAPI.list();
-        setCategories(res.data || []);
+        setCategories(sortItemsAlphabetically(res.data || [], ["name"]));
         return;
       } catch (err) {
         const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
@@ -702,7 +705,7 @@ export default function Documents() {
         name,
         description: newCatDesc || null,
       });
-      setCategories((prev) => [...prev, res.data]);
+      setCategories((prev) => sortItemsAlphabetically([...prev, res.data], ["name"]));
       setNewCatName("");
       setNewCatDesc("");
     } catch (err) {
@@ -729,7 +732,7 @@ export default function Documents() {
         description: editingCatDesc,
       };
       const res = await documentCategoriesAPI.update(catId, payload);
-      setCategories((prev) => prev.map((c) => (c.id === catId ? res.data : c)));
+      setCategories((prev) => sortItemsAlphabetically(prev.map((c) => (c.id === catId ? res.data : c)), ["name"]));
       cancelEditCategory();
     } catch (err) {
       console.error("Failed to update category", err);
@@ -1058,7 +1061,7 @@ export default function Documents() {
                 isOpen={isFilterCategoriesOpen}
                 setIsOpen={setIsFilterCategoriesOpen}
                 showHelp={isTrainingMode}
-                options={[{ value: "all", label: "All Categories", description: "Shows documents from every category." }, ...categories.map((cat) => ({ value: String(cat.id), label: cat.name, description: `Shows only documents in the "${cat.name}" category.` }))]}
+                options={[{ value: "all", label: "All Categories", description: "Shows documents from every category." }, ...sortedCategories.map((cat) => ({ value: String(cat.id), label: cat.name, description: `Shows only documents in the "${cat.name}" category.` }))]}
               />
 
               {/* Status Filter */}
@@ -1294,7 +1297,7 @@ export default function Documents() {
               <p className="py-1 small text-center text-muted">No categories yet. Add one below.</p>
             ) : (
               <div className="d-flex flex-column gap-2 pb-0">
-                {categories.map((cat) => (
+                {sortedCategories.map((cat) => (
                   <div key={cat.id} className="align-items-center border d-flex justify-content-between p-0 rounded">
                     {/* Name + description (or inline edit inputs) */}
                     <div className="flex-grow-1 me-2" style={{ minWidth: 0 }}>

@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import Button_Toolbar from "./Button_Toolbar";
 import compactButtonLabel from "../../utils/compactButtonLabel";
 import { TagIcon } from "@heroicons/react/24/outline";
+import { sortOptionsByLabel } from "../../utils/displaySort";
 
 export default function Dropdown_Filter({
   // options: [{ value, label, description }]
@@ -25,7 +26,8 @@ export default function Dropdown_Filter({
   dropdownStyle,
 }) {
   const [helpKey, setHelpKey] = useState(null);
-  const defaultValue = options[0]?.value;
+  const sortedOptions = sortOptionsByLabel(options);
+  const defaultValue = sortedOptions[0]?.value;
   const isActive = value !== defaultValue;
 
   const handleToggle = () => {
@@ -40,8 +42,8 @@ export default function Dropdown_Filter({
 
       {isOpen && (
         <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={dropdownStyle}>
-          {options.map((option, index) => {
-            const isLast = index === options.length - 1;
+          {sortedOptions.map((option, index) => {
+            const isLast = index === sortedOptions.length - 1;
             const isSelected = value === option.value;
             const isHelpOpen = helpKey === option.value;
 

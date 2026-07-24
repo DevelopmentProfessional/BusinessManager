@@ -3,7 +3,7 @@
  * Same layout as Dashboard but with sidebar filters (price range, rating, etc.)
  * and a list-style detail view on click.
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon, AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
 import Layout from "./components/Layout";
@@ -66,7 +66,7 @@ export default function Catalog() {
     load();
   }, [load]);
 
-  const allCategories = [...new Set([...products.map((p) => p.category).filter(Boolean), ...services.map((s) => s.category).filter(Boolean)])].sort();
+  const allCategories = useMemo(() => [...new Set([...products.map((p) => p.category).filter(Boolean), ...services.map((s) => s.category).filter(Boolean)])].sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })), [products, services]);
 
   function filterItems(items) {
     return items.filter((item) => {
@@ -80,8 +80,8 @@ export default function Catalog() {
 
   const showProducts = tab === "all" || tab === "products";
   const showServices = tab === "all" || tab === "services";
-  const fp = showProducts ? filterItems(products) : [];
-  const fs = showServices ? filterItems(services) : [];
+  const fp = showProducts ? filterItems(products).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })) : [];
+  const fs = showServices ? filterItems(services).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })) : [];
 
   function handleSelect(item, itemType) {
     if (itemType === "service") setBookingService(item);

@@ -48,6 +48,7 @@ import Modal_BulkImport from "./Modal_ImportBulk";
 import cacheService from "../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../services/api";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
+import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
@@ -185,14 +186,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       .getAll()
       .then((res) => {
         const data = res?.data ?? res;
-        if (Array.isArray(data)) setAvailableServices(data);
+        if (Array.isArray(data)) setAvailableServices(sortItemsAlphabetically(data, ["name", "category"]));
       })
       .catch(() => {});
     suppliersAPI
       .getAll()
       .then((res) => {
         const data = res?.data ?? res;
-        if (Array.isArray(data)) setAvailableSuppliers(data);
+        if (Array.isArray(data)) setAvailableSuppliers(sortItemsAlphabetically(data, ["name", "email"]));
       })
       .catch(() => {});
   }, []);
@@ -213,7 +214,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     inventoryCategoriesAPI
       .getByType(type)
       .then((res) => {
-        if (!cancelled) setItemCategories(Array.isArray(res?.data) ? res.data : []);
+        if (!cancelled) setItemCategories(sortItemsAlphabetically(Array.isArray(res?.data) ? res.data : [], ["name"]));
       })
       .catch(() => {
         if (!cancelled) setItemCategories([]);

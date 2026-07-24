@@ -9,7 +9,7 @@
  * Reuses: ItemCard (mirrors Sales.jsx ItemCard), same filter UI,
  * same two-column grid, same cart integration.
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { MagnifyingGlassIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import Layout from "./components/Layout";
@@ -68,10 +68,22 @@ export default function Dashboard() {
   }, [load]);
 
   // Derived filter lists
-  const allCategories = [...new Set([...products.map((p) => p.category).filter(Boolean), ...services.map((s) => s.category).filter(Boolean)])].sort();
+  const allCategories = useMemo(() => [...new Set([...products.map((p) => p.category).filter(Boolean), ...services.map((s) => s.category).filter(Boolean)])].sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })), [products, services]);
 
-  const filteredProducts = products.filter((p) => (activeTab === "all" || activeTab === "products") && (categoryFilter === "all" || p.category === categoryFilter) && p.name.toLowerCase().includes(search.toLowerCase()));
-  const filteredServices = services.filter((s) => (activeTab === "all" || activeTab === "services") && (categoryFilter === "all" || s.category === categoryFilter) && s.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredProducts = useMemo(
+    () =>
+      products
+        .filter((p) => (activeTab === "all" || activeTab === "products") && (categoryFilter === "all" || p.category === categoryFilter) && p.name.toLowerCase().includes(search.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [products, activeTab, categoryFilter, search]
+  );
+  const filteredServices = useMemo(
+    () =>
+      services
+        .filter((s) => (activeTab === "all" || activeTab === "services") && (categoryFilter === "all" || s.category === categoryFilter) && s.name.toLowerCase().includes(search.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [services, activeTab, categoryFilter, search]
+  );
 
   function handleItemSelect(item, itemType) {
     if (itemType === "service") {

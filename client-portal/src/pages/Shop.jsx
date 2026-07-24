@@ -3,7 +3,7 @@
  * Loads branding from the portal branding endpoint and displays a hero
  * section if configured. Search, category filter, and type tabs.
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon, ShoppingBagIcon, AdjustmentsHorizontalIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Layout from "./components/Layout";
@@ -67,12 +67,18 @@ export default function Shop() {
     load();
   }, [load]);
 
-  const allCategories = [...new Set([...products.map((p) => p.category).filter(Boolean), ...services.map((s) => s.category).filter(Boolean)])].sort();
+  const allCategories = useMemo(() => [...new Set([...products.map((p) => p.category).filter(Boolean), ...services.map((s) => s.category).filter(Boolean)])].sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })), [products, services]);
 
   const match = (item) => item.name.toLowerCase().includes(search.toLowerCase()) && (category === "all" || item.category === category);
 
-  const showProducts = tab === "all" || tab === "products" ? products.filter(match) : [];
-  const showServices = tab === "all" || tab === "services" ? services.filter(match) : [];
+  const showProducts =
+    tab === "all" || tab === "products"
+      ? products.filter(match).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }))
+      : [];
+  const showServices =
+    tab === "all" || tab === "services"
+      ? services.filter(match).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }))
+      : [];
   const totalShown = showProducts.length + showServices.length;
 
   function handleSelect(item, itemType) {
