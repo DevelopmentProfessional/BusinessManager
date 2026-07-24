@@ -284,8 +284,8 @@ const Login = () => {
 
   // ─── [9] RENDER ─────────────────────────────────────────────────────────────
   return (
-    <div className="bg-gradient-to-br dark:from-gray-900 dark:to-gray-900 dark:via-gray-800 flex from-gray-100 items-center justify-center lg:px-1 min-h-screen px-1 py-0 sm:px-1 to-gray-100 via-white">
-      <div className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 max-h-[calc(100vh-1rem)] max-w-md overflow-y-auto p-0 rounded-3xl shadow-xl space-y-1 w-full">
+    <div className="bg-gradient-to-br dark:from-gray-900 dark:to-gray-900 dark:via-gray-800 flex from-gray-100 items-center justify-center lg:px-1 min-h-screen px-1 py-1 sm:px-1 to-gray-100 via-white">
+      <div className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 max-h-[calc(100vh-1rem)] max-w-md overflow-y-auto p-1 rounded-3xl shadow-xl space-y-1 w-full">
         <div className="text-center">
           <h2 className="dark:text-white font-bold mb-1 text-3xl text-gray-900">login</h2>
           {import.meta.env.VITE_BUILD_TIME && <p className="dark:text-gray-500 text-gray-400 text-xs">Updated on: {import.meta.env.VITE_BUILD_TIME}</p>}
@@ -361,7 +361,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-indigo-600 border border-transparent disabled:cursor-not-allowed disabled:opacity-50 duration-200 flex focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium group hover:bg-indigo-700 hover:shadow-xl justify-center px-1 py-0 relative rounded-full shadow-lg text-sm text-white transition-all w-full"
+              className="bg-indigo-600 border border-transparent disabled:cursor-not-allowed disabled:opacity-50 duration-200 flex focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium group hover:bg-indigo-700 hover:shadow-xl justify-center px-1 py-1 relative rounded-full shadow-lg text-sm text-white transition-all w-full"
             >
               {loading ? (
                 <div className="flex items-center">
@@ -425,14 +425,14 @@ const Login = () => {
                     setError("");
                     setResetData({ username: "", new_password: "", confirm_password: "" });
                   }}
-                  className="bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium hover:bg-gray-200 px-1 py-0 rounded-lg shadow-sm text-gray-700 text-sm transition-colors"
+                  className="bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-200 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium hover:bg-gray-200 px-1 py-1 rounded-lg shadow-sm text-gray-700 text-sm transition-colors"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-indigo-600 border border-transparent disabled:cursor-not-allowed disabled:opacity-50 duration-200 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium hover:bg-indigo-700 px-1 py-0 rounded-lg shadow-sm text-sm text-white transition-all"
+                  className="bg-indigo-600 border border-transparent disabled:cursor-not-allowed disabled:opacity-50 duration-200 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-medium hover:bg-indigo-700 px-1 py-1 rounded-lg shadow-sm text-sm text-white transition-all"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">

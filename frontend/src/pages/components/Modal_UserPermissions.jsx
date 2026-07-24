@@ -18,6 +18,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-07-24 | GitHub Copilot | Added word-safe trigger label truncation for dropup selectors
  * ============================================================
  */
 
@@ -25,11 +26,14 @@ import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Modal from "./Modal";
 import { XMarkIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 
 function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef(null);
   const menuIdRef = useRef(`dropup-menu-${Math.random().toString(36).slice(2)}`);
+  const selectedLabel = value || placeholder;
+  const { ref: labelRef, displayLabel } = useWordSafeLabel(selectedLabel, { enabled: true });
 
   const getMenuStyle = () => {
     if (!btnRef.current) return {};
@@ -66,7 +70,9 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
           }
         }}
       >
-        {value || placeholder}
+        <span ref={labelRef} className="app-word-safe-label">
+          {displayLabel}
+        </span>
       </button>
       {open && ReactDOM.createPortal(
         <>

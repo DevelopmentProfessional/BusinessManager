@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDownIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../utils/searchableSelect";
+import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 
 export default function Dropdown_Custom({
   value,
@@ -29,6 +30,7 @@ export default function Dropdown_Custom({
   allowMultiModeToggle = false,
   isMultiModeActive = false,
   onToggleMultiMode = null,
+  wordSafeTruncate = true,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,6 +82,7 @@ export default function Dropdown_Custom({
       ? selectedOption.label
       : placeholder;
   const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
+  const { ref: triggerTextRef, displayLabel: wordSafeDisplayValue } = useWordSafeLabel(displayValue, { enabled: wordSafeTruncate && !isOpen });
 
   const handleSelect = (option) => {
     if (multiSelect) {
@@ -137,9 +140,6 @@ export default function Dropdown_Custom({
             `}
             disabled={disabled}
           />
-          <button type="button" onClick={() => !disabled && setIsOpen(!isOpen)} className="-translate-y-1/2 absolute right-2 top-1/2 transform">
-            <ChevronDownIcon className={`app-icon app-icon--sm text-gray-400 dark:text-gray-500 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
-          </button>
         </div>
       ) : (
         <button
@@ -152,15 +152,16 @@ export default function Dropdown_Custom({
           className={`
             w-full px-1 py-0 border rounded-lg 
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-            flex items-center justify-between
+            flex items-center justify-start
             border-gray-300 dark:border-gray-600
             ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
             ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
           `}
           disabled={disabled}
         >
-          <span className={(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}>{displayValue}</span>
-          <ChevronDownIcon className={`app-icon app-icon--sm text-gray-500 dark:text-gray-400 app-chevron${isOpen ? " app-chevron--open" : ""}`} />
+          <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`}>
+            {wordSafeDisplayValue}
+          </span>
         </button>
       )}
 

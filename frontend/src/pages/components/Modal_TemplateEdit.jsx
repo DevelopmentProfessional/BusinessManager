@@ -1,5 +1,5 @@
 import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
-import { XMarkIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "./Utils_TemplateVariables";
 import { documentsAPI } from "../../services/api";
 import Editor_Toolbar from "./editors/Editor_Toolbar";
@@ -193,7 +193,6 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               ))}
             </div>
           </div>
-          {isOpen ? <ChevronUpIcon className="flex-shrink-0 h-3 text-gray-400 w-3" /> : <ChevronDownIcon className="flex-shrink-0 h-3 text-gray-400 w-3" />}
         </button>
 
         {isOpen && (
@@ -236,12 +235,12 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
         {/* ── Body ───────────────────────────────────────────────────────────── */}
         <div className="component-body">
-          <div className="component-body-inner">
+          <div className="component-body-inner template-editor-body">
             {/* Error banner */}
             <div className="flex-shrink-0 pb-0 pt-1 px-1">{error && <div className="bg-red-50 dark:bg-red-900/20 px-0 py-1 rounded text-red-600 text-sm">{error}</div>}</div>
 
             {/* ── Editor area ─────────────────────────────────────────────────── */}
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden template-editor-content-shell">
               {/* ── Variables panel ─────────────────────────────────────────── */}
               {activeTab === TAB_VARS && (
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
@@ -311,7 +310,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               )}
 
               {/* Rich text editor */}
-              <div className="flex-1 overflow-hidden p-0">
+              <div className="flex-1 overflow-hidden p-0 template-editor-richtext-wrap">
                 <div className="border border-gray-300 dark:border-gray-600 h-full overflow-hidden rounded">
                   <Suspense fallback={<div className="flex h-full items-center justify-center text-gray-500 text-sm">Loading editor…</div>}>
                     <Editor_RichText ref={editorCallbackRef} content={content} onChange={setContent} />
@@ -385,7 +384,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
               <div className="ui-pos-rel">
                 <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
-                  Pages <ChevronUpIcon className="h-3 w-3" />
+                  Pages
                 </button>
                 {showPagesDropup && (
                   <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>
@@ -408,7 +407,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
               <div className="ui-pos-rel">
                 <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
-                  Insert <ChevronUpIcon className="h-3 w-3" />
+                  Insert
                 </button>
                 {showInsertDropup && (
                   <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>

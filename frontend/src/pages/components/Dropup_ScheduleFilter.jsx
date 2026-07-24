@@ -20,6 +20,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-05-21 | Copilot | Created dropup filter based on item type pattern
+ *   2026-07-24 | GitHub Copilot | Removed trigger caret icon to match global dropdown/dropup no-arrow behavior
  * ============================================================
  */
 
@@ -115,7 +116,6 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
             </span>
           )}
         </span>
-        <span>{isOpen ? "▲" : "▼"}</span>
       </button>
 
       {/* Dropup Panel — rendered via portal so it escapes overflow-clipped modal */}

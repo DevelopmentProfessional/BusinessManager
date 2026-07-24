@@ -24,6 +24,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for category filter options
  *   2026-05-26 | GitHub Copilot | Standardized left-column delete button style to match Inventory row layout
+ *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete action in table mode
  * ============================================================
  */
 
@@ -37,7 +38,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -67,10 +68,10 @@ export default function Services() {
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
-  const [sortColumn, setSortColumn] = useState(null);
+  const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
 
   const svcMultiEditFields = [
@@ -177,6 +178,29 @@ export default function Services() {
     return result;
   };
 
+  const handleDeleteSelectedSvc = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("services", "delete")) {
+      setError("You do not have permission to delete services");
+      return;
+    }
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected service${selectedIds.size !== 1 ? "s" : ""}?`))) return;
+
+    try {
+      await Promise.all([...selectedIds].map((id) => servicesAPI.delete(id)));
+      await loadServices();
+      if (editingService && selectedIds.has(editingService.id)) {
+        setEditingService(null);
+        closeModal();
+      }
+      clearSelectionSvc();
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to delete selected services";
+      setError(String(detail));
+    }
+  };
+
   // ─── 7  DERIVED / COMPUTED VALUES ────────────────────────────────────────
   // Get unique categories for filter
   const categories = useMemo(() => {
@@ -206,15 +230,12 @@ export default function Services() {
   const handleSelectAllSvc = () => {
     if (allVisibleSelectedSvc) {
       setSelectedIds(new Set());
-      setSelectionMode(false);
     } else {
-      setSelectionMode(true);
       setSelectedIds(new Set(filteredServices.map((s) => s.id)));
     }
   };
   const clearSelectionSvc = () => {
     setSelectedIds(new Set());
-    setSelectionMode(false);
   };
 
   const handleSvcMultiEditSave = async (updates) => {
@@ -307,15 +328,7 @@ export default function Services() {
               {sortedAndFiltered.map((service, index) => (
                 <PageTableRow key={service.id || index} onClick={() => !selectionMode && handleEditService(service)}>
                   <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
-                    {selectionMode ? (
-                      <Toggle_MultiSelectIcon selected={selectedIds.has(service.id)} onToggle={() => toggleSelectSvc(service.id)} title="Select service" />
-                    ) : (
-                      <Gate_Permission page="services" permission="delete">
-                        <button type="button" className="btn btn-circle btn-outline-danger" title="Delete service" onClick={(e) => handleDeleteService(service.id, e)}>
-                          <XMarkIcon className="ui-icon-4" />
-                        </button>
-                      </Gate_Permission>
-                    )}
+                    <Toggle_MultiSelectIcon selected={selectedIds.has(service.id)} onToggle={() => toggleSelectSvc(service.id)} title="Select service" />
                   </td>
                   {/* Name + Category stacked */}
                   <td className="main-page-table-data">
@@ -354,6 +367,11 @@ export default function Services() {
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected services" onClick={() => setShowMultiEdit(true)}>
               <PencilSquareIcon style={{ width: 14, height: 14 }} />
             </button>
+            <Gate_Permission page="services" permission="delete">
+              <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected services" onClick={handleDeleteSelectedSvc}>
+                <TrashIcon style={{ width: 14, height: 14 }} />
+              </button>
+            </Gate_Permission>
           </div>
           <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionSvc}>
             <XMarkIcon style={{ width: 14, height: 14 }} />

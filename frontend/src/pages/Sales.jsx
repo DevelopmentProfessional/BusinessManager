@@ -1212,11 +1212,29 @@ export default function Sales() {
 
   // ─── 10  DERIVED / COMPUTED VALUES ───────────────────────────────────────
   // Filter items based on search and category
-  const filteredServices = services.filter((s) => s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || s.description?.toLowerCase().includes(searchQuery.toLowerCase()) || s.category?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredServices = useMemo(
+    () =>
+      services
+        .filter((s) => s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || s.description?.toLowerCase().includes(searchQuery.toLowerCase()) || s.category?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [services, searchQuery]
+  );
 
-  const filteredProducts = products.filter((p) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredProducts = useMemo(
+    () =>
+      products
+        .filter((p) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [products, searchQuery]
+  );
 
-  const filteredSubscriptions = memberships.filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredSubscriptions = useMemo(
+    () =>
+      memberships
+        .filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [memberships, searchQuery]
+  );
 
   const filteredClients = useMemo(() => {
     const q = clientSearch.trim().toLowerCase();
@@ -1228,7 +1246,7 @@ export default function Sales() {
           const phone = String(c.phone || "").toLowerCase();
           return name.includes(q) || email.includes(q) || phone.includes(q);
         });
-    return list.slice(0, 12);
+    return [...list].sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })).slice(0, 12);
   }, [clients, clientSearch]);
 
   // Check if item is in cart
