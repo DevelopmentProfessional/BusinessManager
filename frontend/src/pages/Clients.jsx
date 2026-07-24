@@ -23,6 +23,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added per-option help popovers for tier filter options
  *   2026-05-26 | GitHub Copilot | Moved delete action to left table column and removed modal delete button wiring
+ *   2026-07-24 | GitHub Copilot | Replaced row delete with selection-first bulk delete and paired edit/delete selected actions
  * ============================================================
  */
 
@@ -44,7 +45,7 @@ import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Client from "./components/Form_Client";
 import Modal_Detail_Client from "./components/Modal_ClientDetail";
 import Gate_Permission from "./components/Gate_Permission";
-import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal_TemplateUse from "./components/Modal_TemplateUse";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
@@ -74,10 +75,10 @@ export default function Clients() {
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
-  const [sortColumn, setSortColumn] = useState(null);
+  const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [internalActionCounts, setInternalActionCounts] = useState({});
   const [portalActionCounts, setPortalActionCounts] = useState({});
@@ -282,6 +283,30 @@ export default function Clients() {
     return result;
   };
 
+  const handleDeleteSelectedClients = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("clients", "delete")) {
+      setError("You do not have permission to delete clients");
+      return;
+    }
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected client${selectedIds.size !== 1 ? "s" : ""}?`))) return;
+
+    try {
+      await Promise.all([...selectedIds].map((id) => clientsAPI.delete(id)));
+      await loadClients();
+      if (editingClient && selectedIds.has(editingClient.id)) {
+        setEditingClient(null);
+        closeModal();
+      }
+      clearSelectionCl();
+      clearError();
+    } catch (err) {
+      const errorMsg = err?.response?.data?.detail || "Failed to delete selected clients";
+      setError(errorMsg);
+      console.error(err);
+    }
+  };
+
   const handleUpdateClient = async (clientId, clientData) => {
     try {
       const response = await clientsAPI.update(clientId, clientData);
@@ -394,15 +419,12 @@ export default function Clients() {
   const handleSelectAllCl = () => {
     if (allVisibleSelectedCl) {
       setSelectedIds(new Set());
-      setSelectionMode(false);
     } else {
-      setSelectionMode(true);
       setSelectedIds(new Set(filteredClients.map((c) => c.id)));
     }
   };
   const clearSelectionCl = () => {
     setSelectedIds(new Set());
-    setSelectionMode(false);
   };
 
   const handleMultiEditSave = async (updates) => {
@@ -491,15 +513,7 @@ export default function Clients() {
               {sortedAndFiltered.map((client, index) => (
                 <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
                   <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
-                    {selectionMode ? (
-                      <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
-                    ) : (
-                      <Gate_Permission page="clients" permission="delete">
-                        <button className="btn btn-circle btn-outline-danger" title="Delete client" onClick={() => handleDeleteClient(client.id)}>
-                          <XMarkIcon className="ui-icon-4" />
-                        </button>
-                      </Gate_Permission>
-                    )}
+                    <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
                   </td>
 
                   {/* Name + contact */}
@@ -557,6 +571,11 @@ export default function Clients() {
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected clients" onClick={() => setShowMultiEdit(true)}>
               <PencilSquareIcon style={{ width: 14, height: 14 }} />
             </button>
+            <Gate_Permission page="clients" permission="delete">
+              <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected clients" onClick={handleDeleteSelectedClients}>
+                <TrashIcon style={{ width: 14, height: 14 }} />
+              </button>
+            </Gate_Permission>
           </div>
           <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionCl}>
             <XMarkIcon style={{ width: 14, height: 14 }} />

@@ -118,12 +118,6 @@ export default function Modal_BulkImport({
     /* Modal wraps backdrop + dialog */
     <Modal isOpen={isOpen} onClose={onClose} noPadding centered>
       <div className="ui-component-shell">
-        <div className="component-header">
-          <div className="component-header-left">Bulk Import {entityLabel}</div>
-          <div className="component-header-center"></div>
-          <div className="component-header-right"></div>
-        </div>
-
         {/* Body */}
         <div className="component-body">
           <div className="component-body-inner">
@@ -201,6 +195,12 @@ export default function Modal_BulkImport({
           {resultMsg && <div className={`alert alert-${resultMsg.type === "error" ? "danger" : "success"} py-1 mb-0 small`}>{resultMsg.text}</div>}
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
+
+        <div className="component-header component-header--bottom">
+          <div className="component-header-left">Bulk Import {entityLabel}</div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
 
         {/* Footer */}
         <div className="component-footer">

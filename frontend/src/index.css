@@ -1757,6 +1757,26 @@ textarea.form-control {
   transform: rotate(180deg);
 }
 
+/* Dropdown / dropup caret removal across native and bootstrap-style controls */
+.dropdown-toggle::after {
+  display: none !important;
+}
+
+.form-select,
+select.form-select {
+  background-image: none !important;
+  padding-right: 0.75rem !important;
+}
+
+/* Shared trigger text behavior for dropdown/dropup buttons */
+.app-word-safe-label {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
 .app-label--bold {
   line-height: 1;
   font-weight: 700;
@@ -1843,6 +1863,11 @@ textarea.form-control {
 
 .component-header-right {
   flex: 0 0 auto;
+}
+
+.component-header--bottom {
+  border-bottom: 0;
+  border-top: 1px solid var(--bs-border-color);
 }
 
 /* ── Body ── */
@@ -1952,4 +1977,37 @@ textarea.form-control {
   bottom: 0;
   border-radius: 999px;
   font-size: 0.8125rem;
+}
+
+.bulk-import-top-actions {
+  align-items: center;
+  border-bottom: 1px solid var(--bs-border-color);
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem;
+}
+
+.bulk-import-top-actions-group {
+  align-items: center;
+  column-gap: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 0.5rem;
+}
+
+.template-editor-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding-bottom: calc(var(--app-standard-footer-height) * 2.5);
+}
+
+.template-editor-content-shell {
+  min-height: 0;
+}
+
+.template-editor-richtext-wrap .tiptap-editor .tiptap {
+  padding-bottom: calc(var(--app-standard-footer-height) * 3);
 }

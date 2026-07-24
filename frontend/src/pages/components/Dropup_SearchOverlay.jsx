@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../utils/searchableSelect";
 
 const PANEL_SIDE_MARGIN = 12;
@@ -317,7 +316,6 @@ export default function Dropup_SearchOverlay() {
         <div className="searchable-select-panel-footer searchable-select-panel-header">
           <div className="searchable-select-input-shell">
             <input ref={inputRef} type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} onKeyDown={handleInputKeyDown} className="form-control searchable-select-input" placeholder={label ? `Search ${label}` : "Search options"} />
-            <ChevronDownIcon className="searchable-select-input-icon" />
           </div>
         </div>
       </div>

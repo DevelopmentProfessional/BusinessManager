@@ -32,11 +32,12 @@ export default function Table_Mobile({
       }
     });
 
-    // Apply sorting
-    if (sortConfig.key) {
+    // Apply sorting. If no explicit sort is selected, default to first column ascending.
+    const sortKey = sortConfig.key || columns[0]?.key;
+    if (sortKey) {
       filtered = [...filtered].sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
+        const aVal = String(a?.[sortKey] ?? "").toLowerCase();
+        const bVal = String(b?.[sortKey] ?? "").toLowerCase();
 
         if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;

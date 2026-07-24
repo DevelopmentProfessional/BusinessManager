@@ -32,6 +32,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Converted type select to custom dropdown with per-option help popovers
  *   2026-05-19 | GitHub Copilot | Added cost type/date fields and bundle/mix subtotal summaries
+ *   2026-07-24 | GitHub Copilot | Removed type dropdown caret icon and added word-safe trigger label truncation
  * ============================================================
  */
 
@@ -46,6 +47,7 @@ import Widget_Camera from "./Widget_Camera";
 import Modal_BulkImport from "./Modal_ImportBulk";
 import cacheService from "../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../services/api";
+import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
@@ -112,6 +114,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     { value: "LOCATION", label: "Location", description: "Physical place within your business (room, station, area). No stock tracking." },
     { value: "ITEM", label: "Item", description: "Generic item type. Use when other categories don't apply." },
   ];
+  const selectedTypeLabel = typeOptions.find((opt) => opt.value === formData.type)?.label || "Select Type";
+  const { ref: typeLabelRef, displayLabel: typeTriggerLabel } = useWordSafeLabel(selectedTypeLabel, { enabled: true });
 
   // ─── 2 EFFECTS ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -682,10 +686,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                   style={{ cursor: "pointer" }}
                 >
-                  <span>{typeOptions.find((opt) => opt.value === formData.type)?.label || "Select Type"}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                    <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                  </svg>
+                  <span ref={typeLabelRef} className="app-word-safe-label">
+                    {typeTriggerLabel}
+                  </span>
                 </button>
                 {isTypeDropdownOpen && (
                   <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>

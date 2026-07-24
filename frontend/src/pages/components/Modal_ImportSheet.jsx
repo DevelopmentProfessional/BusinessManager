@@ -375,13 +375,8 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
   return (
     <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding>
       <div className="ui-component-shell" onPaste={handleGlobalPaste}>
-        <div className="component-header">
-          <div className="component-header-left">
-            {title}
-            {hint && <span className="ms-2 small text-muted">{hint}</span>}
-          </div>
-          <div className="component-header-center"></div>
-          <div className="align-items-center component-header-right d-flex gap-2">
+        <div className="bulk-import-top-actions">
+          <div className="bulk-import-top-actions-group">
             <button type="button" className="btn ui-btn-outline-secondary-sm" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
               <ArrowUpIcon style={{ width: 16, height: 16 }} />
             </button>
@@ -492,6 +487,15 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
           {/* /component-body-inner */}
         </div>
         {/* /component-body */}
+
+        <div className="component-header component-header--bottom">
+          <div className="component-header-left">
+            {title}
+            {hint && <span className="ms-2 small text-muted">{hint}</span>}
+          </div>
+          <div className="component-header-center"></div>
+          <div className="component-header-right"></div>
+        </div>
 
         <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
           {status.message && <div className={`px-1 pt-0 pb-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}

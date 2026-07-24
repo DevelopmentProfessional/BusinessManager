@@ -2,7 +2,7 @@
 // Static report picker dropup for Reports page footer (not affected by profile align / view mode).
 
 import React, { useEffect, useRef } from "react";
-import { ChartBarIcon, ChevronUpDownIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { ChartBarIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
 const ITEM_STYLE = {
   fontSize: "var(--app-input-font-size, 0.875rem)",
@@ -56,7 +56,6 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
         title={selectedTitle || "Report"}
       >
         <ChartBarIcon className="flex-shrink-0 h-4 w-4" style={{ width: "1rem", height: "1rem" }} />
-        <ChevronUpDownIcon className="flex-shrink-0 h-4 w-4" style={{ width: "1rem", height: "1rem" }} />
       </button>
 
       {open && (

@@ -44,6 +44,7 @@
  *   2026-03-07 | Copilot | Added per-option help popovers for role/status filters
  *   2026-03-08 | Copilot | Moved lock/unlock column between Employee and Role
  *   2026-05-26 | GitHub Copilot | Added left-column row delete action and removed delete button from employee edit form
+ *   2026-07-24 | GitHub Copilot | Replaced row delete with selection-first bulk delete and grouped selected edit/delete actions
  * ============================================================
  */
 
@@ -53,7 +54,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import useStore from "../services/useStore";
@@ -131,10 +132,10 @@ export default function Employees() {
   const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
-  const [sortColumn, setSortColumn] = useState(null);
+  const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
   // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
   // All modal open/close flags and their associated target object grouped here.
@@ -370,15 +371,12 @@ export default function Employees() {
   const handleSelectAllEmp = () => {
     if (allVisibleSelectedEmp) {
       setSelectedIds(new Set());
-      setSelectionMode(false);
     } else {
-      setSelectionMode(true);
       setSelectedIds(new Set(filteredEmployees.map((e) => e.id)));
     }
   };
   const clearSelectionEmp = () => {
     setSelectedIds(new Set());
-    setSelectionMode(false);
   };
 
   const empMultiEditFields = [
@@ -510,6 +508,28 @@ export default function Employees() {
     setShowBulkImport(false);
     clearError();
     return result;
+  };
+
+  const handleDeleteSelectedEmployees = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("employees", "delete")) {
+      setError("You do not have permission to delete employees");
+      return;
+    }
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected employee${selectedIds.size !== 1 ? "s" : ""}?`, { confirmLabel: "Delete Employees" }))) return;
+
+    try {
+      await Promise.all([...selectedIds].map((id) => employeesAPI.delete(id)));
+      await loadEmployees();
+      if (editingEmployee && selectedIds.has(editingEmployee.id)) {
+        setEditingEmployee(null);
+        closeModal();
+      }
+      clearSelectionEmp();
+      clearError();
+    } catch {
+      setError("Failed to delete selected employees");
+    }
   };
 
   // ─── [16] PERMISSION HANDLERS ───────────────────────────────────────────────
@@ -1057,15 +1077,7 @@ export default function Employees() {
                     }}
                   >
                     <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
-                      {selectionMode ? (
-                        <Toggle_MultiSelectIcon selected={selectedIds.has(employee.id)} onToggle={() => toggleSelectEmp(employee.id)} title="Select employee" />
-                      ) : (
-                        <Gate_Permission page="employees" permission="delete">
-                          <button className="btn btn-circle btn-outline-danger" title="Delete employee" onClick={() => handleDelete(employee.id)}>
-                            <XMarkIcon className="ui-icon-4" />
-                          </button>
-                        </Gate_Permission>
-                      )}
+                      <Toggle_MultiSelectIcon selected={selectedIds.has(employee.id)} onToggle={() => toggleSelectEmp(employee.id)} title="Select employee" />
                     </td>
 
                     {/* Name with color coding for active/inactive */}
@@ -1141,6 +1153,11 @@ export default function Employees() {
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected employees" onClick={() => setShowMultiEdit(true)}>
                 <PencilSquareIcon style={{ width: 14, height: 14 }} />
               </button>
+              <Gate_Permission page="employees" permission="delete">
+                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected employees" onClick={handleDeleteSelectedEmployees}>
+                  <TrashIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </Gate_Permission>
             </div>
             <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionEmp}>
               <XMarkIcon style={{ width: 14, height: 14 }} />

@@ -27,6 +27,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Copilot | Added type filter help popover trigger (`?`) in footer dropdown
  *   2026-03-19 | GitHub Copilot | Replaced single-add with spreadsheet-style bulk import modal flow
+ *   2026-07-24 | GitHub Copilot | Switched delete to a selection-first bulk action and removed single-item delete from inventory row/edit flows
  * ============================================================
  */
 
@@ -39,11 +40,12 @@ import Badge from "./components/Badge";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
+import { showConfirm } from "../services/showConfirm";
 import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -93,10 +95,10 @@ export default function Inventory() {
     return ASSET_UNITS_PAGE_SIZE_OPTIONS.includes(saved) ? saved : 25;
   });
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
-  const [sortColumn, setSortColumn] = useState(null);
+  const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
@@ -428,6 +430,28 @@ export default function Inventory() {
     }
   };
 
+  const handleDeleteSelectedInv = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("inventory", "delete")) {
+      setError("You do not have permission to delete items");
+      return;
+    }
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected item${selectedIds.size !== 1 ? "s" : ""}?`))) return;
+
+    setMultiSaving(true);
+    try {
+      await Promise.all([...selectedIds].map((id) => inventoryAPI.delete(id)));
+      await loadInventoryData();
+      clearSelectionInv();
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to delete selected items";
+      setError(String(detail));
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
   // ─── 8 DERIVED / FILTERED DATA ───────────────────────────────────────────────
   // Filtered inventory based on search, type, and stock filters
   const filteredInventory = useMemo(() => {
@@ -464,15 +488,12 @@ export default function Inventory() {
   const handleSelectAllInv = () => {
     if (allVisibleSelectedInv) {
       setSelectedIds(new Set());
-      setSelectionMode(false);
     } else {
-      setSelectionMode(true);
       setSelectedIds(new Set(filteredInventory.map((i) => i.id)));
     }
   };
   const clearSelectionInv = () => {
     setSelectedIds(new Set());
-    setSelectionMode(false);
   };
 
   const handleSort = (column) => {
@@ -567,13 +588,7 @@ export default function Inventory() {
                 {sortedAndFiltered.map((inv, index) => (
                   <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
                     <td style={{ width: "40px" }} onClick={(e) => e.stopPropagation()}>
-                      {selectionMode ? (
-                        <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
-                      ) : (
-                        <button className="btn btn-circle btn-outline-danger" title="Delete item" onClick={() => handleDeleteItem(inv.id)}>
-                          <XMarkIcon className="ui-icon-4" />
-                        </button>
-                      )}
+                      <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                     </td>
                     <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
 
@@ -604,6 +619,11 @@ export default function Inventory() {
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
                 <PencilSquareIcon style={{ width: 14, height: 14 }} />
               </button>
+              <Gate_Permission page="inventory" permission="delete">
+                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected items" onClick={handleDeleteSelectedInv} disabled={multiSaving}>
+                  <TrashIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </Gate_Permission>
             </div>
             <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionInv}>
               <XMarkIcon style={{ width: 14, height: 14 }} />
@@ -810,8 +830,8 @@ export default function Inventory() {
         itemType={editingInventory?.type || "product"}
         mode="inventory"
         onUpdateInventory={handleSubmitUpdate}
-        onDelete={handleDeleteItem}
-        canDelete={hasPermission("inventory", "delete")}
+        onDelete={null}
+        canDelete={false}
         isDeleting={deletingInventoryId === editingInventory?.id}
         existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
         assetUnitsPerPage={assetUnitsPerPage}

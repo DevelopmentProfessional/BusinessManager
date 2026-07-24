@@ -32,6 +32,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Converted role select to custom dropdown with per-option help popovers
+ *   2026-07-24 | GitHub Copilot | Removed custom dropdown caret icons and added word-safe trigger label truncation
  * ============================================================
  */
 
@@ -46,6 +47,7 @@ import { showConfirm } from "../../services/showConfirm";
 import Widget_Signature from "./Widget_Signature";
 import Modal_Pay_Employee from "./Modal_EmployeePay";
 import useStore from "../../services/useStore";
+import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const PAGE_OPTION_GROUPS = [
@@ -146,6 +148,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     { value: "annually", label: "Annually", description: "Paid once per year. Often used for bonuses or contractor final payments." },
     { value: "one_time", label: "One-time (Contract)", description: "Single payment for completed project or contract work. No recurring schedule." },
   ];
+
+  const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
+  const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
+  const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
+  const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
+  const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
+  const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
 
   // Permissions state
   const [userPermissions, setUserPermissions] = useState([]);
@@ -669,10 +678,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                             style={{ cursor: "pointer" }}
                           >
-                            <span>{roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role"}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                              <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                            </svg>
+                            <span ref={roleLabelRef} className="app-word-safe-label">
+                              {roleTriggerLabel}
+                            </span>
                           </button>
                           {isRoleDropdownOpen && (
                             <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
@@ -1175,10 +1183,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                           style={{ cursor: "pointer" }}
                         >
-                          <span>{employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type"}</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                            <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                          </svg>
+                          <span ref={employmentTypeLabelRef} className="app-word-safe-label">
+                            {employmentTypeTriggerLabel}
+                          </span>
                         </button>
                         {isEmploymentTypeDropdownOpen && (
                           <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
@@ -1258,10 +1265,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
                           style={{ cursor: "pointer" }}
                         >
-                          <span>{payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency"}</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: "8px" }}>
-                            <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
-                          </svg>
+                          <span ref={payFrequencyLabelRef} className="app-word-safe-label">
+                            {payFrequencyTriggerLabel}
+                          </span>
                         </button>
                         {isPayFrequencyDropdownOpen && (
                           <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>

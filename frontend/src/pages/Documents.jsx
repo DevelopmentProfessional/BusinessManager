@@ -32,6 +32,7 @@
  *   2026-03-07 | Copilot | Added per-option help popovers for footer filter options
  *   2026-05-15 | Copilot | Shortened standalone document action button labels for compact training-mode layouts
  *   2026-05-26 | GitHub Copilot | Added left-column delete action for documents list and removed delete action from viewer modal wiring
+ *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete and combined selected edit/delete actions
  * ============================================================
  */
 
@@ -43,7 +44,7 @@ import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -272,10 +273,10 @@ export default function Documents() {
   const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
   const { isTrainingMode } = useViewMode();
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
-  const [sortColumn, setSortColumn] = useState(null);
+  const [sortColumn, setSortColumn] = useState("filename");
   const [sortAsc, setSortAsc] = useState(true);
 
   // Tag data: {documentId: [tagName, ...]} — loaded once, refreshed after edit
@@ -343,15 +344,12 @@ export default function Documents() {
   const handleSelectAllDoc = () => {
     if (allVisibleSelectedDoc) {
       setSelectedIds(new Set());
-      setSelectionMode(false);
     } else {
-      setSelectionMode(true);
       setSelectedIds(new Set(filteredDocuments.map((d) => d.id)));
     }
   };
   const clearSelectionDoc = () => {
     setSelectedIds(new Set());
-    setSelectionMode(false);
   };
 
   const handleDocMultiEditSave = async (updates) => {
@@ -674,6 +672,25 @@ export default function Documents() {
     }
   };
 
+  const handleDeleteSelectedDocuments = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("documents", "delete")) {
+      setError("You do not have permission to delete documents");
+      return;
+    }
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected document${selectedIds.size !== 1 ? "s" : ""}?`))) return;
+
+    try {
+      await Promise.all([...selectedIds].map((id) => documentsAPI.delete(id)));
+      setDocuments((docs) => docs.filter((doc) => !selectedIds.has(doc.id)));
+      clearSelectionDoc();
+      clearError();
+    } catch (err) {
+      const msg = err?.response?.data?.detail || "Failed to delete selected documents";
+      setError(msg);
+    }
+  };
+
   // ─── 14  CATEGORY MANAGEMENT HANDLERS ────────────────────────────────────
   // Categories management
   const handleCreateCategory = async (e) => {
@@ -782,7 +799,9 @@ export default function Documents() {
                 quote: "bg-yellow-100 text-yellow-800",
                 custom: "bg-gray-100 text-gray-700",
               };
-              const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter);
+              const filtered = templates
+                .filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter)
+                .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
               return filtered.length > 0 ? (
                 <table className="mb-0 table table-borderless table-hover">
                   <colgroup>
@@ -866,15 +885,7 @@ export default function Documents() {
                   {sortedAndFiltered.map((doc, index) => (
                     <tr key={doc.id || index} className="align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
                       <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
-                        {selectionMode ? (
-                          <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
-                        ) : (
-                          <Gate_Permission page="documents" permission="delete">
-                            <button onClick={() => handleDeleteDocument(doc.id)} className="btn btn-circle btn-outline-danger" title="Delete document">
-                              <XMarkIcon className="ui-icon-4" />
-                            </button>
-                          </Gate_Permission>
-                        )}
+                        <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
                       </td>
 
                       {/* File Name */}
@@ -917,6 +928,11 @@ export default function Documents() {
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
                 <PencilSquareIcon style={{ width: 14, height: 14 }} />
               </button>
+              <Gate_Permission page="documents" permission="delete">
+                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected documents" onClick={handleDeleteSelectedDocuments}>
+                  <TrashIcon style={{ width: 14, height: 14 }} />
+                </button>
+              </Gate_Permission>
             </div>
             <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionDoc}>
               <XMarkIcon style={{ width: 14, height: 14 }} />
