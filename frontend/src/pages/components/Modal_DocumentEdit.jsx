@@ -27,11 +27,12 @@
  * ============================================================
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { documentsAPI, documentCategoriesAPI, employeesAPI, documentTagsAPI } from "../../services/api";
 import Dropdown_Custom from "./Dropdown_Custom";
 import Modal from "./Modal";
 import { XMarkIcon, TagIcon, MagnifyingGlassIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 // ─── 1 HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -114,13 +115,18 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const sortedCategories = useMemo(() => sortItemsAlphabetically(categories, ["name"]), [categories]);
+  const sortedEmployees = useMemo(() => sortItemsAlphabetically(employees, ["first_name", "last_name", "name", "email"]), [employees]);
+  const sortedDocTags = useMemo(() => sortItemsAlphabetically(docTags, ["name"]), [docTags]);
+  const sortedTagSuggestions = useMemo(() => sortItemsAlphabetically(tagSuggestions, ["name"]), [tagSuggestions]);
+
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
     Promise.all([documentCategoriesAPI.list(), employeesAPI.getAll()])
       .then(([catsRes, empRes]) => {
-        setCategories(catsRes.data || []);
-        setEmployees(empRes.data || []);
+        setCategories(sortItemsAlphabetically(catsRes.data || [], ["name"]));
+        setEmployees(sortItemsAlphabetically(empRes.data || [], ["first_name", "last_name", "name", "email"]));
       })
       .catch((err) => console.warn("Failed to load categories or employees", err));
   }, [isOpen]);
@@ -182,7 +188,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
       const all = res.data || [];
       // Filter out tags already attached
       const attached = new Set(docTags.map((t) => t.id));
-      setTagSuggestions(all.filter((t) => !attached.has(t.id)));
+      setTagSuggestions(sortItemsAlphabetically(all.filter((t) => !attached.has(t.id)), ["name"]));
       setShowTagDropdown(true);
     } catch {
       setTagSuggestions([]);
@@ -213,7 +219,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
       setShowTagDropdown(false);
       return;
     }
-    setDocTags((prev) => [...prev, resolved]);
+    setDocTags((prev) => sortItemsAlphabetically([...prev, resolved], ["name"]));
     setTagSearch("");
     setTagSuggestions([]);
     setShowTagDropdown(false);
@@ -364,7 +370,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                     onChange={(e) => setOwnerId(e.target.value)}
                     options={[
                       { value: "", label: "Unassigned" },
-                      ...employees.map((emp) => ({
+                      ...sortedEmployees.map((emp) => ({
                         value: emp.id,
                         label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
                       })),
@@ -381,7 +387,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
               {/* ── Category ─────────────────────────────────────────────────────── */}
               <div>
                 <label className="block dark:text-gray-300 font-medium text-gray-700 text-sm">Category</label>
-                <Dropdown_Custom name="category_id" value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...categories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
+                <Dropdown_Custom name="category_id" value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...sortedCategories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
               </div>
 
               {/* ── Tags ─────────────────────────────────────────────────────────── */}
@@ -390,8 +396,8 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
                 {/* Attached tags */}
                 <div className="flex flex-wrap gap-1 mb-2 min-h-[1.75rem]">
-                  {docTags.length === 0 && <span className="dark:text-gray-500 italic text-gray-400 text-xs">No tags yet</span>}
-                  {docTags.map((tag) => (
+                  {sortedDocTags.length === 0 && <span className="dark:text-gray-500 italic text-gray-400 text-xs">No tags yet</span>}
+                  {sortedDocTags.map((tag) => (
                     <span key={tag.id} className="bg-blue-100 dark:bg-blue-900/40 dark:text-blue-200 font-medium gap-1 inline-flex items-center px-0 py-0.5 rounded-full text-blue-800 text-xs">
                       {tag.name}
                       <button type="button" onClick={() => handleRemoveTag(tag.id)} className="dark:hover:text-white focus:outline-none hover:text-blue-900" aria-label={`Remove tag ${tag.name}`}>
@@ -443,9 +449,9 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                   </div>
 
                   {/* Dropdown suggestions */}
-                  {showTagDropdown && tagSuggestions.length > 0 && (
+                  {showTagDropdown && sortedTagSuggestions.length > 0 && (
                     <div ref={tagDropdownRef} className="absolute app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-600 max-h-40 mt-1 overflow-y-auto rounded shadow-lg w-full z-50">
-                      {tagSuggestions.map((tag) => (
+                      {sortedTagSuggestions.map((tag) => (
                         <button
                           key={tag.id}
                           type="button"
@@ -458,7 +464,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                           {tag.name}
                         </button>
                       ))}
-                      {tagSearch.trim() && !tagSuggestions.some((t) => t.name.toLowerCase() === tagSearch.trim().toLowerCase()) && (
+                      {tagSearch.trim() && !sortedTagSuggestions.some((t) => t.name.toLowerCase() === tagSearch.trim().toLowerCase()) && (
                         <button
                           type="button"
                           onMouseDown={(e) => {
@@ -487,8 +493,16 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                 <label className="block dark:text-gray-300 font-medium mb-1 text-gray-700 text-sm">Assignments</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {assignments.length === 0 && <span className="dark:text-gray-400 text-gray-500 text-sm">No assigned employees</span>}
-                  {assignments.map((a) => {
-                    const emp = employees.find((e) => e.id === a.employee_id);
+                  {[...assignments]
+                    .sort((a, b) => {
+                      const empA = sortedEmployees.find((e) => e.id === a.employee_id);
+                      const empB = sortedEmployees.find((e) => e.id === b.employee_id);
+                      const labelA = empA ? (empA.first_name ? `${empA.first_name} ${empA.last_name || ""}`.trim() : empA.name || empA.email || a.employee_id) : a.employee_id;
+                      const labelB = empB ? (empB.first_name ? `${empB.first_name} ${empB.last_name || ""}`.trim() : empB.name || empB.email || b.employee_id) : b.employee_id;
+                      return String(labelA).localeCompare(String(labelB), undefined, { sensitivity: "base" });
+                    })
+                    .map((a) => {
+                    const emp = sortedEmployees.find((e) => e.id === a.employee_id);
                     const label = emp ? (emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || a.employee_id) : a.employee_id;
                     return (
                       <span key={a.employee_id} className="bg-gray-100 dark:bg-gray-700 dark:text-gray-300 gap-1 inline-flex items-center px-0 py-1 rounded-full text-gray-700 text-sm">
@@ -504,7 +518,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                   <Dropdown_Custom
                     value={assignEmployeeId}
                     onChange={(e) => setAssignEmployeeId(e.target.value)}
-                    options={employees.map((emp) => ({
+                    options={sortedEmployees.map((emp) => ({
                       value: emp.id,
                       label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
                     }))}

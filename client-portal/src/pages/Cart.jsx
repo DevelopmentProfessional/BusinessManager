@@ -1,7 +1,7 @@
 /**
  * CART PAGE — Modern cart with order review + checkout flow.
  */
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon, ShoppingBagIcon, PlusIcon, MinusIcon, ShoppingCartIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Layout from "./components/Layout";
@@ -55,10 +55,16 @@ export default function Cart() {
   });
   const [editingServiceItem, setEditingServiceItem] = useState(null);
 
-  const cartWithDetails = cart.map((item) => ({
-    ...item,
-    booking_slot: serviceSlotByKey[item._key] || item.booking_slot || null,
-  }));
+  const cartWithDetails = useMemo(
+    () =>
+      cart
+        .map((item) => ({
+          ...item,
+          booking_slot: serviceSlotByKey[item._key] || item.booking_slot || null,
+        }))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [cart, serviceSlotByKey]
+  );
 
   function getApiErrorMessage(err, fallback) {
     const detail = err?.response?.data?.detail;

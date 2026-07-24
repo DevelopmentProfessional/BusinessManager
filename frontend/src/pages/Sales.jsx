@@ -49,6 +49,7 @@ import Modal_Feature_Select_Sales from "./components/Modal_SalesFeatureSelect";
 import Modal_TemplateUse from "./components/Modal_TemplateUse";
 import { getDisplayImageUrl } from "./components/Utils_Image";
 import useViewMode from "../services/useViewMode";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
 // Unified Product/Service Card Component
@@ -1787,7 +1788,7 @@ export default function Sales() {
             .getAll("receipt")
             .then((res) => {
               const all = Array.isArray(res?.data) ? res.data : [];
-              setRcptTemplates(all.filter((t) => t.template_type === "receipt" || t.type === "receipt"));
+              setRcptTemplates(sortItemsAlphabetically(all.filter((t) => t.template_type === "receipt" || t.type === "receipt"), ["name", "template_type"]));
             })
             .catch(() => {});
         }}

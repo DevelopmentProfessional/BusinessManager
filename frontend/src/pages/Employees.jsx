@@ -80,8 +80,11 @@ import Modal_Pay_Employee from "./components/Modal_EmployeePay";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 export default function Employees() {
+  const sortInsuranceByName = (plans) => sortItemsAlphabetically(plans, ["name", "description"]);
+
   // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
   const { employees, setEmployees, addEmployee, updateEmployee, removeEmployee, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, user: currentUser, setUser, hasPermission, refetchPermissions } = useStore();
 
@@ -166,7 +169,7 @@ export default function Employees() {
       .getAll()
       .then((res) => {
         const list = res?.data ?? res ?? [];
-        setDepartments(Array.isArray(list) ? list : []);
+        setDepartments(sortItemsAlphabetically(Array.isArray(list) ? list : [], ["name"]));
       })
       .catch(() => {});
   });
@@ -494,7 +497,7 @@ export default function Employees() {
         .getAll()
         .then((res) => {
           const list = res?.data ?? res ?? [];
-          setDepartments(Array.isArray(list) ? list : []);
+          setDepartments(sortItemsAlphabetically(Array.isArray(list) ? list : [], ["name"]));
         })
         .catch(() => {});
     } catch (err) {
@@ -893,7 +896,7 @@ export default function Employees() {
       setInsurancePlansLoading(true);
       try {
         const res = await insurancePlansAPI.getAll();
-        setInsurancePlans(res?.data ?? res ?? []);
+        setInsurancePlans(sortInsuranceByName(res?.data ?? res ?? []));
       } catch (err) {
         setInsuranceError("Failed to load insurance plans");
       } finally {
@@ -908,11 +911,11 @@ export default function Employees() {
     try {
       if (editingPlan?.id) {
         const res = await insurancePlansAPI.update(editingPlan.id, editingPlan);
-        setInsurancePlans((prev) => prev.map((p) => (p.id === editingPlan.id ? (res?.data ?? res) : p)));
+        setInsurancePlans((prev) => sortInsuranceByName(prev.map((p) => (p.id === editingPlan.id ? (res?.data ?? res) : p))));
         setEditingPlan(null);
       } else {
         const res = await insurancePlansAPI.create(newPlan);
-        setInsurancePlans((prev) => [...prev, res?.data ?? res]);
+        setInsurancePlans((prev) => sortInsuranceByName([...prev, res?.data ?? res]));
         setNewPlan({ name: "", description: "", is_active: true, document_id: null });
       }
     } catch (err) {
@@ -933,7 +936,7 @@ export default function Employees() {
   const handleInsurancePlanToggle = async (plan) => {
     try {
       const res = await insurancePlansAPI.update(plan.id, { is_active: !plan.is_active });
-      setInsurancePlans((prev) => prev.map((p) => (p.id === plan.id ? (res?.data ?? res) : p)));
+      setInsurancePlans((prev) => sortInsuranceByName(prev.map((p) => (p.id === plan.id ? (res?.data ?? res) : p))));
     } catch (err) {
       setInsuranceError("Failed to update plan");
     }

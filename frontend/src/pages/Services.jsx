@@ -50,6 +50,7 @@ import Gate_Permission from "./components/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
@@ -205,7 +206,7 @@ export default function Services() {
   // Get unique categories for filter
   const categories = useMemo(() => {
     const cats = new Set(services.map((s) => s.category).filter(Boolean));
-    return ["all", ...Array.from(cats)];
+    return ["all", ...sortItemsAlphabetically(Array.from(cats))];
   }, [services]);
 
   // Filtered services

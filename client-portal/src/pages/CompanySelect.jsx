@@ -163,11 +163,13 @@ export default function CompanySelect() {
   }
 
   const companiesSafe = Array.isArray(companies) ? companies : [];
-  const filtered = companiesSafe.filter((c) =>
-    String(c?.name || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const filtered = companiesSafe
+    .filter((c) =>
+      String(c?.name || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    )
+    .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8f9fc", display: "flex", flexDirection: "column" }}>

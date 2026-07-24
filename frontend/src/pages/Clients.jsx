@@ -55,6 +55,7 @@ import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 export default function Clients() {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
@@ -82,9 +83,10 @@ export default function Clients() {
   const [sortAsc, setSortAsc] = useState(true);
   const [internalActionCounts, setInternalActionCounts] = useState({});
   const [portalActionCounts, setPortalActionCounts] = useState({});
+  const sortedMemberships = useMemo(() => sortItemsAlphabetically(memberships, ["name", "billing_frequency"]), [memberships]);
 
   const multiEditFields = useMemo(() => {
-    const membershipOptions = memberships
+    const membershipOptions = sortedMemberships
       .filter((membership) => membership.is_active !== false)
       .map((membership) => ({
         value: String(membership.id ?? membership.key),
@@ -100,10 +102,10 @@ export default function Clients() {
       },
       { key: "notes", label: "Notes", type: "text", placeholder: "Add a note to all selected clients..." },
     ];
-  }, [memberships]);
+  }, [sortedMemberships]);
 
   const tierFilterOptions = useMemo(() => {
-    const dynamic = memberships
+    const dynamic = sortedMemberships
       .filter((m) => m.is_active !== false)
       .map((membership) => ({
         value: String(membership.id),
@@ -112,7 +114,7 @@ export default function Clients() {
       }));
 
     return [{ value: "all", label: "All Subscriptions", description: "Shows all clients regardless of subscription." }, { value: "none", label: "No Subscription", description: "Shows clients with no active subscriptions." }, ...dynamic];
-  }, [memberships]);
+  }, [sortedMemberships]);
 
   // Template modal state
   const [templateClient, setTemplateClient] = useState(null);
@@ -172,7 +174,7 @@ export default function Clients() {
     try {
       const response = await membershipsAPI.getAll();
       const membershipData = response?.data ?? response;
-      setMemberships(Array.isArray(membershipData) ? membershipData : []);
+      setMemberships(sortItemsAlphabetically(Array.isArray(membershipData) ? membershipData : [], ["name", "billing_frequency"]));
     } catch {
       setMemberships([]);
     }
@@ -621,7 +623,7 @@ export default function Clients() {
 
       {/* Create Client Modal (bottom-sheet form) */}
       <Modal isOpen={isModalOpen && modalContent === "client-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={memberships} />}
+        {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={sortedMemberships} />}
       </Modal>
 
       <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Client Page Controls">
@@ -690,7 +692,7 @@ export default function Clients() {
           </div>
 
           <div className="d-flex flex-column gap-2" style={{ maxHeight: "220px", overflowY: "auto" }}>
-            {memberships.map((membership) => (
+            {sortedMemberships.map((membership) => (
               <div key={membership.id} className="align-items-start border d-flex gap-2 justify-content-between p-0 rounded">
                 <div className="small">
                   <div className="fw-semibold">{membership.name}</div>

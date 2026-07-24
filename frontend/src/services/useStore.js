@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import cacheService from "./cacheService";
 import { getApiBaseUrl } from "./api";
+import { sortItemsAlphabetically } from "../utils/displaySort";
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -168,7 +169,10 @@ const useStore = create((set, get) => ({
     const state = get();
 
     // Update the user in the employees list (employees are now users)
-    const updatedEmployees = state.employees.map((employee) => (employee.id === userId ? { ...employee, ...updatedUser } : employee));
+    const updatedEmployees = sortItemsAlphabetically(
+      state.employees.map((employee) => (employee.id === userId ? { ...employee, ...updatedUser } : employee)),
+      ["first_name", "last_name", "username", "email"]
+    );
     set({ employees: updatedEmployees });
 
     // If the updated user is the current user, also update the current user's data
@@ -195,7 +199,10 @@ const useStore = create((set, get) => ({
 
     try {
       // Update the user in the store immediately for responsive UI
-      const updatedEmployees = state.employees.map((employee) => (employee.id === userId ? { ...employee, [permissionField]: value } : employee));
+      const updatedEmployees = sortItemsAlphabetically(
+        state.employees.map((employee) => (employee.id === userId ? { ...employee, [permissionField]: value } : employee)),
+        ["first_name", "last_name", "username", "email"]
+      );
       set({ employees: updatedEmployees });
 
       // If this is the current user, update their permissions as well
@@ -277,11 +284,14 @@ const useStore = create((set, get) => ({
 
   // Clients state
   clients: [],
-  setClients: (clients) => set({ clients }),
-  addClient: (client) => set((state) => ({ clients: [...state.clients, client] })),
+  setClients: (clients) => set({ clients: sortItemsAlphabetically(clients, ["name", "email"]) }),
+  addClient: (client) => set((state) => ({ clients: sortItemsAlphabetically([...state.clients, client], ["name", "email"]) })),
   updateClient: (id, updatedClient) =>
     set((state) => ({
-      clients: state.clients.map((client) => (client.id === id ? { ...client, ...updatedClient } : client)),
+      clients: sortItemsAlphabetically(
+        state.clients.map((client) => (client.id === id ? { ...client, ...updatedClient } : client)),
+        ["name", "email"]
+      ),
     })),
   removeClient: (id) =>
     set((state) => ({
@@ -290,11 +300,14 @@ const useStore = create((set, get) => ({
 
   // Services state
   services: [],
-  setServices: (services) => set({ services }),
-  addService: (service) => set((state) => ({ services: [...state.services, service] })),
+  setServices: (services) => set({ services: sortItemsAlphabetically(services, ["name", "category"]) }),
+  addService: (service) => set((state) => ({ services: sortItemsAlphabetically([...state.services, service], ["name", "category"]) })),
   updateService: (id, updatedService) =>
     set((state) => ({
-      services: state.services.map((service) => (service.id === id ? { ...service, ...updatedService } : service)),
+      services: sortItemsAlphabetically(
+        state.services.map((service) => (service.id === id ? { ...service, ...updatedService } : service)),
+        ["name", "category"]
+      ),
     })),
   removeService: (id) =>
     set((state) => ({
@@ -303,11 +316,14 @@ const useStore = create((set, get) => ({
 
   // Employees state (employees are now users)
   employees: [],
-  setEmployees: (employees) => set({ employees }),
-  addEmployee: (employee) => set((state) => ({ employees: [...state.employees, employee] })),
+  setEmployees: (employees) => set({ employees: sortItemsAlphabetically(employees, ["first_name", "last_name", "username", "email"]) }),
+  addEmployee: (employee) => set((state) => ({ employees: sortItemsAlphabetically([...state.employees, employee], ["first_name", "last_name", "username", "email"]) })),
   updateEmployee: (id, updatedEmployee) =>
     set((state) => ({
-      employees: state.employees.map((employee) => (employee.id === id ? { ...employee, ...updatedEmployee } : employee)),
+      employees: sortItemsAlphabetically(
+        state.employees.map((employee) => (employee.id === id ? { ...employee, ...updatedEmployee } : employee)),
+        ["first_name", "last_name", "username", "email"]
+      ),
     })),
   removeEmployee: (id) =>
     set((state) => ({
@@ -325,17 +341,20 @@ const useStore = create((set, get) => ({
 
   // Inventory state
   inventory: [],
-  setInventory: (inventory) => set({ inventory }),
+  setInventory: (inventory) => set({ inventory: sortItemsAlphabetically(inventory, ["name", "sku", "type"]) }),
   lowStockItems: [],
   setLowStockItems: (items) => set({ lowStockItems: items }),
 
   // Suppliers state
   suppliers: [],
-  setSuppliers: (suppliers) => set({ suppliers }),
-  addSupplier: (supplier) => set((state) => ({ suppliers: [...state.suppliers, supplier] })),
+  setSuppliers: (suppliers) => set({ suppliers: sortItemsAlphabetically(suppliers, ["name", "email"]) }),
+  addSupplier: (supplier) => set((state) => ({ suppliers: sortItemsAlphabetically([...state.suppliers, supplier], ["name", "email"]) })),
   updateSupplier: (id, updatedSupplier) =>
     set((state) => ({
-      suppliers: state.suppliers.map((supplier) => (supplier.id === id ? { ...supplier, ...updatedSupplier } : supplier)),
+      suppliers: sortItemsAlphabetically(
+        state.suppliers.map((supplier) => (supplier.id === id ? { ...supplier, ...updatedSupplier } : supplier)),
+        ["name", "email"]
+      ),
     })),
   removeSupplier: (id) =>
     set((state) => ({
@@ -344,11 +363,14 @@ const useStore = create((set, get) => ({
 
   // Documents state
   documents: [],
-  setDocuments: (documents) => set({ documents }),
-  addDocument: (document) => set((state) => ({ documents: [...state.documents, document] })),
+  setDocuments: (documents) => set({ documents: sortItemsAlphabetically(documents, ["original_filename", "filename", "description"]) }),
+  addDocument: (document) => set((state) => ({ documents: sortItemsAlphabetically([...state.documents, document], ["original_filename", "filename", "description"]) })),
   updateDocument: (id, updatedDocument) =>
     set((state) => ({
-      documents: state.documents.map((document) => (document.id === id ? { ...document, ...updatedDocument } : document)),
+      documents: sortItemsAlphabetically(
+        state.documents.map((document) => (document.id === id ? { ...document, ...updatedDocument } : document)),
+        ["original_filename", "filename", "description"]
+      ),
     })),
   removeDocument: (id) =>
     set((state) => ({
