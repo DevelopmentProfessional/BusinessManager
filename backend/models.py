@@ -129,6 +129,7 @@ class PermissionType(str, Enum):
     READ = "read"
     READ_ALL = "read_all"  # New: Read all records permission
     WRITE = "write"
+    WRITE_SELF_ONLY = "write_self_only"  # Schedule-specific: can write only own appointments
     WRITE_ALL = "write_all"  # Keeping for compatibility, but schedule will use VIEW_ALL
     DELETE = "delete"
     ADMIN = "admin"

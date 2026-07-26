@@ -80,7 +80,7 @@ const PAGE_OPTION_GROUPS = [
     ],
   },
 ];
-const PERMISSION_TYPES = ["read", "write", "approve_payments", "admin"];
+const PERMISSION_TYPES = ["read", "write", "write_self_only", "write_all", "approve_payments", "admin"];
 
 const PAY_SCHEDULE_DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
@@ -150,13 +150,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     { value: "one_time", label: "One-time (Contract)", description: "Single payment for completed project or contract work. No recurring schedule." },
   ];
 
-  const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
-  const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
-  const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
-  const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
-  const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
-  const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
-
   // Permissions state
   const [userPermissions, setUserPermissions] = useState([]);
   const [newPermission, setNewPermission] = useState({ page: "", permission: "" });
@@ -219,6 +212,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     sick_days: "",
     sick_days_used: "",
   });
+
+  const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
+  const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
+  const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
+  const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
+  const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
+  const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load available roles
@@ -615,7 +615,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const tabs = [
     { key: "details", label: "Details" },
     { key: "benefits", label: "Benefits" },
-    { key: "signature", label: "Signature", disabled: !employee },
     { key: "permissions", label: "Permissions", disabled: !employee },
     { key: "performance", label: "Performance", disabled: !employee },
     { key: "pay_settings", label: "Pay settings", disabled: !employee },

@@ -11,7 +11,7 @@ Set-Location $root
 
 $targets = @{
     internal = Join-Path $root "start-server.ps1"
-    client = Join-Path $root "start-client.ps1"
+    client   = Join-Path $root "start-client.ps1"
     launcher = Join-Path $root "launch.ps1"
 }
 
