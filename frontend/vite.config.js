@@ -18,6 +18,7 @@ export default defineConfig(({ command }) => {
 
   return {
     define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "0.0.0"),
       __APP_BUILD_TIMESTAMP__: JSON.stringify(buildTimestamp),
     },
     plugins,

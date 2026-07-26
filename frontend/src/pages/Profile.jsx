@@ -35,6 +35,7 @@
  *   2026-03-07 | Claude  | Reduced Profile footer tab width and side padding
  *   2026-03-07 | Claude  | Fixed compact-mode footer centering and training toggle width
  *   2026-03-28 | Claude  | Refactored: extracted panel JSX into Panel_* components
+ *   2026-07-25 | GitHub Copilot | Added environment metadata (last updated + app version/build timestamp) to settings accordion
  * ============================================================
  */
 
@@ -258,6 +259,9 @@ const Profile = () => {
     logout();
     navigate("/login");
   };
+
+  const appVersion = (typeof __APP_VERSION__ !== "undefined" && __APP_VERSION__) || import.meta.env.VITE_APP_VERSION || "0.0.0";
+  const appBuildTimestamp = (typeof __APP_BUILD_TIMESTAMP__ !== "undefined" && __APP_BUILD_TIMESTAMP__) || null;
 
   const currentDbEnvironment = user?.db_environment === "production" ? "production" : "production";
   const [dbLoading, setDbLoading] = useState(false);
@@ -1145,6 +1149,23 @@ const Profile = () => {
     return new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const parsed = new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) return "N/A";
+    return parsed.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const environmentLastUpdated = formatDateTime(user?.updated_at || user?.last_login || null);
+  const appBuildLabel = formatDateTime(appBuildTimestamp);
+
   const getRoleBadgeColor = (role) => {
     switch (role?.toLowerCase()) {
       case "admin":
@@ -1534,6 +1555,9 @@ const Profile = () => {
                         dbError={dbError}
                         handleSwitchEnvironment={handleSwitchEnvironment}
                         DB_ENVIRONMENTS={DB_ENVIRONMENTS}
+                        environmentLastUpdated={environmentLastUpdated}
+                        appVersion={appVersion}
+                        appBuildLabel={appBuildLabel}
                         HelpIcon={HelpIcon}
                         onClose={() => setMeSectionOpen("")}
                         onSave={() => setMeSectionOpen("")}
