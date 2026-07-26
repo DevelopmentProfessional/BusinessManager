@@ -133,6 +133,7 @@ class PermissionType(str, Enum):
     DELETE = "delete"
     ADMIN = "admin"
     VIEW_ALL = "view_all"  # Schedule page uses this instead of WRITE_ALL
+    APPROVE_PAYMENTS = "approve_payments"  # Approve/mark payments for billable schedule events
 
 # ─── 3 BASE MODEL ──────────────────────────────────────────────────────────────
 # Base model with common fields

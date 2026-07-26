@@ -46,6 +46,8 @@
  *   2026-03-14 | Copilot | Updated footer buttons to one row, shortened labels, and fixed 3rem square sizing
  *   2026-03-23 | Copilot | Fixed month-view January cell truncation by using date-based cutoff across year boundaries
  *   2026-05-15 | Copilot | Added client and service labels to schedule events across calendar views
+ *   2026-07-25 | GitHub Copilot | Added in-card mark-paid action for billable schedule events and billable-only unpaid counter
+ *   2026-07-25 | GitHub Copilot | Restricted in-card payment approval to schedule:approve_payments permission
  * ============================================================
  */
 
@@ -58,7 +60,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, clientCartAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
-import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
@@ -353,6 +355,31 @@ export default function Schedule() {
     });
   }, [appointments, filters]);
 
+  const isBillableAppointment = useCallback(
+    (appointment) => {
+      if (!appointment) return false;
+      const type = appointment.appointment_type || "one_time";
+      if (type !== "one_time" && type !== "series") return false;
+      if (!appointment.client_id || !appointment.service_id) return false;
+
+      const service = services.find((s) => s.id === appointment.service_id);
+      if (!service) return true;
+
+      const price = Number(service.price ?? 0);
+      return Number.isFinite(price) ? price > 0 : true;
+    },
+    [services]
+  );
+
+  const isUnpaidBillableAppointment = useCallback(
+    (appointment) => {
+      if (!isBillableAppointment(appointment)) return false;
+      if (appointment.status === "cancelled") return false;
+      return !appointment.is_paid;
+    },
+    [isBillableAppointment]
+  );
+
   // ─── 7 CALENDAR UTILITIES ────────────────────────────────────────────────────
   const days = getCalendarDays();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -400,6 +427,10 @@ export default function Schedule() {
   // ─── 9 PERMISSION HELPERS ────────────────────────────────────────────────────
   const canCreateSchedule = useCallback(() => {
     return hasPermission("schedule", "write") || hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
+  }, [hasPermission]);
+
+  const canApprovePayments = useCallback(() => {
+    return hasPermission("schedule", "approve_payments");
   }, [hasPermission]);
 
   const canEditAppointment = useCallback(
@@ -663,6 +694,24 @@ export default function Schedule() {
     setSelectedAttendees([]);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
 
+  const handleMarkAppointmentPaid = useCallback(
+    async (e, appointment) => {
+      e.stopPropagation();
+      if (!appointment?.id) return;
+      if (!canEditAppointment(appointment)) return;
+      if (!canApprovePayments()) return;
+      if (!isBillableAppointment(appointment) || appointment.is_paid) return;
+
+      try {
+        await scheduleAPI.update(appointment.id, { is_paid: true });
+        setAppointments(appointments.map((item) => (item.id === appointment.id ? { ...item, is_paid: true } : item)));
+      } catch (error) {
+        console.error("Failed to mark appointment as paid:", error);
+      }
+    },
+    [appointments, canApprovePayments, canEditAppointment, isBillableAppointment, setAppointments]
+  );
+
   // ─── 14 DRAG & DROP HANDLERS ─────────────────────────────────────────────────
   const handleDragStart = useCallback((e, appointment) => {
     setDraggedAppointment(appointment);
@@ -854,7 +903,7 @@ export default function Schedule() {
             {/* Unpaid past-due indicator */}
             {(() => {
               const now = new Date();
-              const count = appointments.filter((a) => a.service_id && !a.is_paid && new Date(a.appointment_date) < now && a.status !== "cancelled").length;
+              const count = appointments.filter((a) => isUnpaidBillableAppointment(a) && new Date(a.appointment_date) < now).length;
               return count > 0 ? (
                 <div className="align-items-center d-inline-flex justify-content-center position-relative" title={`${count} unpaid past appointment${count > 1 ? "s" : ""}`} style={{ cursor: "default" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#6b7280" strokeWidth="1.8" aria-hidden="true">
@@ -1050,6 +1099,17 @@ export default function Schedule() {
                                       </div>
                                       {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                       <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
+                                        {isBillableAppointment(appointment) && canApprovePayments() && (
+                                          <button
+                                            type="button"
+                                            className={`schedule-paid-toggle ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
+                                            title={appointment.is_paid ? "Paid" : "Mark as paid"}
+                                            aria-label={appointment.is_paid ? "Appointment paid" : "Mark appointment as paid"}
+                                            onClick={(e) => handleMarkAppointmentPaid(e, appointment)}
+                                          >
+                                            <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
+                                          </button>
+                                        )}
                                         {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                       </div>
                                     </div>
@@ -1200,13 +1260,23 @@ export default function Schedule() {
                                     onDragEnd={handleDragEnd}
                                     onClick={(e) => handleAppointmentClick(e, appointment)}
                                   >
-                                    {appointment.service_id && <span style={{ position: "absolute", top: 3, right: 3, fontSize: "0.55rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
                                     <div className="appointment-time">{timeString}</div>
                                     <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                       {primaryLabel}
                                     </div>
                                     {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                     <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
+                                      {isBillableAppointment(appointment) && canApprovePayments() && (
+                                        <button
+                                          type="button"
+                                          className={`schedule-paid-toggle ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
+                                          title={appointment.is_paid ? "Paid" : "Mark as paid"}
+                                          aria-label={appointment.is_paid ? "Appointment paid" : "Mark appointment as paid"}
+                                          onClick={(e) => handleMarkAppointmentPaid(e, appointment)}
+                                        >
+                                          <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
+                                        </button>
+                                      )}
                                       {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                     </div>
                                   </div>
@@ -1313,7 +1383,6 @@ export default function Schedule() {
                                         onDragEnd={handleDragEnd}
                                         onClick={(e) => handleAppointmentClick(e, appointment)}
                                       >
-                                        {appointment.service_id && <span style={{ position: "absolute", top: 2, right: 2, fontSize: "0.5rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
                                         <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
                                           <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                                             {primaryLabel}
@@ -1323,6 +1392,17 @@ export default function Schedule() {
                                           <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                             {secondaryLabel}
                                           </div>
+                                        )}
+                                        {isBillableAppointment(appointment) && canApprovePayments() && (
+                                          <button
+                                            type="button"
+                                            className={`schedule-paid-toggle schedule-paid-toggle--month ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
+                                            title={appointment.is_paid ? "Paid" : "Mark as paid"}
+                                            aria-label={appointment.is_paid ? "Appointment paid" : "Mark appointment as paid"}
+                                            onClick={(e) => handleMarkAppointmentPaid(e, appointment)}
+                                          >
+                                            <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
+                                          </button>
                                         )}
                                       </div>
                                     );
@@ -1899,7 +1979,7 @@ export default function Schedule() {
         .appointment-dot {
           background: #007bff;
           color: white;
-          padding: 4px 0 4px 6px;
+          padding: 4px 18px 4px 6px;
           border-radius: 8px;
           font-size: 10px;
           margin-bottom: 2px;
@@ -1909,6 +1989,8 @@ export default function Schedule() {
           min-width: 0;
           cursor: pointer;
           transition: background-color 0.2s;
+          text-align: left;
+          position: relative;
         }
         
         .appointment-dot:hover {
@@ -1943,7 +2025,7 @@ export default function Schedule() {
         .appointment-event {
           color: white;
           border-radius: 4px;
-          padding: 2px 4px;
+          padding: 2px 18px 2px 4px;
           overflow: hidden;
           cursor: pointer;
           font-size: 10px;
@@ -1953,10 +2035,50 @@ export default function Schedule() {
           box-sizing: border-box;
           left: 0;
           transition: opacity 0.2s;
+          text-align: left;
         }
 
         .appointment-event:hover {
           opacity: 0.85;
+        }
+
+        .schedule-paid-toggle {
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          background: rgba(255, 255, 255, 0.18);
+          color: rgba(255, 255, 255, 0.95);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          cursor: pointer;
+          transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+          flex-shrink: 0;
+        }
+
+        .schedule-paid-toggle:hover {
+          transform: scale(1.06);
+          background: rgba(255, 255, 255, 0.28);
+        }
+
+        .schedule-paid-toggle.is-paid {
+          background: #16a34a;
+          border-color: #14532d;
+          color: #ffffff;
+        }
+
+        .schedule-paid-toggle.is-unpaid {
+          background: rgba(255, 255, 255, 0.16);
+          border-color: rgba(255, 255, 255, 0.7);
+          color: rgba(255, 255, 255, 0.95);
+        }
+
+        .schedule-paid-toggle--month {
+          position: absolute;
+          bottom: 2px;
+          right: 2px;
         }
 
         .overlap-grey-bar {
