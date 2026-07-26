@@ -62,21 +62,21 @@ import Panel_Database from "./components/Panel_Database";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
-const AlignLeftIcon = ({ className="app-icon flex-shrink-0" }) => (
+const AlignLeftIcon = ({ className = "app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignCenterIcon = ({ className="app-icon flex-shrink-0" }) => (
+const AlignCenterIcon = ({ className = "app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
     <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
   </svg>
 );
-const AlignRightIcon = ({ className="app-icon flex-shrink-0" }) => (
+const AlignRightIcon = ({ className = "app-icon flex-shrink-0" }) => (
   <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
     <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
     <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />

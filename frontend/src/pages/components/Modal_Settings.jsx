@@ -117,7 +117,9 @@ const Modal_Settings = ({
           </div>
         )}
       </div>
-      <div className="mb-2 small text-muted">App Version {appVersion || "0.0.0"} (Build: {appBuildLabel || "N/A"})</div>
+      <div className="mb-2 small text-muted">
+        App Version {appVersion || "0.0.0"} (Build: {appBuildLabel || "N/A"})
+      </div>
       {dbMessage && <div className="mt-1 small text-success">{dbMessage}</div>}
       {dbError && <div className="mt-1 small text-danger">{dbError}</div>}
 
