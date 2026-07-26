@@ -39,6 +39,7 @@
  *   2026-06-13 | GitHub Copilot | Switched schedule form to a single datetime input and moved discount handling to Sales checkout
  *   2026-06-13 | GitHub Copilot | Added per-appointment Reminder toggle and wired schedule-level reminder defaults
  *   2026-07-25 | GitHub Copilot | Fixed self-scheduling employee auto-selection by robustly resolving logged-in user to employee record
+ *   2026-07-25 | GitHub Copilot | Show current employee name in create mode for self-schedulers; keep edit mode employee selection unchanged
  * ============================================================
  */
 
@@ -94,6 +95,12 @@ const normalizeText = (value) =>
     .toLowerCase();
 
 const getEmployeeName = (employee) => normalizeText(`${employee?.first_name ?? ""} ${employee?.last_name ?? ""}`);
+
+const getEmployeeDisplayName = (employee) => {
+  const fullName = `${employee?.first_name ?? ""} ${employee?.last_name ?? ""}`.trim();
+  if (fullName) return fullName;
+  return employee?.username || employee?.email || "Your profile";
+};
 
 const resolveCurrentEmployee = (employeesList, currentUser) => {
   if (!currentUser || !Array.isArray(employeesList) || employeesList.length === 0) return null;
@@ -384,11 +391,13 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   // Auto-select current user if they can only schedule for themselves
   const isWriteAll = hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
   const isWriteOnly = hasPermission("schedule", "write") && !isWriteAll;
+  const isEditMode = Boolean(appointment?.id);
   const currentEmployee = resolveCurrentEmployee(employees, user);
-  const employeeOptions = isWriteOnly && currentEmployee ? [currentEmployee] : employees;
+  const employeeOptions = !isEditMode && isWriteOnly && currentEmployee ? [currentEmployee] : employees;
+  const employeePlaceholder = !isEditMode && isWriteOnly && currentEmployee ? getEmployeeDisplayName(currentEmployee) : typeConfig.employeeMultiple ? "Select employees" : "Select employee";
 
   useEffect(() => {
-    if (isWriteOnly && currentEmployee) {
+    if (!isEditMode && isWriteOnly && currentEmployee) {
       // Lock employee selection to current user when write-only
       if (!Array.isArray(formData.employee_ids) || String(formData.employee_ids[0] ?? "") !== String(currentEmployee.id)) {
         setFormData((prev) => ({ ...prev, employee_ids: [currentEmployee.id] }));
@@ -396,7 +405,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     } else if ((!Array.isArray(formData.employee_ids) || formData.employee_ids.length === 0) && employees.length === 1) {
       setFormData((prev) => ({ ...prev, employee_ids: [employees[0].id] }));
     }
-  }, [currentEmployee, employees, formData.employee_ids, isWriteOnly]);
+  }, [currentEmployee, employees, formData.employee_ids, isEditMode, isWriteOnly]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -650,7 +659,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                           value: employee.id,
                           label: `${employee.first_name} ${employee.last_name}`.trim(),
                         }))}
-                        placeholder={typeConfig.employeeMultiple ? "Select employees" : "Select employee"}
+                        placeholder={employeePlaceholder}
                         required
                         searchable={true}
                         disabled={isWriteOnly}
