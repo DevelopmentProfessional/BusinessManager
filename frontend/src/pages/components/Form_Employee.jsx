@@ -255,7 +255,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       try {
         const response = await insurancePlansAPI.getAll();
         const data = response?.data ?? response;
-        if (Array.isArray(data)) setInsurancePlans(sortItemsAlphabetically(data.filter((p) => p.is_active), ["name", "id"]));
+        if (Array.isArray(data))
+          setInsurancePlans(
+            sortItemsAlphabetically(
+              data.filter((p) => p.is_active),
+              ["name", "id"]
+            )
+          );
       } catch (err) {
         console.error("Failed to load insurance plans:", err);
       }
@@ -435,9 +441,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     const alreadySupervisingOther = new Set(employeesList.filter((e) => e.reports_to && e.id !== employee?.id && e.reports_to !== employee?.id).map((e) => e.reports_to));
     return sortItemsAlphabetically(
       employeesList.filter((e) => {
-      if (e.id === employee?.id) return false; // can't supervise yourself
-      if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
-      return true;
+        if (e.id === employee?.id) return false; // can't supervise yourself
+        if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
+        return true;
       }),
       ["first_name", "last_name", "username", "email"]
     );
