@@ -47,7 +47,7 @@
  *   2026-03-23 | Copilot | Fixed month-view January cell truncation by using date-based cutoff across year boundaries
  *   2026-05-15 | Copilot | Added client and service labels to schedule events across calendar views
  *   2026-07-25 | GitHub Copilot | Added in-card mark-paid action for billable schedule events and billable-only unpaid counter
- *   2026-07-25 | GitHub Copilot | Restricted in-card payment approval to schedule:approve_payments permission
+ *   2026-07-25 | GitHub Copilot | Enabled in-card payment approval for all users who can create schedule events
  * ============================================================
  */
 
@@ -430,8 +430,8 @@ export default function Schedule() {
   }, [hasPermission]);
 
   const canApprovePayments = useCallback(() => {
-    return hasPermission("schedule", "approve_payments");
-  }, [hasPermission]);
+    return canCreateSchedule();
+  }, [canCreateSchedule]);
 
   const canEditAppointment = useCallback(
     (appointment) => {

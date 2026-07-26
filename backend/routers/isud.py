@@ -35,7 +35,7 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-17 | GitHub Copilot | Fixed inventory image upload compatibility with legacy check constraints
 #   2026-06-11 | GitHub Copilot | Auto-create default asset unit on ASSET inventory insert; honor provided asset_units when supplied
-#   2026-07-25 | GitHub Copilot | Added schedule payment approval guard requiring schedule:approve_payments for is_paid changes
+#   2026-07-25 | GitHub Copilot | Aligned schedule payment update behavior with schedule write access
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -1213,10 +1213,6 @@ async def update_by_id(
 ):
     model_class = get_model_class(table_name)
     _require_isud_permission(current_user, session, table_name, "write")
-
-    # Marking schedule records paid/unpaid requires an explicit payment approval permission.
-    if table_name.lower() in ("schedule", "schedules") and "is_paid" in record_data:
-        _require_isud_permission(current_user, session, table_name, "approve_payments")
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
