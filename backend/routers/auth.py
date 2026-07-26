@@ -64,6 +64,41 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours (was 30 min — too short for a working session)
 REMEMBER_ME_EXPIRE_DAYS = 30
 
+
+def normalize_permission_value(value: Optional[str]) -> str:
+    """Normalize permission values and support legacy aliases."""
+    if value is None:
+        return ""
+    if isinstance(value, PermissionType):
+        return value.value
+
+    text = str(value).strip().lower()
+    aliases = {
+        "viewall": PermissionType.VIEW_ALL.value,
+        "view_all": PermissionType.VIEW_ALL.value,
+        "write_selfonly": PermissionType.WRITE_SELF_ONLY.value,
+        "writeselfonly": PermissionType.WRITE_SELF_ONLY.value,
+        "write-self-only": PermissionType.WRITE_SELF_ONLY.value,
+        "write_self_only": PermissionType.WRITE_SELF_ONLY.value,
+        "readall": PermissionType.READ_ALL.value,
+        "read_all": PermissionType.READ_ALL.value,
+        "writeall": PermissionType.WRITE_ALL.value,
+        "write_all": PermissionType.WRITE_ALL.value,
+        "approvepayments": PermissionType.APPROVE_PAYMENTS.value,
+        "approve_payments": PermissionType.APPROVE_PAYMENTS.value,
+    }
+    return aliases.get(text, text)
+
+
+def parse_permission_type(value: Optional[str]) -> PermissionType:
+    """Parse a permission string into a PermissionType enum with compatibility aliases."""
+    normalized = normalize_permission_value(value)
+    try:
+        return PermissionType(normalized)
+    except ValueError as exc:
+        raise ValueError(f"Invalid permission type: {value}") from exc
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
     to_encode = data.copy()
@@ -161,7 +196,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
         all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin']
-        all_permissions = ['read', 'write', 'write_self_only', 'write_all', 'delete', 'admin']
+        all_permissions = ['read', 'read_all', 'write', 'write_self_only', 'write_all', 'delete', 'admin', 'view_all', 'approve_payments']
         admin_permissions = []
         for page in all_pages:
             for permission in all_permissions:
@@ -710,9 +745,9 @@ def create_user_permission(
         )
 
     # Validate permission type
-    valid_permissions = [p.value for p in PermissionType]
+    valid_permissions = sorted([p.value for p in PermissionType])
     try:
-        PermissionType(permission_data.permission)
+        perm_type = parse_permission_type(permission_data.permission)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -737,7 +772,7 @@ def create_user_permission(
         select(UserPermission).where(
             (UserPermission.user_id == user_uuid) &
             (UserPermission.page == permission_data.page) &
-            (UserPermission.permission == permission_data.permission)
+            (UserPermission.permission == perm_type)
         )
     ).first()
 
@@ -750,7 +785,7 @@ def create_user_permission(
     permission = UserPermission(
         user_id=user_uuid,
         page=permission_data.page,
-        permission=permission_data.permission,
+        permission=perm_type,
         granted=permission_data.granted
     )
 
@@ -783,12 +818,10 @@ def create_user_permission_with_body(
         raise HTTPException(status_code=400, detail="Invalid user_id format; must be a UUID")
 
     # Reuse the same logic as the path-based endpoint by inlining the checks
-    # Validate permission type (no auto-conversion to avoid enum issues)
-    valid_permissions = [p.value for p in PermissionType]
-    original_permission = permission_data.permission
-
+    # Validate permission type with compatibility aliases for legacy clients.
+    valid_permissions = sorted([p.value for p in PermissionType])
     try:
-        perm_type = PermissionType(permission_data.permission)
+        perm_type = parse_permission_type(permission_data.permission)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -809,7 +842,7 @@ def create_user_permission_with_body(
         select(UserPermission).where(
             (UserPermission.user_id == body_user_id) &
             (UserPermission.page == permission_data.page) &
-            (UserPermission.permission == permission_data.permission)
+            (UserPermission.permission == perm_type)
         )
     ).first()
     if existing_permission:
@@ -818,7 +851,7 @@ def create_user_permission_with_body(
     permission = UserPermission(
         user_id=body_user_id,
         page=permission_data.page,
-        permission=permission_data.permission,
+        permission=perm_type,
         granted=permission_data.granted
     )
     session.add(permission)
@@ -1390,7 +1423,7 @@ def add_role_permission(
 
     # Validate permission type
     try:
-        perm_type = PermissionType(permission_data.permission.lower())
+        perm_type = parse_permission_type(permission_data.permission)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
