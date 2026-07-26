@@ -271,7 +271,6 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-5 p-1 gap-1">
             <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-2xl p-1 space-y-1">
-
               <div className="border-gray-200 border-t dark:border-gray-700 pt-1 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="dark:text-gray-400 text-gray-500">Subtotal</span>
@@ -336,9 +335,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               {isCardScan || isTapPay ? (
                 <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-1 rounded-2xl space-y-1">
                   <div className="flex items-center gap-1">
-                    <div className="bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-full">
-                      {isTapPay ? <DevicePhoneMobileIcon className="h-5 text-emerald-600 w-5" /> : <CreditCardIcon className="h-5 text-emerald-600 w-5" />}
-                    </div>
+                    <div className="bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-full">{isTapPay ? <DevicePhoneMobileIcon className="h-5 text-emerald-600 w-5" /> : <CreditCardIcon className="h-5 text-emerald-600 w-5" />}</div>
                     <div>
                       <p className="dark:text-white font-semibold text-gray-900 text-sm">{isTapPay ? "Tap to Pay" : "Stripe checkout"}</p>
                       <p className="dark:text-gray-400 text-gray-500 text-xs">{stripeReady ? "Payment opens in Stripe's hosted flow. No card data is stored in the app." : "Stripe is not configured for this company."}</p>
