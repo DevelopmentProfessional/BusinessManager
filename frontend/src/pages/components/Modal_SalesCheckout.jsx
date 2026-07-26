@@ -128,6 +128,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
       const email = selectedClient?.email || "";
       if (!email) {
         setPromptEmail("");
+        setEmailSaveError("");
         setShowEmailPrompt(true);
       } else {
         setTemplateFilterType("receipt");
@@ -136,6 +137,29 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
     } else {
       setTemplateFilterType("receipt");
       setShowTemplateUse(true);
+    }
+  };
+
+  const handleSavePromptEmail = async () => {
+    const nextEmail = String(promptEmail || "").trim();
+    if (!nextEmail || !nextEmail.includes("@")) {
+      setEmailSaveError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!selectedClient?.id) {
+      setEmailSaveError("No client selected for this receipt.");
+      return;
+    }
+
+    try {
+      setEmailSaveError("");
+      await clientsAPI.update(selectedClient.id, { email: nextEmail });
+      setShowEmailPrompt(false);
+      setTemplateFilterType("receipt");
+      setShowTemplateUse(true);
+    } catch (err) {
+      setEmailSaveError(err?.response?.data?.detail || "Failed to save email.");
     }
   };
 
@@ -226,40 +250,27 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                 <p className="dark:text-gray-300 mb-1 text-gray-700 text-sm">Client has no email on file. Enter email to send receipt:</p>
                 <div className="flex gap-1">
                   <input type="email" value={promptEmail} onChange={(e) => setPromptEmail(e.target.value)} placeholder="client@email.com" className="flex-1 form-control form-control-sm" />
+                  <button type="button" onClick={handleSavePromptEmail} className="btn btn-success btn-sm">
+                    Save
+                  </button>
                   <button
                     type="button"
-                    {isCardScan || isTapPay ? (
-                      <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-1 rounded-2xl space-y-1">
-                        <div className="flex items-center gap-1">
-                          <div className="bg-emerald-100 dark:bg-emerald-900/40 p-1 rounded-full">
-                            {isTapPay ? <DevicePhoneMobileIcon className="h-5 text-emerald-600 w-5" /> : <CreditCardIcon className="h-5 text-emerald-600 w-5" />}
-                          </div>
-                          <div>
-                            <p className="dark:text-white font-semibold text-gray-900 text-sm">{isTapPay ? "Tap to Pay" : "Stripe checkout"}</p>
-                            <p className="dark:text-gray-400 text-gray-500 text-xs">{stripeReady ? "Payment opens in Stripe's hosted flow. No card data is stored in the app." : "Stripe is not configured for this company."}</p>
-                          </div>
-                        </div>
-                        <div className="border border-dashed border-emerald-200 dark:border-emerald-800 rounded-xl p-1 text-sm text-gray-600 dark:text-gray-300">
-                          Total: <span className="font-semibold text-gray-900 dark:text-white">${total.toFixed(2)}</span>
-                        </div>
-                        <button
-                          onClick={handleSubmit}
-                          disabled={!stripeReady || isProcessing}
-                          className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${stripeReady && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
-                        >
-                          {isProcessing ? (
-                            <>
-                              <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircleIcon className="ui-icon-5" />
-                              Continue to secure checkout
-                            </>
-                          )}
-                        </button>
-                      </div>
+                    onClick={() => {
+                      setShowEmailPrompt(false);
+                      setEmailSaveError("");
+                    }}
+                    className="btn btn-outline-secondary btn-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {emailSaveError && <p className="mt-2 text-danger text-xs">{emailSaveError}</p>}
               </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-5 p-1 gap-1">
+            <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-2xl p-1 space-y-1">
 
               <div className="border-gray-200 border-t dark:border-gray-700 pt-1 space-y-1">
                 <div className="flex justify-between text-sm">
