@@ -38,6 +38,7 @@
  *   2026-06-13 | GitHub Copilot | Added schedule production item create-from-search flow (+ button) with prefill and auto-select
  *   2026-06-13 | GitHub Copilot | Switched schedule form to a single datetime input and moved discount handling to Sales checkout
  *   2026-06-13 | GitHub Copilot | Added per-appointment Reminder toggle and wired schedule-level reminder defaults
+ *   2026-07-25 | GitHub Copilot | Fixed self-scheduling employee auto-selection by robustly resolving logged-in user to employee record
  * ============================================================
  */
 
@@ -86,6 +87,36 @@ const APPOINTMENT_STATUS_OPTIONS = [
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
 ];
+
+const normalizeText = (value) => String(value ?? "").trim().toLowerCase();
+
+const getEmployeeName = (employee) => normalizeText(`${employee?.first_name ?? ""} ${employee?.last_name ?? ""}`);
+
+const resolveCurrentEmployee = (employeesList, currentUser) => {
+  if (!currentUser || !Array.isArray(employeesList) || employeesList.length === 0) return null;
+
+  const userId = String(currentUser.id ?? "");
+  const userEmployeeId = String(currentUser.employee_id ?? "");
+  const userName = getEmployeeName(currentUser);
+  const userUsername = normalizeText(currentUser.username);
+  const userEmail = normalizeText(currentUser.email);
+
+  return (
+    employeesList.find((employee) => {
+      const employeeId = String(employee.id ?? "");
+      const employeeName = getEmployeeName(employee);
+      const employeeUsername = normalizeText(employee.username);
+      const employeeEmail = normalizeText(employee.email);
+
+      if (userId && employeeId === userId) return true;
+      if (userEmployeeId && employeeId === userEmployeeId) return true;
+      if (userUsername && employeeUsername && employeeUsername === userUsername) return true;
+      if (userEmail && employeeEmail && employeeEmail === userEmail) return true;
+      if (userName && employeeName && employeeName === userName) return true;
+      return false;
+    }) || null
+  );
+};
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
@@ -350,18 +381,19 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   // Auto-select current user if they can only schedule for themselves
   const isWriteAll = hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
   const isWriteOnly = hasPermission("schedule", "write") && !isWriteAll;
+  const currentEmployee = resolveCurrentEmployee(employees, user);
+  const employeeOptions = isWriteOnly && currentEmployee ? [currentEmployee] : employees;
 
   useEffect(() => {
-    if (user && isWriteOnly) {
+    if (isWriteOnly && currentEmployee) {
       // Lock employee selection to current user when write-only
-      const self = employees.find((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase());
-      if (self && (!Array.isArray(formData.employee_ids) || formData.employee_ids[0] !== self.id)) {
-        setFormData((prev) => ({ ...prev, employee_ids: [self.id] }));
+      if (!Array.isArray(formData.employee_ids) || String(formData.employee_ids[0] ?? "") !== String(currentEmployee.id)) {
+        setFormData((prev) => ({ ...prev, employee_ids: [currentEmployee.id] }));
       }
     } else if ((!Array.isArray(formData.employee_ids) || formData.employee_ids.length === 0) && employees.length === 1) {
       setFormData((prev) => ({ ...prev, employee_ids: [employees[0].id] }));
     }
-  }, [employees, formData.employee_ids, isWriteOnly, user]);
+  }, [currentEmployee, employees, formData.employee_ids, isWriteOnly]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -611,7 +643,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                        options={employeeOptions.map((employee) => ({
                           value: employee.id,
                           label: `${employee.first_name} ${employee.last_name}`.trim(),
                         }))}
@@ -695,7 +727,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                        options={employeeOptions.map((employee) => ({
                           value: employee.id,
                           label: `${employee.first_name} ${employee.last_name}`.trim(),
                         }))}
@@ -789,7 +821,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                        options={employeeOptions.map((employee) => ({
                           value: employee.id,
                           label: `${employee.first_name} ${employee.last_name}`.trim(),
                         }))}
