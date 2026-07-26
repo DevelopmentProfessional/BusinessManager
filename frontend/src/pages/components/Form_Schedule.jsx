@@ -88,7 +88,10 @@ const APPOINTMENT_STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-const normalizeText = (value) => String(value ?? "").trim().toLowerCase();
+const normalizeText = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
 
 const getEmployeeName = (employee) => normalizeText(`${employee?.first_name ?? ""} ${employee?.last_name ?? ""}`);
 
