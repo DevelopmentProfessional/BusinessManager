@@ -64,6 +64,17 @@ EOF
 
 # Nginx config - Pure API Proxy (no static files)
 cat > /etc/nginx/conf.d/businessmanager.conf << 'EOF'
+# CORS origin allowlist for browser-based API calls (production + local/LAN clients)
+map $http_origin $cors_allow_origin {
+    default "";
+    ~^https://([a-zA-Z0-9-]+\.)?vadpivi\.com$ $http_origin;
+    ~^https?://localhost(:\d+)?$ $http_origin;
+    ~^https?://127\.0\.0\.1(:\d+)?$ $http_origin;
+    ~^https?://192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$ $http_origin;
+    ~^https?://10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$ $http_origin;
+    ~^https?://172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$ $http_origin;
+}
+
 # Upstream servers
 upstream staff_api {
     server 127.0.0.1:8000 max_fails=3 fail_timeout=30s;
@@ -81,13 +92,15 @@ server {
 
     # Staff API routes
     location /api/v1/ {
+        add_header Access-Control-Allow-Origin $cors_allow_origin always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Expose-Headers "*" always;
+        add_header Vary "Origin" always;
+
         if ($request_method = OPTIONS) {
-            add_header Access-Control-Allow-Origin $http_origin always;
-            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
-            add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 86400 always;
-            add_header Vary "Origin" always;
             return 204;
         }
 
@@ -106,13 +119,15 @@ server {
 
     # Client API routes
     location /api/client/ {
+        add_header Access-Control-Allow-Origin $cors_allow_origin always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        add_header Access-Control-Expose-Headers "*" always;
+        add_header Vary "Origin" always;
+
         if ($request_method = OPTIONS) {
-            add_header Access-Control-Allow-Origin $http_origin always;
-            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
-            add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 86400 always;
-            add_header Vary "Origin" always;
             return 204;
         }
 

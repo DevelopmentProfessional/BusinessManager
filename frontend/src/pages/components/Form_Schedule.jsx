@@ -40,6 +40,7 @@
  *   2026-06-13 | GitHub Copilot | Added per-appointment Reminder toggle and wired schedule-level reminder defaults
  *   2026-07-25 | GitHub Copilot | Fixed self-scheduling employee auto-selection by robustly resolving logged-in user to employee record
  *   2026-07-25 | GitHub Copilot | Show current employee name in create mode for self-schedulers; keep edit mode employee selection unchanged
+ *   2026-07-26 | GitHub Copilot | Added write-only fallback to current user identity when employee list is not readable
  * ============================================================
  */
 
@@ -102,8 +103,22 @@ const getEmployeeDisplayName = (employee) => {
   return employee?.username || employee?.email || "Your profile";
 };
 
+const buildFallbackEmployeeFromUser = (currentUser) => {
+  if (!currentUser) return null;
+  const fallbackId = currentUser.employee_id ?? currentUser.id;
+  if (!fallbackId) return null;
+
+  return {
+    id: fallbackId,
+    first_name: currentUser.first_name ?? currentUser.firstName ?? "",
+    last_name: currentUser.last_name ?? currentUser.lastName ?? "",
+    username: currentUser.username ?? "",
+    email: currentUser.email ?? "",
+  };
+};
+
 const resolveCurrentEmployee = (employeesList, currentUser) => {
-  if (!currentUser || !Array.isArray(employeesList) || employeesList.length === 0) return null;
+  if (!currentUser) return null;
 
   const userId = String(currentUser.id ?? "");
   const userEmployeeId = String(currentUser.employee_id ?? "");
@@ -111,7 +126,11 @@ const resolveCurrentEmployee = (employeesList, currentUser) => {
   const userUsername = normalizeText(currentUser.username);
   const userEmail = normalizeText(currentUser.email);
 
-  return (
+  if (!Array.isArray(employeesList) || employeesList.length === 0) {
+    return buildFallbackEmployeeFromUser(currentUser);
+  }
+
+  const matched =
     employeesList.find((employee) => {
       const employeeId = String(employee.id ?? "");
       const employeeName = getEmployeeName(employee);
@@ -124,8 +143,9 @@ const resolveCurrentEmployee = (employeesList, currentUser) => {
       if (userEmail && employeeEmail && employeeEmail === userEmail) return true;
       if (userName && employeeName && employeeName === userName) return true;
       return false;
-    }) || null
-  );
+    }) || null;
+
+  return matched || buildFallbackEmployeeFromUser(currentUser);
 };
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
@@ -345,6 +365,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   };
 
   const [formData, setFormData] = useState(getInitialFormData);
+  const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
   // Track whether duration was manually changed (independent of service)
   const [durationManuallySet, setDurationManuallySet] = useState(false);
 
@@ -390,7 +411,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
   // Auto-select current user if they can only schedule for themselves
   const isWriteAll = hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
-  const isWriteOnly = hasPermission("schedule", "write") && !isWriteAll;
+  const isWriteOnly = (hasPermission("schedule", "write") || hasPermission("schedule", "write_self_only")) && !isWriteAll;
   const isEditMode = Boolean(appointment?.id);
   const currentEmployee = resolveCurrentEmployee(employees, user);
   const employeeOptions = !isEditMode && isWriteOnly && currentEmployee ? [currentEmployee] : employees;
@@ -564,7 +585,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   // Get config for current appointment type
-  const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
   const appointmentDateOnly = formData.appointment_datetime ? formData.appointment_datetime.split("T")[0] : "";
 
   const selectedEmployeeColor = employees.find((employee) => employee.id === formData.employee_ids?.[0])?.color || "#64748b";
@@ -657,7 +677,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         onChange={handleEmployeeChange}
                         options={employeeOptions.map((employee) => ({
                           value: employee.id,
-                          label: `${employee.first_name} ${employee.last_name}`.trim(),
+                          label: getEmployeeDisplayName(employee),
                         }))}
                         placeholder={employeePlaceholder}
                         required

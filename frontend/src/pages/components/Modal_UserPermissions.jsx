@@ -94,7 +94,7 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   );
 }
 
-export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleViewAllToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
+export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleWriteSelfOnlyToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
       <div className="ui-component-shell">
@@ -146,23 +146,23 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                   <div className="flex items-center">
                     <input
                       type="checkbox"
-                      id="viewAllSchedules"
-                      checked={userPermissions.some((p) => p.page === "schedule" && p.permission === "write" && p.granted)}
-                      onChange={(e) => onScheduleViewAllToggle(e.target.checked)}
+                      id="writeSelfOnlySchedules"
+                      checked={userPermissions.some((p) => p.page === "schedule" && p.permission === "write_self_only" && p.granted)}
+                      onChange={(e) => onScheduleWriteSelfOnlyToggle(e.target.checked)}
                       className="border-gray-300 focus:ring-indigo-500 h-4 rounded text-indigo-600 w-4"
                     />
-                    <label htmlFor="viewAllSchedules" className={`ml-2 block text-sm ${isDarkMode ? "text-light" : "text-dark"}`}>
-                      View All Employee Schedules
+                    <label htmlFor="writeSelfOnlySchedules" className={`ml-2 block text-sm ${isDarkMode ? "text-light" : "text-dark"}`}>
+                      Write Self-Only Schedules
                     </label>
                   </div>
-                  <div className="text-muted text-xs">Allows viewing schedules of all employees, not just their own</div>
+                  <div className="text-muted text-xs">Allows creating/editing only their own appointments</div>
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center">
                     <input
                       type="checkbox"
                       id="writeAllSchedules"
-                      checked={userPermissions.some((p) => p.page === "schedule" && p.permission === "write" && p.granted)}
+                      checked={userPermissions.some((p) => p.page === "schedule" && p.permission === "write_all" && p.granted)}
                       onChange={(e) => onScheduleWriteAllToggle(e.target.checked)}
                       className="border-gray-300 focus:ring-indigo-500 h-4 rounded text-indigo-600 w-4"
                     />

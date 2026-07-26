@@ -161,7 +161,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
         all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin']
-        all_permissions = ['read', 'write', 'delete', 'admin']
+        all_permissions = ['read', 'write', 'write_self_only', 'write_all', 'delete', 'admin']
         admin_permissions = []
         for page in all_pages:
             for permission in all_permissions:
@@ -981,6 +981,8 @@ def normalize_permissions(
         norm = (raw or "").strip().lower()
         if norm == "viewall":
             norm = "view_all"
+        if norm in {"write_selfonly", "writeselfonly", "write_self-only"}:
+            norm = "write_self_only"
 
         if norm in allowed:
             try:
