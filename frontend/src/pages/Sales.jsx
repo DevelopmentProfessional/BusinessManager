@@ -1242,10 +1242,7 @@ export default function Sales() {
   );
 
   const filteredSubscriptions = useMemo(
-    () =>
-      memberships
-        .filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase()))
-        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    () => memberships.filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
     [memberships, searchQuery]
   );
 
@@ -1800,7 +1797,12 @@ export default function Sales() {
             .getAll("receipt")
             .then((res) => {
               const all = Array.isArray(res?.data) ? res.data : [];
-              setRcptTemplates(sortItemsAlphabetically(all.filter((t) => t.template_type === "receipt" || t.type === "receipt"), ["name", "template_type"]));
+              setRcptTemplates(
+                sortItemsAlphabetically(
+                  all.filter((t) => t.template_type === "receipt" || t.type === "receipt"),
+                  ["name", "template_type"]
+                )
+              );
             })
             .catch(() => {});
         }}
