@@ -31,6 +31,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-07-26 | GitHub Copilot | Added initiate_refunds permission aliasing and admin permission expansion
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -86,6 +87,8 @@ def normalize_permission_value(value: Optional[str]) -> str:
         "write_all": PermissionType.WRITE_ALL.value,
         "approvepayments": PermissionType.APPROVE_PAYMENTS.value,
         "approve_payments": PermissionType.APPROVE_PAYMENTS.value,
+        "initiaterefunds": PermissionType.INITIATE_REFUNDS.value,
+        "initiate_refunds": PermissionType.INITIATE_REFUNDS.value,
     }
     return aliases.get(text, text)
 
@@ -196,7 +199,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
         all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin']
-        all_permissions = ['read', 'read_all', 'write', 'write_self_only', 'write_all', 'delete', 'admin', 'view_all', 'approve_payments']
+        all_permissions = ['read', 'read_all', 'write', 'write_self_only', 'write_all', 'delete', 'admin', 'view_all', 'approve_payments', 'initiate_refunds']
         admin_permissions = []
         for page in all_pages:
             for permission in all_permissions:

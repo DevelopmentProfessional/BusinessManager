@@ -45,6 +45,7 @@
  *   2026-03-08 | Copilot | Moved lock/unlock column between Employee and Role
  *   2026-05-26 | GitHub Copilot | Added left-column row delete action and removed delete button from employee edit form
  *   2026-07-24 | GitHub Copilot | Replaced row delete with selection-first bulk delete and grouped selected edit/delete actions
+ *   2026-07-26 | GitHub Copilot | Added initiate_refunds to assignable permission options for roles
  * ============================================================
  */
 
@@ -950,7 +951,7 @@ export default function Employees() {
   // ─── [9b] SHARED CONSTANTS & PAYROLL PERIOD HELPERS ────────────────────────
   // pages/permissions/roles are used by both the permission and role modals.
   const pages = ["clients", "inventory", "sales", "services", "employees", "schedule", "documents", "templates", "insurance", "tasks", "leave", "reports", "admin"];
-  const permissions = ["read", "write", "write_self_only", "write_all", "approve_payments", "admin"]; // Keep in sync with backend PermissionType enum
+  const permissions = ["read", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"]; // Keep in sync with backend PermissionType enum
   const roles = ["admin", "manager", "employee", "viewer"];
 
   // Helper function to determine current pay period based on pay_frequency

@@ -39,6 +39,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-07-26 | GitHub Copilot | Added initiate_refunds permission type for manager-approved appointment refund actions
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ class PermissionType(str, Enum):
     ADMIN = "admin"
     VIEW_ALL = "view_all"  # Schedule page uses this instead of WRITE_ALL
     APPROVE_PAYMENTS = "approve_payments"  # Approve/mark payments for billable schedule events
+    INITIATE_REFUNDS = "initiate_refunds"  # Can initiate refund flow for already-paid schedule events
 
 # ─── 3 BASE MODEL ──────────────────────────────────────────────────────────────
 # Base model with common fields

@@ -36,6 +36,7 @@
 #   2026-03-17 | GitHub Copilot | Fixed inventory image upload compatibility with legacy check constraints
 #   2026-06-11 | GitHub Copilot | Auto-create default asset unit on ASSET inventory insert; honor provided asset_units when supplied
 #   2026-07-25 | GitHub Copilot | Aligned schedule payment update behavior with schedule write access
+#   2026-07-26 | GitHub Copilot | Added manager-gated schedule refund initiation endpoint and protected schedule paid-state transitions
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -1108,6 +1109,91 @@ async def sale_transaction_stripe_webhook(
 
     return {"received": True}
 
+
+@router.post("/schedules/{schedule_id}/initiate-refund")
+async def initiate_schedule_refund(
+    schedule_id: UUID,
+    payload: Dict[str, Any],
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Initiate an appointment refund and unlock paid state with elevated permission."""
+    permissions = set(get_user_permissions_list(current_user, session))
+    has_refund_access = (
+        current_user.role == UserRole.ADMIN
+        or "schedule:initiate_refunds" in permissions
+        or "schedule:admin" in permissions
+    )
+    if not has_refund_access:
+        raise HTTPException(status_code=403, detail="Missing permission: schedule:initiate_refunds")
+
+    schedule_stmt = sql_select(Schedule).where(Schedule.id == schedule_id)
+    if hasattr(Schedule, "company_id"):
+        schedule_stmt = schedule_stmt.where(Schedule.company_id == current_user.company_id)
+    schedule = session.exec(schedule_stmt).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if not getattr(schedule, "is_paid", False):
+        raise HTTPException(status_code=400, detail="Schedule is not marked as paid.")
+
+    reason = str((payload or {}).get("reason") or "").strip()
+    sale = session.get(SaleTransaction, schedule.sale_transaction_id) if getattr(schedule, "sale_transaction_id", None) else None
+    refund_mode = "manual"
+
+    # Attempt Stripe refund for non-cash transactions when enough Stripe context exists.
+    if sale and str(getattr(sale, "payment_method", "") or "").strip().lower() != "cash":
+        stripe_cfg = _get_company_stripe_settings(session, getattr(sale, "company_id", None) or current_user.company_id)
+        if not stripe_cfg["enabled"] or not stripe_cfg["secret_key"]:
+            raise HTTPException(status_code=400, detail="Stripe is not configured for refunds.")
+        if not getattr(sale, "stripe_payment_intent_id", None) and not getattr(sale, "stripe_charge_id", None):
+            raise HTTPException(status_code=400, detail="Sale has no Stripe identifiers to refund.")
+
+        try:
+            stripe.api_key = stripe_cfg["secret_key"]
+            refund_payload = {
+                "metadata": {
+                    "schedule_id": str(schedule.id),
+                    "sale_transaction_id": str(sale.id),
+                    "company_id": str(current_user.company_id or ""),
+                }
+            }
+            if reason:
+                refund_payload["metadata"]["reason"] = reason
+
+            if getattr(sale, "stripe_payment_intent_id", None):
+                refund_payload["payment_intent"] = sale.stripe_payment_intent_id
+            else:
+                refund_payload["charge"] = sale.stripe_charge_id
+
+            stripe.Refund.create(**refund_payload)
+            refund_mode = "stripe"
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Stripe refund failed: {str(exc)}")
+
+    schedule.is_paid = False
+    schedule.sale_transaction_id = None
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    audit_note = f"[Refund initiated {timestamp} by {current_user.username or 'user'} via {refund_mode}]"
+    if reason:
+        audit_note = f"{audit_note} {reason}"
+    schedule.notes = f"{(schedule.notes or '').strip()}\n{audit_note}".strip()
+
+    session.add(schedule)
+    try:
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to persist refund initiation: {str(exc)}")
+    session.refresh(schedule)
+
+    return {
+        "ok": True,
+        "schedule_id": str(schedule.id),
+        "is_paid": schedule.is_paid,
+        "refund_mode": refund_mode,
+    }
+
 @router.post("/{table_name}")
 async def insert(
     table_name: str,
@@ -1222,6 +1308,29 @@ async def update_by_id(
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
+
+    if table_name.lower() in ("schedule", "schedules") and "is_paid" in record_data:
+        permissions = set(get_user_permissions_list(current_user, session))
+        current_paid = bool(getattr(record, "is_paid", False))
+        requested_paid = bool(record_data.get("is_paid"))
+
+        if not current_paid and requested_paid:
+            has_approve_permission = (
+                current_user.role == UserRole.ADMIN
+                or "schedule:approve_payments" in permissions
+                or "schedule:admin" in permissions
+            )
+            if not has_approve_permission:
+                raise HTTPException(status_code=403, detail="Missing permission: schedule:approve_payments")
+
+        if current_paid and not requested_paid:
+            has_refund_permission = (
+                current_user.role == UserRole.ADMIN
+                or "schedule:initiate_refunds" in permissions
+                or "schedule:admin" in permissions
+            )
+            if not has_refund_permission:
+                raise HTTPException(status_code=403, detail="Missing permission: schedule:initiate_refunds")
 
     membership_ids = None
     if table_name.lower() in ('client', 'clients'):

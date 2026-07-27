@@ -24,6 +24,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-19 | GitHub Copilot | Added unified filter dropdown with client search and services/products/subscriptions filters; added checkout-time subscription start assignment
+ *   2026-07-26 | GitHub Copilot | Added schedule-driven auto-open checkout handoff for appointment payment flow
  * ============================================================
  */
 
@@ -448,6 +449,7 @@ export default function Sales() {
   };
 
   const [linkedScheduleId, setLinkedScheduleId] = useState(null);
+  const [autoOpenCheckoutRequested, setAutoOpenCheckoutRequested] = useState(false);
 
   // On mount: restore walk-in cart from localStorage (only when not navigating with a pre-selected client)
   useEffect(() => {
@@ -467,9 +469,12 @@ export default function Sales() {
 
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
   useEffect(() => {
-    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId } = location.state || {};
+    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout } = location.state || {};
     if (scheduleId) {
       setLinkedScheduleId(scheduleId);
+    }
+    if (openCheckout) {
+      setAutoOpenCheckoutRequested(true);
     }
     if (preSelectedClient) {
       handleSelectClient(preSelectedClient, { preloadCart });
@@ -498,7 +503,14 @@ export default function Sales() {
         return () => clearInterval(interval);
       }
     }
-  }, [location.state?.preSelectedClient, location.state?.preloadServiceId, services.length]);
+  }, [location.state?.openCheckout, location.state?.preSelectedClient, location.state?.preloadServiceId, services.length]);
+
+  useEffect(() => {
+    if (!autoOpenCheckoutRequested) return;
+    if (cart.length === 0) return;
+    setShowCheckout(true);
+    setAutoOpenCheckoutRequested(false);
+  }, [autoOpenCheckoutRequested, cart.length]);
 
   // Walk-in cart persisted to localStorage (no client selected)
   useEffect(() => {

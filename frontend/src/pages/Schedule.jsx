@@ -48,6 +48,7 @@
  *   2026-05-15 | Copilot | Added client and service labels to schedule events across calendar views
  *   2026-07-25 | GitHub Copilot | Added in-card mark-paid action for billable schedule events and billable-only unpaid counter
  *   2026-07-25 | GitHub Copilot | Enabled in-card payment approval for all users who can create schedule events
+ *   2026-07-26 | GitHub Copilot | Routed unpaid appointment payment action through Sales checkout and restricted paid->unpaid to initiate_refunds permission
  * ============================================================
  */
 
@@ -445,8 +446,12 @@ export default function Schedule() {
   }, [hasPermission]);
 
   const canApprovePayments = useCallback(() => {
-    return canCreateSchedule();
-  }, [canCreateSchedule]);
+    return hasPermission("schedule", "approve_payments") || hasPermission("schedule", "admin");
+  }, [hasPermission]);
+
+  const canInitiateRefunds = useCallback(() => {
+    return hasPermission("schedule", "initiate_refunds") || hasPermission("schedule", "admin");
+  }, [hasPermission]);
 
   const canEditAppointment = useCallback(
     (appointment) => {
@@ -709,24 +714,65 @@ export default function Schedule() {
     setSelectedAttendees([]);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
 
+  const launchScheduleCheckout = useCallback(
+    (appointment) => {
+      if (!appointment?.client_id || !appointment?.service_id) return;
+      const preSelectedClient = clients.find((c) => c.id === appointment.client_id);
+      navigate("/sales", {
+        state: {
+          preSelectedClient,
+          scheduleId: appointment.id,
+          preloadServiceId: appointment.service_id,
+          openCheckout: true,
+        },
+      });
+    },
+    [clients, navigate]
+  );
+
+  const canShowPaymentAction = useCallback(
+    (appointment) => {
+      if (!canTogglePaidForAppointment(appointment)) return false;
+      if (appointment?.is_paid) return canInitiateRefunds();
+      return canApprovePayments();
+    },
+    [canApprovePayments, canInitiateRefunds, canTogglePaidForAppointment]
+  );
+
   const handleToggleAppointmentPaid = useCallback(
     async (e, appointment) => {
       e.stopPropagation();
       if (!appointment?.id) return;
       if (!canEditAppointment(appointment)) return;
-      if (!canApprovePayments()) return;
       if (!canTogglePaidForAppointment(appointment)) return;
 
-      const nextPaidState = !Boolean(appointment.is_paid);
+      if (!appointment.is_paid) {
+        if (!canApprovePayments()) return;
+        launchScheduleCheckout(appointment);
+        return;
+      }
+
+      if (!canInitiateRefunds()) return;
+      const shouldProceed = window.confirm("Initiate refund and unlock this appointment from paid status?");
+      if (!shouldProceed) return;
 
       try {
-        await scheduleAPI.update(appointment.id, { is_paid: nextPaidState });
-        setAppointments(appointments.map((item) => (item.id === appointment.id ? { ...item, is_paid: nextPaidState } : item)));
+        await scheduleAPI.initiateRefund(appointment.id, {
+          reason: "Refund initiated from calendar payment toggle",
+        });
+        setAppointments(appointments.map((item) => (item.id === appointment.id ? { ...item, is_paid: false, sale_transaction_id: null } : item)));
       } catch (error) {
-        console.error("Failed to toggle appointment paid state:", error);
+        console.error("Failed to initiate appointment refund:", error);
+        setPastDateError("Refund initiation failed. Please verify manager permissions and payment state.");
+        if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
+        const timer = setTimeout(() => {
+          setPastDateError("");
+          setPastDateErrorTimer(null);
+        }, 2500);
+        setPastDateErrorTimer(timer);
       }
     },
-    [appointments, canApprovePayments, canEditAppointment, canTogglePaidForAppointment, setAppointments]
+    [appointments, canApprovePayments, canEditAppointment, canInitiateRefunds, canTogglePaidForAppointment, launchScheduleCheckout, pastDateErrorTimer, setAppointments]
   );
 
   // ─── 14 DRAG & DROP HANDLERS ─────────────────────────────────────────────────
@@ -1125,12 +1171,12 @@ export default function Schedule() {
                                         {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                         {appointment.status && appointment.status !== "scheduled" && <span style={{ position: "absolute", bottom: 2, right: 3, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                       </div>
-                                      {canTogglePaidForAppointment(appointment) && canApprovePayments() && (
+                                      {canShowPaymentAction(appointment) && (
                                         <button
                                           type="button"
                                           className={`schedule-paid-toggle schedule-paid-toggle--floating ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
-                                          title={appointment.is_paid ? "Mark as unpaid" : "Mark as paid"}
-                                          aria-label={appointment.is_paid ? "Mark appointment as unpaid" : "Mark appointment as paid"}
+                                          title={appointment.is_paid ? "Initiate refund (manager approval required)" : "Open checkout to mark paid"}
+                                          aria-label={appointment.is_paid ? "Initiate refund for appointment" : "Open checkout for appointment payment"}
                                           onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
                                         >
                                           <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
@@ -1299,12 +1345,12 @@ export default function Schedule() {
                                       {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                       {appointment.status && appointment.status !== "scheduled" && <span style={{ position: "absolute", bottom: 2, right: 3, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                     </div>
-                                    {canTogglePaidForAppointment(appointment) && canApprovePayments() && (
+                                    {canShowPaymentAction(appointment) && (
                                       <button
                                         type="button"
                                         className={`schedule-paid-toggle schedule-paid-toggle--floating ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
-                                        title={appointment.is_paid ? "Mark as unpaid" : "Mark as paid"}
-                                        aria-label={appointment.is_paid ? "Mark appointment as unpaid" : "Mark appointment as paid"}
+                                        title={appointment.is_paid ? "Initiate refund (manager approval required)" : "Open checkout to mark paid"}
+                                        aria-label={appointment.is_paid ? "Initiate refund for appointment" : "Open checkout for appointment payment"}
                                         onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
                                       >
                                         <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
@@ -1424,12 +1470,12 @@ export default function Schedule() {
                                             </div>
                                           )}
                                         </div>
-                                        {canTogglePaidForAppointment(appointment) && canApprovePayments() && (
+                                        {canShowPaymentAction(appointment) && (
                                           <button
                                             type="button"
                                             className={`schedule-paid-toggle schedule-paid-toggle--month ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
-                                            title={appointment.is_paid ? "Mark as unpaid" : "Mark as paid"}
-                                            aria-label={appointment.is_paid ? "Mark appointment as unpaid" : "Mark appointment as paid"}
+                                            title={appointment.is_paid ? "Initiate refund (manager approval required)" : "Open checkout to mark paid"}
+                                            aria-label={appointment.is_paid ? "Initiate refund for appointment" : "Open checkout for appointment payment"}
                                             onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
                                           >
                                             <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
