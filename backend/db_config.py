@@ -27,7 +27,6 @@
 # ─── 1 IMPORTS & CONSTANTS ─────────────────────────────────────────────────────
 import os
 from pathlib import Path
-from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 RENDER_ENVIRONMENT_NAME = "render"
@@ -56,60 +55,6 @@ def get_database_url() -> str:
             f"{RENDER_DATABASE_URL_ENV_VAR} is not set. Configure it with a PostgreSQL URL."
         )
     return env_url
-
-
-# ─── 4 COMPATIBILITY HELPERS ───────────────────────────────────────────────────
-def get_current_environment() -> str:
-    """Compatibility shim for older tooling; backend is Render-only."""
-    return RENDER_ENVIRONMENT_NAME
-
-
-def set_current_environment(environment: str) -> bool:
-    """Compatibility shim; set_current_environment only accepts RENDER_ENVIRONMENT_NAME.
-
-    get_current_environment() and get_all_environments() always report the
-    Render runtime, so environment switching remains disabled.
-    """
-    return environment == RENDER_ENVIRONMENT_NAME
-
-
-def get_all_environments() -> dict:
-    """Return the single supported backend database environment."""
-    return {
-        RENDER_ENVIRONMENT_NAME: {
-            "name": "Render",
-            "configured": True,
-            "is_current": True,
-        }
-    }
-
-
-def get_configured_environments() -> dict:
-    """Return the single configured backend database environment."""
-    return get_all_environments()
-
-
-def get_environment_info(include_urls: bool = False) -> dict:
-    """Return metadata for the single supported Render database target."""
-    info = {
-        "current_environment": RENDER_ENVIRONMENT_NAME,
-        "environments": {
-            RENDER_ENVIRONMENT_NAME: {
-                "name": "Render",
-                "configured": True,
-                "is_current": True,
-            }
-        },
-    }
-    if include_urls:
-        host = urlparse(get_database_url()).hostname or "render"
-        info["environments"][RENDER_ENVIRONMENT_NAME]["host"] = host
-    return info
-
-
-def add_environment(name: str, url: str) -> bool:
-    """Compatibility shim; custom environments are disabled."""
-    return name.lower() in {RENDER_ENVIRONMENT_NAME, "production"} and validate_database_url(url)
 
 
 def validate_database_url(url: str) -> bool:
