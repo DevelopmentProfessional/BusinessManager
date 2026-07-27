@@ -478,6 +478,7 @@ export const scheduleAPI = {
   ...createISUDApi("schedules", "schedule"),
   getByEmployee: (userId) => api.get(`/isud/schedules?employee_id=${userId}`),
   getAvailableEmployees: () => api.get("/isud/users"),
+  initiateRefund: (scheduleId, data = {}) => api.post(`/isud/schedules/${scheduleId}/initiate-refund`, data),
 };
 
 export const scheduleAttendeesAPI = {

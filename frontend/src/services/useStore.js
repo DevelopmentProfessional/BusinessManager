@@ -13,6 +13,8 @@ const IMPLIED_PERMISSIONS = {
   write_self_only: ["write_self_only", "write_all", "delete", "admin"],
   write_all: ["write_all", "delete", "admin"],
   delete: ["delete", "admin"],
+  approve_payments: ["approve_payments", "admin"],
+  initiate_refunds: ["initiate_refunds", "admin"],
   admin: ["admin"],
 };
 

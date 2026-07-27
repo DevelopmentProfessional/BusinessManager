@@ -33,6 +33,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-07 | Claude  | Converted role select to custom dropdown with per-option help popovers
  *   2026-07-24 | GitHub Copilot | Removed custom dropdown caret icons and added word-safe trigger label truncation
+ *   2026-07-26 | GitHub Copilot | Added initiate_refunds to direct user permission type options
  * ============================================================
  */
 
@@ -80,7 +81,7 @@ const PAGE_OPTION_GROUPS = [
     ],
   },
 ];
-const PERMISSION_TYPES = ["read", "write", "write_self_only", "write_all", "approve_payments", "admin"];
+const PERMISSION_TYPES = ["read", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"];
 
 const PAY_SCHEDULE_DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
