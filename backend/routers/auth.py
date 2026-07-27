@@ -1607,11 +1607,3 @@ def get_user_profile_picture(
         raise HTTPException(status_code=404, detail="Profile picture file not found")
 
     return FileResponse(file_path)
-
-
-# ============================================================================
-# Database Environment (DEPRECATED)
-# ============================================================================
-# NOTE: Database environment preference is now stored in the user's profile
-# (User.db_environment field). Use the user update endpoint to change it.
-# These endpoints are kept for backward compatibility but may be removed.
