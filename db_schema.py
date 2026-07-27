@@ -10,10 +10,11 @@ Usage:
 import sys
 import json as json_mod
 import argparse
+from urllib.parse import urlparse
 
 sys.path.insert(0, "backend")
 
-from db_config import get_database_url, get_current_environment
+from db_config import get_database_url
 from sqlalchemy import create_engine, inspect, text
 
 
@@ -63,8 +64,8 @@ def main():
     parser.add_argument("--table", metavar="NAME", help="Show only this table")
     args = parser.parse_args()
 
-    env = get_current_environment()
-    print(f"Environment: {env}", file=sys.stderr)
+    host = urlparse(get_database_url()).hostname or "unknown"
+    print(f"Environment: render (host={host})", file=sys.stderr)
 
     engine = get_engine()
     schema = get_schema(engine, filter_table=args.table)
