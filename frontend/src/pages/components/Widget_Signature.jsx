@@ -139,16 +139,18 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
         />
       </div>
       <p className="dark:text-gray-400 text-center text-gray-500 text-xs">Draw your signature above using mouse or touch</p>
-      <div className="flex items-center justify-between">
-        <div className="ui-flex-items-gap-2">
+      <div className="grid grid-cols-3 items-center gap-2">
+        <div className="ui-flex-items-gap-2 justify-self-start">
           <button type="button" onClick={handleUndo} disabled={undoStack.length === 0} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
             Undo
           </button>
+        </div>
+        <div className="justify-self-center">
           <button type="button" onClick={handleClear} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
-            Clear
+            Delete
           </button>
         </div>
-        <div className="ui-flex-items-gap-2">
+        <div className="ui-flex-items-gap-2 justify-self-end">
           {onCancel && (
             <button type="button" onClick={onCancel} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
               Cancel

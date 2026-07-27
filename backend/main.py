@@ -21,6 +21,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-07-26 | GitHub Copilot | Expanded CORS to allow LAN Vite origins used during local network testing
 # ============================================================
 
 # ─── 1 IMPORTS & LOGGING ───────────────────────────────────────────────────────
@@ -168,6 +169,10 @@ allowed_origins = [
     "http://192.168.4.118:5173",
     "https://192.168.4.118:5174",
     "http://192.168.4.118:5174",
+    "https://192.168.4.23:5173",
+    "http://192.168.4.23:5173",
+    "https://192.168.4.23:5174",
+    "http://192.168.4.23:5174",
     # CompanyCreation portal — local dev
     "http://localhost:5175",
     # Render / production frontend (set in Render env or add your deployed frontend URL)
@@ -180,6 +185,16 @@ allowed_origins = _extend_allowed_origins_from_env(allowed_origins)
 
 print(f"CORS ALLOWED ORIGINS: {allowed_origins}")
 
+# Includes: production vadpivi domains + LAN/private hosts (with or without explicit port).
+allowed_origin_regex = (
+    r"^https://([a-zA-Z0-9-]+\.)?vadpivi\.com$"
+    r"|^https?://(?:"
+    r"192\.168\.\d{1,3}\.\d{1,3}"
+    r"|10\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+    r"|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+    r")(?:\:\d+)?$"
+)
+
 # Add aggressive CORS middleware first
 app.add_middleware(AggressiveCORSMiddleware)
 
@@ -187,7 +202,7 @@ app.add_middleware(AggressiveCORSMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,  # Use explicit origins to avoid '*' with credentials
-    allow_origin_regex=r"^https://([a-zA-Z0-9-]+\.)?vadpivi\.com$",
+    allow_origin_regex=allowed_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

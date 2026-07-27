@@ -35,6 +35,7 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-17 | GitHub Copilot | Fixed inventory image upload compatibility with legacy check constraints
 #   2026-06-11 | GitHub Copilot | Auto-create default asset unit on ASSET inventory insert; honor provided asset_units when supplied
+#   2026-07-25 | GitHub Copilot | Aligned schedule payment update behavior with schedule write access
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -540,9 +541,11 @@ def _require_isud_permission(
     for page in _resolve_permission_pages(table_name):
         if f"{page}:{action}" in permissions or f"{page}:admin" in permissions:
             return
+        if action == "write" and page == "schedule" and f"{page}:write_self_only" in permissions:
+            return
         # write/write_all/delete implies read
         if action == "read" and any(
-            f"{page}:{p}" in permissions for p in ("write", "write_all", "delete")
+            f"{page}:{p}" in permissions for p in ("write", "write_self_only", "write_all", "delete")
         ):
             return
 

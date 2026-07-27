@@ -669,11 +669,30 @@ export default function Employees() {
     }
   };
 
-  const handleScheduleViewAllToggle = async (granted) => {
+  const upsertSchedulePermission = async (permission, granted, successMessage) => {
+    const existingPermission = userPermissions.find((p) => p.page === "schedule" && p.permission === permission);
+
+    if (existingPermission) {
+      await api.put(`/auth/users/${selectedUser.id}/permissions/${existingPermission.id}`, { granted });
+    } else {
+      await api.post(`/auth/users/${selectedUser.id}/permissions`, {
+        user_id: selectedUser.id,
+        page: "schedule",
+        permission,
+        granted,
+      });
+    }
+
+    setSuccess(successMessage);
+    await fetchUserPermissions(selectedUser.id);
+    if (selectedUser.id === currentUser?.id) refetchPermissions();
+  };
+
+  const handleScheduleWriteSelfOnlyToggle = async (granted) => {
     setError("");
     setSuccess("");
 
-    console.log("🔥 SCHEDULE VIEW ALL - selectedUser:", selectedUser);
+    console.log("🔥 SCHEDULE WRITE SELF ONLY - selectedUser:", selectedUser);
 
     if (!selectedUser || !selectedUser.id) {
       setError("No user selected. Please close and reopen the permissions modal.");
@@ -681,25 +700,10 @@ export default function Employees() {
     }
 
     try {
-      const existingPermission = userPermissions.find((p) => p.page === "schedule" && p.permission === "write");
-
-      if (existingPermission) {
-        await api.put(`/auth/users/${selectedUser.id}/permissions/${existingPermission.id}`, { granted });
-        setSuccess(granted ? "Schedule write permission granted!" : "Schedule write permission revoked!");
-      } else {
-        await api.post(`/auth/users/${selectedUser.id}/permissions`, {
-          user_id: selectedUser.id, // Add user_id to payload as backup
-          page: "schedule",
-          permission: "write",
-          granted,
-        });
-        setSuccess(granted ? "Schedule write permission granted!" : "Schedule write permission revoked!");
-      }
-
-      fetchUserPermissions(selectedUser.id);
+      await upsertSchedulePermission("write_self_only", granted, granted ? "Schedule self-only write granted!" : "Schedule self-only write revoked!");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update schedule view all permission");
+      setError(err.response?.data?.detail || "Failed to update schedule self-only permission");
     }
   };
 
@@ -712,22 +716,8 @@ export default function Employees() {
     }
 
     try {
-      const existingPermission = userPermissions.find((p) => p.page === "schedule" && p.permission === "write");
-
-      if (existingPermission) {
-        await employeesAPI.updateUserPermission(selectedUser.id, existingPermission.id, { granted });
-        setSuccess(granted ? "Schedule write permission granted!" : "Schedule write permission revoked!");
-      } else {
-        const response = await employeesAPI.createUserPermission(selectedUser.id, {
-          user_id: selectedUser.id, // Add user_id to payload as backup
-          page: "schedule",
-          permission: "write",
-          granted,
-        });
-        setSuccess(granted ? "Schedule write permission granted!" : "Schedule write permission revoked!");
-      }
-
-      await fetchUserPermissions(selectedUser.id);
+      await upsertSchedulePermission("write_all", granted, granted ? "Schedule write-all granted!" : "Schedule write-all revoked!");
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || "Failed to update schedule write all permission");
     }
@@ -960,7 +950,7 @@ export default function Employees() {
   // ─── [9b] SHARED CONSTANTS & PAYROLL PERIOD HELPERS ────────────────────────
   // pages/permissions/roles are used by both the permission and role modals.
   const pages = ["clients", "inventory", "sales", "services", "employees", "schedule", "documents", "templates", "insurance", "tasks", "leave", "reports", "admin"];
-  const permissions = ["read", "write", "admin"]; // Only use permission types that exist in production DB
+  const permissions = ["read", "write", "write_self_only", "write_all", "approve_payments", "admin"]; // Keep in sync with backend PermissionType enum
   const roles = ["admin", "manager", "employee", "viewer"];
 
   // Helper function to determine current pay period based on pay_frequency
@@ -1327,7 +1317,7 @@ export default function Employees() {
         onCreatePermission={handleCreatePermission}
         onDeletePermission={handleDeletePermission}
         onUpdatePermission={handleUpdatePermission}
-        onScheduleViewAllToggle={handleScheduleViewAllToggle}
+        onScheduleWriteSelfOnlyToggle={handleScheduleWriteSelfOnlyToggle}
         onScheduleWriteAllToggle={handleScheduleWriteAllToggle}
         pages={pages}
         permissions={permissions}

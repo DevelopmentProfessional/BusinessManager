@@ -80,7 +80,7 @@ const PAGE_OPTION_GROUPS = [
     ],
   },
 ];
-const PERMISSION_TYPES = ["read", "write", "admin"];
+const PERMISSION_TYPES = ["read", "write", "write_self_only", "write_all", "approve_payments", "admin"];
 
 const PAY_SCHEDULE_DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
@@ -150,13 +150,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     { value: "one_time", label: "One-time (Contract)", description: "Single payment for completed project or contract work. No recurring schedule." },
   ];
 
-  const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
-  const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
-  const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
-  const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
-  const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
-  const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
-
   // Permissions state
   const [userPermissions, setUserPermissions] = useState([]);
   const [newPermission, setNewPermission] = useState({ page: "", permission: "" });
@@ -220,6 +213,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     sick_days_used: "",
   });
 
+  const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
+  const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
+  const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
+  const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
+  const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
+  const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
+
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load available roles
   useEffect(() => {
@@ -255,7 +255,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       try {
         const response = await insurancePlansAPI.getAll();
         const data = response?.data ?? response;
-        if (Array.isArray(data)) setInsurancePlans(sortItemsAlphabetically(data.filter((p) => p.is_active), ["name", "id"]));
+        if (Array.isArray(data))
+          setInsurancePlans(
+            sortItemsAlphabetically(
+              data.filter((p) => p.is_active),
+              ["name", "id"]
+            )
+          );
       } catch (err) {
         console.error("Failed to load insurance plans:", err);
       }
@@ -435,9 +441,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     const alreadySupervisingOther = new Set(employeesList.filter((e) => e.reports_to && e.id !== employee?.id && e.reports_to !== employee?.id).map((e) => e.reports_to));
     return sortItemsAlphabetically(
       employeesList.filter((e) => {
-      if (e.id === employee?.id) return false; // can't supervise yourself
-      if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
-      return true;
+        if (e.id === employee?.id) return false; // can't supervise yourself
+        if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
+        return true;
       }),
       ["first_name", "last_name", "username", "email"]
     );
@@ -609,7 +615,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const tabs = [
     { key: "details", label: "Details" },
     { key: "benefits", label: "Benefits" },
-    { key: "signature", label: "Signature", disabled: !employee },
     { key: "permissions", label: "Permissions", disabled: !employee },
     { key: "performance", label: "Performance", disabled: !employee },
     { key: "pay_settings", label: "Pay settings", disabled: !employee },

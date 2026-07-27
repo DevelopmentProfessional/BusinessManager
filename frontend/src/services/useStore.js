@@ -6,10 +6,11 @@ import { sortItemsAlphabetically } from "../utils/displaySort";
 const API_BASE_URL = getApiBaseUrl();
 
 const IMPLIED_PERMISSIONS = {
-  read: ["read", "read_all", "view_all", "write", "write_all", "delete", "admin"],
+  read: ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "admin"],
   read_all: ["read_all", "view_all", "write_all", "delete", "admin"],
   view_all: ["view_all", "write_all", "delete", "admin"],
-  write: ["write", "write_all", "delete", "admin"],
+  write: ["write", "write_self_only", "write_all", "delete", "admin"],
+  write_self_only: ["write_self_only", "write_all", "delete", "admin"],
   write_all: ["write_all", "delete", "admin"],
   delete: ["delete", "admin"],
   admin: ["admin"],
@@ -103,7 +104,7 @@ const useStore = create((set, get) => ({
   },
   hasPageAccess: (page) => {
     const { hasPermission } = get();
-    return hasPermission(page, "read") || hasPermission(page, "write") || hasPermission(page, "delete") || hasPermission(page, "admin") || hasPermission(page, "read_all") || hasPermission(page, "view_all") || hasPermission(page, "write_all");
+    return hasPermission(page, "read") || hasPermission(page, "write") || hasPermission(page, "write_self_only") || hasPermission(page, "delete") || hasPermission(page, "admin") || hasPermission(page, "read_all") || hasPermission(page, "view_all") || hasPermission(page, "write_all");
   },
 
   // Fetch and update the current user's flat permission strings from the server
