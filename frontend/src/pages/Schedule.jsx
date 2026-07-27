@@ -46,6 +46,8 @@
  *   2026-03-14 | Copilot | Updated footer buttons to one row, shortened labels, and fixed 3rem square sizing
  *   2026-03-23 | Copilot | Fixed month-view January cell truncation by using date-based cutoff across year boundaries
  *   2026-05-15 | Copilot | Added client and service labels to schedule events across calendar views
+ *   2026-07-25 | GitHub Copilot | Added in-card mark-paid action for billable schedule events and billable-only unpaid counter
+ *   2026-07-25 | GitHub Copilot | Enabled in-card payment approval for all users who can create schedule events
  * ============================================================
  */
 
@@ -58,7 +60,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, clientCartAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
-import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
@@ -353,6 +355,38 @@ export default function Schedule() {
     });
   }, [appointments, filters]);
 
+  const isBillableAppointment = useCallback(
+    (appointment) => {
+      if (!appointment) return false;
+      const type = appointment.appointment_type || "one_time";
+      if (type !== "one_time" && type !== "series") return false;
+      if (!appointment.client_id || !appointment.service_id) return false;
+
+      const service = services.find((s) => s.id === appointment.service_id);
+      if (!service) return true;
+
+      const price = Number(service.price ?? 0);
+      return Number.isFinite(price) ? price > 0 : true;
+    },
+    [services]
+  );
+
+  const isUnpaidBillableAppointment = useCallback(
+    (appointment) => {
+      if (!isBillableAppointment(appointment)) return false;
+      if (appointment.status === "cancelled") return false;
+      return !appointment.is_paid;
+    },
+    [isBillableAppointment]
+  );
+
+  const canTogglePaidForAppointment = useCallback((appointment) => {
+    if (!appointment) return false;
+    const type = appointment.appointment_type || "one_time";
+    if (type !== "one_time" && type !== "series") return false;
+    return Boolean(appointment.client_id && appointment.service_id);
+  }, []);
+
   // ─── 7 CALENDAR UTILITIES ────────────────────────────────────────────────────
   const days = getCalendarDays();
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -377,6 +411,14 @@ export default function Schedule() {
     return weeks;
   }, [currentView, days, monthColCount]);
 
+  const isPastCalendarDate = useCallback((date) => {
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return day < today;
+  }, []);
+
   // ─── 8 AUTO-SCROLL EFFECT ────────────────────────────────────────────────────
   // Auto-scroll to current time when switching to day or week view
   useEffect(() => {
@@ -399,14 +441,18 @@ export default function Schedule() {
 
   // ─── 9 PERMISSION HELPERS ────────────────────────────────────────────────────
   const canCreateSchedule = useCallback(() => {
-    return hasPermission("schedule", "write") || hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
+    return hasPermission("schedule", "write") || hasPermission("schedule", "write_self_only") || hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
   }, [hasPermission]);
+
+  const canApprovePayments = useCallback(() => {
+    return canCreateSchedule();
+  }, [canCreateSchedule]);
 
   const canEditAppointment = useCallback(
     (appointment) => {
       if (!appointment) return false;
       if (hasPermission("schedule", "admin") || hasPermission("schedule", "write_all")) return true;
-      if (!hasPermission("schedule", "write")) return false;
+      if (!hasPermission("schedule", "write") && !hasPermission("schedule", "write_self_only")) return false;
       // Try direct match (DB FK to user.id)
       if (user && appointment.employee_id === user.id) return true;
       // Heuristic: if FK is employee.id, try to match by name from employees list
@@ -663,6 +709,26 @@ export default function Schedule() {
     setSelectedAttendees([]);
   }, [deleteScheduleAttendees, editingAppointment, refreshSchedules]);
 
+  const handleToggleAppointmentPaid = useCallback(
+    async (e, appointment) => {
+      e.stopPropagation();
+      if (!appointment?.id) return;
+      if (!canEditAppointment(appointment)) return;
+      if (!canApprovePayments()) return;
+      if (!canTogglePaidForAppointment(appointment)) return;
+
+      const nextPaidState = !Boolean(appointment.is_paid);
+
+      try {
+        await scheduleAPI.update(appointment.id, { is_paid: nextPaidState });
+        setAppointments(appointments.map((item) => (item.id === appointment.id ? { ...item, is_paid: nextPaidState } : item)));
+      } catch (error) {
+        console.error("Failed to toggle appointment paid state:", error);
+      }
+    },
+    [appointments, canApprovePayments, canEditAppointment, canTogglePaidForAppointment, setAppointments]
+  );
+
   // ─── 14 DRAG & DROP HANDLERS ─────────────────────────────────────────────────
   const handleDragStart = useCallback((e, appointment) => {
     setDraggedAppointment(appointment);
@@ -854,7 +920,7 @@ export default function Schedule() {
             {/* Unpaid past-due indicator */}
             {(() => {
               const now = new Date();
-              const count = appointments.filter((a) => a.service_id && !a.is_paid && new Date(a.appointment_date) < now && a.status !== "cancelled").length;
+              const count = appointments.filter((a) => isUnpaidBillableAppointment(a) && new Date(a.appointment_date) < now).length;
               return count > 0 ? (
                 <div className="align-items-center d-inline-flex justify-content-center position-relative" title={`${count} unpaid past appointment${count > 1 ? "s" : ""}`} style={{ cursor: "default" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#6b7280" strokeWidth="1.8" aria-hidden="true">
@@ -914,8 +980,9 @@ export default function Schedule() {
                     </th>
                     {days.map((date, index) => {
                       const isToday = date.toDateString() === new Date().toDateString();
+                      const isPast = isPastCalendarDate(date);
                       return (
-                        <th key={index} className={`calendar-header-cell ${isToday ? "today-header" : ""}`}>
+                        <th key={index} className={`calendar-header-cell ${isToday ? "today-header" : ""} ${!isToday && isPast ? "past-header" : ""}`}>
                           <div className="day-name">{weekDays[date.getDay()]}</div>
                           <div className={`day-date ${isToday ? "today-badge" : ""}`}>{date.getDate()}</div>
                         </th>
@@ -1027,31 +1094,48 @@ export default function Schedule() {
                                   const isCancelled = appointment.status === "cancelled";
                                   return (
                                     <div
+                                      className="appointment-event-wrap"
                                       key={appointment.id}
-                                      className="appointment-event"
                                       title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                                       style={{
-                                        backgroundColor: employeeColor,
                                         position: "absolute",
                                         top: `${topOffset}%`,
                                         height: `${heightPercent}%`,
                                         width: "95%",
                                         zIndex: 10000 + minutesFromMidnight,
-                                        opacity: isCancelled ? 0.65 : 1,
                                       }}
-                                      draggable={true}
-                                      onDragStart={(e) => handleDragStart(e, appointment)}
-                                      onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
-                                      {appointment.is_paid && <span style={{ position: "absolute", top: 3, left: 3, display: "block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#fff", opacity: 0.9, flexShrink: 0 }} />}
-                                      <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                        {primaryLabel}
+                                      <div
+                                        className="appointment-event"
+                                        style={{
+                                          backgroundColor: employeeColor,
+                                          opacity: isCancelled ? 0.65 : 1,
+                                          height: "100%",
+                                          width: "100%",
+                                        }}
+                                        draggable={true}
+                                        onDragStart={(e) => handleDragStart(e, appointment)}
+                                        onDragEnd={handleDragEnd}
+                                        onClick={(e) => handleAppointmentClick(e, appointment)}
+                                      >
+                                        <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
+                                          {primaryLabel}
+                                        </div>
+                                        {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
+                                        {appointment.status && appointment.status !== "scheduled" && <span style={{ position: "absolute", bottom: 2, right: 3, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                       </div>
-                                      {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
-                                      <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
-                                        {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
-                                      </div>
+                                      {canTogglePaidForAppointment(appointment) && canApprovePayments() && (
+                                        <button
+                                          type="button"
+                                          className={`schedule-paid-toggle schedule-paid-toggle--floating ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
+                                          title={appointment.is_paid ? "Mark as unpaid" : "Mark as paid"}
+                                          aria-label={appointment.is_paid ? "Mark appointment as unpaid" : "Mark appointment as paid"}
+                                          onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
+                                        >
+                                          <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
+                                        </button>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -1183,32 +1267,49 @@ export default function Schedule() {
                                 const isCancelled = appointment.status === "cancelled";
                                 return (
                                   <div
+                                    className="appointment-event-wrap"
                                     key={appointment.id}
-                                    className="appointment-event"
                                     title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
                                     style={{
-                                      backgroundColor: employeeColor,
                                       position: "absolute",
                                       top: `${topOffset}%`,
                                       height: `${heightPercent}%`,
                                       width: "95%",
                                       zIndex: 10000 + minutesFromMidnight,
-                                      opacity: isCancelled ? 0.65 : 1,
                                     }}
-                                    draggable={true}
-                                    onDragStart={(e) => handleDragStart(e, appointment)}
-                                    onDragEnd={handleDragEnd}
                                     onClick={(e) => handleAppointmentClick(e, appointment)}
                                   >
-                                    {appointment.service_id && <span style={{ position: "absolute", top: 3, right: 3, fontSize: "0.55rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
-                                    <div className="appointment-time">{timeString}</div>
-                                    <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
-                                      {primaryLabel}
+                                    <div
+                                      className="appointment-event"
+                                      style={{
+                                        backgroundColor: employeeColor,
+                                        opacity: isCancelled ? 0.65 : 1,
+                                        height: "100%",
+                                        width: "100%",
+                                      }}
+                                      draggable={true}
+                                      onDragStart={(e) => handleDragStart(e, appointment)}
+                                      onDragEnd={handleDragEnd}
+                                      onClick={(e) => handleAppointmentClick(e, appointment)}
+                                    >
+                                      <div className="appointment-time">{timeString}</div>
+                                      <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
+                                        {primaryLabel}
+                                      </div>
+                                      {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
+                                      {appointment.status && appointment.status !== "scheduled" && <span style={{ position: "absolute", bottom: 2, right: 3, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                     </div>
-                                    {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
-                                    <div style={{ position: "absolute", bottom: 2, right: 3, display: "flex", alignItems: "center", gap: 2 }}>
-                                      {appointment.status && appointment.status !== "scheduled" && <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
-                                    </div>
+                                    {canTogglePaidForAppointment(appointment) && canApprovePayments() && (
+                                      <button
+                                        type="button"
+                                        className={`schedule-paid-toggle schedule-paid-toggle--floating ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
+                                        title={appointment.is_paid ? "Mark as unpaid" : "Mark as paid"}
+                                        aria-label={appointment.is_paid ? "Mark appointment as unpaid" : "Mark appointment as paid"}
+                                        onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
+                                      >
+                                        <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1298,31 +1399,41 @@ export default function Schedule() {
                                     const isMeeting = appointment.appointment_type === "meeting";
                                     const isCancelled = appointment.status === "cancelled";
                                     return (
-                                      <div
-                                        key={appointment.id}
-                                        className="appointment-dot"
-                                        title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`}
-                                        style={{
-                                          position: "relative",
-                                          backgroundColor: employeeColor,
-                                          opacity: isCancelled ? 0.65 : 1,
-                                          borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
-                                        }}
-                                        draggable={true}
-                                        onDragStart={(e) => handleDragStart(e, appointment)}
-                                        onDragEnd={handleDragEnd}
-                                        onClick={(e) => handleAppointmentClick(e, appointment)}
-                                      >
-                                        {appointment.service_id && <span style={{ position: "absolute", top: 2, right: 2, fontSize: "0.5rem", fontWeight: 700, color: appointment.is_paid ? "#22c55e" : "rgba(255,255,255,0.55)", lineHeight: 1 }}>$</span>}
-                                        <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
-                                          <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                                            {primaryLabel}
-                                          </span>
-                                        </div>
-                                        {secondaryLabel && (
-                                          <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                            {secondaryLabel}
+                                      <div className="appointment-dot-wrap" key={appointment.id} title={isMeeting ? `Meeting: ${appointment.notes || ""} at ${timeString}` : `${clientName} - ${serviceName} at ${timeString}`} onClick={(e) => handleAppointmentClick(e, appointment)}>
+                                        <div
+                                          className="appointment-dot"
+                                          style={{
+                                            position: "relative",
+                                            backgroundColor: employeeColor,
+                                            opacity: isCancelled ? 0.65 : 1,
+                                            borderLeft: appointment.status && appointment.status !== "scheduled" ? `3px solid ${STATUS_DOT_COLOR[appointment.status]}` : undefined,
+                                          }}
+                                          draggable={true}
+                                          onDragStart={(e) => handleDragStart(e, appointment)}
+                                          onDragEnd={handleDragEnd}
+                                          onClick={(e) => handleAppointmentClick(e, appointment)}
+                                        >
+                                          <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
+                                            <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                                              {primaryLabel}
+                                            </span>
                                           </div>
+                                          {secondaryLabel && (
+                                            <div className="appointment-client" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                              {secondaryLabel}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {canTogglePaidForAppointment(appointment) && canApprovePayments() && (
+                                          <button
+                                            type="button"
+                                            className={`schedule-paid-toggle schedule-paid-toggle--month ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
+                                            title={appointment.is_paid ? "Mark as unpaid" : "Mark as paid"}
+                                            aria-label={appointment.is_paid ? "Mark appointment as unpaid" : "Mark appointment as paid"}
+                                            onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
+                                          >
+                                            <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
+                                          </button>
                                         )}
                                       </div>
                                     );
@@ -1852,6 +1963,11 @@ export default function Schedule() {
           background-color: ${isDarkMode ? "#2563eb" : "#2196f3"} !important;
           color: white !important;
         }
+
+        .past-header {
+          background-color: ${isDarkMode ? "#1f2937" : "#d1d5db"} !important;
+          color: ${isDarkMode ? "#9ca3af" : "#374151"} !important;
+        }
         
         .today-header .day-name {
           font-size: 11px;
@@ -1896,19 +2012,27 @@ export default function Schedule() {
           margin-top: 4px;
         }
         
+        .appointment-dot-wrap {
+          position: relative;
+          overflow: visible;
+          margin-bottom: 2px;
+        }
+
         .appointment-dot {
           background: #007bff;
           color: white;
-          padding: 4px 0 4px 6px;
+          padding: 4px 18px 4px 6px;
           border-radius: 8px;
           font-size: 10px;
-          margin-bottom: 2px;
+          margin-bottom: 0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           min-width: 0;
           cursor: pointer;
           transition: background-color 0.2s;
+          text-align: left;
+          position: relative;
         }
         
         .appointment-dot:hover {
@@ -1943,7 +2067,7 @@ export default function Schedule() {
         .appointment-event {
           color: white;
           border-radius: 4px;
-          padding: 2px 4px;
+          padding: 2px 18px 2px 4px;
           overflow: hidden;
           cursor: pointer;
           font-size: 10px;
@@ -1953,10 +2077,64 @@ export default function Schedule() {
           box-sizing: border-box;
           left: 0;
           transition: opacity 0.2s;
+          text-align: left;
+          position: relative;
+        }
+
+        .appointment-event-wrap {
+          overflow: visible;
         }
 
         .appointment-event:hover {
           opacity: 0.85;
+        }
+
+        .schedule-paid-toggle {
+          width: 16px;
+          height: 16px;
+          border-radius: 9999px;
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          background: rgba(255, 255, 255, 0.18);
+          color: rgba(255, 255, 255, 0.95);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          cursor: pointer;
+          transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+          flex-shrink: 0;
+        }
+
+        .schedule-paid-toggle:hover {
+          transform: scale(1.06);
+          background: rgba(255, 255, 255, 0.28);
+        }
+
+        .schedule-paid-toggle.is-paid {
+          background: #16a34a;
+          border-color: #14532d;
+          color: #ffffff;
+        }
+
+        .schedule-paid-toggle.is-unpaid {
+          background: rgba(255, 255, 255, 0.16);
+          border-color: rgba(255, 255, 255, 0.7);
+          color: rgba(255, 255, 255, 0.95);
+        }
+
+        .schedule-paid-toggle--month {
+          position: absolute;
+          right: 4px;
+          bottom: 4px;
+          z-index: 11560;
+        }
+
+        .schedule-paid-toggle--floating {
+          position: absolute;
+          right: 4px;
+          bottom: 4px;
+          z-index: 11560;
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.25);
         }
 
         .overlap-grey-bar {

@@ -38,6 +38,9 @@ const Modal_Settings = ({
   dbError,
   handleSwitchEnvironment,
   DB_ENVIRONMENTS,
+  environmentLastUpdated,
+  appVersion,
+  appBuildLabel,
   HelpIcon,
   onClose,
   onSave,
@@ -85,7 +88,7 @@ const Modal_Settings = ({
   return (
     <div className={embedded ? "" : "accordion-popup"} style={containerStyle}>
       <div className="align-items-center d-flex flex-wrap gap-1 mb-2">
-        <span className="me-1 small text-muted">Environment</span>
+        <span className="me-1 small text-muted">Environment Production (Last Updated: {environmentLastUpdated || "N/A"})</span>
         {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
           const isCurrent = key === currentDbEnvironment;
           return (
@@ -113,6 +116,9 @@ const Modal_Settings = ({
             <span className="visually-hidden">Updating...</span>
           </div>
         )}
+      </div>
+      <div className="mb-2 small text-muted">
+        App Version {appVersion || "0.0.0"} (Build: {appBuildLabel || "N/A"})
       </div>
       {dbMessage && <div className="mt-1 small text-success">{dbMessage}</div>}
       {dbError && <div className="mt-1 small text-danger">{dbError}</div>}

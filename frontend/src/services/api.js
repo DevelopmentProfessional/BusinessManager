@@ -79,6 +79,20 @@ const normalizeAxiosError = (error, fallback = "Request failed") => {
 
 // API Configuration - Determine backend URL based on environment
 export const getApiBaseUrl = () => {
+  // Runtime override from Profile settings (if configured)
+  try {
+    const raw = localStorage.getItem("app_db_settings") || sessionStorage.getItem("app_db_settings");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const overrideBase = String(parsed?.apiBaseUrl || "").trim();
+      if (overrideBase) {
+        return overrideBase;
+      }
+    }
+  } catch {
+    // Ignore malformed stored settings and fall back to defaults
+  }
+
   const hostname = window.location.hostname;
 
   // Check if we're in development (localhost, 127.0.0.1, or private network IPs)
@@ -98,8 +112,9 @@ export const getApiBaseUrl = () => {
   }
 
   if (isLocalhost || isPrivateIP || isVadpiviWebHost) {
-    // Local development uses Vite proxy
-    return "/api/v1";
+    // Default local and known hosts to the production API unless overridden.
+    // This keeps local frontend aligned with live production data by default.
+    return "https://api.vadpivi.com/api/v1";
   }
 
   // Production fallback: use the public API domain when build-time env is absent.

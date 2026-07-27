@@ -38,6 +38,9 @@
  *   2026-06-13 | GitHub Copilot | Added schedule production item create-from-search flow (+ button) with prefill and auto-select
  *   2026-06-13 | GitHub Copilot | Switched schedule form to a single datetime input and moved discount handling to Sales checkout
  *   2026-06-13 | GitHub Copilot | Added per-appointment Reminder toggle and wired schedule-level reminder defaults
+ *   2026-07-25 | GitHub Copilot | Fixed self-scheduling employee auto-selection by robustly resolving logged-in user to employee record
+ *   2026-07-25 | GitHub Copilot | Show current employee name in create mode for self-schedulers; keep edit mode employee selection unchanged
+ *   2026-07-26 | GitHub Copilot | Added write-only fallback to current user identity when employee list is not readable
  * ============================================================
  */
 
@@ -86,6 +89,64 @@ const APPOINTMENT_STATUS_OPTIONS = [
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
 ];
+
+const normalizeText = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+const getEmployeeName = (employee) => normalizeText(`${employee?.first_name ?? ""} ${employee?.last_name ?? ""}`);
+
+const getEmployeeDisplayName = (employee) => {
+  const fullName = `${employee?.first_name ?? ""} ${employee?.last_name ?? ""}`.trim();
+  if (fullName) return fullName;
+  return employee?.username || employee?.email || "Your profile";
+};
+
+const buildFallbackEmployeeFromUser = (currentUser) => {
+  if (!currentUser) return null;
+  const fallbackId = currentUser.employee_id ?? currentUser.id;
+  if (!fallbackId) return null;
+
+  return {
+    id: fallbackId,
+    first_name: currentUser.first_name ?? currentUser.firstName ?? "",
+    last_name: currentUser.last_name ?? currentUser.lastName ?? "",
+    username: currentUser.username ?? "",
+    email: currentUser.email ?? "",
+  };
+};
+
+const resolveCurrentEmployee = (employeesList, currentUser) => {
+  if (!currentUser) return null;
+
+  const userId = String(currentUser.id ?? "");
+  const userEmployeeId = String(currentUser.employee_id ?? "");
+  const userName = getEmployeeName(currentUser);
+  const userUsername = normalizeText(currentUser.username);
+  const userEmail = normalizeText(currentUser.email);
+
+  if (!Array.isArray(employeesList) || employeesList.length === 0) {
+    return buildFallbackEmployeeFromUser(currentUser);
+  }
+
+  const matched =
+    employeesList.find((employee) => {
+      const employeeId = String(employee.id ?? "");
+      const employeeName = getEmployeeName(employee);
+      const employeeUsername = normalizeText(employee.username);
+      const employeeEmail = normalizeText(employee.email);
+
+      if (userId && employeeId === userId) return true;
+      if (userEmployeeId && employeeId === userEmployeeId) return true;
+      if (userUsername && employeeUsername && employeeUsername === userUsername) return true;
+      if (userEmail && employeeEmail && employeeEmail === userEmail) return true;
+      if (userName && employeeName && employeeName === userName) return true;
+      return false;
+    }) || null;
+
+  return matched || buildFallbackEmployeeFromUser(currentUser);
+};
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
@@ -304,6 +365,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   };
 
   const [formData, setFormData] = useState(getInitialFormData);
+  const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
   // Track whether duration was manually changed (independent of service)
   const [durationManuallySet, setDurationManuallySet] = useState(false);
 
@@ -349,19 +411,22 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
   // Auto-select current user if they can only schedule for themselves
   const isWriteAll = hasPermission("schedule", "write_all") || hasPermission("schedule", "admin");
-  const isWriteOnly = hasPermission("schedule", "write") && !isWriteAll;
+  const isWriteOnly = (hasPermission("schedule", "write") || hasPermission("schedule", "write_self_only")) && !isWriteAll;
+  const isEditMode = Boolean(appointment?.id);
+  const currentEmployee = resolveCurrentEmployee(employees, user);
+  const employeeOptions = !isEditMode && isWriteOnly && currentEmployee ? [currentEmployee] : employees;
+  const employeePlaceholder = !isEditMode && isWriteOnly && currentEmployee ? getEmployeeDisplayName(currentEmployee) : typeConfig.employeeMultiple ? "Select employees" : "Select employee";
 
   useEffect(() => {
-    if (user && isWriteOnly) {
+    if (!isEditMode && isWriteOnly && currentEmployee) {
       // Lock employee selection to current user when write-only
-      const self = employees.find((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase());
-      if (self && (!Array.isArray(formData.employee_ids) || formData.employee_ids[0] !== self.id)) {
-        setFormData((prev) => ({ ...prev, employee_ids: [self.id] }));
+      if (!Array.isArray(formData.employee_ids) || String(formData.employee_ids[0] ?? "") !== String(currentEmployee.id)) {
+        setFormData((prev) => ({ ...prev, employee_ids: [currentEmployee.id] }));
       }
     } else if ((!Array.isArray(formData.employee_ids) || formData.employee_ids.length === 0) && employees.length === 1) {
       setFormData((prev) => ({ ...prev, employee_ids: [employees[0].id] }));
     }
-  }, [employees, formData.employee_ids, isWriteOnly, user]);
+  }, [currentEmployee, employees, formData.employee_ids, isEditMode, isWriteOnly]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -520,7 +585,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   // Get config for current appointment type
-  const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
   const appointmentDateOnly = formData.appointment_datetime ? formData.appointment_datetime.split("T")[0] : "";
 
   const selectedEmployeeColor = employees.find((employee) => employee.id === formData.employee_ids?.[0])?.color || "#64748b";
@@ -611,11 +675,11 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                        options={employeeOptions.map((employee) => ({
                           value: employee.id,
-                          label: `${employee.first_name} ${employee.last_name}`.trim(),
+                          label: getEmployeeDisplayName(employee),
                         }))}
-                        placeholder={typeConfig.employeeMultiple ? "Select employees" : "Select employee"}
+                        placeholder={employeePlaceholder}
                         required
                         searchable={true}
                         disabled={isWriteOnly}
@@ -695,7 +759,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                        options={employeeOptions.map((employee) => ({
                           value: employee.id,
                           label: `${employee.first_name} ${employee.last_name}`.trim(),
                         }))}
@@ -789,7 +853,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         name="employee_id"
                         value={employeeMultiMode ? formData.employee_ids : formData.employee_ids[0] || ""}
                         onChange={handleEmployeeChange}
-                        options={(isWriteOnly && user ? employees.filter((e) => e.id === user.id || `${e.first_name} ${e.last_name}`.trim().toLowerCase() === `${user.first_name} ${user.last_name}`.trim().toLowerCase()) : employees).map((employee) => ({
+                        options={employeeOptions.map((employee) => ({
                           value: employee.id,
                           label: `${employee.first_name} ${employee.last_name}`.trim(),
                         }))}
