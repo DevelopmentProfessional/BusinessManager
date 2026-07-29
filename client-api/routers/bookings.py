@@ -51,7 +51,16 @@ def _get_company_stripe_secret(company_id: str | None, session: Session) -> str:
             select(AppSettings).where(AppSettings.company_id == company_id)
         ).first()
         if settings and getattr(settings, "stripe_enabled", False):
-            secret = (getattr(settings, "stripe_secret_key", None) or "").strip()
+            mode = str(getattr(settings, "stripe_mode", "test") or "test").strip().lower()
+            mode = "live" if mode == "live" else "test"
+            legacy_secret = (getattr(settings, "stripe_secret_key", None) or "").strip()
+            test_secret = (getattr(settings, "stripe_test_secret_key", None) or "").strip()
+            live_secret = (getattr(settings, "stripe_live_secret_key", None) or "").strip()
+            has_env_specific = bool(test_secret or live_secret)
+            if mode == "live":
+                secret = live_secret or (legacy_secret if not has_env_specific else "")
+            else:
+                secret = test_secret or (legacy_secret if not has_env_specific else "")
             if secret:
                 return secret
     return (os.getenv("STRIPE_SECRET_KEY", "") or "").strip()

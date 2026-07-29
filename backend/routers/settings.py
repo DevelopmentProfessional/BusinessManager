@@ -58,6 +58,81 @@ class StripeTestCheckoutResponse(BaseModel):
     checkout_session_id: str | None = None
 
 
+STRIPE_SECRET_FIELDS = {
+    "stripe_secret_key",
+    "stripe_webhook_secret",
+    "stripe_test_secret_key",
+    "stripe_test_webhook_secret",
+    "stripe_live_secret_key",
+    "stripe_live_webhook_secret",
+}
+
+STRIPE_KEY_FIELDS = {
+    "stripe_publishable_key",
+    "stripe_secret_key",
+    "stripe_webhook_secret",
+    "stripe_test_publishable_key",
+    "stripe_test_secret_key",
+    "stripe_test_webhook_secret",
+    "stripe_live_publishable_key",
+    "stripe_live_secret_key",
+    "stripe_live_webhook_secret",
+}
+
+
+def _normalize_stripe_mode(value: str | None) -> str:
+    normalized = (value or "").strip().lower()
+    return "live" if normalized == "live" else "test"
+
+
+def _active_stripe_credentials(settings: AppSettings) -> dict[str, str]:
+    mode = _normalize_stripe_mode(getattr(settings, "stripe_mode", "test"))
+    has_env_specific = any([
+        (getattr(settings, "stripe_test_publishable_key", None) or "").strip(),
+        (getattr(settings, "stripe_test_secret_key", None) or "").strip(),
+        (getattr(settings, "stripe_test_webhook_secret", None) or "").strip(),
+        (getattr(settings, "stripe_live_publishable_key", None) or "").strip(),
+        (getattr(settings, "stripe_live_secret_key", None) or "").strip(),
+        (getattr(settings, "stripe_live_webhook_secret", None) or "").strip(),
+    ])
+
+    if mode == "live":
+        return {
+            "mode": mode,
+            "publishable_key": (getattr(settings, "stripe_live_publishable_key", None) or (getattr(settings, "stripe_publishable_key", None) if not has_env_specific else None) or "").strip(),
+            "secret_key": (getattr(settings, "stripe_live_secret_key", None) or (getattr(settings, "stripe_secret_key", None) if not has_env_specific else None) or "").strip(),
+            "webhook_secret": (getattr(settings, "stripe_live_webhook_secret", None) or (getattr(settings, "stripe_webhook_secret", None) if not has_env_specific else None) or "").strip(),
+        }
+
+    return {
+        "mode": mode,
+        "publishable_key": (getattr(settings, "stripe_test_publishable_key", None) or (getattr(settings, "stripe_publishable_key", None) if not has_env_specific else None) or "").strip(),
+        "secret_key": (getattr(settings, "stripe_test_secret_key", None) or (getattr(settings, "stripe_secret_key", None) if not has_env_specific else None) or "").strip(),
+        "webhook_secret": (getattr(settings, "stripe_test_webhook_secret", None) or (getattr(settings, "stripe_webhook_secret", None) if not has_env_specific else None) or "").strip(),
+    }
+
+
+def _sync_legacy_active_stripe_fields(settings: AppSettings) -> None:
+    # Keep legacy columns in sync so older code paths remain functional.
+    active = _active_stripe_credentials(settings)
+    settings.stripe_mode = active["mode"]
+    settings.stripe_publishable_key = active["publishable_key"] or None
+    settings.stripe_secret_key = active["secret_key"] or None
+    settings.stripe_webhook_secret = active["webhook_secret"] or None
+
+
+def _strip_optional(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = str(value).strip()
+    return stripped or None
+
+
+def _mask_stripe_secrets_for_non_admin(response: AppSettingsRead) -> None:
+    for field in STRIPE_SECRET_FIELDS:
+        setattr(response, field, None)
+
+
 # ─── 1 SETTINGS SINGLETON HELPER ───────────────────────────────────────────────
 
 def resolve_company_id(session: Session, current_user) -> str:
@@ -249,11 +324,11 @@ def get_schedule_settings(
     """Get schedule settings (auto-creates defaults if none exist)."""
     company_id = resolve_company_id(session, current_user)
     settings = get_or_create_settings(session, company_id)
+    _sync_legacy_active_stripe_fields(settings)
     company = get_company(session, company_id)
     response = _to_settings_response(settings, company)
     if current_user.role != UserRole.ADMIN:
-        response.stripe_secret_key = None
-        response.stripe_webhook_secret = None
+        _mask_stripe_secrets_for_non_admin(response)
     return response
 
 
@@ -273,6 +348,13 @@ def update_schedule_settings(
     # Only admins can update Stripe credentials/settings.
     stripe_fields = {
         "stripe_enabled",
+        "stripe_mode",
+        "stripe_test_publishable_key",
+        "stripe_test_secret_key",
+        "stripe_test_webhook_secret",
+        "stripe_live_publishable_key",
+        "stripe_live_secret_key",
+        "stripe_live_webhook_secret",
         "stripe_publishable_key",
         "stripe_secret_key",
         "stripe_webhook_secret",
@@ -281,8 +363,17 @@ def update_schedule_settings(
         for field in stripe_fields:
             update_data.pop(field, None)
 
+    if "stripe_mode" in update_data:
+        update_data["stripe_mode"] = _normalize_stripe_mode(update_data.get("stripe_mode"))
+
+    for field in STRIPE_KEY_FIELDS:
+        if field in update_data:
+            update_data[field] = _strip_optional(update_data.get(field))
+
     for field, value in update_data.items():
         setattr(settings, field, value)
+
+    _sync_legacy_active_stripe_fields(settings)
 
     settings.updated_at = datetime.utcnow()
     upsert_company_from_settings(session, company_id, settings)
@@ -296,8 +387,7 @@ def update_schedule_settings(
     company = get_company(session, company_id)
     response = _to_settings_response(settings, company)
     if current_user.role != UserRole.ADMIN:
-        response.stripe_secret_key = None
-        response.stripe_webhook_secret = None
+        _mask_stripe_secrets_for_non_admin(response)
     return response
 
 
@@ -316,10 +406,11 @@ def create_stripe_test_checkout(
 
     if not settings.stripe_enabled:
         raise HTTPException(status_code=400, detail="Stripe is disabled in settings.")
-    if not (settings.stripe_secret_key or "").strip():
-        raise HTTPException(status_code=400, detail="Stripe secret key is missing.")
+    active = _active_stripe_credentials(settings)
+    if not active["secret_key"]:
+        raise HTTPException(status_code=400, detail=f"Stripe {active['mode']} secret key is missing.")
 
-    stripe.api_key = settings.stripe_secret_key.strip()
+    stripe.api_key = active["secret_key"]
 
     amount = max(0.5, float(payload.amount or 0.5))
     base_origin = (os.getenv("APP_WEB_URL") or os.getenv("CLIENT_PORTAL_URL") or "https://app.vadpivi.com").rstrip("/")

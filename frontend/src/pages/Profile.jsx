@@ -348,6 +348,13 @@ const Profile = () => {
 
   const [stripeSettings, setStripeSettings] = useState({
     stripe_enabled: false,
+    stripe_mode: "test",
+    stripe_test_publishable_key: "",
+    stripe_test_secret_key: "",
+    stripe_test_webhook_secret: "",
+    stripe_live_publishable_key: "",
+    stripe_live_secret_key: "",
+    stripe_live_webhook_secret: "",
     stripe_publishable_key: "",
     stripe_secret_key: "",
     stripe_webhook_secret: "",
@@ -490,6 +497,13 @@ const Profile = () => {
           }));
           setStripeSettings({
             stripe_enabled: res.data.stripe_enabled ?? false,
+            stripe_mode: (res.data.stripe_mode || "test").toLowerCase() === "live" ? "live" : "test",
+            stripe_test_publishable_key: res.data.stripe_test_publishable_key || "",
+            stripe_test_secret_key: res.data.stripe_test_secret_key || "",
+            stripe_test_webhook_secret: res.data.stripe_test_webhook_secret || "",
+            stripe_live_publishable_key: res.data.stripe_live_publishable_key || "",
+            stripe_live_secret_key: res.data.stripe_live_secret_key || "",
+            stripe_live_webhook_secret: res.data.stripe_live_webhook_secret || "",
             stripe_publishable_key: res.data.stripe_publishable_key || "",
             stripe_secret_key: res.data.stripe_secret_key || "",
             stripe_webhook_secret: res.data.stripe_webhook_secret || "",

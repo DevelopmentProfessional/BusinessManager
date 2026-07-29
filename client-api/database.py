@@ -123,9 +123,51 @@ def _ensure_app_settings_stripe_columns():
         with engine.begin() as conn:
             _ensure_columns(conn, "app_settings", [
                 ("stripe_enabled", "BOOLEAN NOT NULL DEFAULT FALSE"),
+                ("stripe_mode", "VARCHAR NOT NULL DEFAULT 'test'"),
+                ("stripe_test_publishable_key", "VARCHAR"),
+                ("stripe_test_secret_key", "VARCHAR"),
+                ("stripe_test_webhook_secret", "VARCHAR"),
+                ("stripe_live_publishable_key", "VARCHAR"),
+                ("stripe_live_secret_key", "VARCHAR"),
+                ("stripe_live_webhook_secret", "VARCHAR"),
                 ("stripe_publishable_key", "VARCHAR"),
                 ("stripe_secret_key", "VARCHAR"),
                 ("stripe_webhook_secret", "VARCHAR"),
             ])
+
+            conn.execute(text(
+                "UPDATE app_settings "
+                "SET stripe_mode = CASE "
+                "WHEN stripe_mode IS NULL OR LOWER(TRIM(stripe_mode)) NOT IN ('test', 'live') THEN 'test' "
+                "ELSE LOWER(TRIM(stripe_mode)) END"
+            ))
+            conn.execute(text(
+                "UPDATE app_settings "
+                "SET stripe_live_publishable_key = stripe_publishable_key "
+                "WHERE stripe_live_publishable_key IS NULL "
+                "AND stripe_publishable_key IS NOT NULL "
+                "AND stripe_publishable_key LIKE 'pk_live_%'"
+            ))
+            conn.execute(text(
+                "UPDATE app_settings "
+                "SET stripe_test_publishable_key = stripe_publishable_key "
+                "WHERE stripe_test_publishable_key IS NULL "
+                "AND stripe_publishable_key IS NOT NULL "
+                "AND stripe_publishable_key NOT LIKE 'pk_live_%'"
+            ))
+            conn.execute(text(
+                "UPDATE app_settings "
+                "SET stripe_live_secret_key = stripe_secret_key "
+                "WHERE stripe_live_secret_key IS NULL "
+                "AND stripe_secret_key IS NOT NULL "
+                "AND stripe_secret_key LIKE 'sk_live_%'"
+            ))
+            conn.execute(text(
+                "UPDATE app_settings "
+                "SET stripe_test_secret_key = stripe_secret_key "
+                "WHERE stripe_test_secret_key IS NULL "
+                "AND stripe_secret_key IS NOT NULL "
+                "AND stripe_secret_key NOT LIKE 'sk_live_%'"
+            ))
     except Exception as exc:
         logger.exception("Best-effort app_settings Stripe migration failed: %s", exc)
