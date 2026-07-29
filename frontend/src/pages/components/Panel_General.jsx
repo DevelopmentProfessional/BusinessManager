@@ -314,7 +314,7 @@ const Panel_General = ({
       {user?.role === "admin" && (
         <SettingsSection open={openAccordions.payments} onToggle={() => toggleAccordion("payments")} icon={CreditCardIcon} iconClassName="text-success" title="Payments (Stripe)">
           <div className="alert alert-info mb-2 py-1 small">
-            Configure Stripe keys here. Card checkout in the client portal uses these values per company.
+            Configure Stripe card payments here. Stripe checkout has no monthly fee by default; you only pay per successful transaction.
           </div>
 
           <div className="align-items-center d-flex gap-2 mb-2">
@@ -329,51 +329,113 @@ const Panel_General = ({
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <input
-              type="text"
-              id="stripe_publishable_key"
-              value={stripeSettings.stripe_publishable_key || ""}
-              onChange={(e) => handleStripeSettingsChange("stripe_publishable_key", e.target.value)}
-              className="form-control ui-control-sm"
-              placeholder="pk_test_..."
-              autoComplete="off"
-            />
-            <label htmlFor="stripe_publishable_key">Stripe Publishable Key</label>
+            <select
+              id="stripe_mode"
+              value={stripeSettings.stripe_mode || "test"}
+              onChange={(e) => handleStripeSettingsChange("stripe_mode", e.target.value === "live" ? "live" : "test")}
+              className="form-select ui-control-sm"
+            >
+              <option value="test">Sandbox / Test Mode</option>
+              <option value="live">Production / Live Mode</option>
+            </select>
+            <label htmlFor="stripe_mode">Active Payment Mode</label>
           </div>
 
-          <div className="form-floating ui-form-floating-mb2">
-            <input
-              type="password"
-              id="stripe_secret_key"
-              value={stripeSettings.stripe_secret_key || ""}
-              onChange={(e) => handleStripeSettingsChange("stripe_secret_key", e.target.value)}
-              className="form-control ui-control-sm"
-              placeholder="sk_test_..."
-              autoComplete="new-password"
-            />
-            <label htmlFor="stripe_secret_key">Stripe Secret Key</label>
+          <div className="alert alert-secondary mb-2 py-1 small">
+            Current mode: <span className="fw-semibold text-uppercase">{(stripeSettings.stripe_mode || "test") === "live" ? "LIVE" : "TEST"}</span>
           </div>
 
-          <div className="form-floating mb-2">
-            <input
-              type="password"
-              id="stripe_webhook_secret"
-              value={stripeSettings.stripe_webhook_secret || ""}
-              onChange={(e) => handleStripeSettingsChange("stripe_webhook_secret", e.target.value)}
-              className="form-control ui-control-sm"
-              placeholder="whsec_..."
-              autoComplete="new-password"
-            />
-            <label htmlFor="stripe_webhook_secret">Stripe Webhook Secret</label>
+          <div className="border mb-2 p-1 rounded">
+            <div className="fw-semibold mb-2 small">Test (Sandbox) Keys</div>
+            <div className="form-floating ui-form-floating-mb2">
+              <input
+                type="text"
+                id="stripe_test_publishable_key"
+                value={stripeSettings.stripe_test_publishable_key || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_test_publishable_key", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="pk_test_..."
+                autoComplete="off"
+              />
+              <label htmlFor="stripe_test_publishable_key">Test Publishable Key</label>
+            </div>
+
+            <div className="form-floating ui-form-floating-mb2">
+              <input
+                type="password"
+                id="stripe_test_secret_key"
+                value={stripeSettings.stripe_test_secret_key || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_test_secret_key", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="sk_test_..."
+                autoComplete="new-password"
+              />
+              <label htmlFor="stripe_test_secret_key">Test Secret Key</label>
+            </div>
+
+            <div className="form-floating mb-0">
+              <input
+                type="password"
+                id="stripe_test_webhook_secret"
+                value={stripeSettings.stripe_test_webhook_secret || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_test_webhook_secret", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="whsec_..."
+                autoComplete="new-password"
+              />
+              <label htmlFor="stripe_test_webhook_secret">Test Webhook Secret</label>
+            </div>
           </div>
 
-          <Button_Toolbar icon={CheckCircleIcon} label={stripeSettingsLoading ? "Saving..." : "Save Stripe Settings"} onClick={handleSaveStripeSettings} className="btn-success" disabled={stripeSettingsLoading} />
+          <div className="border mb-2 p-1 rounded">
+            <div className="fw-semibold mb-2 small">Live (Production) Keys</div>
+            <div className="form-floating ui-form-floating-mb2">
+              <input
+                type="text"
+                id="stripe_live_publishable_key"
+                value={stripeSettings.stripe_live_publishable_key || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_live_publishable_key", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="pk_live_..."
+                autoComplete="off"
+              />
+              <label htmlFor="stripe_live_publishable_key">Live Publishable Key</label>
+            </div>
+
+            <div className="form-floating ui-form-floating-mb2">
+              <input
+                type="password"
+                id="stripe_live_secret_key"
+                value={stripeSettings.stripe_live_secret_key || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_live_secret_key", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="sk_live_..."
+                autoComplete="new-password"
+              />
+              <label htmlFor="stripe_live_secret_key">Live Secret Key</label>
+            </div>
+
+            <div className="form-floating mb-0">
+              <input
+                type="password"
+                id="stripe_live_webhook_secret"
+                value={stripeSettings.stripe_live_webhook_secret || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_live_webhook_secret", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="whsec_..."
+                autoComplete="new-password"
+              />
+              <label htmlFor="stripe_live_webhook_secret">Live Webhook Secret</label>
+            </div>
+          </div>
+
+          <Button_Toolbar icon={CheckCircleIcon} label={stripeSettingsLoading ? "Saving..." : "Save Payment Gateway Settings"} onClick={handleSaveStripeSettings} className="btn-success" disabled={stripeSettingsLoading} />
 
           {/* TEMPORARY TEST BLOCK (isolated for easy removal) */}
           <div className="alert alert-warning mb-0 mt-2 py-1">
             <div className="fw-semibold mb-1 small">Temporary Test Utilities</div>
             <button type="button" className="btn btn-outline-dark btn-sm" onClick={handleStripeTestCheckout} disabled={stripeTestLoading || stripeSettingsLoading}>
-              {stripeTestLoading ? "Launching test..." : "Test Stripe Checkout ($0.50)"}
+              {stripeTestLoading ? "Launching test..." : "Launch Checkout in Current Mode ($0.50)"}
             </button>
           </div>
         </SettingsSection>

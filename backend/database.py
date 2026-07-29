@@ -40,6 +40,7 @@
 #   2026-05-26 | GitHub Copilot | Added asset_unit.employee_id migration/required artifact checks for assigned/shared asset ownership
 #   2026-06-13 | GitHub Copilot | Extended required schema artifact checks with schedule columns to prevent stale version-marker skips
 #   2026-06-13 | GitHub Copilot | Added sale_transaction.discount_amount schema checks/migration to fix schedule delete failures
+#   2026-07-28 | GitHub Copilot | Added Stripe test/live mode app_settings migrations with legacy key backfill
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.06.13.1"
+CURRENT_SCHEMA_VERSION = "2026.07.28.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -1244,6 +1245,34 @@ def _ensure_app_settings_stripe_columns_if_needed() -> None:
             conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_enabled BOOLEAN NOT NULL DEFAULT FALSE"))
             print("  + Added app_settings.stripe_enabled")
 
+        if "stripe_mode" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_mode VARCHAR NOT NULL DEFAULT 'test'"))
+            print("  + Added app_settings.stripe_mode")
+
+        if "stripe_test_publishable_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_test_publishable_key VARCHAR"))
+            print("  + Added app_settings.stripe_test_publishable_key")
+
+        if "stripe_test_secret_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_test_secret_key VARCHAR"))
+            print("  + Added app_settings.stripe_test_secret_key")
+
+        if "stripe_test_webhook_secret" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_test_webhook_secret VARCHAR"))
+            print("  + Added app_settings.stripe_test_webhook_secret")
+
+        if "stripe_live_publishable_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_live_publishable_key VARCHAR"))
+            print("  + Added app_settings.stripe_live_publishable_key")
+
+        if "stripe_live_secret_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_live_secret_key VARCHAR"))
+            print("  + Added app_settings.stripe_live_secret_key")
+
+        if "stripe_live_webhook_secret" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_live_webhook_secret VARCHAR"))
+            print("  + Added app_settings.stripe_live_webhook_secret")
+
         if "stripe_publishable_key" not in existing_cols:
             conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_publishable_key VARCHAR"))
             print("  + Added app_settings.stripe_publishable_key")
@@ -1255,6 +1284,59 @@ def _ensure_app_settings_stripe_columns_if_needed() -> None:
         if "stripe_webhook_secret" not in existing_cols:
             conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_webhook_secret VARCHAR"))
             print("  + Added app_settings.stripe_webhook_secret")
+
+        # Normalize mode values and backfill new per-environment fields from legacy keys.
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_mode = CASE "
+            "WHEN stripe_mode IS NULL OR LOWER(TRIM(stripe_mode)) NOT IN ('test', 'live') THEN 'test' "
+            "ELSE LOWER(TRIM(stripe_mode)) END"
+        ))
+
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_live_publishable_key = stripe_publishable_key "
+            "WHERE stripe_live_publishable_key IS NULL "
+            "AND stripe_publishable_key IS NOT NULL "
+            "AND stripe_publishable_key LIKE 'pk_live_%'"
+        ))
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_test_publishable_key = stripe_publishable_key "
+            "WHERE stripe_test_publishable_key IS NULL "
+            "AND stripe_publishable_key IS NOT NULL "
+            "AND stripe_publishable_key NOT LIKE 'pk_live_%'"
+        ))
+
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_live_secret_key = stripe_secret_key "
+            "WHERE stripe_live_secret_key IS NULL "
+            "AND stripe_secret_key IS NOT NULL "
+            "AND stripe_secret_key LIKE 'sk_live_%'"
+        ))
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_test_secret_key = stripe_secret_key "
+            "WHERE stripe_test_secret_key IS NULL "
+            "AND stripe_secret_key IS NOT NULL "
+            "AND stripe_secret_key NOT LIKE 'sk_live_%'"
+        ))
+
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_test_webhook_secret = stripe_webhook_secret "
+            "WHERE stripe_test_webhook_secret IS NULL "
+            "AND stripe_webhook_secret IS NOT NULL "
+            "AND (stripe_mode = 'test' OR stripe_live_webhook_secret IS NULL)"
+        ))
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_live_webhook_secret = stripe_webhook_secret "
+            "WHERE stripe_live_webhook_secret IS NULL "
+            "AND stripe_webhook_secret IS NOT NULL "
+            "AND stripe_mode = 'live'"
+        ))
 
 
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────

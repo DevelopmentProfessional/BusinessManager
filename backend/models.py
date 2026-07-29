@@ -690,6 +690,14 @@ class AppSettings(BaseModel, table=True):
     portal_secondary_color: Optional[str] = Field(default=None)
     # Stripe configuration (admin-managed, company scoped)
     stripe_enabled: bool = Field(default=False)
+    stripe_mode: str = Field(default="test")
+    stripe_test_publishable_key: Optional[str] = Field(default=None)
+    stripe_test_secret_key: Optional[str] = Field(default=None)
+    stripe_test_webhook_secret: Optional[str] = Field(default=None)
+    stripe_live_publishable_key: Optional[str] = Field(default=None)
+    stripe_live_secret_key: Optional[str] = Field(default=None)
+    stripe_live_webhook_secret: Optional[str] = Field(default=None)
+    # Legacy active-key fields kept for backward compatibility.
     stripe_publishable_key: Optional[str] = Field(default=None)
     stripe_secret_key: Optional[str] = Field(default=None)
     stripe_webhook_secret: Optional[str] = Field(default=None)
@@ -1543,6 +1551,13 @@ class AppSettingsCreate(SQLModel):
     saturday_enabled: bool = True
     sunday_enabled: bool = True
     stripe_enabled: bool = False
+    stripe_mode: str = "test"
+    stripe_test_publishable_key: Optional[str] = None
+    stripe_test_secret_key: Optional[str] = None
+    stripe_test_webhook_secret: Optional[str] = None
+    stripe_live_publishable_key: Optional[str] = None
+    stripe_live_secret_key: Optional[str] = None
+    stripe_live_webhook_secret: Optional[str] = None
     stripe_publishable_key: Optional[str] = None
     stripe_secret_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None
@@ -1581,6 +1596,13 @@ class AppSettingsUpdate(SQLModel):
     portal_primary_color: Optional[str] = None
     portal_secondary_color: Optional[str] = None
     stripe_enabled: Optional[bool] = None
+    stripe_mode: Optional[str] = None
+    stripe_test_publishable_key: Optional[str] = None
+    stripe_test_secret_key: Optional[str] = None
+    stripe_test_webhook_secret: Optional[str] = None
+    stripe_live_publishable_key: Optional[str] = None
+    stripe_live_secret_key: Optional[str] = None
+    stripe_live_webhook_secret: Optional[str] = None
     stripe_publishable_key: Optional[str] = None
     stripe_secret_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None
@@ -1620,6 +1642,13 @@ class AppSettingsRead(SQLModel):
     portal_primary_color: Optional[str] = None
     portal_secondary_color: Optional[str] = None
     stripe_enabled: bool = False
+    stripe_mode: str = "test"
+    stripe_test_publishable_key: Optional[str] = None
+    stripe_test_secret_key: Optional[str] = None
+    stripe_test_webhook_secret: Optional[str] = None
+    stripe_live_publishable_key: Optional[str] = None
+    stripe_live_secret_key: Optional[str] = None
+    stripe_live_webhook_secret: Optional[str] = None
     stripe_publishable_key: Optional[str] = None
     stripe_secret_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None

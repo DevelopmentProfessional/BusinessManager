@@ -336,16 +336,48 @@ def _consume_sale_transaction_inventory(session: Session, sale_transaction_id) -
 
 def _get_company_stripe_settings(session: Session, company_id: str | None) -> dict:
     if not company_id:
-        return {"enabled": False, "secret_key": None, "webhook_secret": None}
+        return {
+            "enabled": False,
+            "mode": "test",
+            "secret_key": None,
+            "webhook_secret": None,
+            "webhook_secrets": [],
+        }
 
     settings = session.exec(
         sql_select(AppSettings).where(AppSettings.company_id == company_id)
     ).first()
 
+    mode = str(getattr(settings, "stripe_mode", "test") or "test").strip().lower() if settings else "test"
+    mode = "live" if mode == "live" else "test"
+
+    def _clean(value: Any) -> str:
+        return (str(value).strip() if value is not None else "")
+
+    legacy_secret = _clean(getattr(settings, "stripe_secret_key", None)) if settings else ""
+    legacy_webhook = _clean(getattr(settings, "stripe_webhook_secret", None)) if settings else ""
+    test_secret = _clean(getattr(settings, "stripe_test_secret_key", None)) if settings else ""
+    live_secret = _clean(getattr(settings, "stripe_live_secret_key", None)) if settings else ""
+    test_webhook = _clean(getattr(settings, "stripe_test_webhook_secret", None)) if settings else ""
+    live_webhook = _clean(getattr(settings, "stripe_live_webhook_secret", None)) if settings else ""
+    has_env_specific = any([test_secret, live_secret, test_webhook, live_webhook])
+
+    active_secret = live_secret if mode == "live" else test_secret
+    if not active_secret and not has_env_specific:
+        active_secret = legacy_secret
+
+    active_webhook = live_webhook if mode == "live" else test_webhook
+    if not active_webhook and not has_env_specific:
+        active_webhook = legacy_webhook
+
+    webhook_secrets = [s for s in [active_webhook, test_webhook, live_webhook, legacy_webhook] if s]
+
     return {
         "enabled": bool(getattr(settings, "stripe_enabled", False)) if settings else False,
-        "secret_key": (getattr(settings, "stripe_secret_key", None) or "").strip() if settings else None,
-        "webhook_secret": (getattr(settings, "stripe_webhook_secret", None) or "").strip() if settings else None,
+        "mode": mode,
+        "secret_key": active_secret or None,
+        "webhook_secret": active_webhook or None,
+        "webhook_secrets": list(dict.fromkeys(webhook_secrets)),
     }
 
 
@@ -411,9 +443,21 @@ def _construct_stripe_event(payload: bytes, stripe_signature: str | None, sessio
     secrets: list[str] = []
     settings_rows = session.exec(sql_select(AppSettings)).all()
     for row in settings_rows:
-        secret = (getattr(row, "stripe_webhook_secret", None) or "").strip()
-        if secret and secret not in secrets:
-            secrets.append(secret)
+        mode = str(getattr(row, "stripe_mode", "test") or "test").strip().lower()
+        mode = "live" if mode == "live" else "test"
+        candidates = [
+            (getattr(row, "stripe_live_webhook_secret", None) or "").strip(),
+            (getattr(row, "stripe_test_webhook_secret", None) or "").strip(),
+            (getattr(row, "stripe_webhook_secret", None) or "").strip(),
+        ]
+        if mode == "live":
+            candidates = [candidates[0], candidates[2], candidates[1]]
+        else:
+            candidates = [candidates[1], candidates[2], candidates[0]]
+
+        for secret in candidates:
+            if secret and secret not in secrets:
+                secrets.append(secret)
 
     env_secret = (os.getenv("STRIPE_WEBHOOK_SECRET", "") or "").strip()
     if env_secret and env_secret not in secrets:
