@@ -25,6 +25,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-19 | GitHub Copilot | Added unified filter dropdown with client search and services/products/subscriptions filters; added checkout-time subscription start assignment
  *   2026-07-26 | GitHub Copilot | Added schedule-driven auto-open checkout handoff for appointment payment flow
+ *   2026-07-31 | GitHub Copilot | Added partial checkout item support and schedule context display payload for checkout modal
  * ============================================================
  */
 
@@ -380,6 +381,7 @@ export default function Sales() {
     status: "",
   });
   const stripeReturnHandledRef = useRef(false);
+  const [checkoutContext, setCheckoutContext] = useState(null);
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
@@ -449,6 +451,7 @@ export default function Sales() {
   };
 
   const [linkedScheduleId, setLinkedScheduleId] = useState(null);
+  const [linkedScheduleServiceId, setLinkedScheduleServiceId] = useState(null);
   const [autoOpenCheckoutRequested, setAutoOpenCheckoutRequested] = useState(false);
 
   // On mount: restore walk-in cart from localStorage (only when not navigating with a pre-selected client)
@@ -469,10 +472,14 @@ export default function Sales() {
 
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
   useEffect(() => {
-    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout } = location.state || {};
+    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext } = location.state || {};
     if (scheduleId) {
       setLinkedScheduleId(scheduleId);
     }
+    if (preloadServiceId) {
+      setLinkedScheduleServiceId(preloadServiceId);
+    }
+    setCheckoutContext(stateCheckoutContext || null);
     if (openCheckout) {
       setAutoOpenCheckoutRequested(true);
     }
@@ -484,9 +491,10 @@ export default function Sales() {
       const addServiceWhenReady = () => {
         const svc = services.find((s) => String(s.id) === String(preloadServiceId));
         if (svc) {
+          const preloadCartKey = `service-${svc.id}`;
           setCart((prev) => {
-            if (prev.some((item) => item.id === svc.id && item.itemType === "service")) return prev;
-            return [...prev, { ...svc, itemType: "service", quantity: 1 }];
+            if (prev.some((item) => item.cartKey === preloadCartKey || (item.id === svc.id && item.itemType === "service"))) return prev;
+            return [...prev, { ...svc, cartKey: preloadCartKey, itemType: "service", quantity: 1 }];
           });
         }
       };
@@ -565,6 +573,8 @@ export default function Sales() {
       }
 
       const saleIdMatches = pending && String(pending.saleId || "") === String(saleId);
+      const checkoutItemCartKeys = Array.isArray(pending?.checkoutItemCartKeys) ? pending.checkoutItemCartKeys.filter(Boolean) : [];
+      const checkoutHadRemainingItems = Boolean(pending?.checkoutHadRemainingItems);
 
       try {
         if (saleIdMatches && pending?.selectedClientId && Array.isArray(pending.soldSubscriptions) && pending.soldSubscriptions.length > 0) {
@@ -572,7 +582,14 @@ export default function Sales() {
         }
 
         if (saleIdMatches && pending?.selectedClientId) {
-          await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+          if (checkoutItemCartKeys.length > 0) {
+            await Promise.all(checkoutItemCartKeys.map((cartKey) => clientCartAPI.removeItem(pending.selectedClientId, cartKey).catch(() => {})));
+            if (!checkoutHadRemainingItems) {
+              await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+            }
+          } else {
+            await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+          }
         }
 
         if (saleIdMatches && pending?.linkedScheduleId) {
@@ -585,10 +602,34 @@ export default function Sales() {
         }
 
         await loadTransactionHistory();
-        setCart([]);
-        setSelectedClient(null);
+        if (saleIdMatches && checkoutItemCartKeys.length > 0) {
+          setCart((prev) => prev.filter((item) => !checkoutItemCartKeys.includes(item.cartKey)));
+        } else {
+          setCart([]);
+        }
+
+        if (saleIdMatches && checkoutHadRemainingItems && pending?.selectedClientId) {
+          const matchedClient = clients.find((client) => String(client.id) === String(pending.selectedClientId));
+          if (matchedClient) {
+            setSelectedClient(matchedClient);
+          } else {
+            setSelectedClient((prev) =>
+              prev && String(prev.id) === String(pending.selectedClientId)
+                ? prev
+                : {
+                    id: pending.selectedClientId,
+                    name: pending.selectedClientName || "Client",
+                    email: pending.selectedClientEmail || "",
+                  }
+            );
+          }
+        } else {
+          setSelectedClient(null);
+          setCheckoutContext(null);
+        }
         setShowCheckout(false);
         setLinkedScheduleId(null);
+        setLinkedScheduleServiceId(null);
         clearError();
         setSuccessNotice("Payment confirmed. Receipt email was sent to the client when an email address is on file.");
       } finally {
@@ -598,7 +639,7 @@ export default function Sales() {
     };
 
     finalizeStripeSaleReturn();
-  }, [location.search]);
+  }, [clients, location.search]);
 
   // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
   const mapCartItemToDb = (item) => ({
@@ -898,11 +939,14 @@ export default function Sales() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const taxRatePercent = Number.isFinite(Number(appSettings?.tax_rate)) ? Number(appSettings.tax_rate) : 0;
 
-  // Calculate applicable discount from active rules
-  const cartDiscount = (() => {
+  const calculateDiscountForItems = (items) => {
+    const targetItems = Array.isArray(items) ? items : [];
+    const itemsSubtotal = targetItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    if (itemsSubtotal <= 0) return 0;
+
     const now = new Date();
     const today = now.toISOString().split("T")[0];
-    const currentTime = now.toTimeString().slice(0, 5);
+    const currentClock = now.toTimeString().slice(0, 5);
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const currentDay = dayNames[now.getDay()];
     let total = 0;
@@ -919,9 +963,9 @@ export default function Sales() {
         }
         if (days.length > 0 && !days.includes(currentDay)) continue;
       }
-      if (rule.day_start_time && currentTime < rule.day_start_time) continue;
-      if (rule.day_end_time && currentTime > rule.day_end_time) continue;
-      let base = cartTotal;
+      if (rule.day_start_time && currentClock < rule.day_start_time) continue;
+      if (rule.day_end_time && currentClock > rule.day_end_time) continue;
+      let base = itemsSubtotal;
       if (rule.applies_to !== "all") {
         let ids = [];
         try {
@@ -929,13 +973,16 @@ export default function Sales() {
         } catch {
           ids = [];
         }
-        base = cart.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.price * i.quantity, 0);
+        base = targetItems.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.price * i.quantity, 0);
       }
       const amt = rule.discount_type === "percentage" ? base * (rule.discount_value / 100) : Math.min(rule.discount_value, base);
       total += amt;
     }
-    return Math.min(total, cartTotal);
-  })();
+    return Math.min(total, itemsSubtotal);
+  };
+
+  // Calculate applicable discount from active rules
+  const cartDiscount = calculateDiscountForItems(cart);
 
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
@@ -1049,8 +1096,16 @@ export default function Sales() {
     setShowCheckout(true);
   };
 
-  const processPayment = async (paymentMethod) => {
-    // Totals already calculated at module level with discount applied (invoiceTaxAmount, invoiceTotal)
+  const processPayment = async (paymentMethod, checkoutItemsArg = null) => {
+    const checkoutItems = Array.isArray(checkoutItemsArg) && checkoutItemsArg.length > 0 ? checkoutItemsArg : cart;
+    if (checkoutItems.length === 0) return { completed: false };
+    const includesLinkedScheduleService = linkedScheduleId && linkedScheduleServiceId ? checkoutItems.some((item) => item.itemType === "service" && String(item.id) === String(linkedScheduleServiceId)) : false;
+
+    const checkoutSubtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const checkoutDiscount = calculateDiscountForItems(checkoutItems);
+    const checkoutSubtotalAfterDiscount = roundCurrency(checkoutSubtotal - checkoutDiscount);
+    const checkoutTaxAmount = roundCurrency(checkoutSubtotalAfterDiscount * (taxRatePercent / 100));
+    const checkoutTotal = roundCurrency(checkoutSubtotalAfterDiscount + checkoutTaxAmount);
 
     const provisionalSaleId = `local-${Date.now()}`;
     let paymentResult = { completed: false };
@@ -1060,11 +1115,11 @@ export default function Sales() {
       id: provisionalSaleId,
       date: new Date().toISOString(),
       client: selectedClient ? { name: selectedClient.name, email: selectedClient.email } : null,
-      items: cart.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
-      subtotal: cartTotal,
-      discount_amount: cartDiscount,
-      tax: invoiceTaxAmount,
-      total: invoiceTotal,
+      items: checkoutItems.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
+      subtotal: checkoutSubtotal,
+      discount_amount: checkoutDiscount,
+      tax: checkoutTaxAmount,
+      total: checkoutTotal,
       paymentMethod,
     };
     setSalesHistory((prev) => [sale, ...prev].slice(0, 50));
@@ -1075,18 +1130,18 @@ export default function Sales() {
       const txData = {
         client_id: selectedClient?.id || null,
         employee_id: user?.id || null,
-        subtotal: cartTotal,
-        discount_amount: cartDiscount,
-        tax_amount: invoiceTaxAmount,
-        total: invoiceTotal,
+        subtotal: checkoutSubtotal,
+        discount_amount: checkoutDiscount,
+        tax_amount: checkoutTaxAmount,
+        total: checkoutTotal,
         payment_method: paymentMethod,
-        schedule_id: linkedScheduleId || null,
+        schedule_id: includesLinkedScheduleService ? linkedScheduleId : null,
       };
       const txResponse = await saleTransactionsAPI.create(txData);
       const txId = txResponse?.data?.id || txResponse?.id;
       if (txId) {
         await Promise.all(
-          cart.map((item) =>
+          checkoutItems.map((item) =>
             saleTransactionsAPI.createItem({
               sale_transaction_id: txId,
               item_id: item.id || null,
@@ -1101,15 +1156,21 @@ export default function Sales() {
           )
         );
 
-        const soldSubscriptions = cart.filter((item) => item.itemType === "subscription");
+        const soldSubscriptions = checkoutItems.filter((item) => item.itemType === "subscription");
 
         const checkoutUrl = txResponse?.data?.checkout_url || txResponse?.checkout_url || null;
         if (checkoutUrl && String(paymentMethod || "").toLowerCase() !== "cash") {
           try {
+            const checkoutItemCartKeys = checkoutItems.map((item) => item.cartKey).filter(Boolean);
+            const checkoutHadRemainingItems = cart.some((item) => !checkoutItemCartKeys.includes(item.cartKey));
             const pendingSaleContext = {
               saleId: txId,
               selectedClientId: selectedClient?.id || null,
-              linkedScheduleId: linkedScheduleId || null,
+              selectedClientName: selectedClient?.name || "",
+              selectedClientEmail: selectedClient?.email || "",
+              linkedScheduleId: includesLinkedScheduleService ? linkedScheduleId : null,
+              checkoutItemCartKeys,
+              checkoutHadRemainingItems,
               soldSubscriptions: soldSubscriptions.map((sub) => ({
                 id: sub.id,
                 subscriptionStartDate: sub.subscriptionStartDate || null,
@@ -1135,7 +1196,7 @@ export default function Sales() {
         const featureDeductions = [];
         const allSoldMap = {}; // used only for immediate local UI update
 
-        cart.forEach((item) => {
+        checkoutItems.forEach((item) => {
           if (item.itemType !== "product" || !item.id) return;
           allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
           if (item.selectedOptions?.length > 0) {
@@ -1156,7 +1217,7 @@ export default function Sales() {
           setProducts((prev) => prev.map((p) => (allSoldMap[p.id] != null ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - allSoldMap[p.id]) } : p)));
         }
         // Mark linked schedule as paid
-        if (linkedScheduleId && txId) {
+        if (includesLinkedScheduleService && linkedScheduleId && txId) {
           try {
             await scheduleAPI.update(linkedScheduleId, {
               is_paid: true,
@@ -1166,6 +1227,8 @@ export default function Sales() {
             console.warn("Could not mark schedule as paid:", err);
           }
           setLinkedScheduleId(null);
+          setLinkedScheduleServiceId(null);
+          setCheckoutContext(null);
         }
         persistedSuccessfully = true;
         paymentResult = { completed: true, sale_id: txId, txResponse };
@@ -1184,12 +1247,27 @@ export default function Sales() {
       }
     }
 
-    // Clear DB cart now that transaction is complete
+    // Remove only checked out items; keep remaining cart items for later payment.
+    const checkoutKeys = new Set(checkoutItems.map((item, index) => item.cartKey || `${item.itemType || "item"}-${item.id || "idx"}-${index}`));
+    const remainingCart = cart.filter((item, index) => {
+      const key = item.cartKey || `${item.itemType || "item"}-${item.id || "idx"}-${index}`;
+      return !checkoutKeys.has(key);
+    });
+
     if (selectedClient?.id) {
-      clientCartAPI.clearCart(selectedClient.id).catch(() => {});
+      checkoutItems.forEach((item) => {
+        if (item.cartKey) removeItemFromDb(item.cartKey, selectedClient.id);
+      });
+      if (remainingCart.length === 0) {
+        clientCartAPI.clearCart(selectedClient.id).catch(() => {});
+      }
     }
-    setCart([]);
-    setSelectedClient(null);
+
+    setCart(remainingCart);
+    if (remainingCart.length === 0) {
+      setSelectedClient(null);
+      setCheckoutContext(null);
+    }
     setShowCheckout(false);
     clearError();
     if (String(paymentMethod || "").toLowerCase() === "cash") {
@@ -1719,10 +1797,11 @@ export default function Sales() {
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
         cart={cart}
-        cartTotal={cartTotal}
         discountAmount={cartDiscount}
         selectedClient={selectedClient}
+        checkoutContext={checkoutContext}
         onProcessPayment={processPayment}
+        getDiscountForItems={calculateDiscountForItems}
         taxRate={appSettings?.tax_rate ?? 0}
         currentUser={user}
         appSettings={appSettings}
