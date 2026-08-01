@@ -1042,6 +1042,26 @@ def _ensure_service_image_url_if_needed():
             print("  + Added column service.image_url")
 
 
+def _ensure_service_and_schedule_addons_if_needed():
+    """Add service/schedule add-on JSON columns if missing."""
+    with engine.begin() as conn:
+        svc_addons_exists = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='service' AND column_name='addons_json'"
+        )).fetchone()
+        if not svc_addons_exists:
+            conn.execute(text("ALTER TABLE service ADD COLUMN addons_json TEXT"))
+            print("  + Added column service.addons_json")
+
+        sched_addons_exists = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='schedule' AND column_name='service_addons_json'"
+        )).fetchone()
+        if not sched_addons_exists:
+            conn.execute(text("ALTER TABLE schedule ADD COLUMN service_addons_json TEXT"))
+            print("  + Added column schedule.service_addons_json")
+
+
 def _ensure_user_hierarchy_columns_if_needed():
     """Add reports_to and role_id columns to user table if missing."""
     cols_to_add = {
@@ -1413,6 +1433,7 @@ def create_db_and_tables():
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()
+    _ensure_service_and_schedule_addons_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
     _ensure_asset_unit_employee_column_if_needed()
     _ensure_asset_unit_location_column_if_needed()

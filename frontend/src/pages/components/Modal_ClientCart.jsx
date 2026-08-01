@@ -14,7 +14,7 @@ import React, { useState, useEffect } from "react";
 import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { clientCartAPI, clientOrdersAPI, inventoryFeaturesAPI } from "../../services/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -70,6 +70,7 @@ export async function getClientCartCount(clientId) {
 
 export default function Modal_ClientCart({ isOpen, onClose, client }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -205,7 +206,17 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
   };
 
   const handleGoToSales = () => {
-    navigate("/sales", { state: { preSelectedClient: client, preloadCart: cartItems } });
+    navigate("/sales", {
+      state: {
+        preSelectedClient: client,
+        preloadCart: cartItems,
+        checkoutReturnTo: {
+          pathname: location.pathname,
+          search: location.search,
+          hash: location.hash,
+        },
+      },
+    });
     onClose();
   };
 

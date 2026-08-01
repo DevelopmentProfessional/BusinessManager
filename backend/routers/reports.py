@@ -25,16 +25,18 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-03-15 | Claude  | Added authentication + company_id scoping to all endpoints
 #   2026-05-19 | GitHub Copilot | Added integrated inventory expenses report with recurring and one-time cost behavior
+#   2026-08-01 | GitHub Copilot | Added base-vs-add-on service revenue split datasets for sales analytics
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
 from typing import Optional
+import json
 import logging
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoSuchTableError
 from backend.database import get_session
-from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, Attendance, PaySlip, ClientOrder, Task
+from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, SaleTransactionItem, Attendance, PaySlip, ClientOrder, Task
 from backend.routers.auth import get_current_user
 
 router = APIRouter()
@@ -466,8 +468,11 @@ def get_sales_report(
     grouped_total: dict = {}
     grouped_pos: dict = {}
     grouped_portal: dict = {}
+    grouped_service_base: dict = {}
+    grouped_service_addon: dict = {}
 
     try:
+        tx_label_by_id: dict = {}
         stmt = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
         txs = session.exec(stmt).all()
         for tx in txs:
@@ -481,8 +486,46 @@ def get_sales_report(
 
             label = _group_label(dt, group_by)
             amount = tx.total or 0
+            tx_label_by_id[str(tx.id)] = label
             grouped_pos[label] = grouped_pos.get(label, 0) + amount
             grouped_total[label] = grouped_total.get(label, 0) + amount
+
+        # Split service line revenue into base and add-on components using options_json.
+        stmt_items = select(SaleTransactionItem).where(SaleTransactionItem.company_id == current_user.company_id)
+        tx_items = session.exec(stmt_items).all()
+        for item in tx_items:
+            if str(item.item_type or "").lower() != "service":
+                continue
+            label = tx_label_by_id.get(str(item.sale_transaction_id))
+            if not label:
+                continue
+
+            line_total = float(item.line_total or 0)
+            qty = max(0, int(item.quantity or 0))
+            addon_total = 0.0
+
+            raw_options = item.options_json
+            if raw_options:
+                try:
+                    parsed_options = json.loads(raw_options) if isinstance(raw_options, str) else raw_options
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    parsed_options = []
+                if isinstance(parsed_options, list):
+                    for addon in parsed_options:
+                        if not isinstance(addon, dict):
+                            continue
+                        if addon.get("is_billable", True) is False:
+                            continue
+                        addon_qty = max(0, int(addon.get("quantity") or 0))
+                        price_delta = float(addon.get("price_delta") or 0)
+                        addon_total += price_delta * addon_qty
+                    addon_total *= max(1, qty)
+
+            addon_total = min(max(addon_total, 0), max(line_total, 0))
+            base_total = max(0.0, line_total - addon_total)
+
+            grouped_service_addon[label] = grouped_service_addon.get(label, 0) + addon_total
+            grouped_service_base[label] = grouped_service_base.get(label, 0) + base_total
     except (NoSuchTableError, SQLAlchemyError, IntegrityError):
         logger.exception(
             "Sales report: failed SaleTransaction query block (query=select(SaleTransaction).where(company_id=%s)).",
@@ -521,6 +564,8 @@ def get_sales_report(
             {"label": "Total Sales", "data": [grouped_total.get(k, 0) for k in sorted_keys]},
             {"label": "POS Sales", "data": [grouped_pos.get(k, 0) for k in sorted_keys]},
             {"label": "Portal Sales", "data": [grouped_portal.get(k, 0) for k in sorted_keys]},
+            {"label": "Base Service Revenue", "data": [grouped_service_base.get(k, 0) for k in sorted_keys]},
+            {"label": "Service Add-on Revenue", "data": [grouped_service_addon.get(k, 0) for k in sorted_keys]},
         ],
     }
 

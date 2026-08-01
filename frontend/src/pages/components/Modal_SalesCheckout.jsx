@@ -196,9 +196,21 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
     setSelectedCartKeys(new Set(normalizedCart.map((item) => item._checkoutKey)));
   };
 
-  const checkoutDateLabel = checkoutContext?.appointmentDate
-    ? new Date(checkoutContext.appointmentDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-    : "";
+  const getItemAddonLabel = (item) => {
+    const addons = Array.isArray(item?.selectedOptions) ? item.selectedOptions : [];
+    if (addons.length === 0) return "";
+    return addons
+      .map((addon) => {
+        const name = String(addon?.name || addon?.option_name || "").trim();
+        if (!name) return "";
+        const qty = Math.max(0, parseInt(addon?.quantity ?? 0, 10) || 0);
+        return qty > 1 ? `${name} x${qty}` : name;
+      })
+      .filter(Boolean)
+      .join(" • ");
+  };
+
+  const checkoutDateLabel = checkoutContext?.appointmentDate ? new Date(checkoutContext.appointmentDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true} contentGravity="top">
@@ -273,6 +285,9 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                   <div className="dark:text-white font-semibold text-gray-900 text-sm">{selectedClient?.name || "Walk-in checkout"}</div>
                   {(selectedClient?.email || selectedClient?.phone) && <div className="dark:text-gray-400 text-gray-500 text-xs">{[selectedClient?.email, selectedClient?.phone].filter(Boolean).join(" • ")}</div>}
                   {checkoutContext?.serviceName && <div className="dark:text-emerald-300 mt-1 text-emerald-700 text-xs">Service: {checkoutContext.serviceName}</div>}
+                  {Array.isArray(checkoutContext?.serviceAddons) && checkoutContext.serviceAddons.length > 0 && (
+                    <div className="dark:text-gray-400 text-gray-500 text-xs">Add-ons: {checkoutContext.serviceAddons.map((addon) => `${addon.name}${addon.quantity > 1 ? ` x${addon.quantity}` : ""}`).join(" • ")}</div>
+                  )}
                   {checkoutDateLabel && <div className="dark:text-gray-400 text-gray-500 text-xs">Appointment: {checkoutDateLabel}</div>}
                   {checkoutContext?.appointmentStatus && <div className="dark:text-gray-400 text-gray-500 text-xs">Status: {checkoutContext.appointmentStatus}</div>}
                   {checkoutContext?.employeeName && <div className="dark:text-gray-400 text-gray-500 text-xs">Employee: {checkoutContext.employeeName}</div>}
@@ -293,13 +308,19 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                     normalizedCart.map((item) => {
                       const isSelected = selectedCartKeys.has(item._checkoutKey);
                       return (
-                        <button key={item._checkoutKey} type="button" onClick={() => toggleCartItem(item._checkoutKey)} className={`bg-transparent border-0 border-b dark:border-gray-700 flex gap-1 items-center p-1 text-left transition-colors w-full ${isSelected ? "bg-emerald-50/60 dark:bg-emerald-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/40"}`}>
+                        <button
+                          key={item._checkoutKey}
+                          type="button"
+                          onClick={() => toggleCartItem(item._checkoutKey)}
+                          className={`bg-transparent border-0 border-b dark:border-gray-700 flex gap-1 items-center p-1 text-left transition-colors w-full ${isSelected ? "bg-emerald-50/60 dark:bg-emerald-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/40"}`}
+                        >
                           <input type="checkbox" checked={isSelected} readOnly className="h-4 w-4" />
                           <div className="min-w-0 flex-1">
                             <p className="dark:text-white font-medium mb-0 text-gray-900 text-sm truncate">{item.name}</p>
                             <p className="dark:text-gray-400 mb-0 text-gray-500 text-xs">
                               ${Number(item.price || 0).toFixed(2)} × {item.quantity}
                             </p>
+                            {getItemAddonLabel(item) && <p className="dark:text-gray-500 mb-0 text-gray-500 text-xs truncate">{getItemAddonLabel(item)}</p>}
                           </div>
                           <span className="dark:text-white font-semibold text-gray-900 text-sm">${(Number(item.price || 0) * Number(item.quantity || 0)).toFixed(2)}</span>
                         </button>
@@ -379,7 +400,8 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                   >
                     {isProcessing ? (
                       <>
-                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />...
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />
+                        ...
                       </>
                     ) : (
                       <>
@@ -396,10 +418,15 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                   </div>
                   <p className="dark:text-gray-400 mb-2 text-gray-600">Amount to collect</p>
                   <p className="dark:text-emerald-400 font-bold mb-2 text-4xl text-emerald-600">${total.toFixed(2)}</p>
-                  <button onClick={handleSubmit} disabled={isProcessing || selectedLineCount === 0} className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isProcessing || selectedLineCount === 0}
+                    className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+                  >
                     {isProcessing ? (
                       <>
-                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />...
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />
+                        ...
                       </>
                     ) : (
                       <>
@@ -417,16 +444,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
 
       {showTemplateUse && completedSaleRef.current && (
         <div className="fixed inset-0 z-50">
-          <Modal_TemplateUse
-            page="sales"
-            entity={completedSaleRef.current}
-            client={selectedClient}
-            items={completedSaleRef.current.items || []}
-            currentUser={currentUser}
-            settings={appSettings}
-            filterType={templateFilterType || "receipt"}
-            onClose={() => setShowTemplateUse(false)}
-          />
+          <Modal_TemplateUse page="sales" entity={completedSaleRef.current} client={selectedClient} items={completedSaleRef.current.items || []} currentUser={currentUser} settings={appSettings} filterType={templateFilterType || "receipt"} onClose={() => setShowTemplateUse(false)} />
         </div>
       )}
     </Modal>
