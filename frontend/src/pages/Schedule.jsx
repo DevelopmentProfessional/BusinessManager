@@ -49,6 +49,7 @@
  *   2026-07-25 | GitHub Copilot | Added in-card mark-paid action for billable schedule events and billable-only unpaid counter
  *   2026-07-25 | GitHub Copilot | Enabled in-card payment approval for all users who can create schedule events
  *   2026-07-26 | GitHub Copilot | Routed unpaid appointment payment action through Sales checkout and restricted paid->unpaid to initiate_refunds permission
+ *   2026-07-31 | GitHub Copilot | Included schedule context in Sales checkout handoff so checkout can show appointment/client details
  * ============================================================
  */
 
@@ -718,16 +719,27 @@ export default function Schedule() {
     (appointment) => {
       if (!appointment?.client_id || !appointment?.service_id) return;
       const preSelectedClient = clients.find((c) => c.id === appointment.client_id);
+      const serviceName = services.find((s) => String(s.id) === String(appointment.service_id))?.name || "Service";
+      const employeeName = employees.find((e) => String(e.id) === String(appointment.employee_id))?.name || "";
       navigate("/sales", {
         state: {
           preSelectedClient,
           scheduleId: appointment.id,
           preloadServiceId: appointment.service_id,
           openCheckout: true,
+          checkoutContext: {
+            source: "schedule",
+            appointmentId: appointment.id,
+            appointmentDate: appointment.appointment_date || null,
+            appointmentStatus: appointment.status || null,
+            serviceName,
+            employeeName,
+            notes: appointment.notes || "",
+          },
         },
       });
     },
-    [clients, navigate]
+    [clients, employees, navigate, services]
   );
 
   const canShowPaymentAction = useCallback(

@@ -24,105 +24,74 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-03-01 | Claude  | P6-B — taxRate prop now accepts a percentage value (e.g. 8.5); hides tax line when 0
+ *   2026-07-31 | GitHub Copilot | Added appointment/client context and selectable checkout items; fixed fullscreen responsive layout
  * ============================================================
  */
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Modal from "./Modal";
 import Modal_TemplateUse from "./Modal_TemplateUse";
 import { clientsAPI } from "../../services/api";
-import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ArrowLeftIcon, ShoppingCartIcon, UserIcon, ReceiptPercentIcon, PrinterIcon, CameraIcon, VideoCameraIcon, DevicePhoneMobileIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ShoppingCartIcon, PrinterIcon, DevicePhoneMobileIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartTotal = 0, discountAmount = 0, selectedClient = null, onProcessPayment, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
+export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], discountAmount = 0, selectedClient = null, checkoutContext = null, onProcessPayment, getDiscountForItems = null, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
   const [paymentMethod, setPaymentMethod] = useState("card_scan");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showTemplateUse, setShowTemplateUse] = useState(false);
   const [templateFilterType, setTemplateFilterType] = useState(null);
+  const [selectedCartKeys, setSelectedCartKeys] = useState(() => new Set());
   const completedSaleRef = useRef(null);
-
-  // Camera scan state
-  const [showCamera, setShowCamera] = useState(false);
-  const [cameraError, setCameraError] = useState("");
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
 
   // Client email prompt (for email receipt action)
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const [promptEmail, setPromptEmail] = useState("");
   const [emailSaveError, setEmailSaveError] = useState("");
 
-  const subtotal = cartTotal;
-  const effectiveSubtotal = Math.max(0, subtotal - (discountAmount || 0));
+  const normalizedCart = useMemo(
+    () =>
+      cart.map((item, index) => ({
+        ...item,
+        _checkoutKey: item.cartKey || `${item.itemType || "item"}-${item.id || "idx"}-${index}`,
+      })),
+    [cart]
+  );
+
+  const selectedItems = normalizedCart.filter((item) => selectedCartKeys.has(item._checkoutKey));
+  const subtotal = selectedItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+  const selectedItemsDiscountRaw = typeof getDiscountForItems === "function" ? Number(getDiscountForItems(selectedItems)) : Number(discountAmount || 0);
+  const selectedItemsDiscount = Math.min(Math.max(0, Number.isFinite(selectedItemsDiscountRaw) ? selectedItemsDiscountRaw : 0), subtotal);
+  const effectiveSubtotal = Math.max(0, subtotal - selectedItemsDiscount);
   const tax = effectiveSubtotal * (taxRate / 100);
   const total = effectiveSubtotal + tax;
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = selectedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const selectedLineCount = selectedItems.length;
+  const allItemsSelected = normalizedCart.length > 0 && selectedLineCount === normalizedCart.length;
   const isCardScan = paymentMethod === "card_scan";
   const isTapPay = paymentMethod === "tap_pay";
   const stripeReady = Boolean(appSettings?.stripe_enabled);
-  const nfcSupported = typeof window !== "undefined" && "NDEFReader" in window;
 
-  // ─── 3 VALIDATION & FORM HANDLERS ──────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedCartKeys(new Set(normalizedCart.map((item) => item._checkoutKey)));
+  }, [isOpen, normalizedCart]);
+
   const resetForm = () => {
     setPaymentSuccess(false);
     setIsProcessing(false);
     setShowTemplateUse(false);
     setTemplateFilterType(null);
     completedSaleRef.current = null;
-    stopCamera();
-    setShowCamera(false);
-    setCameraError("");
   };
 
-  // ─── CAMERA HELPERS ────────────────────────────────────────────────────────
-  const startCamera = async () => {
-    setCameraError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch (err) {
-      setCameraError("Camera access denied or unavailable.");
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    if (showCamera) startCamera();
-    else stopCamera();
-    return () => stopCamera();
-  }, [showCamera]);
-
-  const captureAndParseCard = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d").drawImage(videoRef.current, 0, 0);
-    // OCR not available without a library — close camera and let user type
-    stopCamera();
-    setShowCamera(false);
-    setCameraError("");
-  };
-
-  // ─── RECEIPT ACTION HELPER ─────────────────────────────────────────────────
   const triggerReceiptAction = () => {
     if (!receiptSettings?.templateId) {
-      // No template — show template selector
       setTemplateFilterType("receipt");
       setShowTemplateUse(true);
       return;
     }
+
     const action = receiptSettings.action || "select";
     if (action === "email") {
       const email = selectedClient?.email || "";
@@ -134,10 +103,11 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
         setTemplateFilterType("receipt");
         setShowTemplateUse(true);
       }
-    } else {
-      setTemplateFilterType("receipt");
-      setShowTemplateUse(true);
+      return;
     }
+
+    setTemplateFilterType("receipt");
+    setShowTemplateUse(true);
   };
 
   const handleSavePromptEmail = async () => {
@@ -164,9 +134,12 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
   };
 
   const handleSubmit = async () => {
+    if (selectedItems.length === 0) return;
+
     setIsProcessing(true);
     try {
-      const paymentResult = await onProcessPayment(paymentMethod);
+      const checkoutItems = selectedItems.map(({ _checkoutKey, ...item }) => item);
+      const paymentResult = await onProcessPayment(paymentMethod, checkoutItems);
       if (paymentResult?.checkout_url) {
         window.location.assign(paymentResult.checkout_url);
         return;
@@ -179,6 +152,13 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
         tax_amount: tax,
         total,
         payment_method: paymentMethod,
+        items: checkoutItems.map((item) => ({
+          item_name: item.name,
+          item_type: item.itemType,
+          quantity: item.quantity,
+          unit_price: item.price,
+          line_total: Number(item.price || 0) * Number(item.quantity || 0),
+        })),
       };
 
       setPaymentSuccess(true);
@@ -199,10 +179,30 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
     }
   };
 
+  const toggleCartItem = (checkoutKey) => {
+    setSelectedCartKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(checkoutKey)) next.delete(checkoutKey);
+      else next.add(checkoutKey);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (allItemsSelected) {
+      setSelectedCartKeys(new Set());
+      return;
+    }
+    setSelectedCartKeys(new Set(normalizedCart.map((item) => item._checkoutKey)));
+  };
+
+  const checkoutDateLabel = checkoutContext?.appointmentDate
+    ? new Date(checkoutContext.appointmentDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "";
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true} contentGravity="top">
-      <div className="bg-white dark:bg-gray-900 h-full max-w-2xl overflow-hidden w-full">
-        {/* ─── 4 MODAL HEADER ──────────────────────────────────────────────── */}
+      <div className="bg-white dark:bg-gray-900 flex flex-col h-full w-full">
         {/* Header */}
         <div className="bg-gradient-to-r border-b border-gray-200 dark:border-gray-700 flex from-emerald-500 items-center justify-between p-1 to-emerald-600">
           <div className="ui-flex-items-gap-1">
@@ -211,7 +211,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
             </div>
             <div>
               <h2 className="font-bold text-lg text-white">Checkout</h2>
-              <p className="text-emerald-100 text-sm">{itemCount} items</p>
+              <p className="text-emerald-100 text-sm">{itemCount} items selected</p>
             </div>
           </div>
           <button onClick={handleClose} disabled={isProcessing} className="disabled:opacity-50 hover:bg-white/20 p-1 rounded-lg transition-colors">
@@ -219,7 +219,6 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
           </button>
         </div>
 
-        {/* ─── 5 PAYMENT SUCCESS SCREEN ────────────────────────────────────── */}
         {paymentSuccess ? (
           <div className="p-1 text-center">
             <div className="animate-in bg-emerald-100 dark:bg-emerald-900/50 duration-300 flex h-24 items-center justify-center mb-1 mx-auto rounded-full w-24 zoom-in">
@@ -229,7 +228,6 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
             <p className="dark:text-gray-400 mb-1 text-gray-500">Transaction completed successfully</p>
             <p className="dark:text-emerald-400 font-bold mb-3 text-3xl text-emerald-600">${total.toFixed(2)}</p>
 
-            {/* Receipt / Done row */}
             <div className="flex gap-2 items-center justify-between mb-1">
               <button
                 type="button"
@@ -244,7 +242,6 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               </button>
             </div>
 
-            {/* Email prompt when client has no email */}
             {showEmailPrompt && (
               <div className="bg-gray-50 border dark:bg-gray-800 mt-2 p-0 rounded-xl text-left">
                 <p className="dark:text-gray-300 mb-1 text-gray-700 text-sm">Client has no email on file. Enter email to send receipt:</p>
@@ -269,17 +266,58 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-5 p-1 gap-1">
-            <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-2xl p-1 space-y-1">
-              <div className="border-gray-200 border-t dark:border-gray-700 pt-1 space-y-1">
+          <div className="gap-1 grid grid-cols-1 md:grid-cols-5 min-h-0 p-1">
+            <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800/40 dark:border-gray-700 flex flex-col md:col-span-2 min-h-0 rounded-2xl">
+              <div className="p-1 space-y-1">
+                <div className="bg-white border border-gray-200 dark:bg-gray-800/70 dark:border-gray-700 p-1 rounded-xl">
+                  <div className="dark:text-white font-semibold text-gray-900 text-sm">{selectedClient?.name || "Walk-in checkout"}</div>
+                  {(selectedClient?.email || selectedClient?.phone) && <div className="dark:text-gray-400 text-gray-500 text-xs">{[selectedClient?.email, selectedClient?.phone].filter(Boolean).join(" • ")}</div>}
+                  {checkoutContext?.serviceName && <div className="dark:text-emerald-300 mt-1 text-emerald-700 text-xs">Service: {checkoutContext.serviceName}</div>}
+                  {checkoutDateLabel && <div className="dark:text-gray-400 text-gray-500 text-xs">Appointment: {checkoutDateLabel}</div>}
+                  {checkoutContext?.appointmentStatus && <div className="dark:text-gray-400 text-gray-500 text-xs">Status: {checkoutContext.appointmentStatus}</div>}
+                  {checkoutContext?.employeeName && <div className="dark:text-gray-400 text-gray-500 text-xs">Employee: {checkoutContext.employeeName}</div>}
+                  {checkoutContext?.notes && <div className="dark:text-gray-400 text-gray-500 text-xs line-clamp-2">Notes: {checkoutContext.notes}</div>}
+                </div>
+
+                <div className="items-center flex justify-between">
+                  <p className="dark:text-white font-semibold mb-0 text-gray-900 text-sm">Items available for checkout</p>
+                  <button type="button" onClick={handleToggleSelectAll} className="btn btn-sm btn-outline-secondary">
+                    {allItemsSelected ? "Deselect all" : "Select all"}
+                  </button>
+                </div>
+
+                <div className="bg-white border border-gray-200 dark:bg-gray-800/70 dark:border-gray-700 max-h-56 md:max-h-[34vh] overflow-y-auto rounded-xl">
+                  {normalizedCart.length === 0 ? (
+                    <p className="dark:text-gray-400 mb-0 p-1 text-gray-500 text-sm">No cart items found.</p>
+                  ) : (
+                    normalizedCart.map((item) => {
+                      const isSelected = selectedCartKeys.has(item._checkoutKey);
+                      return (
+                        <button key={item._checkoutKey} type="button" onClick={() => toggleCartItem(item._checkoutKey)} className={`bg-transparent border-0 border-b dark:border-gray-700 flex gap-1 items-center p-1 text-left transition-colors w-full ${isSelected ? "bg-emerald-50/60 dark:bg-emerald-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/40"}`}>
+                          <input type="checkbox" checked={isSelected} readOnly className="h-4 w-4" />
+                          <div className="min-w-0 flex-1">
+                            <p className="dark:text-white font-medium mb-0 text-gray-900 text-sm truncate">{item.name}</p>
+                            <p className="dark:text-gray-400 mb-0 text-gray-500 text-xs">
+                              ${Number(item.price || 0).toFixed(2)} × {item.quantity}
+                            </p>
+                          </div>
+                          <span className="dark:text-white font-semibold text-gray-900 text-sm">${(Number(item.price || 0) * Number(item.quantity || 0)).toFixed(2)}</span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="border-gray-200 border-t dark:border-gray-700 mt-auto p-1 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="dark:text-gray-400 text-gray-500">Subtotal</span>
                   <span className="dark:text-white text-gray-900">${subtotal.toFixed(2)}</span>
                 </div>
-                {(discountAmount || 0) > 0 && (
+                {selectedItemsDiscount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="dark:text-gray-400 text-gray-500">Discount</span>
-                    <span className="dark:text-red-400 text-red-600">-${(discountAmount || 0).toFixed(2)}</span>
+                    <span className="dark:text-red-400 text-red-600">-${selectedItemsDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {taxRate > 0 && (
@@ -295,37 +333,27 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
               </div>
             </div>
 
-            {/* ─── 7 PAYMENT FORM ──────────────────────────────────────────── */}
-            {/* Payment Form */}
-            <div className="md:w-3/5 overflow-y-auto p-1">
+            <div className="md:col-span-3 min-w-0 overflow-y-auto p-1">
               <h3 className="dark:text-white font-semibold mb-1 text-gray-900">Payment Method</h3>
 
-              {/* ─── 8 PAYMENT METHOD TABS ───────────────────────────────── */}
-              {/* Payment Method Tabs */}
-              <div className="flex gap-1 mb-1">
+              <div className="gap-1 grid grid-cols-1 mb-1 sm:grid-cols-3">
                 <button
                   onClick={() => setPaymentMethod("card_scan")}
-                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
-                    isCardScan ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                  }`}
+                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${isCardScan ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"}`}
                 >
                   <CreditCardIcon className="ui-icon-5" />
                   <span className="font-medium">Card Scan</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("tap_pay")}
-                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
-                    isTapPay ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                  }`}
+                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${isTapPay ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"}`}
                 >
                   <DevicePhoneMobileIcon className="ui-icon-5" />
                   <span className="font-medium">Tap Pay</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("cash")}
-                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${
-                    paymentMethod === "cash" ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
-                  }`}
+                  className={`flex-1 py-1 px-0 rounded-xl border-2 flex items-center justify-center gap-1 transition-all ${paymentMethod === "cash" ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"}`}
                 >
                   <BanknotesIcon className="ui-icon-5" />
                   <span className="font-medium">Cash</span>
@@ -346,17 +374,17 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   </div>
                   <button
                     onClick={handleSubmit}
-                    disabled={!stripeReady || isProcessing}
-                    className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${stripeReady && !isProcessing ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
+                    disabled={!stripeReady || isProcessing || selectedLineCount === 0}
+                    className={`w-full py-0 rounded-pill font-semibold text-white transition-all flex items-center justify-center gap-1 mt-1 ${stripeReady && !isProcessing && selectedLineCount > 0 ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : "bg-gray-300 dark:bg-gray-700 cursor-not-allowed"}`}
                   >
                     {isProcessing ? (
                       <>
-                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />...
                       </>
                     ) : (
                       <>
                         <CheckCircleIcon className="ui-icon-5" />
-                        Continue to secure checkout
+                        {selectedLineCount > 0 ? "Continue to secure checkout" : "Select at least one item"}
                       </>
                     )}
                   </button>
@@ -368,15 +396,15 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
                   </div>
                   <p className="dark:text-gray-400 mb-2 text-gray-600">Amount to collect</p>
                   <p className="dark:text-emerald-400 font-bold mb-2 text-4xl text-emerald-600">${total.toFixed(2)}</p>
-                  <button onClick={handleSubmit} disabled={isProcessing} className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full">
+                  <button onClick={handleSubmit} disabled={isProcessing || selectedLineCount === 0} className="bg-emerald-600 flex font-semibold gap-1 hover:bg-emerald-700 items-center justify-center py-0 rounded-pill shadow-emerald-600/20 shadow-lg text-white transition-all w-full disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700">
                     {isProcessing ? (
                       <>
-                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />…
+                        <div className="animate-spin border-2 border-t-white border-white/30 h-5 rounded-full w-5" />...
                       </>
                     ) : (
                       <>
                         <CheckCircleIcon className="ui-icon-5" />
-                        Confirm
+                        {selectedLineCount > 0 ? "Confirm" : "Select at least one item"}
                       </>
                     )}
                   </button>
@@ -386,6 +414,21 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], cartT
           </div>
         )}
       </div>
+
+      {showTemplateUse && completedSaleRef.current && (
+        <div className="fixed inset-0 z-50">
+          <Modal_TemplateUse
+            page="sales"
+            entity={completedSaleRef.current}
+            client={selectedClient}
+            items={completedSaleRef.current.items || []}
+            currentUser={currentUser}
+            settings={appSettings}
+            filterType={templateFilterType || "receipt"}
+            onClose={() => setShowTemplateUse(false)}
+          />
+        </div>
+      )}
     </Modal>
   );
 }
