@@ -133,10 +133,11 @@ const parseScheduleServiceAddons = (rawValue) => {
   }
 };
 
-const getServiceAddonsTotal = (addons) => addons.reduce((sum, addon) => {
-  if (addon?.is_billable === false) return sum;
-  return sum + Number(addon.price_delta || 0) * Number(addon.quantity || 0);
-}, 0);
+const getServiceAddonsTotal = (addons) =>
+  addons.reduce((sum, addon) => {
+    if (addon?.is_billable === false) return sum;
+    return sum + Number(addon.price_delta || 0) * Number(addon.quantity || 0);
+  }, 0);
 
 export default function Schedule() {
   const location = useLocation();
