@@ -26,13 +26,15 @@
  *   2026-05-19 | GitHub Copilot | Added unified filter dropdown with client search and services/products/subscriptions filters; added checkout-time subscription start assignment
  *   2026-07-26 | GitHub Copilot | Added schedule-driven auto-open checkout handoff for appointment payment flow
  *   2026-07-31 | GitHub Copilot | Added partial checkout item support and schedule context display payload for checkout modal
+ *   2026-07-31 | GitHub Copilot | Added checkout return-target routing so closing checkout returns to opener page
+ *   2026-08-01 | GitHub Copilot | Added service add-on inventory auto-consumption during successful checkout finalization
  * ============================================================
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import useFetchOnce from "../services/useFetchOnce";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
@@ -310,6 +312,7 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
 export default function Sales() {
   const { services, setServices, loading, setLoading, error, setError, clearError, hasPermission, openAddClientModal, user } = useStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const { footerAlign } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
 
@@ -382,6 +385,21 @@ export default function Sales() {
   });
   const stripeReturnHandledRef = useRef(false);
   const [checkoutContext, setCheckoutContext] = useState(null);
+  const [checkoutReturnTarget, setCheckoutReturnTarget] = useState(null);
+
+  const closeCheckoutModal = () => {
+    setShowCheckout(false);
+
+    if (checkoutReturnTarget?.pathname) {
+      const targetPath = `${checkoutReturnTarget.pathname}${checkoutReturnTarget.search || ""}${checkoutReturnTarget.hash || ""}`;
+      const navOptions = checkoutReturnTarget.state ? { state: checkoutReturnTarget.state } : undefined;
+      setCheckoutReturnTarget(null);
+      navigate(targetPath || "/", navOptions);
+      return;
+    }
+
+    setCheckoutReturnTarget(null);
+  };
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
@@ -472,12 +490,15 @@ export default function Sales() {
 
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
   useEffect(() => {
-    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext } = location.state || {};
+    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
     if (scheduleId) {
       setLinkedScheduleId(scheduleId);
     }
     if (preloadServiceId) {
       setLinkedScheduleServiceId(preloadServiceId);
+    }
+    if (checkoutReturnTo?.pathname) {
+      setCheckoutReturnTarget(checkoutReturnTo);
     }
     setCheckoutContext(stateCheckoutContext || null);
     if (openCheckout) {
@@ -627,7 +648,7 @@ export default function Sales() {
           setSelectedClient(null);
           setCheckoutContext(null);
         }
-        setShowCheckout(false);
+        closeCheckoutModal();
         setLinkedScheduleId(null);
         setLinkedScheduleServiceId(null);
         clearError();
@@ -789,7 +810,7 @@ export default function Sales() {
     const scheduledService = await getNextScheduledService(client.id);
     if (scheduledService) {
       const scheduledCartKey = `service-${scheduledService.id}`;
-      const alreadyInCart = nextCart.some((item) => item.cartKey === scheduledCartKey);
+      const alreadyInCart = nextCart.some((item) => item.cartKey === scheduledCartKey || (item.itemType === "service" && String(item.id) === String(scheduledService.id)));
       if (!alreadyInCart) {
         nextCart = [
           ...nextCart,
@@ -985,6 +1006,24 @@ export default function Sales() {
   const cartDiscount = calculateDiscountForItems(cart);
 
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+
+  const parseServiceAddonsForConsumption = (value) => {
+    if (!value) return [];
+    try {
+      const parsed = typeof value === "string" ? JSON.parse(value) : value;
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((addon) => ({
+          linked_inventory_id: addon?.linked_inventory_id || null,
+          consume_inventory: Boolean(addon?.consume_inventory),
+          consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+          quantity: Math.max(0, Number(addon?.quantity || 0)),
+        }))
+        .filter((addon) => addon.linked_inventory_id && addon.consume_inventory && addon.consume_quantity_per_unit > 0 && addon.quantity > 0);
+    } catch {
+      return [];
+    }
+  };
 
   // Calculate invoice totals with discount applied (used for display AND preview)
   const subtotalAfterDiscount = roundCurrency(cartTotal - cartDiscount);
@@ -1194,22 +1233,51 @@ export default function Sales() {
         // Feature-option products: call deduct-stock so option quantities and
         //   the recalculated inventory.quantity are updated correctly.
         const featureDeductions = [];
+        const addonInventoryDeductions = new Map();
         const allSoldMap = {}; // used only for immediate local UI update
 
         checkoutItems.forEach((item) => {
-          if (item.itemType !== "product" || !item.id) return;
-          allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
-          if (item.selectedOptions?.length > 0) {
-            featureDeductions.push({
-              inventory_id: item.id,
-              option_ids: item.selectedOptions.map((opt) => opt.optionId),
-              quantity: item.quantity,
+          if (item.itemType === "product" && item.id) {
+            allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
+            if (item.selectedOptions?.length > 0) {
+              featureDeductions.push({
+                inventory_id: item.id,
+                option_ids: item.selectedOptions.map((opt) => opt.optionId),
+                quantity: item.quantity,
+              });
+            }
+            return;
+          }
+
+          if (item.itemType === "service") {
+            const serviceUnits = Math.max(0, Number(item.quantity || 0));
+            const addons = parseServiceAddonsForConsumption(item.selectedOptions);
+            addons.forEach((addon) => {
+              const current = addonInventoryDeductions.get(addon.linked_inventory_id) || 0;
+              const consumeAmount = addon.consume_quantity_per_unit * addon.quantity * serviceUnits;
+              addonInventoryDeductions.set(addon.linked_inventory_id, current + consumeAmount);
             });
           }
         });
 
         if (featureDeductions.length > 0) {
           await inventoryFeaturesAPI.deductStock(featureDeductions);
+        }
+
+        if (addonInventoryDeductions.size > 0) {
+          const deductionEntries = Array.from(addonInventoryDeductions.entries());
+          await Promise.all(
+            deductionEntries.map(async ([inventoryId, deductionQty]) => {
+              const qtyToConsume = Math.max(0, Number(deductionQty || 0));
+              if (!qtyToConsume) return;
+              const invRes = await inventoryAPI.getById(inventoryId);
+              const inv = invRes?.data ?? invRes;
+              const currentQty = Math.max(0, Number(inv?.quantity || 0));
+              await inventoryAPI.update(inventoryId, {
+                quantity: Math.max(0, currentQty - qtyToConsume),
+              });
+            })
+          );
         }
 
         // Update local product quantities for immediate UI feedback
@@ -1268,7 +1336,7 @@ export default function Sales() {
       setSelectedClient(null);
       setCheckoutContext(null);
     }
-    setShowCheckout(false);
+    closeCheckoutModal();
     clearError();
     if (String(paymentMethod || "").toLowerCase() === "cash") {
       setSuccessNotice("Payment confirmed.");
@@ -1795,7 +1863,7 @@ export default function Sales() {
       {/* Checkout Modal */}
       <Modal_Checkout_Sales
         isOpen={showCheckout}
-        onClose={() => setShowCheckout(false)}
+        onClose={closeCheckoutModal}
         cart={cart}
         discountAmount={cartDiscount}
         selectedClient={selectedClient}

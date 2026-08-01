@@ -41,6 +41,7 @@
  *   2026-07-25 | GitHub Copilot | Fixed self-scheduling employee auto-selection by robustly resolving logged-in user to employee record
  *   2026-07-25 | GitHub Copilot | Show current employee name in create mode for self-schedulers; keep edit mode employee selection unchanged
  *   2026-07-26 | GitHub Copilot | Added write-only fallback to current user identity when employee list is not readable
+ *   2026-07-31 | GitHub Copilot | Added appointment-level service add-on quantity controls and persistence
  * ============================================================
  */
 
@@ -148,6 +149,51 @@ const resolveCurrentEmployee = (employeesList, currentUser) => {
   return matched || buildFallbackEmployeeFromUser(currentUser);
 };
 
+const parseServiceAddonDefinitions = (service) => {
+  if (!service) return [];
+  try {
+    const raw = service.addons_json;
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((addon, index) => ({
+        id: addon?.id || `addon-${index + 1}`,
+        name: String(addon?.name || "").trim(),
+        price_delta: Number(addon?.price_delta || 0),
+        default_quantity: Math.max(0, parseInt(addon?.default_quantity ?? 0, 10) || 0),
+        linked_inventory_id: addon?.linked_inventory_id || null,
+        consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+        is_billable: addon?.is_billable !== false,
+        consume_inventory: Boolean(addon?.consume_inventory),
+      }))
+      .filter((addon) => addon.name.length > 0);
+  } catch {
+    return [];
+  }
+};
+
+const parseSelectedServiceAddons = (rawValue) => {
+  if (!rawValue) return [];
+  try {
+    const parsed = typeof rawValue === "string" ? JSON.parse(rawValue) : rawValue;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((addon, index) => ({
+        id: addon?.id || `addon-${index + 1}`,
+        name: String(addon?.name || "").trim(),
+        price_delta: Number(addon?.price_delta || 0),
+        quantity: Math.max(0, parseInt(addon?.quantity ?? 0, 10) || 0),
+        linked_inventory_id: addon?.linked_inventory_id || null,
+        consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+        is_billable: addon?.is_billable !== false,
+        consume_inventory: Boolean(addon?.consume_inventory),
+      }))
+      .filter((addon) => addon.name.length > 0);
+  } catch {
+    return [];
+  }
+};
+
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
   const { closeModal, hasPermission, user, openAddClientModal, openAddServiceModal, openAddInventoryModal } = useStore();
@@ -163,6 +209,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [clientMultiMode, setClientMultiMode] = useState(false);
   const [employeeMultiMode, setEmployeeMultiMode] = useState(false);
   const [serviceResources, setServiceResources] = useState([]);
+  const [selectedServiceAddons, setSelectedServiceAddons] = useState([]);
   const [inventoryMap, setInventoryMap] = useState({});
   // Linked task (parent task) state
   const [linkedTasks, setLinkedTasks] = useState([]);
@@ -428,6 +475,56 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
   }, [currentEmployee, employees, formData.employee_ids, isEditMode, isWriteOnly]);
 
+  useEffect(() => {
+    if (!formData.service_id) {
+      setSelectedServiceAddons([]);
+      return;
+    }
+
+    const selectedService = services.find((service) => String(service.id) === String(formData.service_id));
+    const definitions = parseServiceAddonDefinitions(selectedService);
+    const existing = parseSelectedServiceAddons(appointment?.service_addons_json);
+
+    if (existing.length > 0) {
+      const existingQuantityById = new Map(existing.map((addon) => [String(addon.id), addon.quantity]));
+      setSelectedServiceAddons(
+        definitions.map((definition) => ({
+          id: definition.id,
+          name: definition.name,
+          price_delta: definition.price_delta,
+          linked_inventory_id: definition.linked_inventory_id,
+          consume_quantity_per_unit: definition.consume_quantity_per_unit,
+          is_billable: definition.is_billable,
+          consume_inventory: definition.consume_inventory,
+          quantity: existingQuantityById.get(String(definition.id)) ?? definition.default_quantity,
+        }))
+      );
+      return;
+    }
+
+    setSelectedServiceAddons(
+      definitions.map((definition) => ({
+        id: definition.id,
+        name: definition.name,
+        price_delta: definition.price_delta,
+        linked_inventory_id: definition.linked_inventory_id,
+        consume_quantity_per_unit: definition.consume_quantity_per_unit,
+        is_billable: definition.is_billable,
+        consume_inventory: definition.consume_inventory,
+        quantity: definition.default_quantity,
+      }))
+    );
+  }, [appointment?.id, appointment?.service_addons_json, formData.service_id, services]);
+
+  const adjustServiceAddonQuantity = (addonId, delta) => {
+    setSelectedServiceAddons((prev) =>
+      prev.map((addon) => {
+        if (String(addon.id) !== String(addonId)) return addon;
+        return { ...addon, quantity: Math.max(0, (addon.quantity || 0) + delta) };
+      })
+    );
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -442,11 +539,24 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const handleServiceChange = (e) => {
     const { value } = e.target;
     const selectedService = services.find((s) => s.id === value);
+    const addonDefinitions = parseServiceAddonDefinitions(selectedService);
     setFormData((prev) => ({
       ...prev,
       service_id: value,
       duration_minutes: selectedService?.duration_minutes ? selectedService.duration_minutes : prev.duration_minutes,
     }));
+    setSelectedServiceAddons(
+      addonDefinitions.map((addon) => ({
+        id: addon.id,
+        name: addon.name,
+        price_delta: addon.price_delta,
+        linked_inventory_id: addon.linked_inventory_id,
+        consume_quantity_per_unit: addon.consume_quantity_per_unit,
+        is_billable: addon.is_billable,
+        consume_inventory: addon.consume_inventory,
+        quantity: addon.default_quantity,
+      }))
+    );
     setDurationManuallySet(false);
     setServiceResources([]);
     if (selectedService?.duration_minutes) {
@@ -571,6 +681,19 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
     if (config.needsService && formData.service_id) {
       submitData.service_id = formData.service_id;
+      const selectedAddons = selectedServiceAddons
+        .map((addon) => ({
+          id: addon.id,
+          name: addon.name,
+          price_delta: Number(addon.price_delta || 0),
+          quantity: Math.max(0, parseInt(addon.quantity ?? 0, 10) || 0),
+          linked_inventory_id: addon.linked_inventory_id || null,
+          consume_quantity_per_unit: Math.max(0, Number(addon.consume_quantity_per_unit || 0)),
+          is_billable: addon.is_billable !== false,
+          consume_inventory: Boolean(addon.consume_inventory),
+        }))
+        .filter((addon) => addon.name && addon.quantity > 0);
+      submitData.service_addons_json = selectedAddons.length > 0 ? JSON.stringify(selectedAddons) : null;
     }
 
     try {
@@ -923,6 +1046,35 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                     <div className="ui-flex-center-gap-2">
                       <span className="badge bg-secondary">{r.quantity} units</span>
                       {r.consumption_rate_pct != null && <span className="badge bg-info text-dark">{r.consumption_rate_pct}%</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {typeConfig.needsService && selectedServiceAddons.length > 0 && (
+            <div className="border p-0 rounded" style={{ fontSize: "0.78rem" }}>
+              <p className="dark:text-gray-400 fw-semibold mb-1 text-gray-600">Service Add-ons</p>
+              <div className="d-flex flex-column gap-1">
+                {selectedServiceAddons.map((addon) => (
+                  <div key={addon.id} className="align-items-center d-flex justify-content-between">
+                    <div className="d-flex flex-column">
+                      <span className="dark:text-gray-200 text-gray-800">{addon.name}</span>
+                      <span className="text-muted" style={{ fontSize: "0.68rem" }}>
+                        {addon.price_delta >= 0 ? "+" : "-"}${Math.abs(Number(addon.price_delta || 0)).toFixed(2)} each
+                      </span>
+                    </div>
+                    <div className="align-items-center d-flex gap-1">
+                      <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => adjustServiceAddonQuantity(addon.id, -1)}>
+                        -
+                      </button>
+                      <span className="fw-semibold" style={{ minWidth: 24, textAlign: "center" }}>
+                        {addon.quantity || 0}
+                      </span>
+                      <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => adjustServiceAddonQuantity(addon.id, 1)}>
+                        +
+                      </button>
                     </div>
                   </div>
                 ))}

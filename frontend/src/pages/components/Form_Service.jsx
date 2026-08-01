@@ -31,6 +31,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-06-13 | GitHub Copilot | Added initialName support for global create-from-search service modal
+ *   2026-07-31 | GitHub Copilot | Added editable service add-ons (name, price delta, default quantity)
  * ============================================================
  */
 
@@ -63,6 +64,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
     duration_minutes: "60",
     image_url: "",
   });
+  const [serviceAddons, setServiceAddons] = useState([]);
 
   // ── Lookup data ──────────────────────────────────────────────────
   const [inventory, setInventory] = useState([]);
@@ -97,6 +99,25 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   // Populate form when editing
   useEffect(() => {
     if (service) {
+      let parsedAddons = [];
+      try {
+        const raw = service.addons_json;
+        const decoded = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (Array.isArray(decoded)) {
+          parsedAddons = decoded.map((addon, index) => ({
+            id: addon?.id || `addon-${index + 1}`,
+            name: String(addon?.name || ""),
+            price_delta: Number(addon?.price_delta || 0),
+            default_quantity: Math.max(0, parseInt(addon?.default_quantity ?? 0, 10) || 0),
+            linked_inventory_id: addon?.linked_inventory_id || "",
+            consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+            is_billable: addon?.is_billable !== false,
+            consume_inventory: Boolean(addon?.consume_inventory),
+          }));
+        }
+      } catch {
+        parsedAddons = [];
+      }
       setFormData({
         name: service.name || "",
         description: service.description || "",
@@ -105,6 +126,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         duration_minutes: service.duration_minutes?.toString() || "60",
         image_url: service.image_url || "",
       });
+      setServiceAddons(parsedAddons);
+    } else {
+      setServiceAddons([]);
     }
   }, [service]);
 
@@ -198,10 +222,24 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const cleanedAddons = serviceAddons
+      .map((addon, index) => ({
+        id: addon.id || `addon-${index + 1}`,
+        name: String(addon.name || "").trim(),
+        price_delta: Number(addon.price_delta || 0),
+        default_quantity: Math.max(0, parseInt(addon.default_quantity ?? 0, 10) || 0),
+        linked_inventory_id: addon.linked_inventory_id || null,
+        consume_quantity_per_unit: Math.max(0, Number(addon.consume_quantity_per_unit || 0)),
+        is_billable: addon.is_billable !== false,
+        consume_inventory: Boolean(addon.consume_inventory),
+      }))
+      .filter((addon) => addon.name.length > 0);
+
     const submitData = {
       ...formData,
       price: parseFloat(formData.price),
       duration_minutes: parseInt(formData.duration_minutes),
+      addons_json: cleanedAddons.length > 0 ? JSON.stringify(cleanedAddons) : null,
     };
     if (!submitData.image_url) delete submitData.image_url;
     if (!submitData.category) delete submitData.category;
@@ -215,6 +253,28 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
     } catch (err) {
       setTabError(err?.response?.data?.detail || err?.message || "Operation failed");
     }
+  };
+
+  const addServiceAddonRow = () => {
+    setServiceAddons((prev) => [...prev, { id: `addon-${Date.now()}`, name: "", price_delta: 0, default_quantity: 0, linked_inventory_id: "", consume_quantity_per_unit: 0, is_billable: true, consume_inventory: false }]);
+  };
+
+  const updateServiceAddonRow = (index, field, value) => {
+    setServiceAddons((prev) =>
+      prev.map((addon, rowIndex) => {
+        if (rowIndex !== index) return addon;
+        if (field === "price_delta") return { ...addon, price_delta: Number(value || 0) };
+        if (field === "default_quantity") return { ...addon, default_quantity: Math.max(0, parseInt(value || 0, 10) || 0) };
+        if (field === "consume_quantity_per_unit") return { ...addon, consume_quantity_per_unit: Math.max(0, Number(value || 0)) };
+        if (field === "is_billable") return { ...addon, is_billable: Boolean(value) };
+        if (field === "consume_inventory") return { ...addon, consume_inventory: Boolean(value) };
+        return { ...addon, [field]: value };
+      })
+    );
+  };
+
+  const removeServiceAddonRow = (index) => {
+    setServiceAddons((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
   };
 
   // ── Create-from-search handlers ──────────────────────────────────
@@ -491,6 +551,74 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 <div className="form-floating ui-form-floating-mb2">
                   <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Description" />
                   <label htmlFor="description">Description</label>
+                </div>
+
+                <div className="border mb-3 rounded" style={{ fontSize: "0.85rem" }}>
+                  <div className="align-items-center bg-light border-bottom d-flex dark:bg-gray-800 justify-content-between px-1 py-0 rounded-top">
+                    <span className="dark:text-gray-200 fw-semibold text-gray-800">Service Add-ons</span>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={addServiceAddonRow}>
+                      <PlusIcon style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                  <div className="p-1">
+                    {serviceAddons.length === 0 ? (
+                      <div className="fst-italic small text-muted">No add-ons yet. Add items like broken nail repair or extra sauce.</div>
+                    ) : (
+                      <table className="mb-0 table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th style={{ width: 96 }}>Price +/-</th>
+                            <th style={{ width: 88 }}>Default Qty</th>
+                            <th style={{ width: 170 }}>Linked Resource</th>
+                            <th style={{ width: 110 }}>Consume / svc</th>
+                            <th style={{ width: 86 }}>Billable</th>
+                            <th style={{ width: 86 }}>Consume</th>
+                            <th style={{ width: 52 }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {serviceAddons.map((addon, index) => (
+                            <tr key={addon.id || index} className="align-middle">
+                              <td>
+                                <input type="text" className="form-control ui-control-sm" value={addon.name} onChange={(e) => updateServiceAddonRow(index, "name", e.target.value)} placeholder="e.g. Broken nail" />
+                              </td>
+                              <td>
+                                <input type="number" step="0.01" className="form-control ui-control-sm" value={addon.price_delta} onChange={(e) => updateServiceAddonRow(index, "price_delta", e.target.value)} />
+                              </td>
+                              <td>
+                                <input type="number" min="0" step="1" className="form-control ui-control-sm" value={addon.default_quantity} onChange={(e) => updateServiceAddonRow(index, "default_quantity", e.target.value)} />
+                              </td>
+                              <td>
+                                <select className="form-select ui-control-sm" value={addon.linked_inventory_id || ""} onChange={(e) => updateServiceAddonRow(index, "linked_inventory_id", e.target.value)}>
+                                  <option value="">None</option>
+                                  {resourceItems.map((inv) => (
+                                    <option key={inv.id} value={inv.id}>
+                                      {inv.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={addon.consume_quantity_per_unit || 0} onChange={(e) => updateServiceAddonRow(index, "consume_quantity_per_unit", e.target.value)} />
+                              </td>
+                              <td className="text-center">
+                                <input type="checkbox" checked={addon.is_billable !== false} onChange={(e) => updateServiceAddonRow(index, "is_billable", e.target.checked)} />
+                              </td>
+                              <td className="text-center">
+                                <input type="checkbox" checked={Boolean(addon.consume_inventory)} onChange={(e) => updateServiceAddonRow(index, "consume_inventory", e.target.checked)} />
+                              </td>
+                              <td>
+                                <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => removeServiceAddonRow(index)}>
+                                  <XMarkIcon style={{ width: 16, height: 16 }} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               </form>
 

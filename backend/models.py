@@ -520,6 +520,7 @@ class Service(BaseModel, table=True):
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
     image_url: Optional[str] = Field(default=None)  # URL or path to service image
+    addons_json: Optional[str] = Field(default=None)  # JSON: service add-on definitions
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -591,6 +592,7 @@ class Schedule(BaseModel, table=True):
     notes: Optional[str] = Field(default=None)
     appointment_type: str = Field(default="one_time")
     duration_minutes: int = Field(default=60)
+    service_addons_json: Optional[str] = Field(default=None)  # JSON: selected add-ons for this appointment
     # Recurrence fields
     recurrence_frequency: Optional[str] = Field(default=None)  # daily/weekly/biweekly/monthly
     recurrence_end_date: Optional[datetime] = Field(default=None)
@@ -980,6 +982,7 @@ class ServiceRead(SQLModel):
     price: float
     duration_minutes: int
     image_url: Optional[str] = None
+    addons_json: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -1406,6 +1409,7 @@ class ScheduleCreate(SQLModel):
     notes: Optional[str] = None
     appointment_type: str = "one_time"
     duration_minutes: int = 60
+    service_addons_json: Optional[str] = None
     recurrence_frequency: Optional[str] = None
     recurrence_end_date: Optional[datetime] = None
     recurrence_count: Optional[int] = None
@@ -1426,6 +1430,7 @@ class ScheduleUpdate(SQLModel):
     notes: Optional[str] = None
     appointment_type: Optional[str] = None
     duration_minutes: Optional[int] = None
+    service_addons_json: Optional[str] = None
     recurrence_frequency: Optional[str] = None
     recurrence_end_date: Optional[datetime] = None
     recurrence_count: Optional[int] = None
@@ -1448,6 +1453,7 @@ class ScheduleRead(SQLModel):
     notes: Optional[str] = None
     appointment_type: str = "one_time"
     duration_minutes: int = 60
+    service_addons_json: Optional[str] = None
     recurrence_frequency: Optional[str] = None
     recurrence_end_date: Optional[datetime] = None
     recurrence_count: Optional[int] = None

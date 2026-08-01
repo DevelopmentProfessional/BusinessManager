@@ -50,6 +50,8 @@
  *   2026-07-25 | GitHub Copilot | Enabled in-card payment approval for all users who can create schedule events
  *   2026-07-26 | GitHub Copilot | Routed unpaid appointment payment action through Sales checkout and restricted paid->unpaid to initiate_refunds permission
  *   2026-07-31 | GitHub Copilot | Included schedule context in Sales checkout handoff so checkout can show appointment/client details
+ *   2026-08-01 | GitHub Copilot | Preserved add-on billing/consumption metadata and billable-only add-on pricing in schedule checkout handoff
+ *   2026-07-31 | GitHub Copilot | Added appointment service add-ons to schedule save, cart sync, and Sales checkout handoff
  * ============================================================
  */
 
@@ -108,6 +110,33 @@ const STATUS_DOT_COLOR = {
   completed: "#22c55e", // green
   cancelled: "#ef4444", // red
 };
+
+const parseScheduleServiceAddons = (rawValue) => {
+  if (!rawValue) return [];
+  try {
+    const parsed = typeof rawValue === "string" ? JSON.parse(rawValue) : rawValue;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((addon, index) => ({
+        id: addon?.id || `addon-${index + 1}`,
+        name: String(addon?.name || "").trim(),
+        price_delta: Number(addon?.price_delta || 0),
+        quantity: Math.max(0, parseInt(addon?.quantity ?? 0, 10) || 0),
+        is_billable: addon?.is_billable !== false,
+        linked_inventory_id: addon?.linked_inventory_id || null,
+        consume_inventory: Boolean(addon?.consume_inventory),
+        consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+      }))
+      .filter((addon) => addon.name.length > 0 && addon.quantity > 0);
+  } catch {
+    return [];
+  }
+};
+
+const getServiceAddonsTotal = (addons) => addons.reduce((sum, addon) => {
+  if (addon?.is_billable === false) return sum;
+  return sum + Number(addon.price_delta || 0) * Number(addon.quantity || 0);
+}, 0);
 
 export default function Schedule() {
   const location = useLocation();
@@ -650,6 +679,7 @@ export default function Schedule() {
         appointment_date: appointmentData.appointment_date,
         appointment_type: effectiveType,
         duration_minutes: parseInt(appointmentData.duration_minutes) || 60,
+        service_addons_json: appointmentData.service_addons_json || null,
         notes: appointmentData.notes || null,
         status: appointmentData.status || "scheduled",
         recurrence_frequency: appointmentData.recurrence_frequency || null,
@@ -675,15 +705,19 @@ export default function Schedule() {
       if (primaryServiceId && primaryClientId) {
         const svc = services.find((s) => s.id === primaryServiceId);
         if (svc) {
+          const selectedAddons = parseScheduleServiceAddons(appointmentData.service_addons_json);
+          const addonsTotal = getServiceAddonsTotal(selectedAddons);
+          const unitPrice = Number(svc.price || 0) + addonsTotal;
           try {
             await clientCartAPI.upsertItem(primaryClientId, {
               cart_key: `schedule-${savedRecord?.id || "new"}-${primaryServiceId}`,
               item_type: "service",
               item_id: primaryServiceId,
               item_name: svc.name,
-              unit_price: svc.price ?? 0,
+              unit_price: unitPrice,
               quantity: 1,
-              line_total: svc.price ?? 0,
+              line_total: unitPrice,
+              options_json: selectedAddons.length > 0 ? JSON.stringify(selectedAddons) : null,
             });
           } catch {
             // non-critical — don't fail the booking if cart fails
@@ -701,7 +735,7 @@ export default function Schedule() {
       setEditingAppointment(null);
       setSelectedAttendees([]);
     },
-    [editingAppointment, normalizeIds, refreshSchedules, scheduleSettings.reminder_send_notification, syncScheduleAttendees]
+    [editingAppointment, normalizeIds, refreshSchedules, scheduleSettings.reminder_send_notification, services, syncScheduleAttendees]
   );
 
   const handleDeleteAppointment = useCallback(async () => {
@@ -719,27 +753,49 @@ export default function Schedule() {
     (appointment) => {
       if (!appointment?.client_id || !appointment?.service_id) return;
       const preSelectedClient = clients.find((c) => c.id === appointment.client_id);
-      const serviceName = services.find((s) => String(s.id) === String(appointment.service_id))?.name || "Service";
+      const selectedService = services.find((s) => String(s.id) === String(appointment.service_id));
+      const serviceName = selectedService?.name || "Service";
       const employeeName = employees.find((e) => String(e.id) === String(appointment.employee_id))?.name || "";
+      const serviceAddons = parseScheduleServiceAddons(appointment.service_addons_json);
+      const addonsTotal = getServiceAddonsTotal(serviceAddons);
+      const basePrice = Number(selectedService?.price || 0);
+      const effectivePrice = basePrice + addonsTotal;
       navigate("/sales", {
         state: {
           preSelectedClient,
           scheduleId: appointment.id,
           preloadServiceId: appointment.service_id,
+          preloadCart: [
+            {
+              cartKey: `schedule-${appointment.id}-${appointment.service_id}`,
+              id: appointment.service_id,
+              itemType: "service",
+              name: serviceName,
+              price: effectivePrice,
+              quantity: 1,
+              selectedOptions: serviceAddons,
+            },
+          ],
           openCheckout: true,
+          checkoutReturnTo: {
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+          },
           checkoutContext: {
             source: "schedule",
             appointmentId: appointment.id,
             appointmentDate: appointment.appointment_date || null,
             appointmentStatus: appointment.status || null,
             serviceName,
+            serviceAddons,
             employeeName,
             notes: appointment.notes || "",
           },
         },
       });
     },
-    [clients, employees, navigate, services]
+    [clients, employees, location.hash, location.pathname, location.search, navigate, services]
   );
 
   const canShowPaymentAction = useCallback(
@@ -2169,9 +2225,9 @@ export default function Schedule() {
         }
 
         .schedule-paid-toggle.is-paid {
-          background: #16a34a;
-          border-color: #14532d;
-          color: #ffffff;
+          background: rgba(255, 255, 255, 0.98);
+          border-color: #16a34a;
+          color: #16a34a;
         }
 
         .schedule-paid-toggle.is-unpaid {
