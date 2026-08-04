@@ -9,6 +9,7 @@ import Modal from "./Modal";
 import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const EMPTY_LINE = { inventory_id: "", quantity_ordered: 1, unit_price: 0 };
 
@@ -229,14 +230,15 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
               {formData.line_items.map((item, idx) => (
                 <tr key={idx}>
                   <td>
-                    <select className="form-select ui-control-sm" value={item.inventory_id} onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}>
-                      <option value="">Select…</option>
-                      {inventoryItems.map((inv) => (
-                        <option key={inv.id} value={inv.id}>
-                          {inv.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Dropdown_Custom
+                      className="form-select ui-control-sm"
+                      value={item.inventory_id}
+                      onChange={(e) => handleLineItemChange(idx, "inventory_id", e.target.value)}
+                      options={[
+                        { value: "", label: "Select…" },
+                        ...inventoryItems.map((inv) => ({ value: inv.id, label: inv.name })),
+                      ]}
+                    />
                   </td>
                   <td>
                     <input type="number" min="1" className="form-control ui-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />

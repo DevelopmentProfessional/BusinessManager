@@ -26,14 +26,19 @@ export default function Dropdown_Filter({
   dropdownStyle,
 }) {
   const [helpKey, setHelpKey] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const sortedOptions = sortOptionsByLabel(options);
+  const filteredOptions = searchTerm.trim() ? sortedOptions.filter((option) => String(option?.label || "").toLowerCase().includes(searchTerm.trim().toLowerCase())) : sortedOptions;
   const defaultValue = sortedOptions[0]?.value;
   const isActive = value !== defaultValue;
 
   const handleToggle = () => {
     const next = !isOpen;
     setIsOpen(next);
-    if (!next) setHelpKey(null);
+    if (!next) {
+      setHelpKey(null);
+      setSearchTerm("");
+    }
   };
 
   return (
@@ -42,8 +47,13 @@ export default function Dropdown_Filter({
 
       {isOpen && (
         <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={dropdownStyle}>
-          {sortedOptions.map((option, index) => {
-            const isLast = index === sortedOptions.length - 1;
+          <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-0 py-0">
+            <input type="search" className="form-control ui-control-sm" placeholder={`Search ${String(label || "filter").toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+
+          <div className="overflow-auto" style={{ maxHeight: "16rem" }}>
+            {filteredOptions.map((option, index) => {
+              const isLast = index === filteredOptions.length - 1;
             const isSelected = value === option.value;
             const isHelpOpen = helpKey === option.value;
 
@@ -92,7 +102,10 @@ export default function Dropdown_Filter({
                 )}
               </div>
             );
-          })}
+            })}
+
+            {filteredOptions.length === 0 && <div className="app-menu-empty dark:text-gray-400 px-1 py-0 text-gray-500">No matching options</div>}
+          </div>
         </div>
       )}
     </div>

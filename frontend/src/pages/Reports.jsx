@@ -68,6 +68,7 @@ import useBranding from "../services/useBranding";
 import Chart_Report from "./components/Chart_Report";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Report_SelectorDropup from "./components/Report_SelectorDropup";
+import Dropdown_Custom from "./components/Dropdown_Custom";
 import useViewMode from "../services/useViewMode";
 import Modal_ForecastCalculator from "./components/Modal_ForecastCalculator";
 import Modal from "./components/Modal";
@@ -1111,60 +1112,70 @@ export default function Reports() {
 
               {showReportControls && (
                 <>
-                  <select className="form-select ui-control-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.dateRange} onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}>
-                    {DATE_RANGE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Dropdown_Custom
+                    className="ui-control-sm"
+                    style={CIRCULAR_SELECT_STYLE}
+                    value={reportFilters.dateRange}
+                    onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
+                    options={DATE_RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                    placeholder="Date range"
+                    closeOnSelect
+                  />
 
-                  <select className="form-select ui-control-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.groupBy} onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}>
-                    {GROUP_BY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Dropdown_Custom
+                    className="ui-control-sm"
+                    style={CIRCULAR_SELECT_STYLE}
+                    value={reportFilters.groupBy}
+                    onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
+                    options={GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                    placeholder="Group by"
+                    closeOnSelect
+                  />
 
-                  <select className="form-select ui-control-sm" style={CIRCULAR_SELECT_STYLE} value={reportFilters.chartType} onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}>
-                    {selectedReport.chartTypes.map((chartType) => (
-                      <option key={chartType} value={chartType}>
-                        {chartType === "doughnut" ? "Ring" : chartType}
-                      </option>
-                    ))}
-                  </select>
+                  <Dropdown_Custom
+                    className="ui-control-sm"
+                    style={CIRCULAR_SELECT_STYLE}
+                    value={reportFilters.chartType}
+                    onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
+                    options={selectedReport.chartTypes.map((chartType) => ({ value: chartType, label: chartType === "doughnut" ? "Ring" : chartType }))}
+                    placeholder="Chart type"
+                    closeOnSelect
+                  />
 
                   {canUseStatus && (
-                    <select className="form-select ui-control-sm" style={INLINE_SELECT_STYLE} value={reportFilters.status} onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}>
-                      {FILTER_CONFIG.status.options.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={INLINE_SELECT_STYLE}
+                      value={reportFilters.status}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
+                      options={FILTER_CONFIG.status.options.map((o) => ({ value: o.value, label: o.label }))}
+                      placeholder="Status"
+                      closeOnSelect
+                    />
                   )}
 
                   {canUseService && (
-                    <select className="form-select ui-control-sm" style={INLINE_SELECT_STYLE} value={reportFilters.serviceId} onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}>
-                      <option value="all">{FILTER_CONFIG.service.allLabel}</option>
-                      {services.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s[FILTER_CONFIG.service.labelKey]}
-                        </option>
-                      ))}
-                    </select>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={INLINE_SELECT_STYLE}
+                      value={reportFilters.serviceId}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
+                      options={[{ value: "all", label: FILTER_CONFIG.service.allLabel }, ...services.map((s) => ({ value: s.id, label: s[FILTER_CONFIG.service.labelKey] }))]}
+                      placeholder="Service"
+                      closeOnSelect
+                    />
                   )}
 
                   {canUseEmployee && (
-                    <select className="form-select ui-control-sm" style={INLINE_SELECT_STYLE} value={reportFilters.employeeId} onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}>
-                      <option value="all">{FILTER_CONFIG.employee.allLabel}</option>
-                      {employees.map((e) => (
-                        <option key={e.id} value={e.id}>
-                          {FILTER_CONFIG.employee.labelKey(e)}
-                        </option>
-                      ))}
-                    </select>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={INLINE_SELECT_STYLE}
+                      value={reportFilters.employeeId}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
+                      options={[{ value: "all", label: FILTER_CONFIG.employee.allLabel }, ...employees.map((employeeOption) => ({ value: employeeOption.id, label: FILTER_CONFIG.employee.labelKey(employeeOption) }))]}
+                      placeholder="Employee"
+                      closeOnSelect
+                    />
                   )}
 
                   {canUseEventType && (

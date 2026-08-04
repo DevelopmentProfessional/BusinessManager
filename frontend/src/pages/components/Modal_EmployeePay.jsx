@@ -28,6 +28,7 @@ import { payrollAPI } from "../../services/api";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -291,23 +292,21 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                   {scheduleLoading ? (
                     <div className="py-1 small text-muted">Loading periods…</div>
                   ) : (
-                    <select
+                    <Dropdown_Custom
                       className="form-select ui-control-sm"
                       value={payForm.pay_period_start}
                       onChange={(e) => {
                         const p = availablePeriods.find((w) => w.start === e.target.value);
-                        if (p) setPayForm((f) => ({ ...f, pay_period_start: p.start, pay_period_end: p.end }));
+                        if (!p || p.isPaid) return;
+                        setPayForm((f) => ({ ...f, pay_period_start: p.start, pay_period_end: p.end }));
                       }}
+                      options={availablePeriods.map((w) => ({
+                        value: w.start,
+                        label: `${w.label}${w.isPaid ? " ✓ Paid" : ""}`,
+                      }))}
+                      placeholder="— Select a period —"
                       required
-                    >
-                      <option value="">— Select a period —</option>
-                      {availablePeriods.map((w) => (
-                        <option key={w.start} value={w.start} disabled={w.isPaid}>
-                          {w.label}
-                          {w.isPaid ? " ✓ Paid" : ""}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   )}
                   {payForm.pay_period_start && (
                     <div className="mt-1 ui-small-muted">

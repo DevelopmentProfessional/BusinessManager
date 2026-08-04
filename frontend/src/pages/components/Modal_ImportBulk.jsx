@@ -27,6 +27,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, CheckIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_BulkImport({
   isOpen,
@@ -150,14 +151,17 @@ export default function Modal_BulkImport({
                     </span>
 
                     {itemTypes && (
-                      <select className="form-select ui-control-sm" style={{ width: "7.5rem", fontSize: "0.72rem" }} value={types[i] || defaultItemType || ""} onChange={(e) => handleTypeChange(i, e.target.value)} disabled={saving}>
-                        <option value="">Type…</option>
-                        {itemTypes.map((t) => (
-                          <option key={t.value} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
+                      <Dropdown_Custom
+                        className="form-select ui-control-sm"
+                        style={{ width: "7.5rem", fontSize: "0.72rem" }}
+                        value={types[i] || defaultItemType || ""}
+                        onChange={(e) => handleTypeChange(i, e.target.value)}
+                        disabled={saving}
+                        options={[
+                          { value: "", label: "Type…" },
+                          ...itemTypes.map((t) => ({ value: t.value, label: t.label })),
+                        ]}
+                      />
                     )}
 
                     <input type="text" className="form-control ui-control-sm" style={{ width: "6.5rem", fontSize: "0.72rem" }} placeholder="Category" value={categories[i] || ""} onChange={(e) => setCategories((prev) => ({ ...prev, [i]: e.target.value }))} disabled={saving} />

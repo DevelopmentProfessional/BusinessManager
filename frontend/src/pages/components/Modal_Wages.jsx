@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { payrollAPI } from "../../services/api";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1136,12 +1137,15 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
 
       <div className="mb-3">
         <label className="form-label fw-semibold mb-1 small">Employee</label>
-        <select className="form-select ui-control-sm" value={ot.employee_id} onChange={(e) => setOt((p) => ({ ...p, employee_id: e.target.value }))}>
-          <option value="">— Select employee —</option>
-          {employees.filter((e) => e.is_active).map((e) => (
-            <option key={e.id} value={e.id}>{e.first_name} {e.last_name} · {e.role}</option>
-          ))}
-        </select>
+        <Dropdown_Custom
+          className="form-select ui-control-sm"
+          value={ot.employee_id}
+          onChange={(e) => setOt((p) => ({ ...p, employee_id: e.target.value }))}
+          options={[
+            { value: "", label: "— Select employee —" },
+            ...employees.filter((e) => e.is_active).map((e) => ({ value: e.id, label: `${e.first_name} ${e.last_name} · ${e.role}` })),
+          ]}
+        />
       </div>
 
       <div className="mb-3">

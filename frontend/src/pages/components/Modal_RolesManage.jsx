@@ -25,6 +25,7 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
   return (
@@ -113,7 +114,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
 
                       {/* Add Permission to Role */}
                       <div className="d-flex gap-2 mt-2">
-                        <select
+                        <Dropdown_Custom
                           value={editingRole === role.id ? newRolePermission.page : ""}
                           onChange={(e) => {
                             setEditingRole(role.id);
@@ -121,15 +122,12 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                           }}
                           className="form-select ui-control-sm"
                           style={{ maxWidth: "150px" }}
-                        >
-                          <option value="">Page...</option>
-                          {pages.map((page) => (
-                            <option key={page} value={page}>
-                              {page}
-                            </option>
-                          ))}
-                        </select>
-                        <select
+                          options={[
+                            { value: "", label: "Page..." },
+                            ...pages.map((page) => ({ value: page, label: page })),
+                          ]}
+                        />
+                        <Dropdown_Custom
                           value={editingRole === role.id ? newRolePermission.permission : ""}
                           onChange={(e) => {
                             setEditingRole(role.id);
@@ -137,14 +135,11 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                           }}
                           className="form-select ui-control-sm"
                           style={{ maxWidth: "150px" }}
-                        >
-                          <option value="">Permission...</option>
-                          {permissions.map((perm) => (
-                            <option key={perm} value={perm}>
-                              {perm}
-                            </option>
-                          ))}
-                        </select>
+                          options={[
+                            { value: "", label: "Permission..." },
+                            ...permissions.map((perm) => ({ value: perm, label: perm })),
+                          ]}
+                        />
                         <button type="button" onClick={() => onAddRolePermission(role.id)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" disabled={editingRole !== role.id || !newRolePermission.page || !newRolePermission.permission}>
                           <PlusIcon className="ui-icon-4" />
                           <span>Add</span>

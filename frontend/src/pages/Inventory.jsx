@@ -47,6 +47,7 @@ import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
 import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
+import Dropdown_Custom from "./components/Dropdown_Custom";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -869,13 +870,15 @@ export default function Inventory() {
           <label htmlFor="inventory-asset-units-per-page" className="fw-semibold mb-0 small">
             Asset Units per page
           </label>
-          <select id="inventory-asset-units-per-page" className="form-select ui-control-sm" value={assetUnitsPerPage} onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}>
-            {ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+          <Dropdown_Custom
+            id="inventory-asset-units-per-page"
+            className="ui-control-sm"
+            value={String(assetUnitsPerPage)}
+            onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}
+            options={ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) }))}
+            placeholder="Select page size"
+            closeOnSelect
+          />
         </div>
       </PageControlsModal>
 

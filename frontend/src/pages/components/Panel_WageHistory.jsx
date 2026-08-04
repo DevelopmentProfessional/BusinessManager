@@ -2,6 +2,7 @@
 // Embedded wage history for Profile → Wage accordion (scrollable list + bottom filters).
 
 import React, { useMemo, useState } from "react";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 function slipYear(slip) {
   if (!slip?.pay_period_start) return null;
@@ -98,14 +99,16 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Search pay history"
           />
-          <select className="flex-shrink-0 form-select form-select-sm" style={{ width: "5.75rem" }} value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} aria-label="Filter by year">
-            <option value="all">All years</option>
-            {years.map((y) => (
-              <option key={y} value={String(y)}>
-                {y}
-              </option>
-            ))}
-          </select>
+          <Dropdown_Custom
+            className="flex-shrink-0 form-select form-select-sm"
+            style={{ width: "5.75rem" }}
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+            options={[
+              { value: "all", label: "All years" },
+              ...years.map((y) => ({ value: String(y), label: String(y) })),
+            ]}
+          />
         </div>
       </div>
     </div>

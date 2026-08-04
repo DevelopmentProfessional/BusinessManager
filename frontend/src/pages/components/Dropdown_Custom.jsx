@@ -21,7 +21,7 @@ export default function Dropdown_Custom({
   footerSearch = false,
   onCreateFromSearch = null,
   createButtonTitle = "Add",
-  openUpward = false,
+  openUpward = true,
   closeOnSelect = true,
   useCountLabelForMultiSelect = false,
   showSelectionSummary = false,
@@ -32,6 +32,7 @@ export default function Dropdown_Custom({
   isMultiModeActive = false,
   onToggleMultiMode = null,
   wordSafeTruncate = true,
+  style,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -117,7 +118,7 @@ export default function Dropdown_Custom({
   const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
 
   return (
-    <div ref={dropdownRef} className={`relative ${className}`}>
+    <div ref={dropdownRef} className={`relative ${className}`} style={style}>
       {searchable && !footerSearch ? (
         <div className="relative">
           <input
@@ -171,6 +172,19 @@ export default function Dropdown_Custom({
 
       {isOpen && (
         <div className={`app-menu-panel absolute z-50 w-full border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
+          {searchable && !footerSearch && (
+            <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 px-0 py-0">
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="form-control ui-control-sm"
+                placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"}
+                autoFocus
+              />
+            </div>
+          )}
+
           {loading ? (
             <div className="app-menu-empty dark:text-gray-400 flex gap-2 items-center px-1 py-0 text-gray-500">
               <span className="animate-spin border-2 border-gray-400 border-t-transparent h-4 rounded-full w-4" />
@@ -225,7 +239,7 @@ export default function Dropdown_Custom({
           )}
 
           {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle) && (
-            <div className="bg-gray-50 border-gray-200 border-top bottom-0 d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 p-0 sticky">
+            <div className="bg-gray-50 border-gray-200 border-top d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 p-0">
               <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1">
                 OK
               </button>

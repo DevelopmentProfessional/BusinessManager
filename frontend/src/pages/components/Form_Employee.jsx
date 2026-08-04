@@ -48,6 +48,7 @@ import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Widget_Signature from "./Widget_Signature";
 import Modal_Pay_Employee from "./Modal_EmployeePay";
+import Dropdown_Custom from "./Dropdown_Custom";
 import useStore from "../../services/useStore";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 import { sortItemsAlphabetically } from "../../utils/displaySort";
@@ -837,30 +838,35 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div className="form-floating">
-                        <select id="reports_to" name="reports_to" value={formData.reports_to} onChange={handleInputChange} className="form-select ui-control-sm">
-                          <option value="">No Manager (Top Level)</option>
-                          {managerOptions.map((mgr) => (
-                            <option key={mgr.id} value={mgr.id}>
-                              {mgr.first_name} {mgr.last_name} ({mgr.role})
-                            </option>
-                          ))}
-                        </select>
-                        <label htmlFor="reports_to">Supervisor</label>
-                      </div>
+                      <label htmlFor="reports_to" className="form-label ui-form-label-sm">
+                        Supervisor
+                      </label>
+                      <Dropdown_Custom
+                        id="reports_to"
+                        name="reports_to"
+                        className="ui-control-sm"
+                        value={formData.reports_to}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Manager (Top Level)" }, ...managerOptions.map((mgr) => ({ value: mgr.id, label: `${mgr.first_name} ${mgr.last_name} (${mgr.role})` }))]}
+                        placeholder="Select supervisor"
+                        closeOnSelect
+                      />
                     </div>
                     <div className="col-md-6">
-                      <div className="form-floating">
-                        <select id="role_id" name="role_id" value={formData.role_id} onChange={handleInputChange} className="form-select ui-control-sm" disabled={rolesLoading}>
-                          <option value="">No Role Assigned</option>
-                          {roles.map((role) => (
-                            <option key={role.id} value={role.id}>
-                              {role.name} {role.role_permissions?.length > 0 && `(${role.role_permissions.length} permissions)`}
-                            </option>
-                          ))}
-                        </select>
-                        <label htmlFor="role_id">Assigned Role</label>
-                      </div>
+                      <label htmlFor="role_id" className="form-label ui-form-label-sm">
+                        Assigned Role
+                      </label>
+                      <Dropdown_Custom
+                        id="role_id"
+                        name="role_id"
+                        className="ui-control-sm"
+                        value={formData.role_id}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Role Assigned" }, ...roles.map((role) => ({ value: role.id, label: `${role.name}${role.role_permissions?.length > 0 ? ` (${role.role_permissions.length} permissions)` : ""}` }))]}
+                        placeholder="Select role"
+                        disabled={rolesLoading}
+                        closeOnSelect
+                      />
                       {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
                         <div className="bg-body-secondary border mt-2 p-0 rounded" style={{ fontSize: "0.8rem" }}>
                           <strong>Role Permissions:</strong>
@@ -892,16 +898,20 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     {/* Department */}
                     <div className="col-12">
                       <div className="ui-flex-center-gap-2">
-                        <div className="flex-grow-1 form-floating">
-                          <select id="department_id" name="department_id" value={formData.department_id} onChange={handleInputChange} className="form-select ui-control-sm">
-                            <option value="">— None —</option>
-                            {departments.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {d.name}
-                              </option>
-                            ))}
-                          </select>
-                          <label htmlFor="department_id">Department</label>
+                        <div className="flex-grow-1">
+                          <label htmlFor="department_id" className="form-label ui-form-label-sm">
+                            Department
+                          </label>
+                          <Dropdown_Custom
+                            id="department_id"
+                            name="department_id"
+                            className="ui-control-sm"
+                            value={formData.department_id}
+                            onChange={handleInputChange}
+                            options={[{ value: "", label: "— None —" }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+                            placeholder="Select department"
+                            closeOnSelect
+                          />
                         </div>
                         <button
                           type="button"
@@ -1053,16 +1063,20 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 </div>
                 <div className="col-md-6">
                   <div className="align-items-stretch d-flex gap-2">
-                    <div className="flex-grow-1 form-floating">
-                      <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select ui-control-sm">
-                        <option value="">No Plan Selected</option>
-                        {insurancePlans.map((plan) => (
-                          <option key={plan.id} value={plan.name}>
-                            {plan.name}
-                          </option>
-                        ))}
-                      </select>
-                      <label htmlFor="insurance_plan">Insurance Plan</label>
+                    <div className="flex-grow-1">
+                      <label htmlFor="insurance_plan" className="form-label ui-form-label-sm">
+                        Insurance Plan
+                      </label>
+                      <Dropdown_Custom
+                        id="insurance_plan"
+                        name="insurance_plan"
+                        className="ui-control-sm"
+                        value={formData.insurance_plan}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Plan Selected" }, ...insurancePlans.map((plan) => ({ value: plan.name, label: plan.name }))]}
+                        placeholder="Select insurance plan"
+                        closeOnSelect
+                      />
                     </div>
                     <div className="align-items-center d-flex flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
                       <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
@@ -1567,22 +1581,24 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             <div className="col-12">
                               <div className="align-items-center d-flex flex-wrap gap-2">
                                 <label className="form-label fw-semibold mb-0 small">The</label>
-                                <select className="form-select ui-control-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_week ?? ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_week: parseInt(e.target.value) || null }))}>
-                                  <option value="">—</option>
-                                  {PAY_SCHEDULE_WEEK_OPTS.map((w) => (
-                                    <option key={w.value} value={w.value}>
-                                      {w.label}
-                                    </option>
-                                  ))}
-                                </select>
-                                <select className="form-select ui-control-sm" style={{ width: "auto" }} value={employeePaySchedule.monthly_payday_weekday || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_weekday: e.target.value || null }))}>
-                                  <option value="">— day —</option>
-                                  {PAY_SCHEDULE_DAYS.map((d) => (
-                                    <option key={d.key} value={d.key}>
-                                      {d.full}
-                                    </option>
-                                  ))}
-                                </select>
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  style={{ width: 130 }}
+                                  value={String(employeePaySchedule.monthly_payday_week ?? "")}
+                                  onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_week: parseInt(e.target.value) || null }))}
+                                  options={[{ value: "", label: "—" }, ...PAY_SCHEDULE_WEEK_OPTS.map((w) => ({ value: String(w.value), label: w.label }))]}
+                                  placeholder="Week"
+                                  closeOnSelect
+                                />
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  style={{ width: 170 }}
+                                  value={employeePaySchedule.monthly_payday_weekday || ""}
+                                  onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_weekday: e.target.value || null }))}
+                                  options={[{ value: "", label: "— day —" }, ...PAY_SCHEDULE_DAYS.map((d) => ({ value: d.key, label: d.full }))]}
+                                  placeholder="Weekday"
+                                  closeOnSelect
+                                />
                                 <span className="ui-small-muted">of the month</span>
                               </div>
                             </div>
@@ -1748,28 +1764,27 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
             <div className="align-items-center g-2 row">
               <div className="col">
-                <select value={newPermission.page} onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))} className="form-select ui-control-sm">
-                  <option value="">Select Page</option>
-                  {PAGE_OPTION_GROUPS.map((group) => (
-                    <optgroup key={group.label} label={group.label}>
-                      {group.options.map((p) => (
-                        <option key={p.value} value={p.value}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  value={newPermission.page}
+                  onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))}
+                  options={[
+                    { value: "", label: "Select Page" },
+                    ...PAGE_OPTION_GROUPS.flatMap((group) => group.options.map((option) => ({ value: option.value, label: `${group.label} - ${option.label}` }))),
+                  ]}
+                  placeholder="Select Page"
+                  closeOnSelect
+                />
               </div>
               <div className="col">
-                <select value={newPermission.permission} onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))} className="form-select ui-control-sm">
-                  <option value="">Select Permission</option>
-                  {PERMISSION_TYPES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  value={newPermission.permission}
+                  onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))}
+                  options={[{ value: "", label: "Select Permission" }, ...PERMISSION_TYPES.map((permissionType) => ({ value: permissionType, label: permissionType }))]}
+                  placeholder="Select Permission"
+                  closeOnSelect
+                />
               </div>
               <div className="col-auto">
                 <button type="button" onClick={handleCreatePermission} className="btn btn-primary btn-sm" disabled={!newPermission.page || !newPermission.permission}>

@@ -10,6 +10,7 @@ import Filter_CatalogCheckboxes from "./Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "./Filter_SourceToggle";
 import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon, UserIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../services/api";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const STATUS_LABELS = {
   payment_pending: "Payment Pending",
@@ -234,14 +235,15 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
                 </div>
               )}
             </div>
-            <select value={local.status || ""} onChange={(e) => setLocal((prev) => ({ ...prev, status: e.target.value }))} className="form-select form-select-sm rounded-pill" aria-label="Status">
-              <option value="">All statuses</option>
-              {Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => (
-                <option key={statusValue} value={statusValue}>
-                  {statusLabel}
-                </option>
-              ))}
-            </select>
+            <Dropdown_Custom
+              value={local.status || ""}
+              onChange={(e) => setLocal((prev) => ({ ...prev, status: e.target.value }))}
+              className="form-select form-select-sm rounded-pill"
+              options={[
+                { value: "", label: "All statuses" },
+                ...Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => ({ value: statusValue, label: statusLabel })),
+              ]}
+            />
             <input type="number" min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="form-control form-control-sm rounded-pill" aria-label="Minimum total" />
             <input type="number" min="0" step="0.01" value={local.maxPrice} onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))} placeholder="Max $" className="form-control form-control-sm rounded-pill" aria-label="Maximum total" />
             <input type="date" value={local.startDate} onChange={(e) => setLocal((prev) => ({ ...prev, startDate: e.target.value }))} className="form-control form-control-sm rounded-pill" aria-label="From date" />

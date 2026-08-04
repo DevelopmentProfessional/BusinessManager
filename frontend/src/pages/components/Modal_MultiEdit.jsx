@@ -24,6 +24,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], selectedItems = [], onSave, saving = false }) {
   const [formData, setFormData] = useState({});
@@ -132,14 +133,15 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                   )}
 
                   {field.type === "select" ? (
-                    <select className="form-select ui-control-sm" value={formData[field.key] ?? ""} onChange={(e) => handleChange(field.key, e.target.value)}>
-                      <option value="">— Leave unchanged —</option>
-                      {(field.options || []).map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    <Dropdown_Custom
+                      className="form-select ui-control-sm"
+                      value={formData[field.key] ?? ""}
+                      onChange={(e) => handleChange(field.key, e.target.value)}
+                      options={[
+                        { value: "", label: "— Leave unchanged —" },
+                        ...(field.options || []).map((opt) => ({ value: String(opt.value), label: opt.label })),
+                      ]}
+                    />
                   ) : field.type === "number" ? (
                     <input
                       type="number"
