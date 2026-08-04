@@ -781,7 +781,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
   const handleEditScheduleFromHistory = (schedule) => {
     if (!schedule?.id) return;
-    setShowServiceHistory(false);
     onClose?.();
     navigate(`/schedule?edit_schedule_id=${encodeURIComponent(schedule.id)}`);
   };

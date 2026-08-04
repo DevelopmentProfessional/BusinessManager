@@ -40,7 +40,7 @@ import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusI
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Filter_CatalogCheckboxes from "./components/Filter_CatalogCheckboxes";
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI } from "../services/api";
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
@@ -1361,7 +1361,7 @@ export default function Sales() {
         setServices([]);
       }
     } catch (err) {
-      setError("Failed to load services");
+      setError(getDetailedApiErrorMessage(err, "Failed to load services"));
       console.error("Error loading services:", err);
       setServices([]);
     } finally {

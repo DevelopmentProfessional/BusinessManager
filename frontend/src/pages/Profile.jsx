@@ -276,7 +276,7 @@ const Profile = () => {
   const [colorUpdating, setColorUpdating] = useState(false);
   const [colorMessage, setColorMessage] = useState("");
   const [openAccordion, setOpenAccordion] = useState("");
-  const [meSectionOpen, setMeSectionOpen] = useState("profile");
+  const [meSectionOpen, setMeSectionOpen] = useState("");
   const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
 
   const [vacationRequests, setVacationRequests] = useState([]);
@@ -338,7 +338,7 @@ const Profile = () => {
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const [openAccordions, setOpenAccordions] = useState({
-    application: true,
+    application: false,
     companyInfo: false,
     branding: false,
     clientPortal: false,
@@ -1575,6 +1575,7 @@ const Profile = () => {
                         HelpIcon={HelpIcon}
                         onClose={() => setMeSectionOpen("")}
                         onSave={() => setMeSectionOpen("")}
+                        showCloseButton={false}
                       />
                     </div>
                   )}

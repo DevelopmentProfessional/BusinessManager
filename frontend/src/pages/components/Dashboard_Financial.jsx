@@ -8,7 +8,7 @@
  * ============================================================
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { CurrencyDollarIcon, ExclamationTriangleIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 

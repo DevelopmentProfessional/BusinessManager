@@ -227,6 +227,18 @@ function getFileTypeIcon(filename = "", contentType = "") {
 }
 
 // ─── 4  FORMAT FILE SIZE HELPER ───────────────────────────────────────────
+function formatFileSize(bytes) {
+  const size = Number(bytes);
+  if (!Number.isFinite(size) || size <= 0) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const unitIndex = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+  const formatted = size / Math.pow(1024, unitIndex);
+  const precision = unitIndex === 0 ? 0 : 2;
+
+  return `${formatted.toFixed(precision)} ${units[unitIndex]}`;
+}
+
 export default function Documents() {
   const navigate = useNavigate();
   const { user, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();

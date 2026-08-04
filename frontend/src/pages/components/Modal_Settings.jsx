@@ -44,6 +44,7 @@ const Modal_Settings = ({
   HelpIcon,
   onClose,
   onSave,
+  showCloseButton = true,
 }) => {
   const containerStyle = embedded
     ? {
@@ -183,7 +184,7 @@ const Modal_Settings = ({
         <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="btn-outline-secondary settings-accordion-btn" title="Log out" />
       </div>
 
-      {onClose && <Footer_Settings onSave={onSave || onClose} onClose={onClose} />}
+      {(onSave || onClose) && <Footer_Settings onSave={onSave || onClose} onClose={onClose} showClose={showCloseButton} />}
     </div>
   );
 };
