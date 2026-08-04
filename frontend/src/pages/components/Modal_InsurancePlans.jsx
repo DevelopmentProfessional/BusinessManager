@@ -9,6 +9,7 @@ import { documentsAPI } from "../../services/api";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
 import Modal_Viewer_Document from "./Modal_DocumentView";
 import Button_InsuranceDocument from "./Button_InsuranceDocument";
+import Footer_Actions from "./Footer_Actions";
 
 export default function Modal_InsurancePlans({
   isOpen,
@@ -80,7 +81,7 @@ export default function Modal_InsurancePlans({
       noPadding
       fullScreen
     >
-      <form onSubmit={onSave} className="ui-component-shell">
+      <form onSubmit={onSave} className="ui-component-shell d-flex flex-column h-100 min-h-0">
         <div className="component-header">
           <div className="component-header-left">Insurance Plans</div>
           <div className="component-header-center"></div>
@@ -221,21 +222,20 @@ export default function Modal_InsurancePlans({
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-outline-secondary" title={editingPlan ? "Save plan" : "Add plan"} />
-          </div>
-          <div className="component-footer-center">
-            <button
-              type="button"
-              onClick={editingPlan ? () => setEditingPlan(null) : onClose}
-              className="btn ui-btn-circle-outline-secondary"
-              title={editingPlan ? "Cancel edit" : "Close"}
-            >
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
+          <Footer_Actions
+            start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-outline-secondary" title={editingPlan ? "Save plan" : "Add plan"} />}
+            center={
+              <button
+                type="button"
+                onClick={editingPlan ? () => setEditingPlan(null) : onClose}
+                className="btn ui-btn-circle-outline-secondary"
+                title={editingPlan ? "Cancel edit" : "Close"}
+              >
+                <XMarkIcon />
+              </button>
+            }
+          />
         </div>
       </form>
 

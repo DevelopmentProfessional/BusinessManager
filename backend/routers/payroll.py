@@ -16,6 +16,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-08-04 | GitHub Copilot | Convert annual salary to period gross using employee pay frequency when gross is omitted
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -59,6 +60,20 @@ except ModuleNotFoundError:
 router = APIRouter()
 
 
+def _salary_gross_for_frequency(salary_annual: float, pay_frequency: str | None) -> float:
+    """Convert annual salary to gross amount for one pay period."""
+    freq = (pay_frequency or "").strip().lower()
+    if freq == "weekly":
+        return salary_annual / 52.0
+    if freq == "biweekly":
+        return salary_annual / 26.0
+    if freq == "monthly":
+        return salary_annual / 12.0
+    if freq == "daily":
+        return salary_annual / 260.0
+    return salary_annual
+
+
 # ─── 1 PAYMENT PROCESSING ──────────────────────────────────────────────────────
 
 @router.post("/payroll/pay/{employee_id}", response_model=PaySlipRead, tags=["payroll"])
@@ -96,7 +111,10 @@ def process_payment(
     if emp_type == "hourly":
         gross = hourly_rate * (data.hours_worked or 0.0)
     else:
-        gross = data.gross_amount if data.gross_amount is not None else (employee.salary or 0.0)
+        if data.gross_amount is not None:
+            gross = data.gross_amount
+        else:
+            gross = _salary_gross_for_frequency(float(employee.salary or 0.0), employee.pay_frequency)
 
     # Auto-deduction from insurance plan
     insurance_deduction = 0.0

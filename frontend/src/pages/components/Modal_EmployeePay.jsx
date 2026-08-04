@@ -19,6 +19,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Created — extracted from Employees.jsx (P4-A)
+ *   2026-08-04 | GitHub Copilot | Default salary gross amount now follows selected pay frequency
  * ============================================================
  */
 
@@ -57,6 +58,27 @@ function isPaidStart(paidStartDates, startStr) {
     const dStr = typeof d === "string" ? d.slice(0, 10) : isoDate(d);
     return dStr === startStr;
   });
+}
+
+function salaryGrossForFrequency(salaryAnnual, payFrequency) {
+  const annual = Number(salaryAnnual);
+  if (!Number.isFinite(annual)) return null;
+  const freq = String(payFrequency || "").toLowerCase();
+  if (freq === "weekly") return annual / 52;
+  if (freq === "biweekly") return annual / 26;
+  if (freq === "monthly") return annual / 12;
+  if (freq === "daily") return annual / 260;
+  return annual;
+}
+
+function salaryFrequencyLabel(payFrequency) {
+  const freq = String(payFrequency || "").toLowerCase();
+  if (freq === "weekly") return "per week";
+  if (freq === "biweekly") return "per bi-week";
+  if (freq === "monthly") return "per month";
+  if (freq === "daily") return "per day";
+  if (freq === "annually") return "per year";
+  return "for selected period";
 }
 
 function generateRecentPeriods({ paidStartDates, frequency, cycleAnchorDate = null, count = 26 }) {
@@ -130,10 +152,11 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
       return;
     }
 
+    const defaultSalaryGross = salaryGrossForFrequency(employee.salary, normalizedPayFrequency);
     const baseForm = {
       pay_period_start: "",
       pay_period_end: "",
-      gross_amount: employee.salary ? String(employee.salary) : "",
+      gross_amount: defaultSalaryGross != null ? String(Math.round(defaultSalaryGross * 100) / 100) : "",
       hours_worked: "",
       other_deductions: "",
       notes: "",
@@ -318,9 +341,9 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                 </div>
               ) : (
                 <div className="mb-2">
-                  <label className="form-label ui-form-label-sm">Gross Amount ($)</label>
+                  <label className="form-label ui-form-label-sm">Gross Amount ($ {salaryFrequencyLabel(normalizedPayFrequency)})</label>
                   <input type="number" className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.gross_amount} onChange={(e) => setPayForm((f) => ({ ...f, gross_amount: e.target.value }))} />
-                  <div className="mt-1 ui-small-muted">Leave blank to use employee salary</div>
+                  <div className="mt-1 ui-small-muted">Pre-filled from employee salary using the selected pay frequency.</div>
                 </div>
               )}
 

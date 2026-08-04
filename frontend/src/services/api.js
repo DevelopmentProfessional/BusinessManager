@@ -358,6 +358,44 @@ export const inventoryFeaturesAPI = {
 
 export const servicesAPI = {
   ...createISUDApi("services"),
+  getAll: async () => {
+    const normalizeService = (service) => {
+      if (!service || typeof service !== "object") return service;
+
+      const priceValue = Number(service.price);
+      const durationValue = Number(service.duration_minutes ?? service.duration);
+
+      return {
+        ...service,
+        price: Number.isFinite(priceValue) ? priceValue : 0,
+        duration_minutes: Number.isFinite(durationValue) ? durationValue : 60,
+      };
+    };
+
+    const normalizePayload = (payload) => {
+      if (Array.isArray(payload)) return payload.map(normalizeService);
+      return payload;
+    };
+
+    try {
+      const res = await getCachedOrFetch("services", () => api.get("/isud/services"));
+      if (Array.isArray(res?.data)) {
+        return { ...res, data: normalizePayload(res.data) };
+      }
+      return normalizePayload(res);
+    } catch (error) {
+      if (error?.response?.status !== 404) {
+        throw error;
+      }
+
+      // Backward-compatible fallback for older backends exposing singular table routes.
+      const fallbackRes = await getCachedOrFetch("services", () => api.get("/isud/service"));
+      if (Array.isArray(fallbackRes?.data)) {
+        return { ...fallbackRes, data: normalizePayload(fallbackRes.data) };
+      }
+      return normalizePayload(fallbackRes);
+    }
+  },
   uploadCSV: (formData) => {
     clearCache("services");
     return api.post("/services/upload-csv", formData, { headers: { "Content-Type": "multipart/form-data" } });

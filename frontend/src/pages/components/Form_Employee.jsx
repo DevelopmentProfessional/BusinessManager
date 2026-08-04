@@ -34,6 +34,7 @@
  *   2026-03-07 | Claude  | Converted role select to custom dropdown with per-option help popovers
  *   2026-07-24 | GitHub Copilot | Removed custom dropdown caret icons and added word-safe trigger label truncation
  *   2026-07-26 | GitHub Copilot | Added initiate_refunds to direct user permission type options
+ *   2026-08-04 | GitHub Copilot | Made salary input frequency-aware and convert to annualized value on submit
  * ============================================================
  */
 
@@ -113,6 +114,51 @@ function serializePayScheduleWorkDays(arr) {
   return arr.join(",");
 }
 
+const SALARY_PERIODS_PER_YEAR = {
+  daily: 260,
+  weekly: 52,
+  biweekly: 26,
+  monthly: 12,
+  annually: 1,
+  one_time: 1,
+};
+
+function normalizeFrequency(value) {
+  return String(value || "").toLowerCase();
+}
+
+function annualSalaryToFrequencyAmount(annualSalary, payFrequency) {
+  const annual = Number(annualSalary);
+  if (!Number.isFinite(annual)) return null;
+  const periods = SALARY_PERIODS_PER_YEAR[normalizeFrequency(payFrequency)] || 1;
+  return annual / periods;
+}
+
+function frequencyAmountToAnnualSalary(amount, payFrequency) {
+  const parsed = Number(amount);
+  if (!Number.isFinite(parsed)) return null;
+  const periods = SALARY_PERIODS_PER_YEAR[normalizeFrequency(payFrequency)] || 1;
+  return parsed * periods;
+}
+
+function formatCompInputAmount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "";
+  const rounded = Math.round(num * 100) / 100;
+  return String(rounded);
+}
+
+function getSalaryFieldMeta(payFrequency) {
+  const freq = normalizeFrequency(payFrequency);
+  if (freq === "weekly") return { label: "Weekly Pay Amount", placeholder: "e.g. 1000.00" };
+  if (freq === "biweekly") return { label: "Bi-weekly Pay Amount", placeholder: "e.g. 2000.00" };
+  if (freq === "monthly") return { label: "Monthly Pay Amount", placeholder: "e.g. 4333.33" };
+  if (freq === "daily") return { label: "Daily Pay Amount", placeholder: "e.g. 200.00" };
+  if (freq === "annually") return { label: "Annual Salary", placeholder: "e.g. 52000.00" };
+  if (freq === "one_time") return { label: "One-time Contract Amount", placeholder: "e.g. 5000.00" };
+  return { label: "Salary Amount", placeholder: "0.00" };
+}
+
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, onManagePermissions, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
   const [activeTab, setActiveTab] = useState("details");
@@ -138,7 +184,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   ];
 
   const employmentTypeOptions = [
-    { value: "salary", label: "Salary", description: "Fixed annual compensation. Employee receives consistent pay regardless of hours worked." },
+    { value: "salary", label: "Salary", description: "Fixed compensation based on selected pay frequency. Employee receives consistent pay regardless of hours worked." },
     { value: "hourly", label: "Hourly", description: "Paid by the hour worked. Compensation varies based on actual hours logged." },
   ];
 
@@ -217,6 +263,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
   const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
   const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
+  const salaryFieldMeta = getSalaryFieldMeta(formData.pay_frequency);
   const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
   const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
   const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
@@ -312,7 +359,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         location: employee.location || "",
         department_id: employee.department_id || "",
         employment_type: employee.employment_type || "",
-        salary: employee.salary ?? "",
+        salary: employee.salary != null ? formatCompInputAmount(annualSalaryToFrequencyAmount(employee.salary, employee.pay_frequency || "")) : "",
         hourly_rate: employee.hourly_rate ?? "",
         pay_frequency: employee.pay_frequency || "",
         insurance_plan: employee.insurance_plan || "",
@@ -471,6 +518,24 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         reports_to: value,
         supervisor: supervisorName,
       }));
+    } else if (name === "pay_frequency") {
+      setFormData((prev) => {
+        const next = {
+          ...prev,
+          pay_frequency: value,
+        };
+
+        if (prev.employment_type !== "hourly" && prev.salary !== "") {
+          const currentDisplayed = Number(prev.salary);
+          if (Number.isFinite(currentDisplayed)) {
+            const annualized = frequencyAmountToAnnualSalary(currentDisplayed, prev.pay_frequency);
+            const converted = annualized != null ? annualSalaryToFrequencyAmount(annualized, value) : null;
+            if (converted != null) next.salary = formatCompInputAmount(converted);
+          }
+        }
+
+        return next;
+      });
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -529,7 +594,12 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     if (!submitData.pay_frequency) submitData.pay_frequency = null;
     if (!submitData.insurance_plan) submitData.insurance_plan = null;
     // Convert numeric fields
-    submitData.salary = submitData.salary !== "" ? parseFloat(submitData.salary) : null;
+    if (submitData.employment_type === "hourly") {
+      submitData.salary = null;
+    } else {
+      const salaryInput = submitData.salary !== "" ? parseFloat(submitData.salary) : null;
+      submitData.salary = salaryInput != null ? frequencyAmountToAnnualSalary(salaryInput, submitData.pay_frequency) : null;
+    }
     submitData.hourly_rate = submitData.hourly_rate !== "" ? parseFloat(submitData.hourly_rate) : null;
     submitData.vacation_days = submitData.vacation_days !== "" ? parseInt(submitData.vacation_days) : null;
     submitData.vacation_days_used = submitData.vacation_days_used !== "" ? parseInt(submitData.vacation_days_used) : null;
@@ -908,30 +978,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {activeTab === "benefits" && (
             <div className="tab-pane">
               <div className="g-3 row">
-                {/* Insurance */}
-                <div className="col-12 mt-3">
-                  <h6 className="mb-0 text-uppercase ui-small-muted">Insurance</h6>
-                  <hr className="mb-2 mt-1" />
-                </div>
-                <div className="col-md-6">
-                  <div className="align-items-stretch d-flex gap-2">
-                    <div className="flex-grow-1 form-floating">
-                      <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select ui-control-sm">
-                        <option value="">No Plan Selected</option>
-                        {insurancePlans.map((plan) => (
-                          <option key={plan.id} value={plan.name}>
-                            {plan.name}
-                          </option>
-                        ))}
-                      </select>
-                      <label htmlFor="insurance_plan">Insurance Plan</label>
-                    </div>
-                    <div className="align-items-center d-flex flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
-                      <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Leave */}
                 <div className="col-12 mt-3">
                   <h6 className="mb-0 text-uppercase ui-small-muted">Leave</h6>
@@ -999,6 +1045,30 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                   </div>
                 )}
+
+                {/* Insurance */}
+                <div className="col-12 mt-3">
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Insurance</h6>
+                  <hr className="mb-2 mt-1" />
+                </div>
+                <div className="col-md-6">
+                  <div className="align-items-stretch d-flex gap-2">
+                    <div className="flex-grow-1 form-floating">
+                      <select id="insurance_plan" name="insurance_plan" value={formData.insurance_plan} onChange={handleInputChange} className="form-select ui-control-sm">
+                        <option value="">No Plan Selected</option>
+                        {insurancePlans.map((plan) => (
+                          <option key={plan.id} value={plan.name}>
+                            {plan.name}
+                          </option>
+                        ))}
+                      </select>
+                      <label htmlFor="insurance_plan">Insurance Plan</label>
+                    </div>
+                    <div className="align-items-center d-flex flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
+                      <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1352,10 +1422,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <div className="form-floating">
-                          <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
-                          <label htmlFor="salary">Annual Salary</label>
+                          <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder={salaryFieldMeta.placeholder} step="0.01" min="0" />
+                          <label htmlFor="salary">{salaryFieldMeta.label}</label>
                         </div>
                       </div>
+                      <div className="mt-1 ui-small-muted">Amount follows selected pay frequency.</div>
                     </div>
                   )}
                   {formData.employment_type === "hourly" && (

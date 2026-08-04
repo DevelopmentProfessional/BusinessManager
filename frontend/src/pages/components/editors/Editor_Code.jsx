@@ -30,6 +30,7 @@ import { python } from "@codemirror/lang-python";
 import { sql } from "@codemirror/lang-sql";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { undo, redo } from "@codemirror/commands";
 
 // ─── 1 LANGUAGE EXTENSION MAP ──────────────────────────────────────────────────
 
@@ -63,13 +64,11 @@ const Editor_Code = forwardRef(function Editor_Code({ content, onChange, languag
     () => ({
       undo: () => {
         if (viewRef.current?.view) {
-          const { undo } = require("@codemirror/commands");
           undo(viewRef.current.view);
         }
       },
       redo: () => {
         if (viewRef.current?.view) {
-          const { redo } = require("@codemirror/commands");
           redo(viewRef.current.view);
         }
       },

@@ -14,8 +14,8 @@ if ("serviceWorker" in navigator) {
 
 // Clear any workbox / PWA caches left from previous builds
 if ("caches" in window) {
-  caches.keys().then((keys) => {
-    keys.forEach((key) => caches.delete(key));
+  window.caches.keys().then((keys) => {
+    keys.forEach((key) => window.caches.delete(key));
   });
 }
 

@@ -42,7 +42,7 @@ import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, T
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
-import { servicesAPI } from "../services/api";
+import { servicesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Service from "./components/Form_Service";
@@ -97,7 +97,7 @@ export default function Services() {
         setServices([]);
       }
     } catch (err) {
-      setError("Failed to load services");
+      setError(getDetailedApiErrorMessage(err, "Failed to load services"));
       setServices([]);
     } finally {
       setLoading(false);
