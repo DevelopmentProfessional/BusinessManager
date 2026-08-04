@@ -44,6 +44,7 @@ import Scanner_Barcode from "./Scanner_Barcode";
 import Widget_Camera from "./Widget_Camera";
 import FeatureSection from "./Panel_Features";
 import AssetUnitsPanel from "./Panel_AssetUnits";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode
@@ -227,16 +228,17 @@ function ProductionRelationsPanel({ productId }) {
 
             {addingResource ? (
               <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
-                <select value={newResourceId} onChange={(e) => setNewResourceId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
-                  <option value="">Select resource…</option>
-                  {resourceItems
-                    .filter((i) => !resources.some((r) => r.resource_id === i.id))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  value={newResourceId}
+                  onChange={(e) => setNewResourceId(e.target.value)}
+                  style={{ ...inputSm, flex: 1 }}
+                  options={[
+                    { value: "", label: "Select resource…" },
+                    ...resourceItems
+                      .filter((i) => !resources.some((r) => r.resource_id === i.id))
+                      .map((i) => ({ value: i.id, label: i.name })),
+                  ]}
+                />
                 <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddResource}>
                   <PlusIcon className="ui-icon-4" />
@@ -284,16 +286,17 @@ function ProductionRelationsPanel({ productId }) {
 
             {addingAsset ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 6 }}>
-                <select value={newAssetId} onChange={(e) => setNewAssetId(e.target.value)} style={{ ...inputSm, flex: "1 1 120px" }}>
-                  <option value="">Select asset…</option>
-                  {assetItems
-                    .filter((i) => !assets.some((a) => a.asset_id === i.id))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  value={newAssetId}
+                  onChange={(e) => setNewAssetId(e.target.value)}
+                  style={{ ...inputSm, flex: "1 1 120px" }}
+                  options={[
+                    { value: "", label: "Select asset…" },
+                    ...assetItems
+                      .filter((i) => !assets.some((a) => a.asset_id === i.id))
+                      .map((i) => ({ value: i.id, label: i.name })),
+                  ]}
+                />
                 <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddAsset}>
@@ -506,16 +509,17 @@ function MixSetupPanel({ mixId }) {
         )}
         {adding ? (
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
-            <select value={newCompId} onChange={(e) => setNewCompId(e.target.value)} style={{ ...s.input, flex: 1 }}>
-              <option value="">Select product…</option>
-              {productItems
-                .filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id))
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name}
-                  </option>
-                ))}
-            </select>
+            <Dropdown_Custom
+              value={newCompId}
+              onChange={(e) => setNewCompId(e.target.value)}
+              style={{ ...s.input, flex: 1 }}
+              options={[
+                { value: "", label: "Select product…" },
+                ...productItems
+                  .filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id))
+                  .map((i) => ({ value: i.id, label: i.name })),
+              ]}
+            />
             <input type="number" min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
             <button type="button" className={mixBtnPrimary} onClick={handleAddComponent}>
               Add
@@ -657,16 +661,17 @@ function BundleComponentsPanel({ bundleId }) {
         )}
         {adding ? (
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
-            <select value={newComponentId} onChange={(e) => setNewComponentId(e.target.value)} style={{ ...inputSm, flex: 1 }}>
-              <option value="">Select product…</option>
-              {productItems
-                .filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id))
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name}
-                  </option>
-                ))}
-            </select>
+            <Dropdown_Custom
+              value={newComponentId}
+              onChange={(e) => setNewComponentId(e.target.value)}
+              style={{ ...inputSm, flex: 1 }}
+              options={[
+                { value: "", label: "Select product…" },
+                ...productItems
+                  .filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id))
+                  .map((i) => ({ value: i.id, label: i.name })),
+              ]}
+            />
             <input type="number" min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
             <button type="button" className={btnPrimaryClass} onClick={handleAdd}>
               Add
@@ -1539,12 +1544,19 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   )}
 
                   <div className={inventoryRowClass}>
-                    <div className="form-floating" style={equalFieldStyle}>
-                      <select id="detail_cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select ui-control-sm">
-                        <option value="one_time">One-Time Purchase</option>
-                        <option value="recurring">Recurring Rental</option>
-                      </select>
-                      <label htmlFor="detail_cost_type">Cost Type</label>
+                    <div style={equalFieldStyle}>
+                      <label htmlFor="detail_cost_type" className="form-label ui-form-label-sm">Cost Type</label>
+                      <Dropdown_Custom
+                        id="detail_cost_type"
+                        name="cost_type"
+                        value={formData.cost_type}
+                        onChange={handleChange}
+                        className="form-select ui-control-sm"
+                        options={[
+                          { value: "one_time", label: "One-Time Purchase" },
+                          { value: "recurring", label: "Recurring Rental" },
+                        ]}
+                      />
                     </div>
                     <div className="form-floating" style={equalFieldStyle}>
                       <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
@@ -1554,16 +1566,19 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                   {!isLocation ? (
                     <div className={inventoryRowClass}>
-                      <div className="form-floating" style={equalFieldStyle}>
-                        <select id="detail_location" name="location" value={formData.location} onChange={handleChange} className="form-select ui-control-sm">
-                          <option value="">Select location</option>
-                          {availableLocations.map((location) => (
-                            <option key={location} value={location}>
-                              {location}
-                            </option>
-                          ))}
-                        </select>
-                        <label htmlFor="detail_location">Location</label>
+                      <div style={equalFieldStyle}>
+                        <label htmlFor="detail_location" className="form-label ui-form-label-sm">Location</label>
+                        <Dropdown_Custom
+                          id="detail_location"
+                          name="location"
+                          value={formData.location || ""}
+                          onChange={handleChange}
+                          className="form-select ui-control-sm"
+                          options={[
+                            { value: "", label: "Select location" },
+                            ...availableLocations.map((location) => ({ value: location, label: location })),
+                          ]}
+                        />
                       </div>
 
                       <div className="form-floating" style={equalFieldStyle}>
@@ -1585,17 +1600,24 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                 {scanError && <div className="alert alert-danger mb-2 mt-0 py-1 small">{scanError}</div>}
 
                 <div className={inventoryRowClass}>
-                  <div className="form-floating" style={equalFieldStyle}>
-                    <select id="detail_type" name="type" value={formData.type} onChange={handleChange} className="form-select ui-control-sm">
-                      <option value="PRODUCT">Product</option>
-                      <option value="BUNDLE">Bundle</option>
-                      <option value="MIX">Mix</option>
-                      <option value="RESOURCE">Resource</option>
-                      <option value="ASSET">Asset</option>
-                      <option value="LOCATION">Location</option>
-                      <option value="ITEM">Item</option>
-                    </select>
-                    <label htmlFor="detail_type">Type</label>
+                  <div style={equalFieldStyle}>
+                    <label htmlFor="detail_type" className="form-label ui-form-label-sm">Type</label>
+                    <Dropdown_Custom
+                      id="detail_type"
+                      name="type"
+                      value={formData.type}
+                      onChange={handleChange}
+                      className="form-select ui-control-sm"
+                      options={[
+                        { value: "PRODUCT", label: "Product" },
+                        { value: "BUNDLE", label: "Bundle" },
+                        { value: "MIX", label: "Mix" },
+                        { value: "RESOURCE", label: "Resource" },
+                        { value: "ASSET", label: "Asset" },
+                        { value: "LOCATION", label: "Location" },
+                        { value: "ITEM", label: "Item" },
+                      ]}
+                    />
                   </div>
                   <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
@@ -1604,16 +1626,19 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                 </div>
 
                 <div className={inventoryRowClass}>
-                  <div className="form-floating" style={equalFieldStyle}>
-                    <select id="detail_supplier" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select ui-control-sm">
-                      <option value="">— None —</option>
-                      {availableSuppliers.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="detail_supplier">Supplier</label>
+                  <div style={equalFieldStyle}>
+                    <label htmlFor="detail_supplier" className="form-label ui-form-label-sm">Supplier</label>
+                    <Dropdown_Custom
+                      id="detail_supplier"
+                      name="supplier_id"
+                      value={formData.supplier_id || ""}
+                      onChange={handleChange}
+                      className="form-select ui-control-sm"
+                      options={[
+                        { value: "", label: "— None —" },
+                        ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name })),
+                      ]}
+                    />
                   </div>
                   <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />

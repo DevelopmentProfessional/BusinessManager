@@ -10,6 +10,7 @@ import Modal_DocumentUpload from "./Modal_DocumentUpload";
 import Modal_Viewer_Document from "./Modal_DocumentView";
 import Button_InsuranceDocument from "./Button_InsuranceDocument";
 import Footer_Actions from "./Footer_Actions";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_InsurancePlans({
   isOpen,
@@ -191,19 +192,16 @@ export default function Modal_InsurancePlans({
                 <p className="mb-2 ui-small-muted">No document linked.</p>
               )}
               <div className="align-items-center d-flex flex-wrap gap-2">
-                <select
+                <Dropdown_Custom
                   className="form-select ui-control-sm"
                   style={{ maxWidth: "14rem" }}
                   value={editingPlan?.document_id || newPlan?.document_id || ""}
                   onChange={(e) => setPlanDocumentId(e.target.value || null)}
-                >
-                  <option value="">Link existing document…</option>
-                  {documents.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.original_filename || doc.filename}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: "Link existing document…" },
+                    ...documents.map((doc) => ({ value: doc.id, label: doc.original_filename || doc.filename })),
+                  ]}
+                />
                 <button
                   type="button"
                   className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1"

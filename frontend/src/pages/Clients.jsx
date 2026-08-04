@@ -36,6 +36,7 @@ import { S } from "../utils/strings";
 import { showConfirm } from "../services/showConfirm";
 import Badge from "./components/Badge";
 import Dropdown_Filter from "./components/Dropdown_Filter";
+import Dropdown_Custom from "./components/Dropdown_Custom";
 import { clientsAPI, membershipsAPI, settingsAPI } from "../services/api";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
@@ -657,21 +658,35 @@ export default function Clients() {
             <textarea className="form-control ui-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
             <div className="d-flex gap-2">
               <input type="number" min="0" step="0.01" className="form-control ui-control-sm" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
-              <select className="form-select ui-control-sm" value={membershipForm.billing_frequency} onChange={(e) => setMembershipForm((p) => ({ ...p, billing_frequency: e.target.value }))}>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
+              <Dropdown_Custom
+                className="ui-control-sm"
+                value={membershipForm.billing_frequency}
+                onChange={(e) => setMembershipForm((p) => ({ ...p, billing_frequency: e.target.value }))}
+                options={[
+                  { value: "daily", label: "Daily" },
+                  { value: "weekly", label: "Weekly" },
+                  { value: "monthly", label: "Monthly" },
+                  { value: "yearly", label: "Yearly" },
+                ]}
+                placeholder="Billing frequency"
+                closeOnSelect
+              />
             </div>
             <div className="d-flex gap-2">
               <input type="number" min="0" className="form-control ui-control-sm" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
-              <select className="form-select ui-control-sm" value={membershipForm.lock_term_unit} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_unit: e.target.value }))}>
-                <option value="days">Days</option>
-                <option value="weeks">Weeks</option>
-                <option value="months">Months</option>
-                <option value="years">Years</option>
-              </select>
+              <Dropdown_Custom
+                className="ui-control-sm"
+                value={membershipForm.lock_term_unit}
+                onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_unit: e.target.value }))}
+                options={[
+                  { value: "days", label: "Days" },
+                  { value: "weeks", label: "Weeks" },
+                  { value: "months", label: "Months" },
+                  { value: "years", label: "Years" },
+                ]}
+                placeholder="Lock term unit"
+                closeOnSelect
+              />
             </div>
             <label className="align-items-center d-flex gap-2 small">
               <input type="checkbox" checked={membershipForm.is_active} onChange={(e) => setMembershipForm((p) => ({ ...p, is_active: e.target.checked }))} />

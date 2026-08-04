@@ -59,6 +59,7 @@ import Modal_Settings from "./components/Modal_Settings";
 import Panel_General from "./components/Panel_General";
 import Panel_WageHistory from "./components/Panel_WageHistory";
 import Panel_Database from "./components/Panel_Database";
+import Dropdown_Custom from "./components/Dropdown_Custom";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
@@ -1836,20 +1837,23 @@ const Profile = () => {
                   {leaveError && <div className="alert alert-danger mb-2 py-1 small">{leaveError}</div>}
                   <div className="mb-2">
                     <label className="form-label ui-form-label-sm">Request Type</label>
-                    <select
-                      className="form-select ui-control-sm"
+                    <Dropdown_Custom
+                      className="ui-control-sm"
                       value={leaveModalType}
                       onChange={(e) => {
                         setLeaveModalType(e.target.value);
                         setLeaveForm({ start_date: "", end_date: "", notes: "" });
                         setLeaveError("");
                       }}
-                    >
-                      <option value="vacation">Vacation</option>
-                      <option value="sick">Sick</option>
-                      <option value="onboarding">Onboarding</option>
-                      <option value="offboarding">Offboarding</option>
-                    </select>
+                      options={[
+                        { value: "vacation", label: "Vacation" },
+                        { value: "sick", label: "Sick" },
+                        { value: "onboarding", label: "Onboarding" },
+                        { value: "offboarding", label: "Offboarding" },
+                      ]}
+                      placeholder="Request type"
+                      closeOnSelect
+                    />
                   </div>
                   {leaveModalType === "vacation" || leaveModalType === "sick" ? (
                     <>

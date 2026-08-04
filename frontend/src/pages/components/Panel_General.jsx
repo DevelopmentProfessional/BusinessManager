@@ -7,6 +7,7 @@ import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 import Footer_Settings from "./Footer_Settings";
 import { documentsAPI } from "../../services/api";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
@@ -118,13 +119,13 @@ const Panel_General = ({
                   <MagnifyingGlassPlusIcon className="ui-icon-4" />
                   <span>{uiScale}%</span>
                 </button>
-                <select value={uiScale} onChange={(e) => setUiScale(Number(e.target.value))} className="form-select ui-control-sm" style={{ width: "7rem" }} aria-label="App zoom level">
-                  {APP_ZOOM_LEVELS.map((zoomLevel) => (
-                    <option key={zoomLevel} value={zoomLevel}>
-                      {zoomLevel}%
-                    </option>
-                  ))}
-                </select>
+                <Dropdown_Custom
+                  value={uiScale}
+                  onChange={(e) => setUiScale(Number(e.target.value))}
+                  className="form-select ui-control-sm"
+                  style={{ width: "7rem" }}
+                  options={APP_ZOOM_LEVELS.map((zoomLevel) => ({ value: zoomLevel, label: `${zoomLevel}%` }))}
+                />
               </div>
             </div>
             {/* Admin-only: Check/Start Database Button */}
@@ -323,10 +324,16 @@ const Panel_General = ({
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <select id="stripe_mode" value={stripeSettings.stripe_mode || "test"} onChange={(e) => handleStripeSettingsChange("stripe_mode", e.target.value === "live" ? "live" : "test")} className="form-select ui-control-sm">
-              <option value="test">Sandbox / Test Mode</option>
-              <option value="live">Production / Live Mode</option>
-            </select>
+            <Dropdown_Custom
+              id="stripe_mode"
+              value={stripeSettings.stripe_mode || "test"}
+              onChange={(e) => handleStripeSettingsChange("stripe_mode", e.target.value === "live" ? "live" : "test")}
+              className="form-select ui-control-sm"
+              options={[
+                { value: "test", label: "Sandbox / Test Mode" },
+                { value: "live", label: "Production / Live Mode" },
+              ]}
+            />
             <label htmlFor="stripe_mode">Active Payment Mode</label>
           </div>
 

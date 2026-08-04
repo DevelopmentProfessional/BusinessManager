@@ -24,6 +24,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { featuresAPI, inventoryFeaturesAPI } from "../../services/api";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -697,7 +698,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           </div>
 
           <div className="w-100">
-            <select
+            <Dropdown_Custom
               className="form-select ui-control-sm"
               value={affectingFeatureId == null ? "fixed" : String(affectingFeatureId)}
               onChange={(e) => {
@@ -708,14 +709,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                 }
                 void handleAffectsPrice(selectedValue);
               }}
-            >
-              <option value="fixed">Fixed price</option>
-              {itemFeatures.map((feature) => (
-                <option key={feature.feature_id} value={String(feature.feature_id)}>
-                  Depends on {feature.feature_name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "fixed", label: "Fixed price" },
+                ...itemFeatures.map((feature) => ({ value: String(feature.feature_id), label: `Depends on ${feature.feature_name}` })),
+              ]}
+            />
             <div className="mt-1 ui-small-muted">{priceModeLabel}</div>
           </div>
         </div>
@@ -982,14 +980,15 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         return (
                           <React.Fragment key={`draft-${feature.feature_id}`}>
                             <td>
-                              <select className="form-select ui-control-sm" value={combinationDraft.selections[feature.feature_id] ?? ""} onChange={(e) => handleDraftSelectionChange(feature.feature_id, e.target.value)}>
-                                <option value="">Select…</option>
-                                {enabledOptions.map((option) => (
-                                  <option key={option.option_id} value={option.option_id}>
-                                    {option.option_name}
-                                  </option>
-                                ))}
-                              </select>
+                              <Dropdown_Custom
+                                className="form-select ui-control-sm"
+                                value={combinationDraft.selections[feature.feature_id] ?? ""}
+                                onChange={(e) => handleDraftSelectionChange(feature.feature_id, e.target.value)}
+                                options={[
+                                  { value: "", label: "Select…" },
+                                  ...enabledOptions.map((option) => ({ value: option.option_id, label: option.option_name })),
+                                ]}
+                              />
                             </td>
                             {feature.affects_price && (
                               <td style={{ textAlign: "center" }}>

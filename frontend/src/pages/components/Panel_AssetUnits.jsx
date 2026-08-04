@@ -4,6 +4,7 @@ import { showConfirm } from "../../services/showConfirm";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import useViewMode from "../../services/useViewMode";
 import Toggle_MultiSelectIcon from "./Toggle_MultiSelectIcon";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const STATE_LABELS = {
   available: "Available",
@@ -62,6 +63,9 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
   const [availableLocations, setAvailableLocations] = useState([]);
   const [unitSearchTerm, setUnitSearchTerm] = useState("");
   const [selectedUnitIds, setSelectedUnitIds] = useState(new Set());
+  const [bulkStateSelection, setBulkStateSelection] = useState("");
+  const [bulkAssigneeSelection, setBulkAssigneeSelection] = useState("");
+  const [bulkLocationSelection, setBulkLocationSelection] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -316,64 +320,58 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
       {selectedCount > 0 && (
         <div className="align-items-center bg-light-subtle border d-flex flex-wrap gap-2 mb-2 p-0 rounded">
           <span className="fw-semibold ui-text-sm">{selectedCount} selected</span>
-          <select
+          <Dropdown_Custom
             className="form-select ui-control-sm"
             style={{ width: 140 }}
-            defaultValue=""
+            value={bulkStateSelection}
             disabled={saving}
             onChange={(e) => {
-              if (!e.target.value) return;
-              applyBulkUpdate({ state: e.target.value });
-              e.target.value = "";
+              const nextValue = e.target.value;
+              if (!nextValue) return;
+              setBulkStateSelection(nextValue);
+              void applyBulkUpdate({ state: nextValue }).finally(() => setBulkStateSelection(""));
             }}
-          >
-            <option value="">Set state...</option>
-            {Object.entries(STATE_LABELS).map(([s, l]) => (
-              <option key={s} value={s}>
-                {l}
-              </option>
-            ))}
-          </select>
-          <select
+            options={[
+              { value: "", label: "Set state..." },
+              ...Object.entries(STATE_LABELS).map(([s, l]) => ({ value: s, label: l })),
+            ]}
+          />
+          <Dropdown_Custom
             className="form-select ui-control-sm"
             style={{ width: 180 }}
-            defaultValue=""
+            value={bulkAssigneeSelection}
             disabled={saving}
             onChange={(e) => {
-              if (!e.target.value) return;
-              const nextEmployeeId = e.target.value === "shared" ? null : e.target.value;
-              applyBulkUpdate({ employee_id: nextEmployeeId });
-              e.target.value = "";
+              const nextValue = e.target.value;
+              if (!nextValue) return;
+              setBulkAssigneeSelection(nextValue);
+              const nextEmployeeId = nextValue === "shared" ? null : nextValue;
+              void applyBulkUpdate({ employee_id: nextEmployeeId }).finally(() => setBulkAssigneeSelection(""));
             }}
-          >
-            <option value="">Assign...</option>
-            <option value="shared">Shared</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employeeLabel(employee)}
-              </option>
-            ))}
-          </select>
-          <select
+            options={[
+              { value: "", label: "Assign..." },
+              { value: "shared", label: "Shared" },
+              ...employees.map((employee) => ({ value: String(employee.id), label: employeeLabel(employee) })),
+            ]}
+          />
+          <Dropdown_Custom
             className="form-select ui-control-sm"
             style={{ width: 180 }}
-            defaultValue=""
+            value={bulkLocationSelection}
             disabled={saving}
             onChange={(e) => {
-              if (!e.target.value) return;
-              const nextLocation = e.target.value === "__none__" ? null : e.target.value;
-              applyBulkUpdate({ location: nextLocation });
-              e.target.value = "";
+              const nextValue = e.target.value;
+              if (!nextValue) return;
+              setBulkLocationSelection(nextValue);
+              const nextLocation = nextValue === "__none__" ? null : nextValue;
+              void applyBulkUpdate({ location: nextLocation }).finally(() => setBulkLocationSelection(""));
             }}
-          >
-            <option value="">Set location...</option>
-            <option value="__none__">No location</option>
-            {availableLocations.map((location) => (
-              <option key={location} value={location}>
-                {location}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "Set location..." },
+              { value: "__none__", label: "No location" },
+              ...availableLocations.map((location) => ({ value: location, label: location })),
+            ]}
+          />
           <button className="btn btn-outline-danger btn-sm" onClick={handleBulkRemove} disabled={saving}>
             Remove selected
           </button>
@@ -418,33 +416,34 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
                       <InlineText value={unit.label || ""} onSave={(val) => handleLabelSave(unit.id, val)} placeholder="click to set label" />
                     </td>
                     <td style={{ border: "none" }}>
-                      <select className="form-select ui-control-sm" value={unit.location || "__none__"} onChange={(e) => handleLocationChange(unit.id, e.target.value)}>
-                        <option value="__none__">No location</option>
-                        {availableLocations.map((location) => (
-                          <option key={location} value={location}>
-                            {location}
-                          </option>
-                        ))}
-                      </select>
+                      <Dropdown_Custom
+                        className="form-select ui-control-sm"
+                        value={unit.location || "__none__"}
+                        onChange={(e) => handleLocationChange(unit.id, e.target.value)}
+                        options={[
+                          { value: "__none__", label: "No location" },
+                          ...availableLocations.map((location) => ({ value: location, label: location })),
+                        ]}
+                      />
                     </td>
                     <td style={{ border: "none" }}>
-                      <select className="form-select ui-control-sm" value={unit.employee_id || "shared"} onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}>
-                        <option value="shared">Shared</option>
-                        {employees.map((employee) => (
-                          <option key={employee.id} value={employee.id}>
-                            {employeeLabel(employee)}
-                          </option>
-                        ))}
-                      </select>
+                      <Dropdown_Custom
+                        className="form-select ui-control-sm"
+                        value={unit.employee_id ? String(unit.employee_id) : "shared"}
+                        onChange={(e) => handleEmployeeChange(unit.id, e.target.value)}
+                        options={[
+                          { value: "shared", label: "Shared" },
+                          ...employees.map((employee) => ({ value: String(employee.id), label: employeeLabel(employee) })),
+                        ]}
+                      />
                     </td>
                     <td style={{ border: "none" }}>
-                      <select className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`} value={unit.state} onChange={(e) => handleStateChange(unit.id, e.target.value)}>
-                        {Object.entries(STATE_LABELS).map(([s, l]) => (
-                          <option key={s} value={s}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
+                      <Dropdown_Custom
+                        className={`form-select form-select-sm border-${STATE_COLORS[unit.state]}`}
+                        value={unit.state}
+                        onChange={(e) => handleStateChange(unit.id, e.target.value)}
+                        options={Object.entries(STATE_LABELS).map(([s, l]) => ({ value: s, label: l }))}
+                      />
                     </td>
                   </tr>
                 ))

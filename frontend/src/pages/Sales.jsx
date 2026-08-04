@@ -51,6 +51,7 @@ import Modal_Cart_Sales from "./components/Modal_SalesCart";
 import Modal_History_Sales from "./components/Modal_SalesHistory";
 import Modal_Feature_Select_Sales from "./components/Modal_SalesFeatureSelect";
 import Modal_TemplateUse from "./components/Modal_TemplateUse";
+import Dropdown_Custom from "./components/Dropdown_Custom";
 import { getDisplayImageUrl } from "./components/Utils_Image";
 import useViewMode from "../services/useViewMode";
 import { sortItemsAlphabetically } from "../utils/displaySort";
@@ -1962,8 +1963,8 @@ export default function Sales() {
 
         <div className="mb-2">
           <label className="d-block mb-1 small text-muted">Receipt Template</label>
-          <select
-            className="form-select ui-control-sm"
+          <Dropdown_Custom
+            className="ui-control-sm"
             value={receiptSettings.templateId ?? ""}
             onChange={(e) => {
               const id = e.target.value;
@@ -1972,34 +1973,33 @@ export default function Sales() {
               setReceiptSettings(next);
               localStorage.setItem("sales_receipt_settings", JSON.stringify(next));
             }}
-          >
-            <option value="">— No template selected —</option>
-            {rcptTemplates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+            options={[{ value: "", label: "— No template selected —" }, ...rcptTemplates.map((t) => ({ value: String(t.id), label: t.name }))]}
+            placeholder="Select receipt template"
+            closeOnSelect
+          />
           {rcptTemplates.length === 0 && <div className="mt-1 ui-small-muted">No receipt templates found. Create one in Documents → Templates.</div>}
         </div>
 
         <div className="mb-2">
           <label className="d-block mb-1 small text-muted">After Receipt Selected</label>
-          <select
-            className="form-select ui-control-sm"
+          <Dropdown_Custom
+            className="ui-control-sm"
             value={receiptSettings.action}
             onChange={(e) => {
               const next = { ...receiptSettings, action: e.target.value };
               setReceiptSettings(next);
               localStorage.setItem("sales_receipt_settings", JSON.stringify(next));
             }}
-          >
-            <option value="select">Ask (show template list)</option>
-            <option value="print">Print</option>
-            <option value="email">Email to Client</option>
-            <option value="pdf-print">Print to PDF</option>
-            <option value="pdf-download">Download PDF</option>
-          </select>
+            options={[
+              { value: "select", label: "Ask (show template list)" },
+              { value: "print", label: "Print" },
+              { value: "email", label: "Email to Client" },
+              { value: "pdf-print", label: "Print to PDF" },
+              { value: "pdf-download", label: "Download PDF" },
+            ]}
+            placeholder="Post-selection action"
+            closeOnSelect
+          />
         </div>
       </PageControlsModal>
     </div>

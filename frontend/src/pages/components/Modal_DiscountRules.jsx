@@ -17,6 +17,7 @@ import { showConfirm } from "../../services/showConfirm";
 import Modal from "./Modal";
 
 import Button_Toolbar from "./Button_Toolbar";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -411,11 +412,15 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 <div className="col-6">
                   <label className="form-label mb-0 small">Type</label>
 
-                  <select className="form-select ui-control-sm" value={form.discount_type} onChange={(e) => setForm((p) => ({ ...p, discount_type: e.target.value }))}>
-                    <option value="percentage">%</option>
-
-                    <option value="fixed">$</option>
-                  </select>
+                  <Dropdown_Custom
+                    className="form-select ui-control-sm"
+                    value={form.discount_type}
+                    onChange={(e) => setForm((p) => ({ ...p, discount_type: e.target.value }))}
+                    options={[
+                      { value: "percentage", label: "%" },
+                      { value: "fixed", label: "$" },
+                    ]}
+                  />
                 </div>
 
                 <div className="col-6">
@@ -463,10 +468,8 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               <div className="g-2 mb-2 row">
                 <div className="col-12">
                   <label className="form-label mb-0 small">Start</label>
-
                   <input type="datetime-local" className="form-control ui-control-sm" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
                 </div>
-
                 <div className="col-12">
                   <label className="form-label mb-0 small">End</label>
 
@@ -481,13 +484,16 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
               {form.is_recurring && (
                 <div className="border mb-0 p-0 rounded small">
-                  <select className="form-select form-select-sm mb-2" value={form.recur_frequency} onChange={(e) => setForm((p) => ({ ...p, recur_frequency: e.target.value }))}>
-                    <option value="daily">Daily</option>
-
-                    <option value="weekly">Weekly</option>
-
-                    <option value="monthly">Monthly</option>
-                  </select>
+                  <Dropdown_Custom
+                    className="form-select form-select-sm mb-2"
+                    value={form.recur_frequency}
+                    onChange={(e) => setForm((p) => ({ ...p, recur_frequency: e.target.value }))}
+                    options={[
+                      { value: "daily", label: "Daily" },
+                      { value: "weekly", label: "Weekly" },
+                      { value: "monthly", label: "Monthly" },
+                    ]}
+                  />
 
                   {form.recur_frequency === "weekly" && (
                     <div className="d-flex flex-wrap gap-1 mb-2">

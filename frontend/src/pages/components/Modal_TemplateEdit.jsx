@@ -5,6 +5,7 @@ import { documentsAPI } from "../../services/api";
 import Editor_Toolbar from "./editors/Editor_Toolbar";
 import Modal from "./Modal";
 import { sortItemsAlphabetically } from "../../utils/displaySort";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const Editor_RichText = lazy(() => import("./editors/Editor_RichText"));
 
@@ -370,7 +371,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 </div>
               </div>
 
-              <select
+              <Dropdown_Custom
                 value={templateType}
                 onChange={(e) => {
                   setTemplateType(e.target.value);
@@ -378,14 +379,8 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 }}
                 className="form-select ui-control-sm"
                 style={{ width: "120px" }}
-                title="Template type"
-              >
-                {sortedTemplateTypes.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+                options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
+              />
 
               <div className="ui-pos-rel">
                 <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">

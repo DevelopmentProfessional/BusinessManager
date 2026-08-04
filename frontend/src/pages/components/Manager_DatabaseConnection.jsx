@@ -2,6 +2,14 @@ import React, { useState, useEffect } from "react";
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon, EyeIcon, EyeSlashIcon, CheckIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
+import Dropdown_Custom from "./Dropdown_Custom";
+
+const ENVIRONMENT_OPTIONS = [{ value: "production", label: "Production" }];
+const SSL_MODE_OPTIONS = [
+  { value: "require", label: "Require" },
+  { value: "prefer", label: "Prefer" },
+  { value: "disable", label: "Disable" },
+];
 
 export default function Manager_DatabaseConnection() {
   const [connections, setConnections] = useState([]);
@@ -252,11 +260,16 @@ export default function Manager_DatabaseConnection() {
 
                     {/* Environment */}
                     <div className="col-md-6">
-                      <div className="form-floating">
-                        <select id="conn_environment" className="form-select ui-control-sm" value={formData.environment} onChange={(e) => setFormData({ ...formData, environment: e.target.value })} required>
-                          <option value="production">Production</option>
-                        </select>
-                        <label htmlFor="conn_environment">Environment *</label>
+                      <div>
+                        <label htmlFor="conn_environment" className="form-label ui-form-label-sm">Environment *</label>
+                        <Dropdown_Custom
+                          id="conn_environment"
+                          className="form-select ui-control-sm"
+                          value={formData.environment}
+                          onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                          options={ENVIRONMENT_OPTIONS}
+                          required
+                        />
                       </div>
                     </div>
 
@@ -302,13 +315,15 @@ export default function Manager_DatabaseConnection() {
 
                     {/* SSL Mode */}
                     <div className="col-md-6">
-                      <div className="form-floating">
-                        <select id="conn_ssl_mode" className="form-select ui-control-sm" value={formData.ssl_mode} onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}>
-                          <option value="require">Require</option>
-                          <option value="prefer">Prefer</option>
-                          <option value="disable">Disable</option>
-                        </select>
-                        <label htmlFor="conn_ssl_mode">SSL Mode</label>
+                      <div>
+                        <label htmlFor="conn_ssl_mode" className="form-label ui-form-label-sm">SSL Mode</label>
+                        <Dropdown_Custom
+                          id="conn_ssl_mode"
+                          className="form-select ui-control-sm"
+                          value={formData.ssl_mode}
+                          onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}
+                          options={SSL_MODE_OPTIONS}
+                        />
                       </div>
                     </div>
 

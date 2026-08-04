@@ -23,6 +23,7 @@ import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
@@ -125,12 +126,18 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
               ))}
             </div>
             {/* Row 2: Time filter */}
-            <select value={requestTimeFilter} onChange={(e) => setRequestTimeFilter(e.target.value)} className="form-select form-select-sm rounded-pill" style={{ width: "fit-content" }}>
-              <option value="all">All Time</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-            </select>
+            <Dropdown_Custom
+              value={requestTimeFilter}
+              onChange={(e) => setRequestTimeFilter(e.target.value)}
+              className="form-select form-select-sm rounded-pill"
+              style={{ width: "fit-content" }}
+              options={[
+                { value: "all", label: "All Time" },
+                { value: "7d", label: "Last 7 Days" },
+                { value: "30d", label: "Last 30 Days" },
+                { value: "90d", label: "Last 90 Days" },
+              ]}
+            />
           </div>
           <div className="component-footer-center">
             <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">

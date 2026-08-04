@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import Manager_DatabaseConnection from "./Manager_DatabaseConnection";
 import Footer_Settings from "./Footer_Settings";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const Panel_Database = ({
   isMobile,
@@ -55,14 +56,15 @@ const Panel_Database = ({
           <label className="flex font-medium items-center mb-1 text-sm">
             Select Table <HelpIcon id="select-table" text="Choose which database table to import data into" />
           </label>
-          <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)} className="form-select ui-control-sm">
-            <option value="">-- Select a table --</option>
-            {availableTables.map((t) => (
-              <option key={t.name} value={t.name}>
-                {t.display_name}
-              </option>
-            ))}
-          </select>
+          <Dropdown_Custom
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
+            className="form-select ui-control-sm"
+            options={[
+              { value: "", label: "-- Select a table --" },
+              ...availableTables.map((t) => ({ value: t.name, label: t.display_name })),
+            ]}
+          />
         </div>
 
         {selectedTable && tableColumns.length > 0 && (
@@ -114,16 +116,17 @@ const Panel_Database = ({
                     {header}
                   </span>
                   <span className="text-muted">→</span>
-                  <select value={columnMapping[header] || ""} onChange={(e) => handleColumnMappingChange(header, e.target.value)} className="flex-1 form-select form-select-sm">
-                    <option value="">-- Skip --</option>
-                    {tableColumns
-                      .filter((col) => !col.auto_generated)
-                      .map((col) => (
-                        <option key={col.name} value={col.name}>
-                          {col.display_name}
-                        </option>
-                      ))}
-                  </select>
+                  <Dropdown_Custom
+                    value={columnMapping[header] || ""}
+                    onChange={(e) => handleColumnMappingChange(header, e.target.value)}
+                    className="flex-1 form-select form-select-sm"
+                    options={[
+                      { value: "", label: "-- Skip --" },
+                      ...tableColumns
+                        .filter((col) => !col.auto_generated)
+                        .map((col) => ({ value: col.name, label: col.display_name })),
+                    ]}
+                  />
                 </div>
               ))}
             </div>

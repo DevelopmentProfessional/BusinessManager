@@ -590,14 +590,14 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                 <input type="number" min="0" step="1" className="form-control ui-control-sm" value={addon.default_quantity} onChange={(e) => updateServiceAddonRow(index, "default_quantity", e.target.value)} />
                               </td>
                               <td>
-                                <select className="form-select ui-control-sm" value={addon.linked_inventory_id || ""} onChange={(e) => updateServiceAddonRow(index, "linked_inventory_id", e.target.value)}>
-                                  <option value="">None</option>
-                                  {resourceItems.map((inv) => (
-                                    <option key={inv.id} value={inv.id}>
-                                      {inv.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  value={addon.linked_inventory_id || ""}
+                                  onChange={(e) => updateServiceAddonRow(index, "linked_inventory_id", e.target.value)}
+                                  options={[{ value: "", label: "None" }, ...resourceItems.map((inv) => ({ value: inv.id, label: inv.name }))]}
+                                  placeholder="Linked resource"
+                                  closeOnSelect
+                                />
                               </td>
                               <td>
                                 <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={addon.consume_quantity_per_unit || 0} onChange={(e) => updateServiceAddonRow(index, "consume_quantity_per_unit", e.target.value)} />
@@ -875,16 +875,19 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
             {/* Sticky add row */}
             <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
               <div className="ui-flex-center-gap-2">
-                <select className="flex-grow-1 form-select form-select-sm" value={newEmployee.user_id} onChange={(e) => setNewEmployee({ user_id: e.target.value })}>
-                  <option value="">— Select employee —</option>
-                  {employees
-                    .filter((e) => e.is_active && !linkedEmployeeIds.has(e.id))
-                    .map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.first_name} {e.last_name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  className="flex-grow-1 ui-control-sm"
+                  value={newEmployee.user_id}
+                  onChange={(e) => setNewEmployee({ user_id: e.target.value })}
+                  options={[
+                    { value: "", label: "— Select employee —" },
+                    ...employees
+                      .filter((employeeOption) => employeeOption.is_active && !linkedEmployeeIds.has(employeeOption.id))
+                      .map((employeeOption) => ({ value: employeeOption.id, label: `${employeeOption.first_name} ${employeeOption.last_name}` })),
+                  ]}
+                  placeholder="Select employee"
+                  closeOnSelect
+                />
                 <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddEmployee}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>

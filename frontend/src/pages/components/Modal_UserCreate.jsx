@@ -22,6 +22,7 @@
 import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser, onSubmit, loading, roles }) {
   return (
@@ -57,13 +58,7 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
                 <label htmlFor="createUserLastName">Last Name</label>
               </div>
               <div className="form-floating mb-3">
-                <select id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select ui-control-sm">
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
+                <Dropdown_Custom id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select ui-control-sm" options={roles.map((role) => ({ value: role, label: role }))} />
                 <label htmlFor="createUserRole">Role</label>
               </div>
             </form>

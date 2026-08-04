@@ -45,6 +45,7 @@ import Footer_Actions from "./Footer_Actions";
 import Scanner_Barcode from "./Scanner_Barcode";
 import Widget_Camera from "./Widget_Camera";
 import Modal_BulkImport from "./Modal_ImportBulk";
+import Dropdown_Custom from "./Dropdown_Custom";
 import cacheService from "../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../services/api";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
@@ -743,16 +744,20 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
             {!isLocation && (
               <div className="flex-grow-1 mb-0">
                 <div className="align-items-center d-flex gap-2 mb-1">
-                  <div className="flex-grow-1 form-floating">
-                    <select id="category" name="category" value={formData.category} onChange={handleChange} className="form-select ui-control-sm">
-                      <option value="">— None —</option>
-                      {itemCategories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="category">Category</label>
+                  <div className="flex-grow-1">
+                    <label htmlFor="category" className="form-label ui-form-label-sm">
+                      Category
+                    </label>
+                    <Dropdown_Custom
+                      id="category"
+                      name="category"
+                      className="ui-control-sm"
+                      value={formData.category}
+                      onChange={handleChange}
+                      options={[{ value: "", label: "— None —" }, ...itemCategories.map((cat) => ({ value: cat.name, label: cat.name }))]}
+                      placeholder="Select category"
+                      closeOnSelect
+                    />
                   </div>
                   <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-outline-secondary btn-sm flex-shrink-0" style={{ fontSize: "1rem" }}>
                     {showCategoryManager ? "×" : "+"}
@@ -830,25 +835,23 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               <div className="align-items-start d-flex gap-2 mb-2">
                 <div className="flex-grow-1">
                   <div className="ui-flex-center-gap-2">
-                    <div className="flex-grow-1 form-floating mb-0">
-                      <select
+                    <div className="flex-grow-1 mb-0">
+                      <label htmlFor="location" className="form-label ui-form-label-sm">
+                        Location
+                      </label>
+                      <Dropdown_Custom
                         id="location"
                         name="location"
+                        className="ui-control-sm"
                         value={showNewLocationInput ? "" : formData.location}
                         onChange={(e) => {
                           setShowNewLocationInput(false);
                           handleChange(e);
                         }}
-                        className="form-select ui-control-sm"
-                      >
-                        <option value="">Select location</option>
-                        {availableLocations.map((location) => (
-                          <option key={location} value={location}>
-                            {location}
-                          </option>
-                        ))}
-                      </select>
-                      <label htmlFor="location">Location</label>
+                        options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
+                        placeholder="Select location"
+                        closeOnSelect
+                      />
                     </div>
                     <button
                       type="button"
@@ -870,16 +873,20 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </div>
                 </div>
 
-                <div className="flex-grow-1 form-floating mb-0">
-                  <select id="supplier_id" name="supplier_id" value={formData.supplier_id} onChange={handleChange} className="form-select ui-control-sm">
-                    <option value="">No supplier</option>
-                    {availableSuppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </option>
-                    ))}
-                  </select>
-                  <label htmlFor="supplier_id">Supplier (optional)</label>
+                <div className="flex-grow-1 mb-0">
+                  <label htmlFor="supplier_id" className="form-label ui-form-label-sm">
+                    Supplier (optional)
+                  </label>
+                  <Dropdown_Custom
+                    id="supplier_id"
+                    name="supplier_id"
+                    className="ui-control-sm"
+                    value={formData.supplier_id}
+                    onChange={handleChange}
+                    options={[{ value: "", label: "No supplier" }, ...availableSuppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))]}
+                    placeholder="Select supplier"
+                    closeOnSelect
+                  />
                 </div>
               </div>
 
@@ -904,16 +911,20 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* Linked Service - only for RESOURCE or ASSET types */}
           {(formData.type === "RESOURCE" || formData.type === "ASSET") && (
-            <div className="form-floating ui-form-floating-mb2">
-              <select id="service_id" name="service_id" value={formData.service_id} onChange={handleChange} className="form-select ui-control-sm">
-                <option value="">No linked service</option>
-                {availableServices.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.name}
-                  </option>
-                ))}
-              </select>
-              <label htmlFor="service_id">Linked Service (optional)</label>
+            <div className="ui-form-floating-mb2">
+              <label htmlFor="service_id" className="form-label ui-form-label-sm">
+                Linked Service (optional)
+              </label>
+              <Dropdown_Custom
+                id="service_id"
+                name="service_id"
+                className="ui-control-sm"
+                value={formData.service_id}
+                onChange={handleChange}
+                options={[{ value: "", label: "No linked service" }, ...availableServices.map((service) => ({ value: service.id, label: service.name }))]}
+                placeholder="Select linked service"
+                closeOnSelect
+              />
             </div>
           )}
 
@@ -921,12 +932,23 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* Date of Purchase / Date of Sale */}
           <div className="d-flex gap-2 mb-2">
-            <div className="flex-grow-1 form-floating">
-              <select id="cost_type" name="cost_type" value={formData.cost_type} onChange={handleChange} className="form-select ui-control-sm">
-                <option value="one_time">One-Time Purchase</option>
-                <option value="recurring">Recurring Rental</option>
-              </select>
-              <label htmlFor="cost_type">Cost Type</label>
+            <div className="flex-grow-1">
+              <label htmlFor="cost_type" className="form-label ui-form-label-sm">
+                Cost Type
+              </label>
+              <Dropdown_Custom
+                id="cost_type"
+                name="cost_type"
+                className="ui-control-sm"
+                value={formData.cost_type}
+                onChange={handleChange}
+                options={[
+                  { value: "one_time", label: "One-Time Purchase" },
+                  { value: "recurring", label: "Recurring Rental" },
+                ]}
+                placeholder="Cost type"
+                closeOnSelect
+              />
             </div>
             <div className="flex-grow-1 form-floating">
               <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
@@ -953,10 +975,18 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               {/* Price type */}
               <div className="align-items-center d-flex gap-2 mb-2">
                 <label className="mb-0 ui-small-muted">Pricing:</label>
-                <select className="form-select form-select-sm w-auto" value={bundlePriceType} onChange={(e) => setBundlePriceType(e.target.value)}>
-                  <option value="fixed">Fixed price (use Price above)</option>
-                  <option value="percentage">% of component total</option>
-                </select>
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  style={{ width: 260 }}
+                  value={bundlePriceType}
+                  onChange={(e) => setBundlePriceType(e.target.value)}
+                  options={[
+                    { value: "fixed", label: "Fixed price (use Price above)" },
+                    { value: "percentage", label: "% of component total" },
+                  ]}
+                  placeholder="Pricing"
+                  closeOnSelect
+                />
                 {bundlePriceType === "percentage" && (
                   <div className="ui-flex-center-gap-1">
                     <input type="number" min="1" max="500" className="form-control ui-control-sm" style={{ width: 70 }} value={bundlePricePercentage} onChange={(e) => setBundlePricePercentage(e.target.value)} />
@@ -993,16 +1023,20 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               <div className="ui-flex-center-gap-2">
                 <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
                 <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
-                <select className="form-select ui-control-sm" style={{ maxWidth: 160 }} value={bundleNewProductId} onChange={(e) => setBundleNewProductId(e.target.value)}>
-                  <option value="">Select…</option>
-                  {allProducts
-                    .filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  style={{ maxWidth: 220 }}
+                  value={bundleNewProductId}
+                  onChange={(e) => setBundleNewProductId(e.target.value)}
+                  options={[
+                    { value: "", label: "Select…" },
+                    ...allProducts
+                      .filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
+                      .map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                  placeholder="Select product"
+                  closeOnSelect
+                />
                 <button
                   type="button"
                   className="btn btn-sm btn-warning flex-shrink-0"
@@ -1077,16 +1111,20 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               {/* Add product row */}
               <div className="ui-flex-center-gap-2">
                 <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
-                <select className="form-select ui-control-sm" style={{ maxWidth: 180 }} value={mixNewProductId} onChange={(e) => setMixNewProductId(e.target.value)}>
-                  <option value="">Select…</option>
-                  {allProducts
-                    .filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  style={{ maxWidth: 220 }}
+                  value={mixNewProductId}
+                  onChange={(e) => setMixNewProductId(e.target.value)}
+                  options={[
+                    { value: "", label: "Select…" },
+                    ...allProducts
+                      .filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
+                      .map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                  placeholder="Select product"
+                  closeOnSelect
+                />
                 <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
                 <button
                   type="button"
