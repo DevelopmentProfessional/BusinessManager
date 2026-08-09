@@ -41,6 +41,8 @@
 #   2026-06-13 | GitHub Copilot | Extended required schema artifact checks with schedule columns to prevent stale version-marker skips
 #   2026-06-13 | GitHub Copilot | Added sale_transaction.discount_amount schema checks/migration to fix schedule delete failures
 #   2026-07-28 | GitHub Copilot | Added Stripe test/live mode app_settings migrations with legacy key backfill
+#   2026-08-09 | GitHub Copilot | Required service and schedule add-on columns in schema drift checks
+#   2026-08-09 | GitHub Copilot | Moved add-on column repair ahead of schema fast-path checks
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -70,8 +72,8 @@ elif DATABASE_URL.startswith("postgresql://"):
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
-# Bump this string whenever you add a new migration function
-CURRENT_SCHEMA_VERSION = "2026.07.28.1"
+# Bump this string whenever you add a new migration function or required artifact
+CURRENT_SCHEMA_VERSION = "2026.08.09.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -134,6 +136,14 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='schedule' AND column_name='send_reminder'"
             )).fetchone()
+            service_addons_json_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='service' AND column_name='addons_json'"
+            )).fetchone()
+            schedule_service_addons_json_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='service_addons_json'"
+            )).fetchone()
             sale_transaction_discount_amount_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='discount_amount'"
@@ -161,6 +171,8 @@ def _required_schema_artifacts_present() -> bool:
                 and schedule_recurrence_frequency_column is not None
                 and schedule_parent_schedule_id_column is not None
                 and schedule_send_reminder_column is not None
+                and service_addons_json_column is not None
+                and schedule_service_addons_json_column is not None
                 and sale_transaction_discount_amount_column is not None
                 and sale_transaction_inventory_consumed_column is not None
                 and sale_transaction_receipt_emailed_column is not None
@@ -1369,6 +1381,10 @@ def create_db_and_tables():
 
     SQLModel.metadata.create_all(engine)
 
+    # These columns are read by core service queries, so repair them before any
+    # version fast path or unrelated migration can prevent the API from starting.
+    _ensure_service_and_schedule_addons_if_needed()
+
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():
         print(f"Schema already at {CURRENT_SCHEMA_VERSION}, skipping migrations.")
@@ -1433,7 +1449,6 @@ def create_db_and_tables():
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_service_image_url_if_needed()
-    _ensure_service_and_schedule_addons_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
     _ensure_asset_unit_employee_column_if_needed()
     _ensure_asset_unit_location_column_if_needed()
