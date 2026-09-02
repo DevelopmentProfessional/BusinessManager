@@ -198,7 +198,7 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     """Get user permissions as list of strings (including inherited role permissions)"""
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
-        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'reports', 'admin']
+        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'sales', 'employees', 'schedule', 'attendance', 'documents', 'templates', 'tasks', 'leave', 'insurance', 'reports', 'settings', 'admin']
         all_permissions = ['read', 'read_all', 'write', 'write_self_only', 'write_all', 'delete', 'admin', 'view_all', 'approve_payments', 'initiate_refunds']
         admin_permissions = []
         for page in all_pages:
