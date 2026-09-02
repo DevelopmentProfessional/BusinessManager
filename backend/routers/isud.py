@@ -37,6 +37,7 @@
 #   2026-06-11 | GitHub Copilot | Auto-create default asset unit on ASSET inventory insert; honor provided asset_units when supplied
 #   2026-07-25 | GitHub Copilot | Aligned schedule payment update behavior with schedule write access
 #   2026-07-26 | GitHub Copilot | Added manager-gated schedule refund initiation endpoint and protected schedule paid-state transitions
+#   2026-09-02 | GitHub Copilot | Scoped schedule list reads to own/attended appointments unless view-all access is granted
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -977,6 +978,37 @@ def _coerce_filter_value(model_class: Type[SQLModel], column: str, raw_value: st
 
     return raw_value
 
+
+def _can_view_all_schedules(current_user: User, session: Session) -> bool:
+    if current_user.role == UserRole.ADMIN:
+        return True
+
+    permissions = set(get_user_permissions_list(current_user, session))
+    return any(
+        permission in permissions
+        for permission in ("schedule:view_all", "schedule:write_all", "schedule:admin")
+    )
+
+
+def _apply_schedule_visibility_scope(stmt, current_user: User, session: Session):
+    if _can_view_all_schedules(current_user, session):
+        return stmt
+
+    attended_schedule_ids = sql_select(ScheduleAttendee.schedule_id).where(
+        ScheduleAttendee.user_id == current_user.id
+    )
+    if current_user.company_id:
+        attended_schedule_ids = attended_schedule_ids.where(
+            ScheduleAttendee.company_id == current_user.company_id
+        )
+
+    return stmt.where(
+        or_(
+            Schedule.employee_id == current_user.id,
+            Schedule.id.in_(attended_schedule_ids),
+        )
+    )
+
 # ─── [8] INSERT ENDPOINTS ──────────────────────────────────────────────────────
 @router.post("/{table_name}/insert")
 async def insert_with_file(
@@ -1349,6 +1381,8 @@ async def update_by_id(
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+    if table_name.lower() in ("schedule", "schedules"):
+        stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
@@ -1518,6 +1552,9 @@ async def select(
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
 
+    if table_name.lower() in ("schedule", "schedules"):
+        stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
+
     if any(k == "id" for k, _ in user_filters):
         record = session.exec(stmt).first()
         if not record:
@@ -1541,6 +1578,8 @@ async def select_by_id(
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+    if table_name.lower() in ("schedule", "schedules"):
+        stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
@@ -1581,6 +1620,8 @@ async def update(
     stmt = stmt.where(and_(*conditions))
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+    if table_name.lower() in ("schedule", "schedules"):
+        stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
 
     update_many = not any(k == "id" for k, _ in raw_filters)
 
@@ -1752,6 +1793,8 @@ async def delete_by_id(
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
+    if table_name.lower() in ("schedule", "schedules"):
+        stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
