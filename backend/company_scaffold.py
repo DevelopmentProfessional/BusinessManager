@@ -459,6 +459,7 @@ def _seed_roles_and_permissions(conn, company_id: str) -> tuple[int, int, str | 
             "permissions": [
                 ("clients", "read"),
                 ("inventory", "read"),
+                ("sales", "read"), ("sales", "write"),
                 ("services", "read"),
                 ("schedule", "read"),
                 ("reports", "read"),

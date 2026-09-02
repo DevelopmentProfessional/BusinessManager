@@ -951,7 +951,7 @@ export default function Employees() {
   // ─── [9b] SHARED CONSTANTS & PAYROLL PERIOD HELPERS ────────────────────────
   // pages/permissions/roles are used by both the permission and role modals.
   const pages = ["clients", "inventory", "sales", "services", "employees", "schedule", "documents", "templates", "insurance", "tasks", "leave", "reports", "admin"];
-  const permissions = ["read", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"]; // Keep in sync with backend PermissionType enum
+  const permissions = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"]; // Keep in sync with backend PermissionType enum
   const roles = ["admin", "manager", "employee", "viewer"];
 
   // Helper function to determine current pay period based on pay_frequency

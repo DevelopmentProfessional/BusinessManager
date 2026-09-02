@@ -302,7 +302,7 @@ function App() {
           <Route
             path="/documents"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="documents:read">
                 <Layout>
                   <PageErrorBoundary>
                     <Documents />

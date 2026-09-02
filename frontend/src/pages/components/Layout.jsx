@@ -17,7 +17,7 @@ const allNavigation = [
   { name: "Employees", href: "/employees", icon: UsersIcon, permission: "employees:read" },
   { name: "Documents", href: "/documents", icon: DocumentIcon, permission: "documents:read" },
   { name: "Services", href: "/services", icon: SparklesIcon, permission: "services:read" },
-  { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "services:read" },
+  { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "sales:read" },
   { name: "Schedule", href: "/schedule", icon: CalendarDaysIcon, permission: "schedule:read" },
 ];
 

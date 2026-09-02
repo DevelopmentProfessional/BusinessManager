@@ -45,3 +45,16 @@ def test_schedule_admin_role_leaves_query_unscoped(monkeypatch):
     scoped_stmt = isud._apply_schedule_visibility_scope(stmt, current_user, object())
 
     assert scoped_stmt is stmt
+
+
+def test_sales_supporting_tables_resolve_to_sales_permission_page():
+    assert "sales" in isud._resolve_permission_pages("sale_transaction")
+    assert "sales" in isud._resolve_permission_pages("sale_transaction_item")
+    assert "sales" in isud._resolve_permission_pages("discount_rule")
+
+
+def test_shared_supporting_tables_keep_owning_page_aliases():
+    assert "clients" in isud._resolve_permission_pages("client_membership")
+    assert "sales" in isud._resolve_permission_pages("client_membership")
+    assert "documents" in isud._resolve_permission_pages("document_template")
+    assert "templates" in isud._resolve_permission_pages("document_template")

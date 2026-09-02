@@ -570,6 +570,19 @@ def _resolve_permission_pages(table_name: str) -> set[str]:
         pages.add("employees")
     if base in {"leave_request", "leave_requests"}:
         pages.add("leave")
+    if base in {"sale_transaction", "sale_transactions", "sale_transaction_item", "sale_transaction_items", "discount_rule", "discount_rules"}:
+        pages.add("sales")
+    if base in {"membership", "memberships", "client_membership", "client_memberships"}:
+        pages.add("clients")
+        pages.add("sales")
+    if base in {"document_template", "document_templates"}:
+        pages.add("templates")
+        pages.add("documents")
+    if base in {"insurance_plan", "insurance_plans"}:
+        pages.add("insurance")
+        pages.add("employees")
+    if base in {"app_settings", "settings"}:
+        pages.add("settings")
     return {p for p in pages if p}
 
 

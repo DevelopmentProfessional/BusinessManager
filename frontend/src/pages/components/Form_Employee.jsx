@@ -83,7 +83,7 @@ const PAGE_OPTION_GROUPS = [
     ],
   },
 ];
-const PERMISSION_TYPES = ["read", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"];
+const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"];
 
 const PAY_SCHEDULE_DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
