@@ -392,10 +392,10 @@ footer[aria-label="Actions"] {
 }
 
 /* Page footers — every toolbar button same width (TextSize sets --app-btn-width) */
-.app-footer-search .btn:not(.btn-close):not(.btn-unstyled),
-.schedule-footer .btn:not(.btn-close),
-.profile-footer-nav .btn:not(.btn-close):not(.btn-unstyled),
-footer[aria-label="Actions"] .btn:not(.btn-close) {
+.app-footer-search .btn.app-action-btn.rounded-circle,
+.schedule-footer .btn.app-action-btn.rounded-circle,
+.profile-footer-nav .btn.app-action-btn.rounded-circle,
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   max-width: var(--app-btn-width) !important;
@@ -404,10 +404,24 @@ footer[aria-label="Actions"] .btn:not(.btn-close) {
   overflow: hidden;
 }
 
-.app-footer-search .btn .text-nowrap,
-.schedule-footer .btn .text-nowrap,
-.profile-footer-nav .btn .text-nowrap,
-footer[aria-label="Actions"] .btn .text-nowrap {
+.app-footer-search .btn.app-action-btn.rounded-pill,
+.schedule-footer .btn.app-action-btn.rounded-pill,
+.profile-footer-nav .btn.app-action-btn.rounded-pill,
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: none !important;
+  flex: 0 1 auto !important;
+  margin: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  overflow: visible;
+}
+
+.app-footer-search .btn.app-action-btn .text-nowrap,
+.schedule-footer .btn.app-action-btn .text-nowrap,
+.profile-footer-nav .btn.app-action-btn .text-nowrap,
+footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -419,16 +433,8 @@ footer[aria-label="Actions"] .btn .text-nowrap {
    GLOBAL BUTTON STYLES
    All action buttons — dimensions from :root (TextSize + training/compact)
    ======================================== */
-.btn,
-button.btn-primary,
-button.btn-secondary,
-button.btn-success,
-button.btn-accent,
-input[type="submit"].btn-primary,
-input[type="submit"].btn-secondary {
+.btn.app-action-btn {
   height: var(--app-btn-height) !important;
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
   min-height: var(--app-btn-height) !important;
   max-height: var(--app-btn-height) !important;
   padding-top: 0 !important;
@@ -440,6 +446,18 @@ input[type="submit"].btn-secondary {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+
+.btn.app-action-btn.rounded-circle {
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: var(--app-btn-width) !important;
+}
+
+.btn.app-action-btn.rounded-pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: none !important;
 }
 
 /* Bottom-right navigation menu toggle (Layout.jsx) — same height as footer buttons */
@@ -479,17 +497,13 @@ button,
 }
 
 /* Compact mode: any icon-bearing action button should render icon-only. */
-body:not(.training-mode) button:has(svg, img, i.bi, .app-icon),
-body:not(.training-mode) .btn:has(svg, img, i.bi, .app-icon),
-body:not(.training-mode) [role="button"]:has(svg, img, i.bi, .app-icon) {
+body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon) {
   font-size: 0 !important;
   line-height: 1 !important;
 }
 
 /* Hide common text wrappers while preserving direct icon nodes and badges. */
-body:not(.training-mode) button:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden),
-body:not(.training-mode) .btn:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden),
-body:not(.training-mode) [role="button"]:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden) {
+body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden) {
   display: none !important;
 }
 
@@ -527,6 +541,16 @@ div[role="combobox"] {
   font-size: var(--app-input-font-size) !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+}
+
+/* Keep Bootstrap floating labels readable; compact global input sizing makes these overlap. */
+.form-floating > .form-control,
+.form-floating > .form-select {
+  height: calc(3.5rem + 2px) !important;
+  min-height: calc(3.5rem + 2px) !important;
+  padding-top: 1.625rem !important;
+  padding-bottom: 0.625rem !important;
+  font-size: 1rem !important;
 }
 
 /* Footer chrome — bottom inset matches .app-nav-bottom-toggle (same --app-footer-padding-y) */
