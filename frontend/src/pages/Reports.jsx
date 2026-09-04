@@ -405,6 +405,7 @@ export default function Reports() {
   const [kpiVisibility, setKpiVisibility] = useState({ Total: true, "Avg / Period": true, Peak: true, Periods: true });
   const [eventTypeMenuOpen, setEventTypeMenuOpen] = useState(false);
   const [showReportControls, setShowReportControls] = useState(false);
+  const [employeeActivitySections, setEmployeeActivitySections] = useState({ services: true, sales: true });
   const eventTypeRef = useRef(null);
 
   // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
@@ -867,7 +868,7 @@ export default function Reports() {
       if (!totals) return null;
       return [
         { label: "Work Days", value: totals.work_days || 0 },
-        { label: "Appointments", value: totals.appointments || 0 },
+        { label: "Services", value: totals.appointments || 0 },
         { label: "Sales", value: totals.sales || 0 },
         { label: "Sales Total", value: `$${Number(totals.sales_total || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
       ];
@@ -1020,27 +1021,26 @@ export default function Reports() {
             )}
 
             {isEmployeeActivityReport ? (
-              <div id="report-export-section" className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 overflow-auto rounded-lg" style={{ maxHeight: fullScreenMode ? "100%" : "60vh" }}>
+              <div id="report-export-section" className="d-flex flex-column gap-2" style={{ maxHeight: fullScreenMode ? "100%" : "60vh" }}>
                 {reportFilters.employeeId === "all" ? (
-                  <div className="p-3 text-center text-gray-500">Select an employee to view their activity.</div>
+                  <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-3 rounded-lg text-center text-gray-500">Select an employee to view their activity.</div>
                 ) : !reportData?.days?.length ? (
-                  <div className="p-3 text-center text-gray-500">No appointments or sales were recorded in this period.</div>
+                  <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-3 rounded-lg text-center text-gray-500">No services or sales were recorded in this period.</div>
                 ) : (
-                  <table className="mb-0 table table-sm align-middle">
-                    <thead className="bg-white dark:bg-gray-900 sticky-top">
-                      <tr><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Appointments and Services</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Sales</th><th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Daily Total</th></tr>
-                    </thead>
-                    <tbody>
-                      {reportData.days.map((day) => (
-                        <tr key={day.date}>
-                          <td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td>
-                          <td className="dark:text-gray-300 text-gray-700 text-sm">{day.appointments.length ? day.appointments.map((appointment, index) => <div key={`${day.date}-appointment-${index}`}>{appointment.time} {appointment.service} <span className="text-gray-500">({appointment.status})</span></div>) : "-"}</td>
-                          <td className="dark:text-gray-300 text-gray-700 text-sm">{day.sales.length ? day.sales.map((sale, index) => <div key={`${day.date}-sale-${index}`}>{sale.time} {sale.items.join(", ") || "Sale"} <span className="text-gray-500">${sale.total.toFixed(2)}</span></div>) : "-"}</td>
-                          <td className="dark:text-white font-medium text-end text-gray-900 text-sm">${day.sales_total.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <>
+                    <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <button type="button" className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100" onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, services: !sections.services }))} aria-expanded={employeeActivitySections.services}>
+                        <span>Services</span><span className="text-gray-500">Subtotal: {reportData.totals.appointments} {reportData.totals.appointments === 1 ? "service" : "services"}</span>
+                      </button>
+                      {employeeActivitySections.services && <div className="overflow-auto"><table className="mb-0 table table-sm align-middle"><thead className="bg-white dark:bg-gray-900 sticky-top"><tr><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Service</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Status</th></tr></thead><tbody>{reportData.days.flatMap((day) => day.appointments.map((appointment, index) => <tr key={`${day.date}-service-${index}`}><td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.time}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.service}</td><td className="dark:text-gray-300 text-gray-700 text-sm text-capitalize">{appointment.status}</td></tr>))}</tbody></table></div>}
+                    </div>
+                    <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <button type="button" className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100" onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, sales: !sections.sales }))} aria-expanded={employeeActivitySections.sales}>
+                        <span>Sales</span><span className="text-gray-500">Total: ${Number(reportData.totals.sales_total || 0).toFixed(2)}</span>
+                      </button>
+                      {employeeActivitySections.sales && <div className="overflow-auto"><table className="mb-0 table table-sm align-middle"><thead className="bg-white dark:bg-gray-900 sticky-top"><tr><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Items</th><th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th></tr></thead><tbody>{reportData.days.flatMap((day) => day.sales.map((sale, index) => <tr key={`${day.date}-sale-${index}`}><td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{sale.time}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{sale.items.join(", ") || "Sale"}</td><td className="dark:text-white font-medium text-end text-gray-900 text-sm">${sale.total.toFixed(2)}</td></tr>))}</tbody></table></div>}
+                    </div>
+                  </>
                 )}
               </div>
             ) : (
@@ -1134,20 +1134,6 @@ export default function Reports() {
           onSearch={() => {}}
           beforeSearch={
             <div className="align-items-center d-flex flex-wrap gap-2 w-100">
-              <Button_Toolbar
-                icon={showReportControls ? EyeSlashIcon : EyeIcon}
-                label={isTrainingMode ? (showReportControls ? "Hide" : "Show") : ""}
-                onClick={() => {
-                  setShowReportControls((prev) => {
-                    const next = !prev;
-                    if (!next) setEventTypeMenuOpen(false);
-                    return next;
-                  });
-                }}
-                className="btn-outline-secondary"
-                title={showReportControls ? "Hide report controls" : "Show report controls"}
-              />
-
               {showReportControls && (
                 <>
                   <Dropdown_Custom
@@ -1289,6 +1275,19 @@ export default function Reports() {
             {/* Left: Save + Filter */}
             <div className="ui-flex-center-gap-1">
               <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
+              <Button_Toolbar
+                icon={showReportControls ? EyeSlashIcon : EyeIcon}
+                label={isTrainingMode ? (showReportControls ? "Hide" : "Show") : ""}
+                onClick={() => {
+                  setShowReportControls((prev) => {
+                    const next = !prev;
+                    if (!next) setEventTypeMenuOpen(false);
+                    return next;
+                  });
+                }}
+                className="btn-outline-secondary"
+                title={showReportControls ? "Hide report controls" : "Show report controls"}
+              />
               {/* Saved Filters Dropup */}
               <div className="ui-pos-rel">
                 <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
