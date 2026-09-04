@@ -587,7 +587,7 @@ def get_employee_activity_report(
         return {
             "employee": None,
             "days": [],
-            "totals": {"work_days": 0, "appointments": 0, "sales": 0, "sales_total": 0},
+            "totals": {"work_days": 0, "appointments": 0, "services_total": 0, "sales": 0, "sales_total": 0, "total": 0},
         }
 
     employee = session.exec(
@@ -603,7 +603,10 @@ def get_employee_activity_report(
     services = session.exec(
         select(Service).where(Service.company_id == current_user.company_id)
     ).all()
-    service_names = {str(service.id): service.name for service in services}
+    service_details = {
+        str(service.id): {"name": service.name, "amount": float(service.price or 0)}
+        for service in services
+    }
 
     schedules = session.exec(
         select(Schedule).where(
@@ -618,10 +621,11 @@ def get_employee_activity_report(
             continue
         day_key = schedule.appointment_date.date().isoformat()
         day = days.setdefault(day_key, {"date": day_key, "appointments": [], "sales": []})
+        service = service_details.get(str(schedule.service_id), {"name": "Unassigned service", "amount": 0})
         day["appointments"].append({
             "time": schedule.appointment_date.strftime("%H:%M"),
-            "service": service_names.get(str(schedule.service_id), "Unassigned service"),
-            "status": schedule.status,
+            "service": service["name"],
+            "amount": service["amount"],
         })
 
     transactions = session.exec(
@@ -661,6 +665,7 @@ def get_employee_activity_report(
         day["appointments"].sort(key=lambda appointment: appointment["time"])
         day["sales"].sort(key=lambda sale: sale["time"])
         day["appointment_count"] = len(day["appointments"])
+        day["services_total"] = round(sum(appointment["amount"] for appointment in day["appointments"]), 2)
         day["sales_count"] = len(day["sales"])
         day["sales_total"] = round(sum(sale["total"] for sale in day["sales"]), 2)
         ordered_days.append(day)
@@ -674,8 +679,10 @@ def get_employee_activity_report(
         "totals": {
             "work_days": len(ordered_days),
             "appointments": sum(day["appointment_count"] for day in ordered_days),
+            "services_total": round(sum(day["services_total"] for day in ordered_days), 2),
             "sales": sum(day["sales_count"] for day in ordered_days),
             "sales_total": round(sum(day["sales_total"] for day in ordered_days), 2),
+            "total": round(sum(day["services_total"] + day["sales_total"] for day in ordered_days), 2),
         },
     }
 
