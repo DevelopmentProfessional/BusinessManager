@@ -851,6 +851,10 @@ export const reportsAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/sales?${queryParams}`);
   },
+  getEmployeeActivityReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/employee-activity?${queryParams}`);
+  },
   getPayrollReport: (params) => {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/payroll?${queryParams}`);

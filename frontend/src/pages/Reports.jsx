@@ -29,6 +29,7 @@
  *   2026-05-15 | Copilot | Shortened standalone report action labels for compact training-mode layouts
  *   2026-05-26 | GitHub Copilot | Updated Events dropup sizing/icon behavior and refined Financial Controls footer actions
  *   2026-06-13 | GitHub Copilot | Added report controls visibility toggle and normalized report selector dropup behavior
+ *   2026-09-04 | GitHub Copilot | Added persisted employee activity workday report
  * ============================================================
  */
 
@@ -159,6 +160,15 @@ const AVAILABLE_REPORTS = [
     color: "indigo",
     tables: ["user", "schedule", "attendance"],
     chartTypes: ["bar", "line"],
+  },
+  {
+    id: "employee-activity",
+    title: "Employee Activity",
+    description: "Review an employee's worked days, services, and sales",
+    icon: CalendarIcon,
+    color: "teal",
+    tables: ["user", "schedule", "sale_transaction"],
+    chartTypes: ["bar"],
   },
   {
     id: "attendance",
@@ -335,7 +345,7 @@ const FILTER_CONFIG = {
   },
   employee: {
     key: "employeeId",
-    condition: (reportId) => ["appointments", "revenue", "attendance", "payroll", "tasks"].includes(reportId),
+    condition: (reportId) => ["appointments", "revenue", "attendance", "payroll", "tasks", "employee-activity"].includes(reportId),
     dataSource: "employees",
     labelKey: (e) => `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
     allLabel: "All Employees",
@@ -351,6 +361,7 @@ const REPORT_HANDLERS = {
   services: { api: (p) => reportsAPI.getServicesReport(p), transform: "transformServicesData" },
   inventory: { api: () => reportsAPI.getInventoryReport(), transform: "transformInventoryData" },
   employees: { api: (p) => reportsAPI.getEmployeesReport(p), transform: "transformEmployeesData" },
+  "employee-activity": { api: (p) => reportsAPI.getEmployeeActivityReport(p), transform: "transformEmployeeActivityData" },
   attendance: { api: (p) => reportsAPI.getAttendanceReport(p), transform: "transformAttendanceData" },
   sales: { api: (p) => reportsAPI.getSalesReport(p), transform: "transformSalesData" },
   payroll: { api: (p) => reportsAPI.getPayrollReport(p), transform: "transformPayrollData" },
@@ -462,6 +473,7 @@ export default function Reports() {
           transformServicesData,
           transformInventoryData,
           transformEmployeesData,
+          transformEmployeeActivityData,
           transformAttendanceData,
           transformSalesData,
           transformPayrollData,
@@ -701,6 +713,8 @@ export default function Reports() {
     ],
   });
 
+  const transformEmployeeActivityData = (data) => data;
+
   const transformAttendanceData = (data, chartType) => ({
     labels: data.labels,
     datasets: [
@@ -821,8 +835,9 @@ export default function Reports() {
 
   const canUseStatus = selectedReport?.id === "appointments";
   const canUseEventType = selectedReport?.id === "appointments";
+  const isEmployeeActivityReport = selectedReport?.id === "employee-activity";
   const canUseService = ["appointments", "services", "revenue"].includes(selectedReport?.id || "");
-  const canUseEmployee = ["appointments", "employees", "attendance"].includes(selectedReport?.id || "");
+  const canUseEmployee = ["appointments", "employees", "attendance", "employee-activity"].includes(selectedReport?.id || "");
 
   const handleEventTypeKeyDown = (e) => {
     if (!eventTypeMenuOpen) {
@@ -847,6 +862,16 @@ export default function Reports() {
 
   // Derive KPI summary cards from current chart data
   const kpis = useMemo(() => {
+    if (isEmployeeActivityReport) {
+      const totals = reportData?.totals;
+      if (!totals) return null;
+      return [
+        { label: "Work Days", value: totals.work_days || 0 },
+        { label: "Appointments", value: totals.appointments || 0 },
+        { label: "Sales", value: totals.sales || 0 },
+        { label: "Sales Total", value: `$${Number(totals.sales_total || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+      ];
+    }
     const values = reportData?.datasets?.[0]?.data;
     if (!values?.length) return null;
     const nums = values.map(Number);
@@ -863,7 +888,7 @@ export default function Reports() {
       { label: "Peak", value: fmt(maxVal), sub: labels[maxIdx] || "" },
       { label: "Periods", value: nums.length },
     ];
-  }, [reportData]);
+  }, [isEmployeeActivityReport, reportData]);
 
   // ─── 10 PDF EXPORT HANDLER ───────────────────────────────────────────────
   const handleExportPdf = () => {
@@ -994,25 +1019,38 @@ export default function Reports() {
               </div>
             )}
 
-            <div
-              id="report-export-section"
-              className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-0 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1"}
-            >
-              <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
-                <div className="end-0 position-absolute top-0" style={{ zIndex: 12 }}>
-                  <button
-                    type="button"
-                    onClick={() => setFullScreenMode((v) => !v)}
-                    className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`}
-                    style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
-                    title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
-                  >
-                    Full
-                  </button>
-                </div>
-                <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
+            {isEmployeeActivityReport ? (
+              <div id="report-export-section" className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 overflow-auto rounded-lg" style={{ maxHeight: fullScreenMode ? "100%" : "60vh" }}>
+                {reportFilters.employeeId === "all" ? (
+                  <div className="p-3 text-center text-gray-500">Select an employee to view their activity.</div>
+                ) : !reportData?.days?.length ? (
+                  <div className="p-3 text-center text-gray-500">No appointments or sales were recorded in this period.</div>
+                ) : (
+                  <table className="mb-0 table table-sm align-middle">
+                    <thead className="bg-white dark:bg-gray-900 sticky-top">
+                      <tr><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Appointments and Services</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Sales</th><th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Daily Total</th></tr>
+                    </thead>
+                    <tbody>
+                      {reportData.days.map((day) => (
+                        <tr key={day.date}>
+                          <td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td>
+                          <td className="dark:text-gray-300 text-gray-700 text-sm">{day.appointments.length ? day.appointments.map((appointment, index) => <div key={`${day.date}-appointment-${index}`}>{appointment.time} {appointment.service} <span className="text-gray-500">({appointment.status})</span></div>) : "-"}</td>
+                          <td className="dark:text-gray-300 text-gray-700 text-sm">{day.sales.length ? day.sales.map((sale, index) => <div key={`${day.date}-sale-${index}`}>{sale.time} {sale.items.join(", ") || "Sale"} <span className="text-gray-500">${sale.total.toFixed(2)}</span></div>) : "-"}</td>
+                          <td className="dark:text-white font-medium text-end text-gray-900 text-sm">${day.sales_total.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
-            </div>
+            ) : (
+              <div id="report-export-section" className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-0 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1"}>
+                <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
+                  <div className="end-0 position-absolute top-0" style={{ zIndex: 12 }}><button type="button" onClick={() => setFullScreenMode((v) => !v)} className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`} style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}>Full</button></div>
+                  <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
+                </div>
+              </div>
+            )}
 
             {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
             {!fullScreenMode && (
@@ -1032,7 +1070,7 @@ export default function Reports() {
                   <ChevronLeftIcon className="ui-icon-4" />
                 </button>
 
-                {reportData?.labels?.length > 0 && (
+                {!isEmployeeActivityReport && reportData?.labels?.length > 0 && (
                   <button type="button" onClick={() => setShowDataTable((v) => !v)} className="align-items-center btn btn-outline-secondary d-flex gap-1" style={{ fontSize: `var(--app-btn-label-font-size, 0.875rem)` }}>
                     <ChevronUpDownIcon className="ui-icon-4" />
                     {showDataTable ? "Hide" : "Show"}
@@ -1057,7 +1095,7 @@ export default function Reports() {
                 </button>
               </div>
             )}
-            {!fullScreenMode && showDataTable && reportData?.labels?.length > 0 && (
+            {!fullScreenMode && !isEmployeeActivityReport && showDataTable && reportData?.labels?.length > 0 && (
               <div className="border border-gray-200 dark:border-gray-700 mt-2 overflow-auto rounded-lg" style={{ maxHeight: "16rem" }}>
                 <table className="mb-0 table table-sm">
                   <thead className="bg-white dark:bg-gray-900 sticky-top">

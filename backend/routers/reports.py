@@ -18,6 +18,7 @@
 #   [8] Attendance Report — attendance record counts grouped over time with employee filter
 #   [9] Sales Report — sale transaction totals grouped over time
 #   [10] Payroll Report — net pay totals from pay slips grouped over time
+#   [11] Employee Activity Report — employee workdays with appointment and sales details
 #
 # CHANGE LOG — all modifications to this file must be recorded here:
 #   Format : YYYY-MM-DD | Author | Description
@@ -26,6 +27,7 @@
 #   2026-03-15 | Claude  | Added authentication + company_id scoping to all endpoints
 #   2026-05-19 | GitHub Copilot | Added integrated inventory expenses report with recurring and one-time cost behavior
 #   2026-08-01 | GitHub Copilot | Added base-vs-add-on service revenue split datasets for sales analytics
+#   2026-09-04 | GitHub Copilot | Added employee activity workday report with appointments and sales
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -571,6 +573,111 @@ def get_sales_report(
 
 
 # ─── 10 PAYROLL REPORT ─────────────────────────────────────────────────────────
+
+@router.get("/reports/employee-activity")
+def get_employee_activity_report(
+    employee_id: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return an employee's worked days, services performed, and attributed sales."""
+    if not employee_id or employee_id == "all":
+        return {
+            "employee": None,
+            "days": [],
+            "totals": {"work_days": 0, "appointments": 0, "sales": 0, "sales_total": 0},
+        }
+
+    employee = session.exec(
+        select(User).where(User.id == employee_id, User.company_id == current_user.company_id)
+    ).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    start = _parse_date(start_date)
+    end = _parse_date(end_date, end_of_day=True)
+    days: dict = {}
+
+    services = session.exec(
+        select(Service).where(Service.company_id == current_user.company_id)
+    ).all()
+    service_names = {str(service.id): service.name for service in services}
+
+    schedules = session.exec(
+        select(Schedule).where(
+            Schedule.company_id == current_user.company_id,
+            Schedule.employee_id == employee.id,
+        )
+    ).all()
+    for schedule in schedules:
+        if start and schedule.appointment_date < start:
+            continue
+        if end and schedule.appointment_date > end:
+            continue
+        day_key = schedule.appointment_date.date().isoformat()
+        day = days.setdefault(day_key, {"date": day_key, "appointments": [], "sales": []})
+        day["appointments"].append({
+            "time": schedule.appointment_date.strftime("%H:%M"),
+            "service": service_names.get(str(schedule.service_id), "Unassigned service"),
+            "status": schedule.status,
+        })
+
+    transactions = session.exec(
+        select(SaleTransaction).where(
+            SaleTransaction.company_id == current_user.company_id,
+            SaleTransaction.employee_id == employee.id,
+        )
+    ).all()
+    transaction_ids = [transaction.id for transaction in transactions]
+    items_by_transaction: dict = {}
+    if transaction_ids:
+        items = session.exec(
+            select(SaleTransactionItem).where(SaleTransactionItem.sale_transaction_id.in_(transaction_ids))
+        ).all()
+        for item in items:
+            items_by_transaction.setdefault(str(item.sale_transaction_id), []).append(item.item_name)
+
+    for transaction in transactions:
+        sale_date = transaction.created_at
+        if sale_date is None:
+            continue
+        if start and sale_date < start:
+            continue
+        if end and sale_date > end:
+            continue
+        day_key = sale_date.date().isoformat()
+        day = days.setdefault(day_key, {"date": day_key, "appointments": [], "sales": []})
+        day["sales"].append({
+            "time": sale_date.strftime("%H:%M"),
+            "items": items_by_transaction.get(str(transaction.id), []),
+            "total": float(transaction.total or 0),
+        })
+
+    ordered_days = []
+    for day_key in sorted(days):
+        day = days[day_key]
+        day["appointments"].sort(key=lambda appointment: appointment["time"])
+        day["sales"].sort(key=lambda sale: sale["time"])
+        day["appointment_count"] = len(day["appointments"])
+        day["sales_count"] = len(day["sales"])
+        day["sales_total"] = round(sum(sale["total"] for sale in day["sales"]), 2)
+        ordered_days.append(day)
+
+    return {
+        "employee": {
+            "id": str(employee.id),
+            "name": f"{employee.first_name} {employee.last_name}".strip() or employee.username,
+        },
+        "days": ordered_days,
+        "totals": {
+            "work_days": len(ordered_days),
+            "appointments": sum(day["appointment_count"] for day in ordered_days),
+            "sales": sum(day["sales_count"] for day in ordered_days),
+            "sales_total": round(sum(day["sales_total"] for day in ordered_days), 2),
+        },
+    }
 
 @router.get("/reports/payroll")
 def get_payroll_report(
