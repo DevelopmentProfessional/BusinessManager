@@ -69,6 +69,7 @@ TestSection/
 AI Session Logs.txt
 ToDoFunctions.txt
 *test_*.py
+!backend/tests/test_*.py
 *debug_*.py
 *check_*.py
 migrate_user_table.py

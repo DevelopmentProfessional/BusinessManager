@@ -21,6 +21,7 @@
  *   2026-03-01 | Claude  | Created — extracted from Employees.jsx (P4-A)
  *   2026-08-04 | GitHub Copilot | Default salary gross amount now follows selected pay frequency
  *   2026-09-11 | GitHub Copilot | Removed unused schedule state and fixed effect dependency coverage
+ *   2026-09-11 | GitHub Copilot | Added service revenue and base-pay compensation previews
  * ============================================================
  */
 
@@ -136,6 +137,10 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
   const [paySuccess, setPaySuccess] = useState("");
   const [availablePeriods, setAvailablePeriods] = useState([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [compensationSettings, setCompensationSettings] = useState(null);
+  const [compensationPreview, setCompensationPreview] = useState(null);
+  const [compensationLoading, setCompensationLoading] = useState(false);
+  const [compensationError, setCompensationError] = useState("");
 
   const normalizedEmploymentType = String(employee?.employment_type || "").toLowerCase() || (Number(employee?.hourly_rate || 0) > 0 ? "hourly" : "salary");
   const normalizedPayFrequency = String(employee?.pay_frequency || "").toLowerCase();
@@ -147,6 +152,10 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
       setPayForm({ pay_period_start: "", pay_period_end: "", gross_amount: "", hours_worked: "", other_deductions: "", notes: "" });
       setAvailablePeriods([]);
       setScheduleLoading(false);
+      setCompensationSettings(null);
+      setCompensationPreview(null);
+      setCompensationLoading(false);
+      setCompensationError("");
       setPayError("");
       setPaySuccess("");
       return;
@@ -172,6 +181,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
         const slips = slipsRes?.data ?? slipsRes ?? [];
         const paidStarts = Array.isArray(slips) ? slips.map((s) => s.pay_period_start) : [];
         const sched = schedRes?.data ?? schedRes ?? null;
+        setCompensationSettings(sched);
 
         const effectiveFreq = ["weekly", "biweekly", "monthly"].includes(normalizedPayFrequency) ? normalizedPayFrequency : String(sched?.frequency || normalizedPayFrequency || "monthly").toLowerCase();
 
@@ -216,6 +226,38 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
     };
   }, [isOpen, employee, normalizedPayFrequency]);
 
+  const usesCompensationPlan = Number(compensationSettings?.base_pay || 0) > 0 || Number(compensationSettings?.compensation_percentage || 0) > 0;
+
+  useEffect(() => {
+    if (!isOpen || !employee?.id || !usesCompensationPlan || !payForm.pay_period_start || !payForm.pay_period_end) {
+      setCompensationPreview(null);
+      setCompensationError("");
+      return;
+    }
+
+    let cancelled = false;
+    setCompensationLoading(true);
+    setCompensationError("");
+    payrollAPI
+      .getCompensationPreview(employee.id, `${payForm.pay_period_start}T00:00:00`, `${payForm.pay_period_end}T00:00:00`)
+      .then((response) => {
+        if (cancelled) return;
+        const preview = response?.data ?? response;
+        setCompensationPreview(preview);
+        setPayForm((current) => ({ ...current, gross_amount: String(preview?.gross_amount ?? "") }));
+      })
+      .catch((error) => {
+        if (!cancelled) setCompensationError(error?.response?.data?.detail || "Unable to calculate service compensation");
+      })
+      .finally(() => {
+        if (!cancelled) setCompensationLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [employee?.id, isOpen, payForm.pay_period_end, payForm.pay_period_start, usesCompensationPlan]);
+
   // ─── [3] SUBMIT ─────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -230,7 +272,9 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
         notes: payForm.notes || null,
         employment_type: normalizedEmploymentType || "salary",
       };
-      if (isHourly) {
+      if (usesCompensationPlan) {
+        // The backend recalculates from paid service transactions for this period.
+      } else if (isHourly) {
         payload.hours_worked = payForm.hours_worked !== "" ? parseFloat(payForm.hours_worked) : 0;
         payload.hourly_rate_snapshot = employee?.hourly_rate || 0;
       } else {
@@ -283,6 +327,28 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                 )}
               </div>
 
+              {usesCompensationPlan && (
+                <div className="border mb-2 p-1 rounded">
+                  <div className="d-flex justify-content-between small">
+                    <span>Paid Service Revenue</span>
+                    <strong>{compensationLoading ? "…" : `$${Number(compensationPreview?.service_revenue || 0).toFixed(2)}`}</strong>
+                  </div>
+                  <div className="d-flex justify-content-between small">
+                    <span>Base Pay</span>
+                    <strong>${Number(compensationSettings?.base_pay || 0).toFixed(2)}</strong>
+                  </div>
+                  <div className="d-flex justify-content-between small">
+                    <span>Compensation</span>
+                    <strong>{Number(compensationSettings?.compensation_percentage || 0).toFixed(2)}%</strong>
+                  </div>
+                  <div className="d-flex justify-content-between fw-semibold mt-1">
+                    <span>Calculated Gross</span>
+                    <span>{compensationLoading ? "…" : `$${Number(compensationPreview?.gross_amount || 0).toFixed(2)}`}</span>
+                  </div>
+                  {compensationError && <div className="mt-1 text-danger small">{compensationError}</div>}
+                </div>
+              )}
+
               {/* Period selector — varies by pay frequency */}
               {(["weekly", "biweekly", "monthly"].includes(normalizedPayFrequency) || availablePeriods.length > 0) && normalizedPayFrequency !== "daily" ? (
                 <div className="mb-2">
@@ -330,7 +396,12 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
                 </>
               )}
 
-              {normalizedEmploymentType === "hourly" ? (
+              {usesCompensationPlan ? (
+                <div className="mb-2">
+                  <label className="form-label ui-form-label-sm">Gross Amount</label>
+                  <input type="number" className="form-control ui-control-sm" value={compensationPreview?.gross_amount ?? ""} readOnly />
+                </div>
+              ) : normalizedEmploymentType === "hourly" ? (
                 <div className="mb-2">
                   <label className="form-label ui-form-label-sm">Hours Worked</label>
                   <input type="number" className="form-control ui-control-sm" placeholder="0" min="0" step="0.25" value={payForm.hours_worked} onChange={(e) => setPayForm((f) => ({ ...f, hours_worked: e.target.value }))} required />
@@ -358,7 +429,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
 
         <div className="component-footer">
           <div className="component-footer-left">
-            <Button_Toolbar type="submit" icon={CheckIcon} label={payLoading ? "…" : "Pay"} className="btn-outline-secondary" title="Process payment" disabled={payLoading} />
+            <Button_Toolbar type="submit" icon={CheckIcon} label={payLoading ? "…" : "Pay"} className="btn-outline-secondary" title="Process payment" disabled={payLoading || compensationLoading || Boolean(compensationError)} />
           </div>
           <div className="component-footer-center">
             <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Cancel">

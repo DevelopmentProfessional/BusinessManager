@@ -44,6 +44,7 @@
 #   2026-08-09 | GitHub Copilot | Required service and schedule add-on columns in schema drift checks
 #   2026-08-09 | GitHub Copilot | Moved add-on column repair ahead of schema fast-path checks
 #   2026-09-11 | GitHub Copilot | Synchronized PostgreSQL permissiontype storage labels before schema fast-path checks
+#   2026-09-11 | GitHub Copilot | Added employee base-pay compensation and pay-slip snapshot columns
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -1404,6 +1405,7 @@ def create_db_and_tables():
     # version fast path or unrelated migration can prevent the API from starting.
     _ensure_service_and_schedule_addons_if_needed()
     _ensure_permissiontype_enum_values_if_needed()
+    _ensure_payroll_compensation_columns_if_needed()
 
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():
@@ -2018,6 +2020,34 @@ def _ensure_user_payroll_columns_if_needed():
             if col not in col_names:
                 conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
                 print(f"  + Added column user.{col} ({pg_type})")
+
+
+def _ensure_payroll_compensation_columns_if_needed():
+    """Ensure employee compensation settings and pay-slip snapshots exist."""
+    table_columns = {
+        "employee_pay_schedule": {
+            "base_pay": "DOUBLE PRECISION NOT NULL DEFAULT 0",
+            "compensation_percentage": "DOUBLE PRECISION NOT NULL DEFAULT 0",
+            "base_pay_included": "BOOLEAN NOT NULL DEFAULT TRUE",
+        },
+        "pay_slip": {
+            "service_revenue": "DOUBLE PRECISION NOT NULL DEFAULT 0",
+            "base_pay_snapshot": "DOUBLE PRECISION",
+            "compensation_percentage_snapshot": "DOUBLE PRECISION",
+            "base_pay_included_snapshot": "BOOLEAN",
+        },
+    }
+    with engine.begin() as conn:
+        for table_name, columns in table_columns.items():
+            existing = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=:table_name"
+            ), {"table_name": table_name}).fetchall()
+            existing_names = {row[0] for row in existing}
+            for column_name, definition in columns.items():
+                if column_name not in existing_names:
+                    conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}"))
+                    print(f"  + Added column {table_name}.{column_name}")
 
 
 # ─── 11e MIGRATION: INSURANCE PLAN MONTHLY DEDUCTION ───────────────────────────

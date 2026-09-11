@@ -37,6 +37,7 @@
  *   2026-08-04 | GitHub Copilot | Made salary input frequency-aware and convert to annualized value on submit
  *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to direct user assignment options
  *   2026-09-11 | GitHub Copilot | Removed unused props/locals and fixed missing effect dependencies
+ *   2026-09-11 | GitHub Copilot | Added base pay and service compensation settings
  * ============================================================
  */
 
@@ -610,13 +611,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     submitData.sick_days_used = submitData.sick_days_used !== "" ? parseInt(submitData.sick_days_used) : null;
 
     const payFreq = String(submitData.pay_frequency || "").toLowerCase();
-    if (activeTab === "pay_settings" && employee?.id && employeePaySchedule && ["weekly", "biweekly", "monthly"].includes(payFreq)) {
+    if (activeTab === "pay_settings" && employee?.id && employeePaySchedule) {
       setEmployeePayScheduleSaving(true);
       setEmployeePayScheduleError("");
       setEmployeePayScheduleSuccess("");
       try {
         const payload = {
-          frequency: payFreq,
+          frequency: payFreq || employeePaySchedule.frequency || "monthly",
           work_days: employeePaySchedule.work_days ?? "mon,tue,wed,thu,fri",
           payday_weekday: employeePaySchedule.payday_weekday ?? "fri",
           monthly_payday_type: employeePaySchedule.monthly_payday_type ?? "date",
@@ -625,6 +626,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           monthly_payday_weekday: employeePaySchedule.monthly_payday_weekday ?? null,
           pay_timing: employeePaySchedule.pay_timing ?? "arrears",
           cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
+          base_pay: Number(employeePaySchedule.base_pay || 0),
+          compensation_percentage: Number(employeePaySchedule.compensation_percentage || 0),
+          base_pay_included: employeePaySchedule.base_pay_included !== false,
         };
         await payrollAPI.updateEmployeeSchedule(employee.id, payload);
         setEmployeePayScheduleSuccess("Pay settings saved");
@@ -1472,6 +1476,42 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                   )}
 
+                  {!employeePayScheduleLoading && employeePaySchedule && (
+                    <>
+                      <div className="col-12 mt-2">
+                        <h6 className="mb-0 text-uppercase ui-small-muted">Service Compensation</h6>
+                        <hr className="mb-2 mt-1" />
+                      </div>
+                      <div className="col-md-6">
+                        <div className="input-group">
+                          <span className="input-group-text">$</span>
+                          <div className="form-floating">
+                            <input type="number" id="base_pay" value={employeePaySchedule.base_pay ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
+                            <label htmlFor="base_pay">Base Pay</label>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="input-group">
+                          <div className="form-floating">
+                            <input type="number" id="compensation_percentage" value={employeePaySchedule.compensation_percentage ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))} className="form-control ui-control-sm" placeholder="0" step="0.01" min="0" max="100" />
+                            <label htmlFor="compensation_percentage">Compensation</label>
+                          </div>
+                          <span className="input-group-text">%</span>
+                        </div>
+                      </div>
+                      <div className="col-12">
+                        <div className="form-check form-switch">
+                          <input className="form-check-input" type="checkbox" role="switch" id="base_pay_included" checked={employeePaySchedule.base_pay_included !== false} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay_included: event.target.checked }))} />
+                          <label className="form-check-label" htmlFor="base_pay_included">Base pay included</label>
+                        </div>
+                        <div className="ui-small-muted">
+                          {employeePaySchedule.base_pay_included !== false ? "Compensation applies to service revenue above base pay." : "Pay is the greater of base pay or compensation on all service revenue."}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {employeePayScheduleLoading ? (
                     <div className="col-12">
                       <div className="py-1 text-center">
@@ -1651,6 +1691,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                 monthly_payday_weekday: employeePaySchedule.monthly_payday_weekday ?? null,
                                 pay_timing: employeePaySchedule.pay_timing ?? "arrears",
                                 cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
+                                base_pay: Number(employeePaySchedule.base_pay || 0),
+                                compensation_percentage: Number(employeePaySchedule.compensation_percentage || 0),
+                                base_pay_included: employeePaySchedule.base_pay_included !== false,
                               };
                               await payrollAPI.updateEmployeeSchedule(employee.id, payload);
                               setEmployeePayScheduleSuccess("Pay settings saved");
@@ -1899,6 +1942,18 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 <div className="g-1 row">
                   <div className="col-6 ui-text-muted">Gross Pay</div>
                   <div className="col-6 ui-text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  {selectedSlip.base_pay_snapshot != null && (
+                    <>
+                      <div className="col-6 small text-muted">Service Revenue</div>
+                      <div className="col-6 small text-end">${Number(selectedSlip.service_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                      <div className="col-6 small text-muted">Base Pay</div>
+                      <div className="col-6 small text-end">${Number(selectedSlip.base_pay_snapshot ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                      <div className="col-6 small text-muted">Compensation</div>
+                      <div className="col-6 small text-end">{Number(selectedSlip.compensation_percentage_snapshot ?? 0).toFixed(2)}%</div>
+                      <div className="col-6 small text-muted">Base Included</div>
+                      <div className="col-6 small text-end">{selectedSlip.base_pay_included_snapshot ? "Yes" : "No"}</div>
+                    </>
+                  )}
                   {selectedSlip.insurance_plan_name && (
                     <>
                       <div className="col-6 small text-muted">Insurance ({selectedSlip.insurance_plan_name})</div>

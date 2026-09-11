@@ -17,12 +17,13 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-08-04 | GitHub Copilot | Convert annual salary to period gross using employee pay frequency when gross is omitted
+#   2026-09-11 | GitHub Copilot | Added base-pay and percentage compensation for paid scheduled services
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     from backend.database import get_session
@@ -38,6 +39,9 @@ try:
         EmployeePaySchedule,
         EmployeePayScheduleCreate,
         EmployeePayScheduleRead,
+        SaleTransaction,
+        SaleTransactionItem,
+        Schedule,
     )
     from backend.routers.auth import get_current_user
 except ModuleNotFoundError:
@@ -54,6 +58,9 @@ except ModuleNotFoundError:
         EmployeePaySchedule,
         EmployeePayScheduleCreate,
         EmployeePayScheduleRead,
+        SaleTransaction,
+        SaleTransactionItem,
+        Schedule,
     )
     from routers.auth import get_current_user
 
@@ -72,6 +79,59 @@ def _salary_gross_for_frequency(salary_annual: float, pay_frequency: str | None)
     if freq == "daily":
         return salary_annual / 260.0
     return salary_annual
+
+
+def _calculate_compensation_gross(
+    service_revenue: float,
+    base_pay: float,
+    compensation_percentage: float,
+    base_pay_included: bool,
+) -> float:
+    """Calculate gross pay from base pay and service revenue compensation."""
+    revenue = max(0.0, float(service_revenue or 0.0))
+    base = max(0.0, float(base_pay or 0.0))
+    rate = min(100.0, max(0.0, float(compensation_percentage or 0.0))) / 100.0
+    if base_pay_included:
+        gross = base + max(0.0, revenue - base) * rate
+    else:
+        gross = max(base, revenue * rate)
+    return round(gross, 2)
+
+
+def _service_revenue_for_period(
+    session: Session,
+    employee_id: UUID,
+    company_id: str,
+    period_start: datetime,
+    period_end: datetime,
+) -> float:
+    """Sum paid service line totals linked to this employee's appointments."""
+    period_end_exclusive = period_end + timedelta(days=1)
+    statement = (
+        select(SaleTransactionItem.line_total)
+        .join(SaleTransaction, SaleTransactionItem.sale_transaction_id == SaleTransaction.id)
+        .join(Schedule, SaleTransaction.schedule_id == Schedule.id)
+        .where(
+            Schedule.employee_id == employee_id,
+            Schedule.company_id == company_id,
+            Schedule.is_paid == True,  # noqa: E712
+            Schedule.appointment_date >= period_start,
+            Schedule.appointment_date < period_end_exclusive,
+            SaleTransaction.company_id == company_id,
+            SaleTransactionItem.item_type == "service",
+            SaleTransactionItem.item_id == Schedule.service_id,
+        )
+    )
+    return round(sum(float(value or 0.0) for value in session.exec(statement).all()), 2)
+
+
+def _get_employee_compensation_schedule(session: Session, employee_id: UUID, company_id: str) -> EmployeePaySchedule | None:
+    return session.exec(
+        select(EmployeePaySchedule).where(
+            EmployeePaySchedule.company_id == company_id,
+            EmployeePaySchedule.employee_id == employee_id,
+        )
+    ).first()
 
 
 # ─── 1 PAYMENT PROCESSING ──────────────────────────────────────────────────────
@@ -106,9 +166,26 @@ def process_payment(
 
     emp_type = data.employment_type or employee.employment_type or "salary"
 
+    company_id = current_user.company_id or ""
+    compensation_schedule = _get_employee_compensation_schedule(session, employee_id, company_id)
+    base_pay = float(compensation_schedule.base_pay or 0.0) if compensation_schedule else 0.0
+    compensation_percentage = float(compensation_schedule.compensation_percentage or 0.0) if compensation_schedule else 0.0
+    base_pay_included = compensation_schedule.base_pay_included if compensation_schedule else True
+    compensation_active = base_pay > 0 or compensation_percentage > 0
+    service_revenue = 0.0
+
     # Gross calculation
     hourly_rate = data.hourly_rate_snapshot or employee.hourly_rate or 0.0
-    if emp_type == "hourly":
+    if compensation_active:
+        service_revenue = _service_revenue_for_period(
+            session,
+            employee_id,
+            company_id,
+            data.pay_period_start,
+            data.pay_period_end,
+        )
+        gross = _calculate_compensation_gross(service_revenue, base_pay, compensation_percentage, base_pay_included)
+    elif emp_type == "hourly":
         gross = hourly_rate * (data.hours_worked or 0.0)
     else:
         if data.gross_amount is not None:
@@ -141,16 +218,56 @@ def process_payment(
         hours_worked=data.hours_worked if emp_type == "hourly" else None,
         hourly_rate_snapshot=hourly_rate if emp_type == "hourly" else None,
         salary_snapshot=employee.salary,
+        service_revenue=service_revenue,
+        base_pay_snapshot=base_pay if compensation_active else None,
+        compensation_percentage_snapshot=compensation_percentage if compensation_active else None,
+        base_pay_included_snapshot=base_pay_included if compensation_active else None,
         pay_frequency=employee.pay_frequency,
         notes=data.notes,
         status="paid",
         insurance_plan_name=insurance_plan_name,
-        company_id=current_user.company_id or "",
+        company_id=company_id,
     )
     session.add(slip)
     session.commit()
     session.refresh(slip)
     return slip
+
+
+@router.get("/payroll/compensation-preview/{employee_id}", tags=["payroll"])
+def get_compensation_preview(
+    employee_id: UUID,
+    period_start: str = Query(...),
+    period_end: str = Query(...),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Preview service revenue and calculated gross for a pay period."""
+    employee = session.get(User, employee_id)
+    if not employee or (current_user.company_id and employee.company_id != current_user.company_id):
+        raise HTTPException(status_code=404, detail="Employee not found")
+    try:
+        start = datetime.fromisoformat(period_start.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(period_end.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid pay period")
+    if end < start:
+        raise HTTPException(status_code=400, detail="Pay period end must not be before start")
+
+    company_id = current_user.company_id or ""
+    schedule = _get_employee_compensation_schedule(session, employee_id, company_id)
+    base_pay = float(schedule.base_pay or 0.0) if schedule else 0.0
+    percentage = float(schedule.compensation_percentage or 0.0) if schedule else 0.0
+    included = schedule.base_pay_included if schedule else True
+    revenue = _service_revenue_for_period(session, employee_id, company_id, start, end)
+    return {
+        "service_revenue": revenue,
+        "base_pay": base_pay,
+        "compensation_percentage": percentage,
+        "base_pay_included": included,
+        "compensation_active": base_pay > 0 or percentage > 0,
+        "gross_amount": _calculate_compensation_gross(revenue, base_pay, percentage, included),
+    }
 
 
 # ─── 2 PAY SLIP RETRIEVAL ──────────────────────────────────────────────────────
