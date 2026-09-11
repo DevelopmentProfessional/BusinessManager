@@ -17,6 +17,7 @@
  *   defaultItemType   {string}    — default type value when itemTypes provided
  *
  * CHANGE LOG:
+ *   2026-09-11 | GitHub Copilot | Removed unused CheckIcon import to satisfy ESLint
  *   2026-03-16 | Claude | Initial implementation
  *   2026-03-16 | Claude | Add per-row photo upload support (allowPhotoUpload prop)
  *   2026-03-16 | Claude | Add per-row item type select (itemTypes prop)
@@ -24,7 +25,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { XMarkIcon, CheckIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
 import Dropdown_Custom from "./Dropdown_Custom";

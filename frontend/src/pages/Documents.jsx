@@ -33,18 +33,18 @@
  *   2026-05-15 | Copilot | Shortened standalone document action button labels for compact training-mode layouts
  *   2026-05-26 | GitHub Copilot | Added left-column delete action for documents list and removed delete action from viewer modal wiring
  *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete and combined selected edit/delete actions
+ *   2026-09-11 | GitHub Copilot | Removed unused imports and dead handlers to clear ESLint warnings
  * ============================================================
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useMemo, lazy, Suspense } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from "react";
 import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, ClockIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -52,8 +52,6 @@ import Footer_Actions from "./components/Footer_Actions";
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
-import Table_Mobile from "./components/Table_Mobile";
-import Button_AddMobile from "./components/Button_AddMobile";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Viewer_Document from "./components/Modal_DocumentView";
 import Modal_Edit_Document from "./components/Modal_DocumentEdit";
@@ -76,7 +74,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
@@ -240,7 +238,6 @@ function formatFileSize(bytes) {
 }
 
 export default function Documents() {
-  const navigate = useNavigate();
   const { user, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
   // ─── 5  STATE DECLARATIONS ────────────────────────────────────────────────
@@ -266,7 +263,7 @@ export default function Documents() {
   const [signLoading, setSignLoading] = useState(false);
 
   // History modal state
-  const [historyDoc, setHistoryDoc] = useState(null);
+  const [historyDoc] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -560,11 +557,6 @@ export default function Documents() {
     loadDocTagMap();
   };
 
-  // Open in dedicated editor page
-  const handleOpenEditor = (doc) => {
-    navigate(`/documents/${doc.id}/edit`);
-  };
-
   // ─── 11  DOCUMENT SIGN HANDLERS ──────────────────────────────────────────
   // Sign document
   const handleOpenSign = async (doc) => {
@@ -612,19 +604,6 @@ export default function Documents() {
   };
 
   // ─── 12  DOCUMENT HISTORY HANDLERS ───────────────────────────────────────
-  // History
-  const handleOpenHistory = async (doc) => {
-    setHistoryDoc(doc);
-    try {
-      const res = await documentsAPI.history(doc.id);
-      setHistoryItems(res.data || []);
-    } catch (err) {
-      console.error("Failed to load history", err);
-      setHistoryItems([]);
-    }
-    setIsHistoryOpen(true);
-  };
-
   const handleReplaceContent = async (e) => {
     e.preventDefault();
     if (!historyDoc) return;
@@ -665,25 +644,6 @@ export default function Documents() {
       const errorMsg = err?.response?.data?.detail || err?.message || "Failed to upload document";
       setError(errorMsg);
       throw err; // Re-throw so DocumentUploadForm can catch it
-    }
-  };
-
-  // Delete
-  const handleDeleteDocument = async (documentId) => {
-    if (!hasPermission("documents", "delete")) {
-      setError("You do not have permission to delete documents");
-      return;
-    }
-
-    if (!(await showConfirm("Are you sure you want to delete this document?"))) return;
-
-    try {
-      await documentsAPI.delete(documentId);
-      setDocuments((docs) => docs.filter((doc) => doc.id !== documentId));
-      clearError();
-    } catch (err) {
-      setError("Failed to delete document");
-      console.error(err);
     }
   };
 

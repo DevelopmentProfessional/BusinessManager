@@ -3,8 +3,6 @@
  * Determines which editor to use based on document type and file extension.
  */
 
-const CODE_EXTENSIONS = new Set(["js", "jsx", "ts", "tsx", "css", "scss", "less", "json", "xml", "csv", "yaml", "yml", "sql", "py", "sh", "bash", "env", "toml", "ini", "cfg", "conf", "txt", "md", "log"]);
-
 const RICHTEXT_EXTENSIONS = new Set(["html", "htm", "docx"]);
 
 const LANGUAGE_MAP = {

@@ -25,17 +25,18 @@
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
+ *   2026-09-11 | GitHub Copilot | Removed dead location relations code and resolved ESLint warnings
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-19 | GitHub Copilot | Added cost type/date editing and bundle/mix subtotal summaries
  * ============================================================
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { XMarkIcon, ShoppingCartIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon, CogIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import useViewMode from "../../services/useViewMode";
-import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI, inventoryCategoriesAPI } from "../../services/api";
+import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Modal from "./Modal";
 import cacheService from "../../services/cacheService";
@@ -52,7 +53,6 @@ function ProductionRelationsPanel({ productId }) {
   const [activeTab, setActiveTab] = useState("resources");
   const [resources, setResources] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [locations, setLocations] = useState([]);
   const [allInventory, setAllInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -65,18 +65,15 @@ function ProductionRelationsPanel({ productId }) {
   const [newAssetId, setNewAssetId] = useState("");
   const [newAssetBatch, setNewAssetBatch] = useState(1);
   const [newAssetDur, setNewAssetDur] = useState("");
-  const [addingLocation, setAddingLocation] = useState(false);
-  const [newLocationId, setNewLocationId] = useState("");
 
   const load = useCallback(async () => {
     if (!productId) return;
     setLoading(true);
     setError("");
     try {
-      const [rRes, aRes, lRes, invRes] = await Promise.all([productRelationsAPI.getResources(productId), productRelationsAPI.getAssets(productId), productRelationsAPI.getLocations(productId), inventoryAPI.getAll()]);
+      const [rRes, aRes, invRes] = await Promise.all([productRelationsAPI.getResources(productId), productRelationsAPI.getAssets(productId), inventoryAPI.getAll()]);
       setResources(Array.isArray(rRes?.data) ? rRes.data : []);
       setAssets(Array.isArray(aRes?.data) ? aRes.data : []);
-      setLocations(Array.isArray(lRes?.data) ? lRes.data : []);
       setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
     } catch {
       setError("Failed to load production relations.");
@@ -92,7 +89,6 @@ function ProductionRelationsPanel({ productId }) {
   const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
   const resourceItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "RESOURCE");
   const assetItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "ASSET");
-  const locationItems = allInventory.filter((i) => (i.type || "").toUpperCase() === "LOCATION");
 
   const handleAddResource = async () => {
     if (!newResourceId) return;
@@ -150,26 +146,6 @@ function ProductionRelationsPanel({ productId }) {
       load();
     } catch {
       setError("Failed to update asset.");
-    }
-  };
-
-  const handleAddLocation = async () => {
-    if (!newLocationId) return;
-    try {
-      await productRelationsAPI.addLocation(productId, newLocationId);
-      load();
-      setAddingLocation(false);
-      setNewLocationId("");
-    } catch {
-      setError("Failed to add location.");
-    }
-  };
-  const handleRemoveLocation = async (id) => {
-    try {
-      await productRelationsAPI.removeLocation(id);
-      load();
-    } catch {
-      setError("Failed to remove location.");
     }
   };
 
@@ -699,7 +675,7 @@ function BundleComponentsPanel({ bundleId }) {
 }
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, onUpdateInventory, onDelete, canDelete = false, isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
+export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, onUpdateInventory, onDelete: _onDelete, canDelete: _canDelete = false, isDeleting: _isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -715,7 +691,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [editingImageId, setEditingImageId] = useState(null);
   const [editingImageUrl, setEditingImageUrl] = useState("");
   // Feature-derived values (updated by FeatureSection callbacks)
-  const [featureStock, setFeatureStock] = useState(null); // total qty from features, or null
+  const [, setFeatureStock] = useState(null); // total qty from features, or null
   const [featuresPriceRange, setFeaturesPriceRange] = useState(null); // { min, max } or null
   const [salesPriceRange, setSalesPriceRange] = useState(null); // { min, max } or null — sales mode only
   const [formData, setFormData] = useState({
@@ -735,9 +711,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     supplier_id: "",
     category: "",
   });
-  const [itemCategories, setItemCategories] = useState([]);
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
   const { isTrainingMode } = useViewMode();
 
@@ -835,7 +808,14 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       // Seed images immediately from already-fetched item data, then refresh async
       setImages(Array.isArray(item.images) ? item.images : []);
       setCurrentImageIndex(0);
-      loadImages(item.id);
+      inventoryAPI
+        .getImages(item.id)
+        .then((response) => {
+          const imageList = response.data || [];
+          setImages(imageList);
+          setCurrentImageIndex(0);
+        })
+        .catch(() => {});
 
       // Load latest available locations from inventory + distinct location endpoint
       loadAvailableLocations();
@@ -849,64 +829,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         })
         .catch(() => {});
     }
-  }, [isOpen, item?.id, cartQuantity, isSalesMode, loadAvailableLocations]);
-
-  // Load categories whenever item type changes (or modal opens with a new item).
-  // cancelled flag prevents stale API responses from overwriting fresh results.
-  const currentItemType = (formData.type || "PRODUCT").toLowerCase();
-  useEffect(() => {
-    if (!isOpen || isSalesMode) return;
-    let cancelled = false;
-    inventoryCategoriesAPI
-      .getByType(currentItemType)
-      .then((res) => {
-        if (!cancelled) setItemCategories(Array.isArray(res?.data) ? res.data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setItemCategories([]);
-      });
-    setShowCategoryManager(false);
-    setNewCategoryName("");
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, currentItemType, isSalesMode]);
-
-  const handleAddCategory = async () => {
-    const name = newCategoryName.trim();
-    if (!name) return;
-    const normalizedName = name.toLocaleLowerCase();
-    const existingCategory = itemCategories.find((category) => category.name?.trim().toLocaleLowerCase() === normalizedName);
-    if (existingCategory) {
-      setFormData((prev) => ({ ...prev, category: existingCategory.name }));
-      setNewCategoryName("");
-      setShowCategoryManager(false);
-      return;
-    }
-    try {
-      const res = await inventoryCategoriesAPI.create(currentItemType, name);
-      const created = res?.data;
-      if (!created?.name) return;
-      setItemCategories((prev) => [...prev.filter((c) => c.id !== created?.id), created].sort((a, b) => a.name.localeCompare(b.name)));
-      setFormData((prev) => ({ ...prev, category: created.name }));
-      setNewCategoryName("");
-      setShowCategoryManager(false);
-    } catch {
-      /* silent */
-    }
-  };
-
-  const handleDeleteCategory = async (catId) => {
-    try {
-      await inventoryCategoriesAPI.delete(catId);
-      setItemCategories((prev) => prev.filter((c) => c.id !== catId));
-      if (formData.category === itemCategories.find((c) => c.id === catId)?.name) {
-        setFormData((prev) => ({ ...prev, category: "" }));
-      }
-    } catch {
-      /* silent */
-    }
-  };
+  }, [isOpen, item, cartQuantity, isSalesMode, loadAvailableLocations]);
 
   // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
   const loadImages = async (inventoryId) => {
@@ -1102,13 +1025,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       supplier_id: formData.supplier_id || null,
       category: formData.category || null,
     });
-  };
-
-  const handleDelete = async () => {
-    if (isDeleting) return;
-    if (!(await showConfirm("Are you sure you want to delete this item?"))) return;
-    onDelete?.(item.id);
-    onClose();
   };
 
   // ─── 6 DISPLAY HELPERS ────────────────────────────────────────────────────

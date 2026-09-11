@@ -24,13 +24,14 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-09-11 | GitHub Copilot | Removed unused icon imports to satisfy ESLint no-unused-vars
  * ============================================================
  */
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { EyeIcon, EyeSlashIcon, UserIcon, LockClosedIcon, ExclamationTriangleIcon, CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import api from "../services/api";
 import { getDetailedApiErrorMessage } from "../services/api";

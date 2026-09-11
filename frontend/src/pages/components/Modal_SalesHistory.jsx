@@ -35,7 +35,7 @@ const NEXT_PORTAL_STATUSES = {
   delivered: ["refunded"],
 };
 
-export const EMPTY_HISTORY_FILTERS = {
+const EMPTY_HISTORY_FILTERS = {
   showServices: true,
   showProducts: true,
   showSubscriptions: true,

@@ -32,6 +32,7 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-07-26 | GitHub Copilot | Added initiate_refunds permission aliasing and admin permission expansion
+#   2026-09-11 | GitHub Copilot | Normalized and validated permission updates before PostgreSQL enum persistence
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -928,13 +929,28 @@ def update_user_permission(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
-    
+
+    incoming = permission_data.dict(exclude_unset=True)
+    if "permission" in incoming:
+        try:
+            incoming["permission"] = parse_permission_type(incoming["permission"])
+        except ValueError:
+            valid_permissions = sorted(permission_type.value for permission_type in PermissionType)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid permission type: {incoming['permission']}. Valid types: {valid_permissions}"
+            )
+
     # Update permission fields
-    for field, value in permission_data.dict(exclude_unset=True).items():
+    for field, value in incoming.items():
         setattr(permission, field, value)
-    
-    session.commit()
-    session.refresh(permission)
+
+    try:
+        session.commit()
+        session.refresh(permission)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
     
     return UserPermissionRead.from_orm(permission)
 

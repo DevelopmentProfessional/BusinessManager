@@ -6,6 +6,7 @@ import useViewMode from "../../services/useViewMode";
 import compactButtonLabel from "../../utils/compactButtonLabel";
 
 /** Display label for toolbar buttons (short); keep full phrase in title when needed. */
+// eslint-disable-next-line react-refresh/only-export-components -- Utility export is intentionally shared by button components.
 export function buttonDisplayLabel(label) {
   return typeof label === "string" ? compactButtonLabel(label.trim()) : label;
 }

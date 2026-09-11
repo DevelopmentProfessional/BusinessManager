@@ -17,6 +17,7 @@
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
+ *   2026-09-11 | GitHub Copilot | Removed unused toolbar import to satisfy ESLint no-unused-vars
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
@@ -24,7 +25,6 @@
 import React from "react";
 import Modal from "./Modal";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
-import Button_Toolbar from "./Button_Toolbar";
 import Dropdown_Custom from "./Dropdown_Custom";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {

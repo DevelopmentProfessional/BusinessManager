@@ -15,7 +15,6 @@ import Footer_Settings from "./Footer_Settings";
 import Dropdown_Custom from "./Dropdown_Custom";
 
 const Panel_Database = ({
-  isMobile,
   settingsPanelStyle,
   availableTables,
   selectedTable,

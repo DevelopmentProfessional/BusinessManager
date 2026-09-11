@@ -43,6 +43,7 @@
 #   2026-07-28 | GitHub Copilot | Added Stripe test/live mode app_settings migrations with legacy key backfill
 #   2026-08-09 | GitHub Copilot | Required service and schedule add-on columns in schema drift checks
 #   2026-08-09 | GitHub Copilot | Moved add-on column repair ahead of schema fast-path checks
+#   2026-09-11 | GitHub Copilot | Synchronized PostgreSQL permissiontype enum values before schema fast-path checks
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -484,6 +485,22 @@ def _ensure_userrole_enum_values_if_needed():
                 conn.execute(text(f"ALTER TYPE userrole ADD VALUE IF NOT EXISTS '{val}'"))
     except Exception as e:
         print(f"  Warning: Could not patch userrole enum: {e}")
+
+
+# ─── MIGRATION: ENSURE permissiontype ENUM HAS ALL EXPECTED VALUES ─────────────
+def _ensure_permissiontype_enum_values_if_needed():
+    """Add any missing application permission values to PostgreSQL."""
+    try:
+        from backend.models import PermissionType
+    except ModuleNotFoundError:
+        from models import PermissionType  # type: ignore
+
+    try:
+        with engine.begin() as conn:
+            for permission_type in PermissionType:
+                conn.execute(text(f"ALTER TYPE permissiontype ADD VALUE IF NOT EXISTS '{permission_type.value}'"))
+    except Exception as e:
+        print(f"  Warning: Could not patch permissiontype enum: {e}")
 
 
 # ─── MIGRATION: COMPOSITE UNIQUE CONSTRAINT ON (company_id, username) ───────────
@@ -1384,6 +1401,7 @@ def create_db_and_tables():
     # These columns are read by core service queries, so repair them before any
     # version fast path or unrelated migration can prevent the API from starting.
     _ensure_service_and_schedule_addons_if_needed()
+    _ensure_permissiontype_enum_values_if_needed()
 
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():

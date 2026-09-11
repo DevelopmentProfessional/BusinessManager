@@ -31,8 +31,6 @@ export default function Modal_InsurancePlans({
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerDoc, setViewerDoc] = useState(null);
 
-  const activePlan = editingPlan || null;
-
   useEffect(() => {
     if (!isOpen) return;
     documentsAPI

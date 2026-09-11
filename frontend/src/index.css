@@ -113,7 +113,6 @@ body,
 
 /* Hide scrollbar while preserving scroll behaviour */
 .no-scrollbar {
-  scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE / Edge legacy */
   overscroll-behavior: contain;
 }
@@ -620,7 +619,7 @@ footer[aria-label="Actions"] {
 
 /* Search row is the bottom anchor — height follows input only (padding is on .app-footer-padding) */
 .app-footer-stack > .app-footer-search-row {
-  min-height: auto !important;
+  min-height: 0 !important;
 }
 
 .app-footer-stack > .app-footer-search-row:last-child {
@@ -996,7 +995,6 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
 .sales-history-footer {
   max-height: min(55dvh, 28rem);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .sales-history-footer .app-footer-padding {
@@ -1017,6 +1015,7 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
   font-size: 0.8125rem;
   line-height: 1.2;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -1442,7 +1441,7 @@ textarea.form-control {
   .docx-preview-container section {
     width: 100% !important;
     height: auto !important;
-    min-height: auto !important;
+    min-height: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
@@ -1807,8 +1806,8 @@ select.form-select {
 }
 
 .no-select {
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Reports — full-screen chart mode (footer controls only) */

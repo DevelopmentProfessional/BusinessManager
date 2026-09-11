@@ -46,6 +46,8 @@
  *   2026-05-26 | GitHub Copilot | Added left-column row delete action and removed delete button from employee edit form
  *   2026-07-24 | GitHub Copilot | Replaced row delete with selection-first bulk delete and grouped selected edit/delete actions
  *   2026-07-26 | GitHub Copilot | Added initiate_refunds to assignable permission options for roles
+ *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to role and user assignment options
+ *   2026-09-11 | GitHub Copilot | Removed unused imports/handlers and dead payroll helper vars to reduce ESLint warnings
  * ============================================================
  */
 
@@ -55,16 +57,15 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, CheckIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
-import api, { employeesAPI, adminAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
+import api, { employeesAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import Form_Employee from "./components/Form_Employee";
-import Dropdown_Custom from "./components/Dropdown_Custom";
 import Gate_Permission from "./components/Gate_Permission";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
@@ -87,7 +88,7 @@ export default function Employees() {
   const sortInsuranceByName = (plans) => sortItemsAlphabetically(plans, ["name", "description"]);
 
   // ─── [2] STORE & DARK-MODE ──────────────────────────────────────────────────
-  const { employees, setEmployees, addEmployee, updateEmployee, removeEmployee, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, user: currentUser, setUser, hasPermission, refetchPermissions } = useStore();
+  const { employees, setEmployees, addEmployee, updateEmployee, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, user: currentUser, setUser, hasPermission, refetchPermissions } = useStore();
 
   const { isDarkMode } = useDarkMode();
   const isAdmin = currentUser?.role === "admin";
@@ -103,7 +104,7 @@ export default function Employees() {
   const [showPageControls, setShowPageControls] = useState(false);
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
-  const [systemInfo, setSystemInfo] = useState(null);
+  const [systemInfo] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
@@ -144,15 +145,15 @@ export default function Employees() {
   // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
   // All modal open/close flags and their associated target object grouped here.
   const [showPayModal, setShowPayModal] = useState(false);
-  const [payingEmployee, setPayingEmployee] = useState(null);
-  const [paidEmployeeIds, setPaidEmployeeIds] = useState({});
+  const [payingEmployee] = useState(null);
+  const [, setPaidEmployeeIds] = useState({});
 
   // ─── [5] CHAT STATE ─────────────────────────────────────────────────────────
   const [showChatModal, setShowChatModal] = useState(false);
   const [chattingEmployee, setChattingEmployee] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
 
-  const [appSettings, setAppSettings] = useState(null);
+  const [, setAppSettings] = useState(null);
 
   // Wages modal
   const [showWagesModal, setShowWagesModal] = useState(false);
@@ -234,18 +235,7 @@ export default function Employees() {
     }
   };
 
-  const getRoleName = (roleId) => {
-    if (!roleId) return "-";
-    const role = availableRoles.find((r) => r.id === roleId);
-    return role ? role.name : "-";
-  };
-
   // ─── [10] PAYROLL HANDLERS ──────────────────────────────────────────────────
-  const handleOpenPay = (employee, e) => {
-    e.stopPropagation();
-    setPayingEmployee(employee);
-    setShowPayModal(true);
-  };
 
   const handlePaySuccess = (employeeId) => {
     setPaidEmployeeIds((prev) => ({ ...prev, [employeeId]: true }));
@@ -461,19 +451,6 @@ export default function Employees() {
     openModal("employee-form");
   };
 
-  const handleDelete = async (employeeId) => {
-    if (!(await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" }))) return;
-
-    try {
-      const response = await employeesAPI.delete(employeeId);
-
-      removeEmployee(employeeId);
-      clearError();
-    } catch (err) {
-      setError("Failed to delete employee");
-    }
-  };
-
   const handleSubmit = async (employeeData) => {
     try {
       if (editingEmployee) {
@@ -616,8 +593,6 @@ export default function Employees() {
     console.log("🔥 DELETE PERMISSION - permissionId:", permissionId);
 
     // Find the specific permission being deleted
-    const permissionToDelete = userPermissions.find((p) => p.id === permissionId);
-
     // Add confirmation dialog
     if (!(await showConfirm("Are you sure you want to delete this permission? This action cannot be undone."))) return;
 
@@ -633,7 +608,7 @@ export default function Employees() {
       const deleteUrl = `/auth/users/${selectedUser.id}/permissions/${permissionId}`;
       console.log("🔥 DELETE PERMISSION - URL:", deleteUrl);
 
-      const response = await api.delete(deleteUrl);
+      await api.delete(deleteUrl);
 
       setSuccess("Permission deleted successfully!");
 
@@ -764,50 +739,6 @@ export default function Employees() {
       setError(err.response?.data?.detail || "Failed to create user");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLockUser = async (userId) => {
-    try {
-      await api.post(`/auth/users/${userId}/lock`);
-      setSuccess("User locked successfully!");
-      loadEmployees();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError("Failed to lock user");
-    }
-  };
-
-  const handleUnlockUser = async (userId) => {
-    try {
-      await api.post(`/auth/users/${userId}/unlock`);
-      setSuccess("User unlocked successfully!");
-      loadEmployees();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError("Failed to unlock user");
-    }
-  };
-
-  const handleForcePasswordReset = async (userId) => {
-    try {
-      await api.post(`/auth/users/${userId}/force-password-reset`);
-      setSuccess("User will be required to reset password on next login!");
-      loadEmployees();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError("Failed to force password reset");
-    }
-  };
-
-  const handleTestAppointments = async () => {
-    try {
-      const response = await adminAPI.testAppointments();
-      setSystemInfo(response.data);
-      setSuccess("Appointment test completed successfully!");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError("Failed to test appointments: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -951,7 +882,7 @@ export default function Employees() {
   // ─── [9b] SHARED CONSTANTS & PAYROLL PERIOD HELPERS ────────────────────────
   // pages/permissions/roles are used by both the permission and role modals.
   const pages = ["clients", "inventory", "sales", "services", "employees", "schedule", "documents", "templates", "insurance", "tasks", "leave", "reports", "admin"];
-  const permissions = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"]; // Keep in sync with backend PermissionType enum
+  const permissions = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "approve_payments", "initiate_refunds", "admin"]; // Keep in sync with backend PermissionType enum
   const roles = ["admin", "manager", "employee", "viewer"];
 
   // Helper function to determine current pay period based on pay_frequency
@@ -967,7 +898,7 @@ export default function Employees() {
           start: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
           end: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
         };
-      case "weekly":
+      case "weekly": {
         const dayOfWeek = now.getDay();
         const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
         const weekStart = new Date(now.setDate(diff));
@@ -977,7 +908,8 @@ export default function Employees() {
           start: new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()),
           end: new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate()),
         };
-      case "biweekly":
+      }
+      case "biweekly": {
         const weekStart2 = new Date(startOfYear);
         const weeksElapsed = Math.floor((now - weekStart2) / (7 * 24 * 60 * 60 * 1000));
         const periodNum = Math.floor(weeksElapsed / 2);
@@ -989,6 +921,7 @@ export default function Employees() {
           start: new Date(biStart.getFullYear(), biStart.getMonth(), biStart.getDate()),
           end: new Date(biEnd.getFullYear(), biEnd.getMonth(), biEnd.getDate()),
         };
+      }
       case "monthly":
         return {
           start: new Date(now.getFullYear(), now.getMonth(), 1),
@@ -1005,27 +938,6 @@ export default function Employees() {
   };
 
   // Helper function to check if employee has been paid for current pay period
-  const isEmployeePaidForCurrentPeriod = (employee) => {
-    if (!employee || !employees.length) return false;
-
-    // For employees without a pay frequency, we can't determine pay period
-    const currentPeriod = getCurrentPayPeriod(employee);
-    if (!currentPeriod) return false;
-
-    // Check if any of the loaded employees' payroll data shows a paid slip for current period
-    // Since we don't have direct access to pay slips here, we'll need to load it
-    // For now, return false as default - will be checked on demand
-    return false;
-  };
-
-  // ─── [20] MISC HELPERS ──────────────────────────────────────────────────────
-  // Helper function to get manager name from reports_to ID
-  const getManagerName = (reportsToId) => {
-    if (!reportsToId) return "-";
-    const manager = employees.find((e) => e.id === reportsToId);
-    return manager ? `${manager.first_name} ${manager.last_name}` : "-";
-  };
-
   // ─── [21] LOADING GUARD ─────────────────────────────────────────────────────
   if (loading) {
     return <div className="p-1">{S.loading}</div>;

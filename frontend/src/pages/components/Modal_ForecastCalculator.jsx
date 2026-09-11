@@ -432,7 +432,6 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
     unitsPerPeriod,
     serviceRevenue,
     recurringRevenue,
-    showRevenueSection,
     showCostSection,
     cogsPerUnit,
     unitsPerBatch,

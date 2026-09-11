@@ -183,16 +183,6 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
     }
   };
 
-  const handleNotesSave = async (unitId, notes) => {
-    setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, notes } : u)));
-    try {
-      await assetUnitsAPI.update(assetId, unitId, { notes: notes || null });
-    } catch {
-      setError("Failed to save notes.");
-      load();
-    }
-  };
-
   const handleRemove = async (unitId) => {
     if (!(await showConfirm("Remove this unit? This cannot be undone.", { confirmLabel: "Remove" }))) return;
     try {

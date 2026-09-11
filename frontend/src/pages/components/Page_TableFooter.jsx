@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef } from "react";
 import useViewMode from "../../services/useViewMode";
 
 /**
@@ -20,19 +20,7 @@ import useViewMode from "../../services/useViewMode";
 export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholder = "Search...", beforeSearch, hideSearch, addButton, children }) {
   const { footerAlign } = useViewMode();
   const footerRef = useRef(null);
-  // Start at 140 so the spacer reserves space before the first ResizeObserver tick
-  const [footerHeight, setFooterHeight] = useState(140);
 
-  useEffect(() => {
-    const el = footerRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      const h = entries[0]?.borderBoxSize?.[0]?.blockSize ?? entries[0]?.contentRect?.height ?? 0;
-      setFooterHeight(Math.ceil(h));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
   return (
     <>

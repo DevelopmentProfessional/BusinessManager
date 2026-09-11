@@ -1,6 +1,7 @@
 import React from "react";
 
 /** Default catalog visibility for Sales POS and history filters. */
+// eslint-disable-next-line react-refresh/only-export-components -- Shared default filter constant is imported by non-component modules.
 export const DEFAULT_CATALOG_FILTER = {
   showServices: true,
   showProducts: true,

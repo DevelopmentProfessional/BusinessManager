@@ -79,7 +79,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
         formData.append("appointments_file", files.appointments);
       }
 
-      const response = await adminAPI.importData(formData);
+      await adminAPI.importData(formData);
 
       setSuccess("Data imported successfully!");
       setFiles({ clients: null, services: null, appointments: null });

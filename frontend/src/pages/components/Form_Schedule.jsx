@@ -42,17 +42,16 @@
  *   2026-07-25 | GitHub Copilot | Show current employee name in create mode for self-schedulers; keep edit mode employee selection unchanged
  *   2026-07-26 | GitHub Copilot | Added write-only fallback to current user identity when employee list is not readable
  *   2026-07-31 | GitHub Copilot | Added appointment-level service add-on quantity controls and persistence
+ *   2026-09-11 | GitHub Copilot | Removed unused schedule form helpers/imports and fixed exhaustive-deps warnings
  * ============================================================
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import useStore from "../../services/useStore";
-import { isudAPI, serviceRelationsAPI, inventoryAPI, productRelationsAPI, productionAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../services/api";
-import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, CreditCardIcon, CogIcon, BeakerIcon, WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
+import { isudAPI, serviceRelationsAPI, inventoryAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../services/api";
+import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
-import Gate_Permission from "./Gate_Permission";
 import Dropdown_Custom from "./Dropdown_Custom";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
@@ -196,7 +195,7 @@ const parseSelectedServiceAddons = (rawValue) => {
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
-  const { closeModal, hasPermission, user, openAddClientModal, openAddServiceModal, openAddInventoryModal } = useStore();
+  const { hasPermission, user } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
   const [employees, setEmployees] = useState(employeesProp || []);
@@ -215,7 +214,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [linkedTasks, setLinkedTasks] = useState([]);
   const [linkedTasksLoading, setLinkedTasksLoading] = useState(false);
   const [linkedTasksLoaded, setLinkedTasksLoaded] = useState(false);
-  const navigate = useNavigate();
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load services and employees if not provided as props (clients loaded on-demand)
@@ -297,49 +295,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
   };
 
-  const handleCreateClientFromSearch = (searchText) => {
-    const prefillName = String(searchText || "").trim();
-    openAddClientModal({
-      prefill: { name: prefillName },
-      onCreated: (newClient) => {
-        if (!newClient?.id) return;
-
-        setClients((prev) => {
-          const list = Array.isArray(prev) ? prev : [];
-          if (list.some((client) => client.id === newClient.id)) return list;
-          return [...list, newClient];
-        });
-        setClientsLoaded(true);
-
-        setFormData((prev) => ({
-          ...prev,
-          client_ids: [newClient.id],
-        }));
-      },
-    });
-  };
-
-  const handleCreateServiceFromSearch = (searchText) => {
-    const prefillName = String(searchText || "").trim();
-    openAddServiceModal({
-      prefill: { name: prefillName },
-      onCreated: (newService) => {
-        if (!newService?.id) return;
-
-        setServices((prev) => {
-          const list = Array.isArray(prev) ? prev : [];
-          if (list.some((service) => service.id === newService.id)) return list;
-          return [...list, newService];
-        });
-
-        setFormData((prev) => ({
-          ...prev,
-          service_id: newService.id,
-        }));
-      },
-    });
-  };
-
   const handleLinkedTaskOpen = async () => {
     if (linkedTasksLoaded || linkedTasksLoading) return;
     setLinkedTasksLoading(true);
@@ -366,7 +321,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     };
   };
 
-  const getInitialFormData = () => {
+  const getInitialFormData = useCallback(() => {
     if (appointment && appointment.appointment_date) {
       const { date, time } = extractLocalParts(appointment.appointment_date);
       const recEndDate = appointment.recurrence_end_date ? extractLocalParts(appointment.recurrence_end_date).date : "";
@@ -409,21 +364,18 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       sale_transaction_id: null,
       parent_schedule_id: null,
     };
-  };
+  }, [appointment, scheduleSettings?.reminder_send_notification]);
 
   const [formData, setFormData] = useState(getInitialFormData);
   const typeConfig = APPOINTMENT_TYPE_CONFIG[formData.appointment_type] || APPOINTMENT_TYPE_CONFIG.one_time;
-  // Track whether duration was manually changed (independent of service)
-  const [durationManuallySet, setDurationManuallySet] = useState(false);
-
   useEffect(() => {
     setFormData(getInitialFormData());
-  }, [appointment, scheduleSettings?.reminder_send_notification]);
+  }, [getInitialFormData]);
 
   useEffect(() => {
     setClientMultiMode(Boolean((appointment?.client_ids || []).length > 1));
     setEmployeeMultiMode(Boolean((appointment?.employee_ids || []).length > 1));
-  }, [appointment?.id]);
+  }, [appointment?.id, appointment?.client_ids, appointment?.employee_ids]);
 
   // Load resource consumption info when service changes
   const loadServiceResources = async (serviceId) => {
@@ -557,21 +509,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         quantity: addon.default_quantity,
       }))
     );
-    setDurationManuallySet(false);
     setServiceResources([]);
     if (selectedService?.duration_minutes) {
       setDurationError("");
     }
-  };
-
-  const handleDurationChange = (e) => {
-    const { value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      duration_minutes: value,
-    }));
-    setDurationManuallySet(true);
-    setDurationError("");
   };
 
   const handleClientChange = (e) => {
@@ -632,8 +573,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
 
     const hour = parseInt(hourText, 10);
-    const minute = parseInt(minuteText, 10);
-
     if (hour < 6 || hour > 21) {
       setTimeError("Can only schedule between 6:00 and 21:00");
       return;
@@ -709,17 +648,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   // Get config for current appointment type
   const appointmentDateOnly = formData.appointment_datetime ? formData.appointment_datetime.split("T")[0] : "";
-
-  const selectedEmployeeColor = employees.find((employee) => employee.id === formData.employee_ids?.[0])?.color || "#64748b";
-  const reminderButtonStyle = formData.send_reminder
-    ? {
-        minWidth: 96,
-        whiteSpace: "nowrap",
-        backgroundColor: `${selectedEmployeeColor}1A`,
-        borderColor: `${selectedEmployeeColor}66`,
-        color: selectedEmployeeColor,
-      }
-    : { minWidth: 96, whiteSpace: "nowrap" };
 
   const formTitle = appointment ? (formData.appointment_type === "meeting" ? "Edit Meeting" : formData.appointment_type === "task" ? "Edit Task" : "Edit Appointment") : formData.appointment_type === "meeting" ? "New Meeting" : formData.appointment_type === "task" ? "New Task" : "New Appointment";
 

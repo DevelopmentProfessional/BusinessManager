@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserGroupIcon, WrenchScrewdriverIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, EllipsisHorizontalIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, EllipsisHorizontalIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";

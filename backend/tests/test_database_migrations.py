@@ -12,6 +12,11 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
     )
     monkeypatch.setattr(
         database,
+        "_ensure_permissiontype_enum_values_if_needed",
+        lambda: calls.append("repair_permissions"),
+    )
+    monkeypatch.setattr(
+        database,
         "_schema_is_current",
         lambda: calls.append("schema_current") or True,
     )
@@ -26,6 +31,7 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
     assert calls == [
         "create_all",
         "repair_addons",
+        "repair_permissions",
         "schema_current",
         "required_artifacts",
     ]

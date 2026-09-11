@@ -8,21 +8,13 @@
  * ============================================================
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../../services/api";
 
 const Badge_PendingOrder = ({ clientId }) => {
   const [count, setCount] = useState(0);
 
-  useEffect(() => {
-    loadPendingCount();
-
-    // Refresh every 30 seconds
-    const interval = setInterval(loadPendingCount, 30000);
-    return () => clearInterval(interval);
-  }, [clientId]);
-
-  const loadPendingCount = async () => {
+  const loadPendingCount = useCallback(async () => {
     try {
       const response = await api.get(`/pending-orders/count${clientId ? `?client_id=${clientId}` : ""}`);
       const data = response?.data ?? {};
@@ -30,7 +22,15 @@ const Badge_PendingOrder = ({ clientId }) => {
     } catch (error) {
       console.error("Failed to load pending count:", error);
     }
-  };
+  }, [clientId]);
+
+  useEffect(() => {
+    loadPendingCount();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(loadPendingCount, 30000);
+    return () => clearInterval(interval);
+  }, [loadPendingCount]);
 
   if (!count) {
     return null;

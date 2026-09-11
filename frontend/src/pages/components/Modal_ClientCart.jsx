@@ -55,6 +55,7 @@ const mapToDb = (item) => ({
  * Used by Modal_Detail_Client to show badge count.
  * Returns 0 on error.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- Shared async helper is intentionally exported for reuse.
 export async function getClientCartCount(clientId) {
   if (!clientId) return 0;
   try {

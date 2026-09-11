@@ -36,6 +36,7 @@
  *   2026-03-07 | Claude  | Fixed compact-mode footer centering and training toggle width
  *   2026-03-28 | Claude  | Refactored: extracted panel JSX into Panel_* components
  *   2026-07-25 | GitHub Copilot | Added environment metadata (last updated + app version/build timestamp) to settings accordion
+ *   2026-09-11 | GitHub Copilot | Removed unused settings helpers/state and fixed useEffect dependency warnings
  * ============================================================
  */
 
@@ -48,7 +49,7 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import { UserIcon, CogIcon, PlusCircleIcon, CheckCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
 import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
@@ -268,8 +269,6 @@ const Profile = () => {
   const [dbLoading, setDbLoading] = useState(false);
   const [dbMessage, setDbMessage] = useState("");
   const [dbError, setDbError] = useState("");
-  const [installMessage, setInstallMessage] = useState("");
-  const [installError, setInstallError] = useState("");
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [employeeColor, setEmployeeColor] = useState(user?.color || "#3B82F6");
   const [pendingColor, setPendingColor] = useState(user?.color || "#3B82F6");
@@ -310,9 +309,9 @@ const Profile = () => {
   const [logoPickerError, setLogoPickerError] = useState("");
   const [logoPickerDocs, setLogoPickerDocs] = useState([]);
 
-  const [dbSettings, setDbSettings] = useState({ connectionString: "", apiBaseUrl: "", onlyofficeUrl: "" });
+  const [, setDbSettings] = useState({ connectionString: "", apiBaseUrl: "", onlyofficeUrl: "" });
 
-  const [scheduleSettings, setScheduleSettings] = useState({
+  const [, setScheduleSettings] = useState({
     start_of_day: "06:00",
     end_of_day: "21:00",
     attendance_check_in_required: true,
@@ -326,8 +325,6 @@ const Profile = () => {
     saturday_enabled: true,
     sunday_enabled: true,
   });
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-
   const [companyInfo, setCompanyInfo] = useState({
     company_name: "",
     company_email: "",
@@ -520,7 +517,7 @@ const Profile = () => {
   // ─── 7 DATABASE / IMPORT EFFECTS ─────────────────────────────────────────
   useEffect(() => {
     if (openAccordion === "database" && availableTables.length === 0) loadTables();
-  }, [openAccordion]);
+  }, [openAccordion, availableTables.length]);
 
   useEffect(() => {
     if (selectedTable) loadTableColumns(selectedTable);
@@ -646,36 +643,12 @@ const Profile = () => {
     }
   };
 
-  const handleSaveDbSettings = () => {
-    localStorage.setItem("app_db_settings", JSON.stringify(dbSettings));
-    setSettingsSuccess("Connection settings saved!");
-    setTimeout(() => setSettingsSuccess(""), 3000);
-  };
-  const handleDbSettingsChange = (field, value) => setDbSettings((prev) => ({ ...prev, [field]: value }));
-
   const handleSaveNotifications = () => {
     localStorage.setItem("app_notifications", JSON.stringify(notifications));
     setSettingsSuccess("Notification settings saved!");
     setTimeout(() => setSettingsSuccess(""), 3000);
   };
   const handleNotificationChange = (field, value) => setNotifications((prev) => ({ ...prev, [field]: value }));
-
-  const handleScheduleSettingsChange = (field, value) => setScheduleSettings((prev) => ({ ...prev, [field]: value }));
-
-  const handleSaveScheduleSettings = async () => {
-    setScheduleLoading(true);
-    setSettingsError("");
-    setSettingsSuccess("");
-    try {
-      await settingsAPI.updateScheduleSettings(scheduleSettings);
-      setSettingsSuccess("Schedule settings saved!");
-      setTimeout(() => setSettingsSuccess(""), 3000);
-    } catch (err) {
-      setSettingsError(err.response?.data?.detail || "Failed to save schedule settings");
-    } finally {
-      setScheduleLoading(false);
-    }
-  };
 
   const handleCompanyInfoChange = (field, value) => setCompanyInfo((prev) => ({ ...prev, [field]: value }));
 
@@ -933,7 +906,7 @@ const Profile = () => {
   };
 
   // ─── 10 USER SYNC HELPER ─────────────────────────────────────────────────
-  const syncCurrentUser = async () => {
+  const syncCurrentUser = useCallback(async () => {
     if (!user?.id) return;
     try {
       const response = await employeesAPI.getUserData(user.id);
@@ -946,12 +919,12 @@ const Profile = () => {
     } catch {
       /* silently degrade */
     }
-  };
+  }, [user, setUser]);
 
   useEffect(() => {
     if (!user?.id || user?.color) return;
     syncCurrentUser();
-  }, [user?.id, user?.color]);
+  }, [user?.id, user?.color, syncCurrentUser]);
 
   // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
   useEffect(() => {
@@ -996,7 +969,7 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [meSectionOpen, leaveManagementOpen, user?.id]);
+  }, [meSectionOpen, leaveManagementOpen, user?.id, syncCurrentUser]);
 
   const refreshLeaveRequests = async () => {
     if (!user?.id) return;
@@ -1143,6 +1116,42 @@ const Profile = () => {
     }
   }, [user]);
 
+  const totalFooterHeight = Math.max(row1Height, 80);
+  const row1PanelBottom = totalFooterHeight;
+  const [meSectionHeaderHeight, setMeSectionHeaderHeight] = useState(44);
+  const meSectionHeaderRefs = useRef({});
+
+  const scrollHeaderToBottom = useCallback((el) => {
+    if (!el) return;
+    setTimeout(() => {
+      try {
+        el.scrollIntoView({ block: "end" });
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+  }, []);
+
+  const toggleMeSection = useCallback(
+    (id) => {
+      setMeSectionOpen((prev) => {
+        const next = prev === id ? "" : id;
+        scrollHeaderToBottom(meSectionHeaderRefs.current?.[id]);
+        return next;
+      });
+    },
+    [scrollHeaderToBottom]
+  );
+
+  useEffect(() => {
+    const id = meSectionOpen;
+    if (!id) return;
+    const el = meSectionHeaderRefs.current?.[id];
+    if (!el) return;
+    const height = el.offsetHeight;
+    if (height && Number.isFinite(height)) setMeSectionHeaderHeight(height);
+  }, [meSectionOpen, row1PanelBottom]);
+
   // ─── 15 RENDER HELPERS ───────────────────────────────────────────────────
   if (!user) {
     return (
@@ -1214,44 +1223,7 @@ const Profile = () => {
   const canAccessSettings = hasPermission("settings", "read");
   const canAccessGeneralSettings = ["manager", "admin"].includes((user?.role || "").toLowerCase());
 
-  const totalFooterHeight = Math.max(row1Height, 80);
-  const row1PanelBottom = totalFooterHeight;
-
-  const [meSectionHeaderHeight, setMeSectionHeaderHeight] = useState(44);
   const meSectionBodyMaxHeight = `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px - ${meSectionHeaderHeight}px - 24px)`;
-
-  const meSectionHeaderRefs = useRef({});
-
-  const scrollHeaderToBottom = useCallback((el) => {
-    if (!el) return;
-    setTimeout(() => {
-      try {
-        el.scrollIntoView({ block: "end" });
-      } catch {
-        /* ignore */
-      }
-    }, 0);
-  }, []);
-
-  const toggleMeSection = useCallback(
-    (id) => {
-      setMeSectionOpen((prev) => {
-        const next = prev === id ? "" : id;
-        scrollHeaderToBottom(meSectionHeaderRefs.current?.[id]);
-        return next;
-      });
-    },
-    [scrollHeaderToBottom]
-  );
-
-  useEffect(() => {
-    const id = meSectionOpen;
-    if (!id) return;
-    const el = meSectionHeaderRefs.current?.[id];
-    if (!el) return;
-    const h = el.offsetHeight;
-    if (h && Number.isFinite(h)) setMeSectionHeaderHeight(h);
-  }, [meSectionOpen, row1PanelBottom]);
 
   const settingsPanelStyle = {
     position: "fixed",

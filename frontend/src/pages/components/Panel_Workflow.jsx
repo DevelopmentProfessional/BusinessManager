@@ -14,8 +14,8 @@
  * ============================================================
  */
 
-import React, { useState, useEffect } from "react";
-import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useCallback } from "react";
+import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 import { formatDateTime } from "../../utils/dateFormatters";
 
@@ -26,11 +26,7 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchWorkflows();
-  }, []);
-
-  const fetchWorkflows = async () => {
+  const fetchWorkflows = useCallback(async () => {
     try {
       const response = await api.get("/workflows");
       setWorkflows(response?.data ?? []);
@@ -39,7 +35,11 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchWorkflows();
+  }, [fetchWorkflows]);
 
   const handleAssignWorkflow = async () => {
     if (!selectedWorkflow) return;
@@ -105,11 +105,7 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
   const [steps, setSteps] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadWorkflow();
-  }, [documentId]);
-
-  const loadWorkflow = async () => {
+  const loadWorkflow = useCallback(async () => {
     try {
       const [wfRes, stepsRes] = await Promise.all([api.get(`/documents/${documentId}/workflow`), api.get(`/documents/${documentId}/workflow-steps`)]);
 
@@ -120,7 +116,11 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
     } finally {
       setLoading(false);
     }
-  };
+  }, [documentId]);
+
+  useEffect(() => {
+    loadWorkflow();
+  }, [loadWorkflow]);
 
   if (loading) return <div>Loading workflow...</div>;
   if (!workflow) return null;
@@ -193,7 +193,6 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
 // ─ Approval Action Component ───────────────────────────────────────
 
 export const ApprovalActions = ({ stepId, onApprovalComplete }) => {
-  const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -172,14 +172,6 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     editorInstance?.chain().focus().redo().run();
   };
 
-  // ── Toolbar tab button ───────────────────────────────────────────────────────
-  const TabBtn = ({ id, icon: Icon, label }) => (
-    <button type="button" onClick={() => handleTabClick(id)} className={`flex items-center gap-1 text-xs px-0 py-0.5 rounded transition-colors ${activeTab === id ? "bg-primary-600 text-white" : "text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"}`}>
-      <Icon className="h-3.5 w-3.5" />
-      {label}
-    </button>
-  );
-
   // ── Scope row in Variables panel ─────────────────────────────────────────────
   const renderScopeRow = (scope) => {
     const vars = sortItemsAlphabetically(TEMPLATE_VARIABLES[scope] || [], ["key", "description"]);

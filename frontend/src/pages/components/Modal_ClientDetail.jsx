@@ -27,6 +27,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-09-11 | GitHub Copilot | Fixed hook dependencies and re-mounted service history modal usage
  * ============================================================
  */
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -131,7 +132,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
       }
     };
     load();
-  }, [isOpen, client?.id]);
+  }, [isOpen, client]);
 
   const now = new Date();
   const serviceMap = Object.fromEntries(services.map((s) => [s.id, s]));
@@ -378,7 +379,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
       }
     };
     load();
-  }, [isOpen, client?.id]);
+  }, [isOpen, client]);
 
   const availablePeriods = useMemo(() => buildPurchasePeriods(transactions, portalOrders), [transactions, portalOrders]);
   const posCount = transactions.length;
@@ -703,6 +704,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
     membership_ids: [],
   });
   const [fieldErrors, setFieldErrors] = useState({});
+  const [showServiceHistory, setShowServiceHistory] = useState(false);
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [cartItems, setCartItems] = useState([]);
@@ -736,7 +738,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         setPurchaseHistoryCount(txns.length + orders.length);
       });
     }
-  }, [isOpen, client?.id]);
+  }, [isOpen, client]);
 
   // ─── 5 FORM HANDLERS ──────────────────────────────────────────────────────
   const formatPhone = (raw) => {
@@ -831,6 +833,14 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
           {/* Action buttons */}
           <div className="flex gap-3 items-center mb-3">
+            <button
+              type="button"
+              onClick={() => setShowServiceHistory(true)}
+              className="bg-blue-100 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-white flex flex-shrink-0 h-12 hover:bg-blue-200 items-center justify-center relative rounded-full shadow-lg text-blue-800 transition-all w-12"
+              title="Service History"
+            >
+              <ClockIcon style={{ width: 24, height: 24 }} />
+            </button>
             <button
               type="button"
               onClick={() => setShowPurchaseHistory(true)}
@@ -932,6 +942,9 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
       </div>
 
       {/* ─── 10 SUB-MODAL MOUNTS ──────────────────────────────────────────── */}
+      {/* Service History Sub-modal */}
+      <ServiceHistoryModal isOpen={showServiceHistory} onClose={() => setShowServiceHistory(false)} client={client} onEditSchedule={handleEditScheduleFromHistory} />
+
       {/* Purchase History Sub-modal */}
       <PurchaseHistoryModal isOpen={showPurchaseHistory} onClose={() => setShowPurchaseHistory(false)} client={client} currentUser={currentUser} appSettings={appSettings} />
 

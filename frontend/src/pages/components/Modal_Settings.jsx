@@ -41,7 +41,7 @@ const Modal_Settings = ({
   environmentLastUpdated,
   appVersion,
   appBuildLabel,
-  HelpIcon,
+  HelpIcon: _HelpIcon,
   onClose,
   onSave,
   showCloseButton = true,

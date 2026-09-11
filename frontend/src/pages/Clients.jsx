@@ -24,6 +24,7 @@
  *   2026-03-07 | Copilot | Added per-option help popovers for tier filter options
  *   2026-05-26 | GitHub Copilot | Moved delete action to left table column and removed modal delete button wiring
  *   2026-07-24 | GitHub Copilot | Replaced row delete with selection-first bulk delete and paired edit/delete selected actions
+ *   2026-09-11 | GitHub Copilot | Removed unused delete handler and tightened hook dependencies for query-driven modal open
  * ============================================================
  */
 
@@ -60,7 +61,7 @@ import { sortItemsAlphabetically } from "../utils/displaySort";
 
 export default function Clients() {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
-  const { clients, setClients, addClient, updateClient, removeClient, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user } = useStore();
+  const { clients, setClients, addClient, updateClient, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user } = useStore();
 
   usePagePermission("clients");
 
@@ -145,7 +146,7 @@ export default function Clients() {
       params.delete("new");
       navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : "" }, { replace: true });
     }
-  }, [location.search]);
+  }, [location.search, location.pathname, navigate, openModal]);
 
   // ─── [4] DATA LOADING ───────────────────────────────────────────────────────
   const loadClients = async () => {
@@ -235,24 +236,6 @@ export default function Clients() {
   const handleOpenClient = (client) => {
     setEditingClient(client);
     openModal("client-detail");
-  };
-
-  const handleDeleteClient = async (clientId) => {
-    if (!hasPermission("clients", "delete")) {
-      setError("You do not have permission to delete clients");
-      return;
-    }
-    if (!(await showConfirm("Are you sure you want to delete this client?"))) return;
-    try {
-      await clientsAPI.delete(clientId);
-      removeClient(clientId);
-      closeModal();
-      clearError();
-    } catch (err) {
-      const errorMsg = err?.response?.data?.detail || "Failed to delete client";
-      setError(errorMsg);
-      console.error(err);
-    }
   };
 
   const handleSubmitCreate = async (clientData) => {

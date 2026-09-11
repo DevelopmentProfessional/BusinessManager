@@ -21,6 +21,7 @@
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
+ *   2026-09-11 | GitHub Copilot | Removed unused local variables to satisfy ESLint no-unused-vars
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
  */
@@ -136,7 +137,6 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
   const currentColor = editor.getAttributes("textStyle").color || "#000000";
   const currentHighlight = editor.getAttributes("highlight").color || "#ffff00";
   const isImageSelected = editor.isActive("image");
-  const currentImageFloat = editor.getAttributes("image").float || "none";
   // Read current line-height from the active block node (paragraph or heading)
   const currentLineHeight = editor.getAttributes("paragraph").lineHeight || editor.getAttributes("heading").lineHeight || "";
 
