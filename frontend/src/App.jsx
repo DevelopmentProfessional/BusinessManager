@@ -82,7 +82,7 @@ function App() {
   const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
   const { isTrainingMode, buttonTextSize, setTrainingMode, setButtonTextSize, setFooterAlign, setUiScale } = useViewMode();
-  const { isInitialized: brandingInitialized } = useBranding();
+  useBranding();
 
   // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {

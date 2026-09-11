@@ -28,12 +28,12 @@
  *   2026-03-07 | Copilot | Added type filter help popover trigger (`?`) in footer dropdown
  *   2026-03-19 | GitHub Copilot | Replaced single-add with spreadsheet-style bulk import modal flow
  *   2026-07-24 | GitHub Copilot | Switched delete to a selection-first bulk action and removed single-item delete from inventory row/edit flows
+ *   2026-09-11 | GitHub Copilot | Removed dead inventory delete/UI imports and aligned memo dependencies for ESLint
  * ============================================================
  */
 
 // ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
-import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { S } from "../utils/strings";
 import { itemTypeVariant, stockVariant } from "../utils/colorMapping";
 import Badge from "./components/Badge";
@@ -45,7 +45,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { ExclamationTriangleIcon, PlusIcon, CameraIcon, MagnifyingGlassIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, ChatBubbleLeftIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Dropdown_Custom from "./components/Dropdown_Custom";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
@@ -68,7 +68,6 @@ const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
-  const navigate = useNavigate();
   const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
   // Use the permission refresh hook
@@ -90,7 +89,6 @@ export default function Inventory() {
   const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
   const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
   const [assetUnitCounts, setAssetUnitCounts] = useState({});
-  const [deletingInventoryId, setDeletingInventoryId] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
   const [assetUnitsPerPage, setAssetUnitsPerPage] = useState(() => {
     const saved = parseInt(localStorage.getItem(ASSET_UNITS_PAGE_SIZE_KEY) || "", 10);
@@ -104,7 +102,6 @@ export default function Inventory() {
   const [sortAsc, setSortAsc] = useState(true);
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
-  const deleteInFlightRef = useRef(new Set());
 
   const multiEditFields = [
     {
@@ -133,66 +130,72 @@ export default function Inventory() {
     },
   ];
 
-  const typeFilterOptions = [
-    {
-      value: "all",
-      label: "All Types",
-      description: "Shows every inventory item type together (Products, Resources, Assets, Locations, and Items). Use this to clear type filtering.",
-    },
-    {
-      value: "PRODUCT",
-      label: "Products",
-      description: "Shows sellable product records only. New inventory entries saved as Product appear when this filter is selected.",
-    },
-    {
-      value: "RESOURCE",
-      label: "Resources",
-      description: "Shows consumable/internal resource items used by the business. Use this to review stock for resources only.",
-    },
-    {
-      value: "ASSET",
-      label: "Assets",
-      description: "Shows long-term business assets (equipment/property style items). Asset entries appear here when this filter is active.",
-    },
-    {
-      value: "LOCATION",
-      label: "Locations",
-      description: "Shows location-type inventory records only. Use this when managing location entries separately from stock items.",
-    },
-    {
-      value: "ITEM",
-      label: "Items",
-      description: "Shows generic item records that are not categorized as Product, Resource, Asset, or Location.",
-    },
-    {
-      value: "BUNDLE",
-      label: "Bundles",
-      description: "Shows bundle items — pre-defined sets of products sold together at a fixed price. When a bundle is sold, each component product's stock decrements automatically.",
-    },
-    {
-      value: "MIX",
-      label: "Mixes",
-      description: "Shows mix items — client picks a fixed number of products from a predefined list (e.g. any 10 blankets). Supports per-product maximums and fixed or percentage pricing.",
-    },
-  ];
+  const typeFilterOptions = useMemo(
+    () => [
+      {
+        value: "all",
+        label: "All Types",
+        description: "Shows every inventory item type together (Products, Resources, Assets, Locations, and Items). Use this to clear type filtering.",
+      },
+      {
+        value: "PRODUCT",
+        label: "Products",
+        description: "Shows sellable product records only. New inventory entries saved as Product appear when this filter is selected.",
+      },
+      {
+        value: "RESOURCE",
+        label: "Resources",
+        description: "Shows consumable/internal resource items used by the business. Use this to review stock for resources only.",
+      },
+      {
+        value: "ASSET",
+        label: "Assets",
+        description: "Shows long-term business assets (equipment/property style items). Asset entries appear here when this filter is active.",
+      },
+      {
+        value: "LOCATION",
+        label: "Locations",
+        description: "Shows location-type inventory records only. Use this when managing location entries separately from stock items.",
+      },
+      {
+        value: "ITEM",
+        label: "Items",
+        description: "Shows generic item records that are not categorized as Product, Resource, Asset, or Location.",
+      },
+      {
+        value: "BUNDLE",
+        label: "Bundles",
+        description: "Shows bundle items — pre-defined sets of products sold together at a fixed price. When a bundle is sold, each component product's stock decrements automatically.",
+      },
+      {
+        value: "MIX",
+        label: "Mixes",
+        description: "Shows mix items — client picks a fixed number of products from a predefined list (e.g. any 10 blankets). Supports per-product maximums and fixed or percentage pricing.",
+      },
+    ],
+    []
+  );
 
-  const stockFilterOptions = [
-    {
-      value: "all",
-      label: "All Stock",
-      description: "Shows every inventory record regardless of stock level.",
-    },
-    {
-      value: "low",
-      label: "Low Stock",
-      description: "Shows only items that are at or below minimum stock level.",
-    },
-    {
-      value: "ok",
-      label: "In Stock",
-      description: "Shows items currently above minimum stock level and considered stocked.",
-    },
-  ];
+  const stockFilterOptions = useMemo(
+    () => [
+      {
+        value: "all",
+        label: "All Stock",
+        description: "Shows every inventory record regardless of stock level.",
+      },
+      {
+        value: "low",
+        label: "Low Stock",
+        description: "Shows only items that are at or below minimum stock level.",
+      },
+      {
+        value: "ok",
+        label: "In Stock",
+        description: "Shows items currently above minimum stock level and considered stocked.",
+      },
+    ],
+    []
+  );
 
   const sortedTypeFilterOptions = useMemo(() => {
     const pinned = typeFilterOptions.find((option) => option.value === "all");
@@ -201,7 +204,7 @@ export default function Inventory() {
       ["label"]
     );
     return pinned ? [pinned, ...rest] : rest;
-  }, []);
+  }, [typeFilterOptions]);
 
   const sortedStockFilterOptions = useMemo(() => {
     const pinned = stockFilterOptions.find((option) => option.value === "all");
@@ -210,7 +213,7 @@ export default function Inventory() {
       ["label"]
     );
     return pinned ? [pinned, ...rest] : rest;
-  }, []);
+  }, [stockFilterOptions]);
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   useFetchOnce(() => loadInventoryData());
@@ -379,16 +382,16 @@ export default function Inventory() {
   };
 
   // Location and Asset items always have "OK" status
-  const isLocationOrAsset = (item) => {
+  const isLocationOrAsset = useCallback((item) => {
     const upperType = (item.type || "").toUpperCase();
     return upperType === "LOCATION" || upperType === "ASSET";
-  };
+  }, []);
 
-  const isLowStock = (item) => {
+  const isLowStock = useCallback((item) => {
     // Location and Asset items are always "OK"
     if (isLocationOrAsset(item)) return false;
     return item.quantity <= item.min_stock_level;
-  };
+  }, [isLocationOrAsset]);
 
   const getTypeFilterButtonClass = () => {
     if (typeFilter === "all") return "btn-app-secondary";
@@ -415,40 +418,14 @@ export default function Inventory() {
     return `$${price.toFixed(2)}`;
   };
 
-  const getCountDisplay = (item) => {
+  const getCountDisplay = useCallback((item) => {
     const isAsset = (item?.type || "").toUpperCase() === "ASSET";
     if (isAsset) {
       const assetCount = assetUnitCounts[item.id];
       if (typeof assetCount === "number") return assetCount;
     }
     return item.quantity ?? 0;
-  };
-
-  const handleDeleteItem = async (inventoryId) => {
-    if (deleteInFlightRef.current.has(inventoryId)) {
-      return;
-    }
-
-    if (!hasPermission("inventory", "delete")) {
-      setError("You do not have permission to delete items");
-      return;
-    }
-
-    deleteInFlightRef.current.add(inventoryId);
-    setDeletingInventoryId(inventoryId);
-
-    try {
-      await inventoryAPI.delete(inventoryId);
-      await loadInventoryData();
-      clearError();
-    } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || "Failed to delete item";
-      setError(String(detail));
-    } finally {
-      deleteInFlightRef.current.delete(inventoryId);
-      setDeletingInventoryId((prev) => (prev === inventoryId ? null : prev));
-    }
-  };
+  }, [assetUnitCounts]);
 
   const handleDeleteSelectedInv = async () => {
     if (selectedIds.size === 0) return;
@@ -496,7 +473,7 @@ export default function Inventory() {
 
       return true;
     });
-  }, [inventory, searchTerm, typeFilter, stockFilter]);
+  }, [inventory, searchTerm, typeFilter, stockFilter, isLowStock]);
 
   const toggleSelectInv = (id) =>
     setSelectedIds((prev) => {
@@ -553,7 +530,7 @@ export default function Inventory() {
       });
     }
     return sorted;
-  }, [filteredInventory, sortColumn, sortAsc]);
+  }, [filteredInventory, sortColumn, sortAsc, getCountDisplay]);
 
   const handleMultiEditSave = async (updates) => {
     setMultiSaving(true);
@@ -852,7 +829,6 @@ export default function Inventory() {
         onUpdateInventory={handleSubmitUpdate}
         onDelete={null}
         canDelete={false}
-        isDeleting={deletingInventoryId === editingInventory?.id}
         existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
         assetUnitsPerPage={assetUnitsPerPage}
       />

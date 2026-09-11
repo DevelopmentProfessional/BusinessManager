@@ -25,6 +25,7 @@
  *   2026-03-07 | Copilot | Added per-option help popovers for category filter options
  *   2026-05-26 | GitHub Copilot | Standardized left-column delete button style to match Inventory row layout
  *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete action in table mode
+ *   2026-09-11 | GitHub Copilot | Removed unused single-delete handler and related symbols to satisfy ESLint
  * ============================================================
  */
 
@@ -54,7 +55,7 @@ import { sortItemsAlphabetically } from "../utils/displaySort";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
-  const { services, setServices, addService, updateService, removeService, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
+  const { services, setServices, addService, updateService, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
   usePagePermission("services");
 
@@ -121,27 +122,6 @@ export default function Services() {
     }
     setEditingService(service);
     openModal("service-form");
-  };
-
-  const handleDeleteService = async (serviceId, e) => {
-    e?.stopPropagation?.();
-    if (!hasPermission("services", "delete")) {
-      setError("You do not have permission to delete services");
-      return;
-    }
-    if (!(await showConfirm("Delete this service?"))) return;
-    try {
-      await servicesAPI.delete(serviceId);
-      removeService(serviceId);
-      if (editingService?.id === serviceId) {
-        setEditingService(null);
-        closeModal();
-      }
-      clearError();
-    } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || "Failed to delete service";
-      setError(String(detail));
-    }
   };
 
   const handleSubmitService = async (serviceData) => {

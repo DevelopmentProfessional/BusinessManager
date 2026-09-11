@@ -9,7 +9,6 @@ const hasMoneyValue = (value) => {
 };
 
 export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [] }) {
-  const isAsset = (item.type || "").toUpperCase() === "ASSET";
   const formatMoney = (value) => {
     if (!hasMoneyValue(value)) return null;
     return Number(value).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2 });

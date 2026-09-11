@@ -35,6 +35,8 @@
  *   2026-07-24 | GitHub Copilot | Removed custom dropdown caret icons and added word-safe trigger label truncation
  *   2026-07-26 | GitHub Copilot | Added initiate_refunds to direct user permission type options
  *   2026-08-04 | GitHub Copilot | Made salary input frequency-aware and convert to annualized value on submit
+ *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to direct user assignment options
+ *   2026-09-11 | GitHub Copilot | Removed unused props/locals and fixed missing effect dependencies
  * ============================================================
  */
 
@@ -83,7 +85,7 @@ const PAGE_OPTION_GROUPS = [
     ],
   },
 ];
-const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "approve_payments", "initiate_refunds", "admin"];
+const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "approve_payments", "initiate_refunds", "admin"];
 
 const PAY_SCHEDULE_DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
@@ -161,7 +163,7 @@ function getSalaryFieldMeta(payFrequency) {
 }
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, onManagePermissions, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
+export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
   const [activeTab, setActiveTab] = useState("details");
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -338,7 +340,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     return () => {
       cancelled = true;
     };
-  }, [employeesProp.length]);
+  }, [employeesProp]);
 
   // Populate form when editing
   useEffect(() => {
@@ -392,7 +394,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       };
       loadSignature();
     }
-  }, [activeTab, employee?.id]);
+  }, [activeTab, employee?.id, employee?.signature_data]);
 
   // Load pay slips when switching to payments tab
   useEffect(() => {
@@ -768,8 +770,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </button>
                           {isRoleDropdownOpen && (
                             <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                              {roleOptions.map((option, index) => {
-                                const isHelpOpen = roleHelpKey === option.value;
+                              {roleOptions.map((option) => {
                                 return (
                                   <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
                                     <button

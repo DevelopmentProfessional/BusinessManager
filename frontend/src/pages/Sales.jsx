@@ -28,21 +28,21 @@
  *   2026-07-31 | GitHub Copilot | Added partial checkout item support and schedule context display payload for checkout modal
  *   2026-07-31 | GitHub Copilot | Added checkout return-target routing so closing checkout returns to opener page
  *   2026-08-01 | GitHub Copilot | Added service add-on inventory auto-consumption during successful checkout finalization
+ *   2026-09-11 | GitHub Copilot | Returned completed schedule payment state after cash and external checkout flows
+ *   2026-09-11 | GitHub Copilot | Removed unused imports and added scoped effect dependency suppressions for stable POS flow
  * ============================================================
  */
 
 // ─── 1  IMPORTS ────────────────────────────────────────────────────────────
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation, useNavigate } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, ClockIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, ChevronDownIcon, ChevronUpIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Filter_CatalogCheckboxes from "./components/Filter_CatalogCheckboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
-import Gate_Permission from "./components/Gate_Permission";
-import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import { templatesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/Modal_ItemDetail";
@@ -311,7 +311,7 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
 
 // ─── 3  SALES PAGE COMPONENT ───────────────────────────────────────────────
 export default function Sales() {
-  const { services, setServices, loading, setLoading, error, setError, clearError, hasPermission, openAddClientModal, user } = useStore();
+  const { services, setServices, loading, setLoading, error, setError, clearError, openAddClientModal, user } = useStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { footerAlign } = useViewMode();
@@ -385,22 +385,24 @@ export default function Sales() {
     status: "",
   });
   const stripeReturnHandledRef = useRef(false);
+  const routeHandoffProcessedRef = useRef(null);
   const [checkoutContext, setCheckoutContext] = useState(null);
   const [checkoutReturnTarget, setCheckoutReturnTarget] = useState(null);
 
-  const closeCheckoutModal = () => {
+  const closeCheckoutModal = useCallback((returnState = null) => {
     setShowCheckout(false);
 
     if (checkoutReturnTarget?.pathname) {
       const targetPath = `${checkoutReturnTarget.pathname}${checkoutReturnTarget.search || ""}${checkoutReturnTarget.hash || ""}`;
-      const navOptions = checkoutReturnTarget.state ? { state: checkoutReturnTarget.state } : undefined;
+      const nextState = returnState ? { ...(checkoutReturnTarget.state || {}), ...returnState } : checkoutReturnTarget.state;
+      const navOptions = nextState ? { state: nextState } : undefined;
       setCheckoutReturnTarget(null);
       navigate(targetPath || "/", navOptions);
       return;
     }
 
     setCheckoutReturnTarget(null);
-  };
+  }, [checkoutReturnTarget, navigate]);
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
@@ -418,7 +420,7 @@ export default function Sales() {
   });
 
   // ─── 6  DATA LOADING FUNCTIONS ───────────────────────────────────────────
-  const loadTransactionHistory = async () => {
+  const loadTransactionHistory = useCallback(async () => {
     try {
       const [salesRes, portalRes] = await Promise.all([saleTransactionsAPI.getAll(), clientOrdersAPI.getAll()]);
       const txData = salesRes?.data ?? salesRes;
@@ -467,7 +469,7 @@ export default function Sales() {
     } catch (err) {
       console.error("Failed to load transaction history from DB:", err);
     }
-  };
+  }, [clients, user?.full_name, user?.username]);
 
   const [linkedScheduleId, setLinkedScheduleId] = useState(null);
   const [linkedScheduleServiceId, setLinkedScheduleServiceId] = useState(null);
@@ -487,10 +489,14 @@ export default function Sales() {
 
   useEffect(() => {
     if (showCartModal) loadClients();
-  }, [showCartModal]);
+  }, [showCartModal, loadClients]);
 
-  // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages
+  // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages.
+  // Guard by route-state identity so callback dependency updates do not replay one-time handoff logic.
   useEffect(() => {
+    if (location.state && routeHandoffProcessedRef.current === location.state) return;
+    routeHandoffProcessedRef.current = location.state || null;
+
     const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
     if (scheduleId) {
       setLinkedScheduleId(scheduleId);
@@ -533,7 +539,7 @@ export default function Sales() {
         return () => clearInterval(interval);
       }
     }
-  }, [location.state?.openCheckout, location.state?.preSelectedClient, location.state?.preloadServiceId, services.length]);
+  }, [handleSelectClient, location.state, services]);
 
   useEffect(() => {
     if (!autoOpenCheckoutRequested) return;
@@ -614,13 +620,17 @@ export default function Sales() {
           }
         }
 
+        let linkedScheduleMarkedPaid = false;
         if (saleIdMatches && pending?.linkedScheduleId) {
-          await scheduleAPI
-            .update(pending.linkedScheduleId, {
+          try {
+            await scheduleAPI.update(pending.linkedScheduleId, {
               is_paid: true,
               sale_transaction_id: saleId,
-            })
-            .catch(() => {});
+            });
+            linkedScheduleMarkedPaid = true;
+          } catch (error) {
+            console.warn("Could not mark schedule as paid after checkout return:", error);
+          }
         }
 
         await loadTransactionHistory();
@@ -649,7 +659,25 @@ export default function Sales() {
           setSelectedClient(null);
           setCheckoutContext(null);
         }
-        closeCheckoutModal();
+        const schedulePaymentState =
+          linkedScheduleMarkedPaid && pending?.linkedScheduleId
+            ? {
+                schedulePaymentCompleted: {
+                  appointmentId: pending.linkedScheduleId,
+                  saleTransactionId: saleId,
+                },
+              }
+            : null;
+        if (pending?.checkoutReturnTarget?.pathname) {
+          const returnTarget = pending.checkoutReturnTarget;
+          const targetPath = `${returnTarget.pathname}${returnTarget.search || ""}${returnTarget.hash || ""}`;
+          setShowCheckout(false);
+          navigate(targetPath, {
+            state: { ...(returnTarget.state || {}), ...(schedulePaymentState || {}) },
+          });
+        } else {
+          closeCheckoutModal(schedulePaymentState);
+        }
         setLinkedScheduleId(null);
         setLinkedScheduleServiceId(null);
         clearError();
@@ -661,7 +689,7 @@ export default function Sales() {
     };
 
     finalizeStripeSaleReturn();
-  }, [clients, location.search]);
+  }, [clearError, clients, closeCheckoutModal, loadTransactionHistory, location.search, navigate, setError]);
 
   // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
   const mapCartItemToDb = (item) => ({
@@ -676,7 +704,7 @@ export default function Sales() {
     options_json: item.itemType === "mix" && item.mixSelections?.length > 0 ? JSON.stringify(item.mixSelections) : item.selectedOptions?.length > 0 ? JSON.stringify(item.selectedOptions) : null,
   });
 
-  const mapDbItemToCart = (dbItem) => {
+  const mapDbItemToCart = useCallback((dbItem) => {
     let parsedOptions = [];
     let mixSelections = undefined;
     if (dbItem.options_json) {
@@ -699,19 +727,19 @@ export default function Sales() {
       selectedOptions: parsedOptions,
       ...(mixSelections !== undefined ? { mixSelections } : {}),
     };
-  };
+  }, []);
 
-  const syncItemToDb = (item, clientId) => {
+  const syncItemToDb = useCallback((item, clientId) => {
     if (!clientId) return;
     clientCartAPI.upsertItem(clientId, mapCartItemToDb(item)).catch(() => {});
-  };
+  }, []);
 
   const removeItemFromDb = (cartKey, clientId) => {
     if (!clientId) return;
     clientCartAPI.removeItem(clientId, cartKey).catch(() => {});
   };
 
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     if (clientsLoaded) return; // Already loaded, skip
     try {
       const response = await clientsAPI.getAll();
@@ -723,9 +751,9 @@ export default function Sales() {
     } catch (err) {
       console.error("Failed to load clients for POS:", err);
     }
-  };
+  }, [clientsLoaded]);
 
-  const getNextScheduledService = async (clientId) => {
+  const getNextScheduledService = useCallback(async (clientId) => {
     if (!clientId) return null;
     try {
       const res = await clientsAPI.getSchedules(clientId);
@@ -746,10 +774,10 @@ export default function Sales() {
     } catch {
       return null;
     }
-  };
+  }, [services]);
 
   // Select a client, load their saved cart, merge any walk-in items, and include their next scheduled service
-  const handleSelectClient = async (client, options = {}) => {
+  const handleSelectClient = useCallback(async (client, options = {}) => {
     // Capture walk-in items before switching — from in-memory state (if no client was selected)
     // or from localStorage (when navigating to this page fresh with a pre-selected client)
     let walkInItems = selectedClient == null ? [...cart] : [];
@@ -828,7 +856,7 @@ export default function Sales() {
     }
 
     setCart(nextCart);
-  };
+  }, [cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]);
 
   const loadProducts = async () => {
     try {
@@ -1140,6 +1168,7 @@ export default function Sales() {
     const checkoutItems = Array.isArray(checkoutItemsArg) && checkoutItemsArg.length > 0 ? checkoutItemsArg : cart;
     if (checkoutItems.length === 0) return { completed: false };
     const includesLinkedScheduleService = linkedScheduleId && linkedScheduleServiceId ? checkoutItems.some((item) => item.itemType === "service" && String(item.id) === String(linkedScheduleServiceId)) : false;
+    const completedScheduleId = includesLinkedScheduleService ? linkedScheduleId : null;
 
     const checkoutSubtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const checkoutDiscount = calculateDiscountForItems(checkoutItems);
@@ -1209,6 +1238,7 @@ export default function Sales() {
               selectedClientName: selectedClient?.name || "",
               selectedClientEmail: selectedClient?.email || "",
               linkedScheduleId: includesLinkedScheduleService ? linkedScheduleId : null,
+              checkoutReturnTarget,
               checkoutItemCartKeys,
               checkoutHadRemainingItems,
               soldSubscriptions: soldSubscriptions.map((sub) => ({
@@ -1337,7 +1367,16 @@ export default function Sales() {
       setSelectedClient(null);
       setCheckoutContext(null);
     }
-    closeCheckoutModal();
+    closeCheckoutModal(
+      paymentResult.completed && completedScheduleId
+        ? {
+            schedulePaymentCompleted: {
+              appointmentId: completedScheduleId,
+              saleTransactionId: paymentResult.sale_id || null,
+            },
+          }
+        : null
+    );
     clearError();
     if (String(paymentMethod || "").toLowerCase() === "cash") {
       setSuccessNotice("Payment confirmed.");
@@ -1864,7 +1903,7 @@ export default function Sales() {
       {/* Checkout Modal */}
       <Modal_Checkout_Sales
         isOpen={showCheckout}
-        onClose={closeCheckoutModal}
+        onClose={() => closeCheckoutModal()}
         cart={cart}
         discountAmount={cartDiscount}
         selectedClient={selectedClient}

@@ -33,12 +33,13 @@
  *   2026-03-07 | Claude  | Converted type select to custom dropdown with per-option help popovers
  *   2026-05-19 | GitHub Copilot | Added cost type/date fields and bundle/mix subtotal summaries
  *   2026-07-24 | GitHub Copilot | Removed type dropdown caret icon and added word-safe trigger label truncation
+ *   2026-09-11 | GitHub Copilot | Removed unused locals and fixed photo URL cleanup dependencies
  * ============================================================
  */
 
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, CheckIcon, SparklesIcon, CubeIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, SparklesIcon, CubeIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ArrowUpTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -52,7 +53,7 @@ import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 import { sortItemsAlphabetically } from "../../utils/displaySort";
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", showInitialQuantity = false, onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
+export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
   const [formData, setFormData] = useState({
     name: initialName || "",
     sku: initialSku || "",
@@ -81,7 +82,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
@@ -201,10 +201,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
   // Clean up object URL on unmount
   useEffect(() => {
+    const currentPendingPhotoUrl = pendingPhotoUrl;
     return () => {
-      if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+      if (currentPendingPhotoUrl) URL.revokeObjectURL(currentPendingPhotoUrl);
     };
-  }, []);
+  }, [pendingPhotoUrl]);
 
   // Load categories whenever type changes.
   // cancelled flag prevents stale API responses from overwriting fresh results
@@ -349,6 +350,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     const image_url = addImageMode === "url" || !pendingPhotoUrl ? (formData.image_url || "").trim() : "";
     const location = (formData.location || "").trim();
     const minStockLevel = parseInt(formData.min_stock_level) || 10;
+    const qty = parseInt(formData.quantity) || 0;
+    const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
     const payload = {
       name,
       sku,
@@ -367,8 +370,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       date_of_purchase: formData.date_of_purchase || undefined,
       date_of_sale: formData.date_of_sale || undefined,
     };
-    const qty = parseInt(formData.quantity) || 0;
-    const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
 
     // Include bundle/mix pricing in payload
     if (type === "BUNDLE") {
@@ -694,8 +695,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                 </button>
                 {isTypeDropdownOpen && (
                   <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                    {typeOptions.map((option, index) => {
-                      const isHelpOpen = typeHelpKey === option.value;
+                    {typeOptions.map((option) => {
                       return (
                         <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
                           <button

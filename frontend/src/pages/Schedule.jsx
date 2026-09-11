@@ -52,6 +52,8 @@
  *   2026-07-31 | GitHub Copilot | Included schedule context in Sales checkout handoff so checkout can show appointment/client details
  *   2026-08-01 | GitHub Copilot | Preserved add-on billing/consumption metadata and billable-only add-on pricing in schedule checkout handoff
  *   2026-07-31 | GitHub Copilot | Added appointment service add-ons to schedule save, cart sync, and Sales checkout handoff
+ *   2026-09-11 | GitHub Copilot | Applied completed checkout state immediately and rendered paid controls as solid white circles
+ *   2026-09-11 | GitHub Copilot | Removed unused dark-mode toggle binding and aligned query-open effect dependencies
  * ============================================================
  */
 
@@ -144,8 +146,8 @@ export default function Schedule() {
   const navigate = useNavigate();
 
   // ─── 2 STORE & PERMISSION GUARD ──────────────────────────────────────────────
-  const { appointments, clients, services, employees, loading, setAppointments, setClients, setServices, setEmployees, hasPermission, isAuthenticated, user } = useStore();
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { appointments, clients, services, employees, loading, setAppointments, updateAppointment, setClients, setServices, setEmployees, hasPermission, isAuthenticated, user } = useStore();
+  const { isDarkMode } = useDarkMode();
 
   // Use the permission refresh hook
 
@@ -232,7 +234,7 @@ export default function Schedule() {
     };
 
     openFromQuery();
-  }, [location.pathname, location.search, navigate, appointments]);
+  }, [location.pathname, location.search, navigate, appointments, setCurrentDate, setCurrentView]);
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
   // Update clock every minute
@@ -594,6 +596,22 @@ export default function Schedule() {
       console.error("Failed to refresh schedules:", err);
     }
   }, [setAppointments]);
+
+  useEffect(() => {
+    const completedPayment = location.state?.schedulePaymentCompleted;
+    if (!completedPayment?.appointmentId) return;
+
+    updateAppointment(completedPayment.appointmentId, {
+      is_paid: true,
+      sale_transaction_id: completedPayment.saleTransactionId || null,
+    });
+    const remainingLocationState = { ...(location.state || {}) };
+    delete remainingLocationState.schedulePaymentCompleted;
+    navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: Object.keys(remainingLocationState).length > 0 ? remainingLocationState : null,
+    });
+  }, [location.hash, location.pathname, location.search, location.state, navigate, updateAppointment]);
 
   // ─── 12 ATTENDEE SYNC UTILITIES ──────────────────────────────────────────────
   const normalizeIds = useCallback((value) => {
@@ -1692,7 +1710,7 @@ export default function Schedule() {
                 return nameA.localeCompare(nameB);
               })
               .map((appt) => {
-                const { clientName, serviceName, primaryLabel, secondaryLabel } = getAppointmentDisplay(appt);
+                const { primaryLabel, secondaryLabel } = getAppointmentDisplay(appt);
                 const emp = employees.find((e) => e.id === appt.employee_id);
                 const empName = emp ? `${emp.first_name} ${emp.last_name}` : "";
                 const apptTime = new Date(appt.appointment_date);
@@ -2226,9 +2244,9 @@ export default function Schedule() {
         }
 
         .schedule-paid-toggle.is-paid {
-          background: rgba(255, 255, 255, 0.98);
-          border-color: #16a34a;
-          color: #16a34a;
+          background: #ffffff;
+          border-color: #ffffff;
+          color: #ffffff;
         }
 
         .schedule-paid-toggle.is-unpaid {

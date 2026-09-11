@@ -64,16 +64,24 @@ function getNextEnabledIndex(options, startIndex, direction) {
 
 function getPanelStyle(select) {
   const rect = select.getBoundingClientRect();
-  const width = Math.min(Math.max(rect.width, PANEL_MIN_WIDTH), window.innerWidth - PANEL_SIDE_MARGIN * 2);
-  const left = Math.min(Math.max(rect.left, PANEL_SIDE_MARGIN), window.innerWidth - width - PANEL_SIDE_MARGIN);
-  const availableAbove = Math.max(96, rect.top - PANEL_SIDE_MARGIN - PANEL_GAP);
+  const viewport = window.visualViewport;
+  const viewportLeft = viewport?.offsetLeft ?? 0;
+  const viewportTop = viewport?.offsetTop ?? 0;
+  const viewportWidth = viewport?.width ?? window.innerWidth;
+  const viewportHeight = viewport?.height ?? window.innerHeight;
+  const viewportRight = viewportLeft + viewportWidth;
+  const viewportBottom = viewportTop + viewportHeight;
+  const width = Math.min(Math.max(rect.width, PANEL_MIN_WIDTH), viewportWidth - PANEL_SIDE_MARGIN * 2);
+  const left = Math.min(Math.max(rect.left, viewportLeft + PANEL_SIDE_MARGIN), viewportRight - width - PANEL_SIDE_MARGIN);
+  const panelBottom = Math.min(rect.top - PANEL_GAP, viewportBottom - PANEL_SIDE_MARGIN);
+  const availableAbove = Math.max(96, panelBottom - viewportTop - PANEL_SIDE_MARGIN);
   const maxHeight = Math.min(PANEL_MAX_HEIGHT, availableAbove);
-  const bottom = Math.max(PANEL_SIDE_MARGIN, window.innerHeight - rect.top + PANEL_GAP);
+  const top = Math.max(viewportTop + PANEL_SIDE_MARGIN, panelBottom - maxHeight);
 
   return {
     left,
-    top: "auto",
-    bottom,
+    top,
+    bottom: "auto",
     width,
     maxHeight,
   };
@@ -157,10 +165,14 @@ export default function Dropup_SearchOverlay() {
 
     window.addEventListener("resize", handleViewportChange);
     window.addEventListener("scroll", handleScroll, true);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
 
     return () => {
       window.removeEventListener("resize", handleViewportChange);
       window.removeEventListener("scroll", handleScroll, true);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
     };
   }, [activeSelect, closeOverlay]);
 

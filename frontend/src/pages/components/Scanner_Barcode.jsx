@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
-export default function Scanner_Barcode({ onDetected, onCancel }) {
+export default function Scanner_Barcode({ onDetected, onCancel: _onCancel }) {
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -36,7 +36,7 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
         const deviceId = backCamera?.deviceId || devices[0]?.deviceId;
 
         // If still no device ID, fallback to default camera by passing undefined
-        await codeReaderRef.current.decodeFromVideoDevice(deviceId, videoElement, (result, err) => {
+        await codeReaderRef.current.decodeFromVideoDevice(deviceId, videoElement, (result, _err) => {
           if (!active) return;
           if (result) {
             const text = result.getText();
@@ -60,7 +60,7 @@ export default function Scanner_Barcode({ onDetected, onCancel }) {
         mediaStreamRef.current?.getTracks()?.forEach((t) => t.stop());
       } catch {}
     };
-  }, [onDetected, onCancel]);
+  }, [onDetected]);
 
   return (
     <div className="space-y-3">

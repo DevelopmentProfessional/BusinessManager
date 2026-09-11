@@ -32,6 +32,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-06-13 | GitHub Copilot | Added initialName support for global create-from-search service modal
  *   2026-07-31 | GitHub Copilot | Added editable service add-ons (name, price delta, default quantity)
+ *   2026-09-11 | GitHub Copilot | Removed unused lookup/context state tied to lint cleanup
  * ============================================================
  */
 
@@ -50,8 +51,7 @@ const TABS = ["details", "resources", "assets", "employees", "locations"];
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Service({ service, initialName = "", onSubmit, onCancel, onBulkImport = null }) {
-  const { openAddInventoryModal, addInventory } = useStore();
-  const [createdFromSearchContext, setCreatedFromSearchContext] = useState(null); // "resource", "asset", or "location"
+  const { openAddInventoryModal } = useStore();
 
   const [activeTab, setActiveTab] = useState("details");
 
@@ -69,7 +69,6 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   // ── Lookup data ──────────────────────────────────────────────────
   const [inventory, setInventory] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [lookupLoading, setLookupLoading] = useState(true);
 
   // ── Relationship state ───────────────────────────────────────────
   const [resources, setResources] = useState([]);
@@ -151,7 +150,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
       } catch (err) {
         console.error("Form_Service: failed to load lookups", err);
       } finally {
-        if (!cancelled) setLookupLoading(false);
+        // no-op
       }
     };
     load();
@@ -279,7 +278,6 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   // ── Create-from-search handlers ──────────────────────────────────
   const handleCreateInventoryFromSearch = (context) => (searchText) => {
-    setCreatedFromSearchContext(context);
     openAddInventoryModal((newItem) => {
       // Auto-select and add the created inventory to the appropriate context
       if (context === "resource") {
@@ -293,7 +291,6 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         setNewLocation((prev) => ({ ...prev, inventory_id: newItem.id }));
         inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
       }
-      setCreatedFromSearchContext(null);
     }, searchText);
   };
 

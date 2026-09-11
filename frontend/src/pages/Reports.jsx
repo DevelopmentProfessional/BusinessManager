@@ -30,11 +30,12 @@
  *   2026-05-26 | GitHub Copilot | Updated Events dropup sizing/icon behavior and refined Financial Controls footer actions
  *   2026-06-13 | GitHub Copilot | Added report controls visibility toggle and normalized report selector dropup behavior
  *   2026-09-04 | GitHub Copilot | Added persisted employee activity workday report
+ *   2026-09-11 | GitHub Copilot | Removed unused report symbols and stabilized report reload effect dependencies
  * ============================================================
  */
 
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import {
   ChartBarIcon,
@@ -55,7 +56,6 @@ import {
   Cog6ToothIcon,
   FunnelIcon,
   XMarkIcon,
-  TagIcon,
   PhoneIcon,
   BellIcon,
   ListBulletIcon,
@@ -375,7 +375,7 @@ export default function Reports() {
   const { user, loading, setLoading, error, setError, clearError, hasPageAccess } = useStore();
 
   const { branding } = useBranding();
-  const { isTrainingMode, buttonTextSize } = useViewMode();
+  const { isTrainingMode } = useViewMode();
 
   // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
   // NOTE: permission guard is evaluated AFTER all hooks to comply with React's Rules of Hooks
@@ -432,6 +432,7 @@ export default function Reports() {
   });
 
   const selectedReport = useMemo(() => accessibleReports.find((r) => r.id === selectedReportId) || null, [accessibleReports, selectedReportId]);
+  const activeReportId = selectedReport?.id;
 
   // ─── 5 REPORT SELECTION HANDLER ──────────────────────────────────────────
   const handleReportSelect = (reportId) => {
@@ -444,52 +445,6 @@ export default function Reports() {
       chartType: report.chartTypes[0] || "line",
     }));
     setReportMenuOpen(false);
-  };
-
-  // ─── 6 DATA LOADING / API FETCH ──────────────────────────────────────────
-  const loadReportData = async (reportId, filters = reportFilters) => {
-    if (!reportId) return;
-    setLoading(true);
-    try {
-      let response;
-      const apiParams = {
-        start_date: getStartDate(filters.dateRange, currentPeriodOffset),
-        end_date: getEndDate(filters.dateRange, currentPeriodOffset),
-        group_by: filters.groupBy,
-        ...(filters.status && filters.status !== "all" ? { status: filters.status } : {}),
-        ...(filters.employeeId && filters.employeeId !== "all" ? { employee_id: filters.employeeId } : {}),
-        ...(filters.serviceId && filters.serviceId !== "all" ? { service_id: filters.serviceId } : {}),
-        ...(filters.eventType && filters.eventType !== "all" ? { event_type: filters.eventType } : {}),
-      };
-
-      const handler = REPORT_HANDLERS[reportId];
-      if (!handler) {
-        setReportData({ labels: [], datasets: [] });
-      } else {
-        response = await handler.api(apiParams);
-        const transformFn = {
-          transformAppointmentsData,
-          transformRevenueData,
-          transformClientsData,
-          transformServicesData,
-          transformInventoryData,
-          transformEmployeesData,
-          transformEmployeeActivityData,
-          transformAttendanceData,
-          transformSalesData,
-          transformPayrollData,
-          transformMultiDatasetData,
-        }[handler.transform];
-        setReportData(transformFn(response.data, filters.chartType));
-      }
-      clearError();
-    } catch (err) {
-      setError("Failed to load report data");
-      console.error(err);
-      setReportData({ labels: [], datasets: [] });
-    } finally {
-      setLoading(false);
-    }
   };
 
   // ─── SAVED FILTERS HANDLERS ────────────────────────────────────────────
@@ -558,7 +513,7 @@ export default function Reports() {
   };
 
   // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
-  const getPeriodDuration = (dateRange) => {
+  const getPeriodDuration = useCallback((dateRange) => {
     switch (dateRange) {
       case "last7days":
         return { days: 7 };
@@ -573,9 +528,9 @@ export default function Reports() {
       default:
         return { days: 30 };
     }
-  };
+  }, []);
 
-  const getStartDate = (dateRange, offset = 0) => {
+  const getStartDate = useCallback((dateRange, offset = 0) => {
     const duration = getPeriodDuration(dateRange);
     const base = new Date();
 
@@ -592,9 +547,9 @@ export default function Reports() {
     else if (duration.years) base.setFullYear(base.getFullYear() - duration.years);
 
     return base.toISOString().split("T")[0];
-  };
+  }, [getPeriodDuration]);
 
-  const getEndDate = (dateRange, offset = 0) => {
+  const getEndDate = useCallback((dateRange, offset = 0) => {
     if (offset === 0) return new Date().toISOString().split("T")[0];
 
     const duration = getPeriodDuration(dateRange);
@@ -605,10 +560,10 @@ export default function Reports() {
     else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
 
     return base.toISOString().split("T")[0];
-  };
+  }, [getPeriodDuration]);
 
   // ─── 8 DATA TRANSFORM FUNCTIONS — map API responses to Chart.js datasets ─
-  const getPalette = (count, alpha = 0.5) => Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`);
+  const getPalette = useCallback((count, alpha = 0.5) => Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`), []);
 
   const transformAppointmentsData = (data, chartType) => ({
     labels: data.labels,
@@ -623,7 +578,7 @@ export default function Reports() {
     ],
   });
 
-  const transformRevenueData = (data, chartType) => ({
+  const transformRevenueData = useCallback((data, chartType) => ({
     labels: data.labels,
     datasets:
       Array.isArray(data.datasets) && data.datasets.length > 0
@@ -647,9 +602,9 @@ export default function Reports() {
               borderWidth: 2,
             },
           ],
-  });
+  }), [getPalette]);
 
-  const transformClientsData = (data, chartType) => ({
+  const transformClientsData = useCallback((data, chartType) => ({
     labels: data.labels,
     datasets:
       Array.isArray(data.datasets) && data.datasets.length > 0
@@ -673,9 +628,9 @@ export default function Reports() {
               borderWidth: 2,
             },
           ],
-  });
+  }), [getPalette]);
 
-  const transformServicesData = (data, chartType) => ({
+  const transformServicesData = useCallback((data, chartType) => ({
     labels: data.labels,
     datasets: [
       {
@@ -686,9 +641,9 @@ export default function Reports() {
         borderWidth: 2,
       },
     ],
-  });
+  }), [getPalette]);
 
-  const transformInventoryData = (data, chartType) => ({
+  const transformInventoryData = (data, _chartType) => ({
     labels: data.labels,
     datasets: [
       {
@@ -701,7 +656,7 @@ export default function Reports() {
     ],
   });
 
-  const transformEmployeesData = (data, chartType) => ({
+  const transformEmployeesData = (data, _chartType) => ({
     labels: data.labels,
     datasets: [
       {
@@ -716,7 +671,7 @@ export default function Reports() {
 
   const transformEmployeeActivityData = (data) => data;
 
-  const transformAttendanceData = (data, chartType) => ({
+  const transformAttendanceData = (data, _chartType) => ({
     labels: data.labels,
     datasets: [
       {
@@ -729,7 +684,7 @@ export default function Reports() {
     ],
   });
 
-  const transformSalesData = (data, chartType) => ({
+  const transformSalesData = useCallback((data, chartType) => ({
     labels: data.labels,
     datasets:
       Array.isArray(data.datasets) && data.datasets.length > 0
@@ -753,9 +708,9 @@ export default function Reports() {
               borderWidth: 2,
             },
           ],
-  });
+  }), [getPalette]);
 
-  const transformPayrollData = (data, chartType) => ({
+  const transformPayrollData = (data, _chartType) => ({
     labels: data.labels,
     datasets: [
       {
@@ -769,7 +724,7 @@ export default function Reports() {
   });
 
   // Generic multi-dataset transform for reports that already return datasets array
-  const transformMultiDatasetData = (data, chartType) => {
+  const transformMultiDatasetData = useCallback((data, chartType) => {
     if (!Array.isArray(data.datasets) || data.datasets.length === 0) {
       return { labels: data.labels || [], datasets: [] };
     }
@@ -793,7 +748,7 @@ export default function Reports() {
         };
       }),
     };
-  };
+  }, [getPalette]);
 
   // ─── 9 LIFECYCLE HOOKS ───────────────────────────────────────────────────
   useEffect(() => {
@@ -817,10 +772,83 @@ export default function Reports() {
   }, []);
 
   useEffect(() => {
-    if (selectedReport) {
-      loadReportData(selectedReport.id, reportFilters);
-    }
-  }, [selectedReport?.id, reportFilters.dateRange, reportFilters.groupBy, reportFilters.chartType, reportFilters.status, reportFilters.employeeId, reportFilters.serviceId, reportFilters.eventType, currentPeriodOffset]);
+    if (!activeReportId) return;
+
+    const run = async () => {
+      const filters = {
+        dateRange: reportFilters.dateRange,
+        groupBy: reportFilters.groupBy,
+        chartType: reportFilters.chartType,
+        status: reportFilters.status,
+        employeeId: reportFilters.employeeId,
+        serviceId: reportFilters.serviceId,
+        eventType: reportFilters.eventType,
+      };
+
+      setLoading(true);
+      try {
+        const apiParams = {
+          start_date: getStartDate(filters.dateRange, currentPeriodOffset),
+          end_date: getEndDate(filters.dateRange, currentPeriodOffset),
+          group_by: filters.groupBy,
+          ...(filters.status && filters.status !== "all" ? { status: filters.status } : {}),
+          ...(filters.employeeId && filters.employeeId !== "all" ? { employee_id: filters.employeeId } : {}),
+          ...(filters.serviceId && filters.serviceId !== "all" ? { service_id: filters.serviceId } : {}),
+          ...(filters.eventType && filters.eventType !== "all" ? { event_type: filters.eventType } : {}),
+        };
+
+        const handler = REPORT_HANDLERS[activeReportId];
+        if (!handler) {
+          setReportData({ labels: [], datasets: [] });
+        } else {
+          const response = await handler.api(apiParams);
+          const transformFn = {
+            transformAppointmentsData,
+            transformRevenueData,
+            transformClientsData,
+            transformServicesData,
+            transformInventoryData,
+            transformEmployeesData,
+            transformEmployeeActivityData,
+            transformAttendanceData,
+            transformSalesData,
+            transformPayrollData,
+            transformMultiDatasetData,
+          }[handler.transform];
+          setReportData(transformFn(response.data, filters.chartType));
+        }
+        clearError();
+      } catch (err) {
+        setError("Failed to load report data");
+        console.error(err);
+        setReportData({ labels: [], datasets: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [
+    clearError,
+    currentPeriodOffset,
+    reportFilters.chartType,
+    reportFilters.dateRange,
+    reportFilters.employeeId,
+    reportFilters.eventType,
+    reportFilters.groupBy,
+    reportFilters.serviceId,
+    reportFilters.status,
+    activeReportId,
+    getEndDate,
+    getStartDate,
+    transformClientsData,
+    transformMultiDatasetData,
+    transformRevenueData,
+    transformSalesData,
+    transformServicesData,
+    setError,
+    setLoading,
+  ]);
 
   useEffect(() => {
     loadSavedFilters();

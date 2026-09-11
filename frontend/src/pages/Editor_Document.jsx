@@ -22,11 +22,12 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-15 | Copilot | Shortened document action button labels for compact training-mode layouts
+ *   2026-09-11 | GitHub Copilot | Removed unused loading setter and stabilized document-load effect dependencies
  * ============================================================
  */
 
 // ─── 1 IMPORTS ──────────────────────────────────────────────────────────────
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DocumentIcon, ArrowLeftIcon, CheckIcon, XMarkIcon, EyeIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../services/api";
@@ -36,7 +37,7 @@ import useStore from "../services/useStore";
 export default function Editor_Document() {
   const { documentId } = useParams();
   const navigate = useNavigate();
-  const { setLoading, setError, clearError } = useStore();
+  const { setError, clearError } = useStore();
 
   // ─── 2 STATE DECLARATIONS ────────────────────────────────────────────────
   const [document, setDocument] = useState(null);
@@ -45,13 +46,8 @@ export default function Editor_Document() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // ─── 3 LIFECYCLE — load document when documentId changes ─────────────────
-  useEffect(() => {
-    loadDocument();
-  }, [documentId]);
-
   // ─── 4 DATA LOADING ──────────────────────────────────────────────────────
-  const loadDocument = async () => {
+  const loadDocument = useCallback(async () => {
     setLocalLoading(true);
     setLocalError("");
     try {
@@ -65,7 +61,12 @@ export default function Editor_Document() {
     } finally {
       setLocalLoading(false);
     }
-  };
+  }, [documentId, clearError, setError]);
+
+  // ─── 3 LIFECYCLE — load document when documentId changes ─────────────────
+  useEffect(() => {
+    loadDocument();
+  }, [loadDocument]);
 
   // ─── 5 ACTION HANDLERS ───────────────────────────────────────────────────
   const handleSave = async () => {
@@ -170,19 +171,19 @@ export default function Editor_Document() {
 
               if ((ct && ct.startsWith("image/")) || /(\.png|\.jpg|\.jpeg|\.gif|\.webp)$/i.test(name)) {
                 return <img src={documentsAPI.fileUrl(document.id)} alt={document.original_filename} className="bg-white h-full object-contain w-full" />;
-              } else if (ct.includes("pdf") || name.endsWith(".pdf")) {
-                return <iframe title="PDF Preview" src={documentsAPI.fileUrl(document.id)} className="bg-white h-full w-full" />;
-              } else {
-                return (
-                  <div className="bg-white flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <DocumentIcon className="h-16 mb-4 mx-auto text-gray-400 w-16" />
-                      <p className="text-gray-600">Preview not available for this file type.</p>
-                      <p className="mt-2 text-gray-500 text-sm">Use the editor for supported document types.</p>
-                    </div>
-                  </div>
-                );
               }
+              if (ct.includes("pdf") || name.endsWith(".pdf")) {
+                return <iframe title="PDF Preview" src={documentsAPI.fileUrl(document.id)} className="bg-white h-full w-full" />;
+              }
+              return (
+                <div className="bg-white flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <DocumentIcon className="h-16 mb-4 mx-auto text-gray-400 w-16" />
+                    <p className="text-gray-600">Preview not available for this file type.</p>
+                    <p className="mt-2 text-gray-500 text-sm">Use the editor for supported document types.</p>
+                  </div>
+                </div>
+              );
             })()}
           </div>
         ) : (

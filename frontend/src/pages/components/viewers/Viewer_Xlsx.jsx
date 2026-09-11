@@ -29,13 +29,40 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-09-11 | GitHub Copilot | Replaced unpatched SheetJS dependency with ExcelJS workbook handling
  * ============================================================
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { ArrowDownTrayIcon, PencilIcon, TableCellsIcon, PlusIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../../services/api";
+
+function getCellDisplayValue(value) {
+  if (value == null) return "";
+  if (value instanceof Date) return value.toLocaleString();
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value.richText)) return value.richText.map((part) => part.text || "").join("");
+  if (Object.hasOwn(value, "result")) return value.result ?? "";
+  if (Object.hasOwn(value, "text")) return value.text ?? "";
+  if (Object.hasOwn(value, "error")) return value.error ?? "";
+  return String(value);
+}
+
+function worksheetToRows(worksheet) {
+  if (!worksheet) return [];
+  const rowCount = worksheet.rowCount;
+  const columnCount = Math.max(worksheet.columnCount, 1);
+  return Array.from({ length: rowCount }, (_, rowIndex) =>
+    Array.from({ length: columnCount }, (_, columnIndex) => getCellDisplayValue(worksheet.getCell(rowIndex + 1, columnIndex + 1).value))
+  );
+}
+
+function replaceWorksheetRows(worksheet, rows) {
+  if (!worksheet) return;
+  if (worksheet.rowCount > 0) worksheet.spliceRows(1, worksheet.rowCount);
+  rows.forEach((row) => worksheet.addRow(row));
+}
 
 // ─── 1 COMPONENT STATE & REFS ──────────────────────────────────────────────────
 
@@ -71,13 +98,14 @@ export default function Viewer_Xlsx({ document, onEdit }) {
         const ab = await res.arrayBuffer();
         if (canceled) return;
 
-        const wb = XLSX.read(new Uint8Array(ab), { type: "array" });
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.load(ab);
+        if (canceled) return;
         setWorkbook(wb);
-        if (wb.SheetNames.length > 0) {
-          const firstSheet = wb.SheetNames[0];
-          setActiveSheet(firstSheet);
-          const ws = wb.Sheets[firstSheet];
-          setSheetData(XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }));
+        if (wb.worksheets.length > 0) {
+          const firstSheet = wb.worksheets[0];
+          setActiveSheet(firstSheet.name);
+          setSheetData(worksheetToRows(firstSheet));
         }
         setLoading(false);
       } catch (err) {
@@ -100,8 +128,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
   const handleSheetChange = (sheetName) => {
     if (!workbook) return;
     setActiveSheet(sheetName);
-    const ws = workbook.Sheets[sheetName];
-    setSheetData(XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }));
+    setSheetData(worksheetToRows(workbook.getWorksheet(sheetName)));
     setEditingCell(null);
   };
 
@@ -164,7 +191,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
 
     // Update the workbook sheet in memory
     if (workbook && activeSheet) {
-      workbook.Sheets[activeSheet] = XLSX.utils.aoa_to_sheet(newData);
+      replaceWorksheetRows(workbook.getWorksheet(activeSheet), newData);
     }
   }, [editingCell, editValue, sheetData, workbook, activeSheet, saveStatus]);
 
@@ -207,7 +234,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
     setIsDirty(true);
     if (saveStatus === "saved") setSaveStatus("idle");
     if (workbook && activeSheet) {
-      workbook.Sheets[activeSheet] = XLSX.utils.aoa_to_sheet(newData);
+      replaceWorksheetRows(workbook.getWorksheet(activeSheet), newData);
     }
   };
 
@@ -222,7 +249,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
       setEditingCell(null);
     }
     if (workbook && activeSheet) {
-      workbook.Sheets[activeSheet] = XLSX.utils.aoa_to_sheet(newData);
+      replaceWorksheetRows(workbook.getWorksheet(activeSheet), newData);
     }
   };
 
@@ -238,7 +265,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
     setIsDirty(true);
     if (saveStatus === "saved") setSaveStatus("idle");
     if (workbook && activeSheet) {
-      workbook.Sheets[activeSheet] = XLSX.utils.aoa_to_sheet(newData);
+      replaceWorksheetRows(workbook.getWorksheet(activeSheet), newData);
     }
   };
 
@@ -252,7 +279,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
     setSaveStatus("saving");
 
     try {
-      const wbOut = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const wbOut = await workbook.xlsx.writeBuffer();
       const blob = new Blob([wbOut], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
@@ -310,7 +337,7 @@ export default function Viewer_Xlsx({ document, onEdit }) {
           <span className="dark:text-gray-300 text-gray-600 text-sm">Excel Spreadsheet</span>
           {workbook && (
             <span className="dark:text-gray-500 text-gray-400 text-xs">
-              ({workbook.SheetNames.length} sheet{workbook.SheetNames.length !== 1 ? "s" : ""})
+              ({workbook.worksheets.length} sheet{workbook.worksheets.length !== 1 ? "s" : ""})
             </span>
           )}
         </div>
@@ -357,9 +384,9 @@ export default function Viewer_Xlsx({ document, onEdit }) {
 
       {/* ─── 8 SHEET TABS RENDER ────────────────────────────────────────────── */}
       {/* Sheet Tabs */}
-      {workbook && workbook.SheetNames.length > 1 && (
+      {workbook && workbook.worksheets.length > 1 && (
         <div className="bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex overflow-x-auto">
-          {workbook.SheetNames.map((name) => (
+          {workbook.worksheets.map(({ name }) => (
             <button
               key={name}
               onClick={() => handleSheetChange(name)}

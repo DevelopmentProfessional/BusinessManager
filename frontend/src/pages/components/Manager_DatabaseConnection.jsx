@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon, EyeIcon, EyeSlashIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Dropdown_Custom from "./Dropdown_Custom";

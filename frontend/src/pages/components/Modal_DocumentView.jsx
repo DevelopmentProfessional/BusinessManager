@@ -151,9 +151,10 @@ function DocxViewer({ document, onEdit }) {
 
   useEffect(() => {
     let canceled = false;
+    const container = containerRef.current;
 
     const loadDocument = async () => {
-      if (!containerRef.current) return;
+      if (!container) return;
 
       try {
         setLoading(true);
@@ -163,10 +164,10 @@ function DocxViewer({ document, onEdit }) {
         const ab = await res.arrayBuffer();
         if (canceled) return;
 
-        containerRef.current.innerHTML = "";
+        container.innerHTML = "";
 
         try {
-          await renderAsync(ab, containerRef.current, undefined, {
+          await renderAsync(ab, container, undefined, {
             className: "docx",
             inWrapper: false,
           });
@@ -185,7 +186,7 @@ function DocxViewer({ document, onEdit }) {
           if (html && html.trim().length > 0 && html.includes("<")) {
             // Successfully extracted HTML from MHTML
             try {
-              containerRef.current.innerHTML = html;
+              container.innerHTML = html;
             } catch (innerErr) {
               console.error("Failed to set HTML content:", innerErr);
               throw new Error("Unable to render HTML content");
@@ -212,9 +213,7 @@ function DocxViewer({ document, onEdit }) {
 
     return () => {
       canceled = true;
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
-      }
+      if (container) container.innerHTML = "";
     };
   }, [document.id]);
 
@@ -458,12 +457,10 @@ function EditorArea({ document, documentType }) {
 // Main Document Viewer Modal
 export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdit, onSign, onDelete, onWorkflow }) {
   const [mode, setMode] = useState("view"); // 'view' or 'edit'
-  const [editorDirty, setEditorDirty] = useState(false);
 
   // Reset mode when document changes
   useEffect(() => {
     setMode("view");
-    setEditorDirty(false);
   }, [document?.id]);
 
   if (!document) return null;
@@ -603,4 +600,5 @@ function formatFileSize(bytes) {
 }
 
 // Export the type detection function for external use
+// eslint-disable-next-line react-refresh/only-export-components -- Utility export is consumed by non-component modules.
 export { getDocumentType };

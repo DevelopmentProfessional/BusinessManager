@@ -116,7 +116,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
     setDragOverCol(null);
     setStatus({ type: null, message: "" });
     setIsSaving(false);
-  }, [isOpen]);
+  }, [isOpen, defaultColCount, defaultFieldSequence]);
 
   useEffect(() => {
     const handleWindowMouseUp = () => {

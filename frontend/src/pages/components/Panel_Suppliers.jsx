@@ -8,7 +8,7 @@
  * ============================================================
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import { suppliersAPI } from "../../services/api";
@@ -29,23 +29,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   const [expandedSupplierId, setExpandedSupplierId] = useState(null);
   const scrollRef = useRef(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadSuppliers();
-    } else {
-      setShowForm(false);
-      setEditingSupplier(null);
-      setExpandedSupplierId(null);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (scrollRef.current && suppliers.length > 0 && !showForm) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [suppliers.length, showForm, isOpen]);
-
-  const loadSuppliers = async () => {
+  const loadSuppliers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await suppliersAPI.getAll();
@@ -63,7 +47,23 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clearError, setError]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadSuppliers();
+    } else {
+      setShowForm(false);
+      setEditingSupplier(null);
+      setExpandedSupplierId(null);
+    }
+  }, [isOpen, loadSuppliers]);
+
+  useEffect(() => {
+    if (scrollRef.current && suppliers.length > 0 && !showForm) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [suppliers.length, showForm, isOpen]);
 
   const handleCreate = () => {
     setEditingSupplier(null);

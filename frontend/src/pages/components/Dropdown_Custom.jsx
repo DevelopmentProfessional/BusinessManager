@@ -18,7 +18,7 @@ export default function Dropdown_Custom({
   onOpen = null,
   loading = false,
   multiSelect = false,
-  footerSearch = false,
+  footerSearch = true,
   onCreateFromSearch = null,
   createButtonTitle = "Add",
   openUpward = true,
@@ -122,6 +122,7 @@ export default function Dropdown_Custom({
       {searchable && !footerSearch ? (
         <div className="relative">
           <input
+            id={id || undefined}
             type="text"
             value={isOpen ? searchTerm : displayValue}
             onChange={(e) => {
@@ -146,6 +147,7 @@ export default function Dropdown_Custom({
         </div>
       ) : (
         <button
+          id={id || undefined}
           type="button"
           onClick={() => {
             if (disabled) return;

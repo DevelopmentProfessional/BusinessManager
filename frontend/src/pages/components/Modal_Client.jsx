@@ -19,6 +19,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-06-13 | GitHub Copilot | Added create-from-search prefill support via store modal state
+ *   2026-09-11 | GitHub Copilot | Removed unused store error setter during ESLint cleanup
  * ============================================================
  */
 import React, { useState } from "react";
@@ -29,7 +30,7 @@ import Form_Client from "./Form_Client";
 
 // ─── 1 STORE INTEGRATION ───────────────────────────────────────────────────
 export default function Modal_Client() {
-  const { isAddClientModalOpen, closeAddClientModal, addClientCallback, addClientPrefill, addClient, setError, clearError } = useStore();
+  const { isAddClientModalOpen, closeAddClientModal, addClientCallback, addClientPrefill, addClient, clearError } = useStore();
 
   const [formError, setFormError] = useState(null);
 

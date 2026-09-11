@@ -46,7 +46,7 @@ export default function Table_Mobile({
     }
 
     return filtered;
-  }, [data, searchTerms, sortConfig]);
+  }, [data, searchTerms, sortConfig, columns]);
 
   const handleSort = (columnKey) => {
     setSortConfig((prev) => ({
@@ -108,7 +108,9 @@ export default function Table_Mobile({
               </div>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <div className="align-items-center d-flex h-100 justify-content-center p-2 text-muted text-sm">{emptyMessage}</div>
+        )}
       </div>
 
       {/* Table footer controls - fixed at bottom, does not scroll */}

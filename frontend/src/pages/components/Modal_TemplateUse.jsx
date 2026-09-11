@@ -126,16 +126,6 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   }, [page]);
 
   useEffect(() => {
-    if (!selected) {
-      setRenderedHtml("");
-      return;
-    }
-    const vars = buildVars();
-    const rendered = renderTemplate(selected.content, vars);
-    setRenderedHtml(normalizeImageAlignment(rendered));
-  }, [selected, page, entity, currentUser, settings, items, client, employee, service, clientInvoiceTx, clientInvoiceItems, normalizeImageAlignment]);
-
-  useEffect(() => {
     let cancelled = false;
 
     const loadLatestClientInvoice = async () => {
@@ -193,7 +183,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     };
   }, [page, entity?.id]);
 
-  const buildVars = () => {
+  const buildVars = useCallback(() => {
     if (page === "clients") {
       const baseVars = buildClientVariables(entity, currentUser, settings);
       const cartItems = (clientCartItems || []).map((item) => {
@@ -234,7 +224,17 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     if (page === "sales") return buildSalesVariables(entity, client || entity, currentUser, settings, items);
     if (page === "schedule") return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
     return {};
-  };
+  }, [page, entity, currentUser, settings, items, client, employee, service, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal]);
+
+  useEffect(() => {
+    if (!selected) {
+      setRenderedHtml("");
+      return;
+    }
+    const vars = buildVars();
+    const rendered = renderTemplate(selected.content, vars);
+    setRenderedHtml(normalizeImageAlignment(rendered));
+  }, [selected, buildVars, normalizeImageAlignment]);
 
   const pdfFileName = useMemo(() => {
     const safeName = (selected?.name || companyName || "invoice")

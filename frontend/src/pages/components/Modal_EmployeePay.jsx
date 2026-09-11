@@ -20,6 +20,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Created — extracted from Employees.jsx (P4-A)
  *   2026-08-04 | GitHub Copilot | Default salary gross amount now follows selected pay frequency
+ *   2026-09-11 | GitHub Copilot | Removed unused schedule state and fixed effect dependency coverage
  * ============================================================
  */
 
@@ -134,7 +135,6 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
   const [payError, setPayError] = useState("");
   const [paySuccess, setPaySuccess] = useState("");
   const [availablePeriods, setAvailablePeriods] = useState([]);
-  const [schedule, setSchedule] = useState(null);
   const [scheduleLoading, setScheduleLoading] = useState(false);
 
   const normalizedEmploymentType = String(employee?.employment_type || "").toLowerCase() || (Number(employee?.hourly_rate || 0) > 0 ? "hourly" : "salary");
@@ -146,7 +146,6 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
       // Reset everything when closed
       setPayForm({ pay_period_start: "", pay_period_end: "", gross_amount: "", hours_worked: "", other_deductions: "", notes: "" });
       setAvailablePeriods([]);
-      setSchedule(null);
       setScheduleLoading(false);
       setPayError("");
       setPaySuccess("");
@@ -173,7 +172,6 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
         const slips = slipsRes?.data ?? slipsRes ?? [];
         const paidStarts = Array.isArray(slips) ? slips.map((s) => s.pay_period_start) : [];
         const sched = schedRes?.data ?? schedRes ?? null;
-        setSchedule(sched && typeof sched === "object" ? sched : null);
 
         const effectiveFreq = ["weekly", "biweekly", "monthly"].includes(normalizedPayFrequency) ? normalizedPayFrequency : String(sched?.frequency || normalizedPayFrequency || "monthly").toLowerCase();
 
@@ -216,7 +214,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
     return () => {
       cancelled = true;
     };
-  }, [isOpen, employee?.id, normalizedPayFrequency]);
+  }, [isOpen, employee, normalizedPayFrequency]);
 
   // ─── [3] SUBMIT ─────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {

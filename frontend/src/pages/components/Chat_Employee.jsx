@@ -27,9 +27,10 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-09-11 | GitHub Copilot | Stabilized message polling callback to satisfy exhaustive-deps safely
  * ============================================================
  */
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from "@heroicons/react/24/outline";
 import { chatAPI, documentsAPI } from "../../services/api";
 import useDarkMode from "../../services/useDarkMode";
@@ -57,7 +58,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
 
   // ─── 2 MESSAGE LOADING & POLLING ───────────────────────────────────────────
 
-  const loadMessages = async (quiet = false) => {
+  const loadMessages = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
     try {
       const res = await chatAPI.getHistory(employee.id);
@@ -68,14 +69,14 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     } finally {
       if (!quiet) setLoading(false);
     }
-  };
+  }, [employee.id]);
 
   useEffect(() => {
     loadMessages();
     chatAPI.markRead(employee.id).catch(() => {});
     pollRef.current = setInterval(() => loadMessages(true), 5000);
     return () => clearInterval(pollRef.current);
-  }, [employee.id]);
+  }, [employee.id, loadMessages]);
 
   // ─── 3 AUTO-SCROLL ─────────────────────────────────────────────────────────
 

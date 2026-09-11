@@ -117,7 +117,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [dirty, setDirty] = useState({}); // featureId → bool
   const [combinationDirty, setCombinationDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
   const [openFeatureIds, setOpenFeatureIds] = useState({});
   const [isCombinationsOpen, setIsCombinationsOpen] = useState(true);
@@ -489,8 +489,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   };
 
   const optionLookup = buildOptionLookup(itemFeatures);
-  const usesCombinationTable = itemFeatures.length > 1;
-
   const updateCombinationQuantity = (combinationKey, quantity) => {
     setCombinationRows((prev) => prev.map((row) => (row.combination_key === combinationKey ? { ...row, quantity: Math.max(0, parseInt(quantity, 10) || 0) } : row)));
     setCombinationDirty(true);
