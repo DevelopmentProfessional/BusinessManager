@@ -40,6 +40,7 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-07-26 | GitHub Copilot | Added initiate_refunds permission type for manager-approved appointment refund actions
+#   2026-09-11 | GitHub Copilot | Added employee compensation settings and pay-slip calculation snapshots
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -1935,6 +1936,10 @@ class PaySlip(BaseModel, table=True):
     hours_worked: Optional[float] = Field(default=None)
     hourly_rate_snapshot: Optional[float] = Field(default=None)
     salary_snapshot: Optional[float] = Field(default=None)
+    service_revenue: float = Field(default=0.0)
+    base_pay_snapshot: Optional[float] = Field(default=None)
+    compensation_percentage_snapshot: Optional[float] = Field(default=None)
+    base_pay_included_snapshot: Optional[bool] = Field(default=None)
     pay_frequency: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
     status: str = Field(default="paid")
@@ -1966,6 +1971,10 @@ class PaySlipRead(SQLModel):
     hours_worked: Optional[float] = None
     hourly_rate_snapshot: Optional[float] = None
     salary_snapshot: Optional[float] = None
+    service_revenue: float = 0.0
+    base_pay_snapshot: Optional[float] = None
+    compensation_percentage_snapshot: Optional[float] = None
+    base_pay_included_snapshot: Optional[bool] = None
     pay_frequency: Optional[str] = None
     notes: Optional[str] = None
     status: str
@@ -2053,6 +2062,9 @@ class EmployeePaySchedule(BaseModel, table=True):
 
     pay_timing: str = Field(default="arrears")
     cycle_anchor_date: Optional[str] = Field(default=None)
+    base_pay: float = Field(default=0.0, ge=0)
+    compensation_percentage: float = Field(default=0.0, ge=0, le=100)
+    base_pay_included: bool = Field(default=True)
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -2068,6 +2080,9 @@ class EmployeePayScheduleCreate(SQLModel):
     monthly_payday_weekday: Optional[str] = None
     pay_timing: str = "arrears"
     cycle_anchor_date: Optional[str] = None
+    base_pay: float = Field(default=0.0, ge=0)
+    compensation_percentage: float = Field(default=0.0, ge=0, le=100)
+    base_pay_included: bool = True
 
 
 class EmployeePayScheduleRead(SQLModel):
@@ -2083,6 +2098,9 @@ class EmployeePayScheduleRead(SQLModel):
     monthly_payday_weekday: Optional[str] = None
     pay_timing: str
     cycle_anchor_date: Optional[str] = None
+    base_pay: float = 0.0
+    compensation_percentage: float = 0.0
+    base_pay_included: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

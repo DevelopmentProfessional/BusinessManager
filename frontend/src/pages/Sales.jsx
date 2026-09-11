@@ -30,6 +30,7 @@
  *   2026-08-01 | GitHub Copilot | Added service add-on inventory auto-consumption during successful checkout finalization
  *   2026-09-11 | GitHub Copilot | Returned completed schedule payment state after cash and external checkout flows
  *   2026-09-11 | GitHub Copilot | Removed unused imports and added scoped effect dependency suppressions for stable POS flow
+ *   2026-09-11 | GitHub Copilot | Moved checkout handoff effects below callback initialization to prevent payment-route TDZ crashes
  * ============================================================
  */
 
@@ -488,60 +489,6 @@ export default function Sales() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (showCartModal) loadClients();
-  }, [showCartModal, loadClients]);
-
-  // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages.
-  // Guard by route-state identity so callback dependency updates do not replay one-time handoff logic.
-  useEffect(() => {
-    if (location.state && routeHandoffProcessedRef.current === location.state) return;
-    routeHandoffProcessedRef.current = location.state || null;
-
-    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
-    if (scheduleId) {
-      setLinkedScheduleId(scheduleId);
-    }
-    if (preloadServiceId) {
-      setLinkedScheduleServiceId(preloadServiceId);
-    }
-    if (checkoutReturnTo?.pathname) {
-      setCheckoutReturnTarget(checkoutReturnTo);
-    }
-    setCheckoutContext(stateCheckoutContext || null);
-    if (openCheckout) {
-      setAutoOpenCheckoutRequested(true);
-    }
-    if (preSelectedClient) {
-      handleSelectClient(preSelectedClient, { preloadCart });
-    }
-    if (preloadServiceId) {
-      // Wait for services to load, then add service to cart
-      const addServiceWhenReady = () => {
-        const svc = services.find((s) => String(s.id) === String(preloadServiceId));
-        if (svc) {
-          const preloadCartKey = `service-${svc.id}`;
-          setCart((prev) => {
-            if (prev.some((item) => item.cartKey === preloadCartKey || (item.id === svc.id && item.itemType === "service"))) return prev;
-            return [...prev, { ...svc, cartKey: preloadCartKey, itemType: "service", quantity: 1 }];
-          });
-        }
-      };
-      if (services.length > 0) {
-        addServiceWhenReady();
-      } else {
-        // Retry after services load
-        const interval = setInterval(() => {
-          if (services.length > 0) {
-            addServiceWhenReady();
-            clearInterval(interval);
-          }
-        }, 300);
-        return () => clearInterval(interval);
-      }
-    }
-  }, [handleSelectClient, location.state, services]);
-
-  useEffect(() => {
     if (!autoOpenCheckoutRequested) return;
     if (cart.length === 0) return;
     setShowCheckout(true);
@@ -857,6 +804,49 @@ export default function Sales() {
 
     setCart(nextCart);
   }, [cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]);
+
+  useEffect(() => {
+    if (showCartModal) loadClients();
+  }, [showCartModal, loadClients]);
+
+  // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages.
+  // Guard by route-state identity so callback dependency updates do not replay one-time handoff logic.
+  useEffect(() => {
+    if (location.state && routeHandoffProcessedRef.current === location.state) return;
+    routeHandoffProcessedRef.current = location.state || null;
+
+    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
+    if (scheduleId) setLinkedScheduleId(scheduleId);
+    if (preloadServiceId) setLinkedScheduleServiceId(preloadServiceId);
+    if (checkoutReturnTo?.pathname) setCheckoutReturnTarget(checkoutReturnTo);
+    setCheckoutContext(stateCheckoutContext || null);
+    if (openCheckout) setAutoOpenCheckoutRequested(true);
+    if (preSelectedClient) handleSelectClient(preSelectedClient, { preloadCart });
+
+    if (preloadServiceId) {
+      const addServiceWhenReady = () => {
+        const service = services.find((candidate) => String(candidate.id) === String(preloadServiceId));
+        if (!service) return;
+        const preloadCartKey = `service-${service.id}`;
+        setCart((currentCart) => {
+          if (currentCart.some((item) => item.cartKey === preloadCartKey || (item.id === service.id && item.itemType === "service"))) return currentCart;
+          return [...currentCart, { ...service, cartKey: preloadCartKey, itemType: "service", quantity: 1 }];
+        });
+      };
+
+      if (services.length > 0) {
+        addServiceWhenReady();
+      } else {
+        const interval = setInterval(() => {
+          if (services.length > 0) {
+            addServiceWhenReady();
+            clearInterval(interval);
+          }
+        }, 300);
+        return () => clearInterval(interval);
+      }
+    }
+  }, [handleSelectClient, location.state, services]);
 
   const loadProducts = async () => {
     try {
