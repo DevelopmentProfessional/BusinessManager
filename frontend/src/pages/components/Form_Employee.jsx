@@ -628,7 +628,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
           base_pay: Number(employeePaySchedule.base_pay || 0),
           compensation_percentage: Number(employeePaySchedule.compensation_percentage || 0),
-          base_pay_included: employeePaySchedule.base_pay_included !== false,
+          base_pay_included: true,
         };
         await payrollAPI.updateEmployeeSchedule(employee.id, payload);
         setEmployeePayScheduleSuccess("Pay settings saved");
@@ -1501,13 +1501,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                         </div>
                       </div>
                       <div className="col-12">
-                        <div className="form-check form-switch">
-                          <input className="form-check-input" type="checkbox" role="switch" id="base_pay_included" checked={employeePaySchedule.base_pay_included !== false} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay_included: event.target.checked }))} />
-                          <label className="form-check-label" htmlFor="base_pay_included">Base pay included</label>
-                        </div>
-                        <div className="ui-small-muted">
-                          {employeePaySchedule.base_pay_included !== false ? "Compensation applies to service revenue above base pay." : "Pay is the greater of base pay or compensation on all service revenue."}
-                        </div>
+                        <div className="ui-small-muted">Base pay is guaranteed. Compensation applies only to paid service revenue above twice the base pay.</div>
                       </div>
                     </>
                   )}
@@ -1693,7 +1687,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                                 cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
                                 base_pay: Number(employeePaySchedule.base_pay || 0),
                                 compensation_percentage: Number(employeePaySchedule.compensation_percentage || 0),
-                                base_pay_included: employeePaySchedule.base_pay_included !== false,
+                                base_pay_included: true,
                               };
                               await payrollAPI.updateEmployeeSchedule(employee.id, payload);
                               setEmployeePayScheduleSuccess("Pay settings saved");
@@ -1950,8 +1944,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       <div className="col-6 small text-end">${Number(selectedSlip.base_pay_snapshot ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                       <div className="col-6 small text-muted">Compensation</div>
                       <div className="col-6 small text-end">{Number(selectedSlip.compensation_percentage_snapshot ?? 0).toFixed(2)}%</div>
-                      <div className="col-6 small text-muted">Base Included</div>
-                      <div className="col-6 small text-end">{selectedSlip.base_pay_included_snapshot ? "Yes" : "No"}</div>
                     </>
                   )}
                   {selectedSlip.insurance_plan_name && (

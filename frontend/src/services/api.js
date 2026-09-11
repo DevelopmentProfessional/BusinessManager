@@ -791,6 +791,7 @@ export const settingsAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  getCompanyLogo: () => api.get("/settings/logo", { responseType: "blob" }),
   seedDemoData: (force = true, seedKey = "") => {
     const headers = {};
     if (seedKey) {

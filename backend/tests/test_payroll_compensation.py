@@ -4,20 +4,20 @@ from uuid import uuid4
 from backend.routers.payroll import _calculate_compensation_gross, _service_revenue_for_period
 
 
-def test_base_included_pays_base_until_revenue_exceeds_base():
-    assert _calculate_compensation_gross(500, 500, 50, True) == 500
-    assert _calculate_compensation_gross(1000, 500, 50, True) == 750
+def test_compensation_starts_only_above_twice_base_pay():
+    assert _calculate_compensation_gross(600, 600, 50) == 600
+    assert _calculate_compensation_gross(1200, 600, 50) == 600
+    assert _calculate_compensation_gross(1300, 600, 50) == 650
 
 
-def test_base_excluded_uses_greater_of_base_or_full_revenue_percentage():
-    assert _calculate_compensation_gross(500, 500, 50, False) == 500
-    assert _calculate_compensation_gross(1000, 500, 50, False) == 500
-    assert _calculate_compensation_gross(2000, 500, 50, False) == 1000
+def test_base_pay_is_guaranteed_below_threshold():
+    assert _calculate_compensation_gross(0, 600, 50) == 600
+    assert _calculate_compensation_gross(500, 600, 50) == 600
 
 
 def test_compensation_values_are_clamped_to_safe_ranges():
-    assert _calculate_compensation_gross(-100, 500, 150, True) == 500
-    assert _calculate_compensation_gross(1000, -50, -10, False) == 0
+    assert _calculate_compensation_gross(-100, 500, 150) == 500
+    assert _calculate_compensation_gross(1000, -50, -10) == 0
 
 
 def test_service_revenue_sums_paid_service_line_totals():

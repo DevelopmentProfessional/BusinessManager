@@ -14,6 +14,7 @@ export const TEMPLATE_VARIABLES = {
     { key: "company.email", label: "Company Email", description: "Business email from settings" },
     { key: "company.phone", label: "Company Phone", description: "Business phone from settings" },
     { key: "company.address", label: "Company Address", description: "Business address from settings" },
+    { key: "company.logo", label: "Company Logo", description: "Company logo image", isLayout: true },
   ],
   sender: [
     { key: "sender.first_name", label: "Sender First Name", description: "Logged-in user first name" },
@@ -31,6 +32,19 @@ export const TEMPLATE_VARIABLES = {
     { key: "employee.last_name", label: "Employee Last Name", description: "Employee last name" },
     { key: "employee.role", label: "Employee Role", description: "Employee job role" },
     { key: "employee.hire_date", label: "Hire Date", description: "Employee hire date" },
+  ],
+  payslip: [
+    { key: "payslip.number", label: "Pay Slip Number", description: "Short pay slip identifier" },
+    { key: "payslip.paid_at", label: "Paid Date and Time", description: "When payment was recorded" },
+    { key: "payslip.period_start", label: "Period Start", description: "Pay period start date" },
+    { key: "payslip.period_end", label: "Period End", description: "Pay period end date" },
+    { key: "payslip.gross", label: "Gross Pay", description: "Gross wage amount" },
+    { key: "payslip.insurance_deduction", label: "Insurance Deduction", description: "Insurance deduction amount" },
+    { key: "payslip.other_deductions", label: "Other Deductions", description: "Other deduction amount" },
+    { key: "payslip.net", label: "Net Pay", description: "Final paid amount" },
+    { key: "payslip.service_revenue", label: "Service Revenue", description: "Paid service revenue for the period" },
+    { key: "payslip.base_pay", label: "Base Pay", description: "Base pay used in the calculation" },
+    { key: "payslip.compensation_percentage", label: "Compensation Percentage", description: "Compensation rate used" },
   ],
   invoice: [
     { key: "invoice.number", label: "Invoice Number", description: "Transaction ID" },
@@ -59,7 +73,7 @@ export const TEMPLATE_VARIABLES = {
 /** Which variable scopes are available per page context */
 export const PAGE_VARIABLE_SCOPES = {
   clients: ["system", "company", "sender", "client", "invoice"],
-  employees: ["system", "company", "sender", "employee"],
+  employees: ["system", "company", "sender", "employee", "payslip"],
   sales: ["system", "company", "sender", "client", "invoice"],
   schedule: ["system", "company", "sender", "client", "appointment"],
 };
@@ -74,6 +88,7 @@ export const SCOPE_PAGE_CONTEXT = {
   sender: { label: "Sender", pages: ["clients", "employees", "sales", "schedule"], color: "gray" },
   client: { label: "Client", pages: ["clients", "sales", "schedule"], color: "blue" },
   employee: { label: "Employee", pages: ["employees"], color: "green" },
+  payslip: { label: "Pay Slip", pages: ["employees"], color: "green" },
   invoice: { label: "Invoice / Sales", pages: ["clients", "sales"], color: "amber" },
   appointment: { label: "Appointment", pages: ["schedule"], color: "purple" },
 };
@@ -245,6 +260,29 @@ export function buildEmployeeVariables(employee, currentUser, settings) {
     "employee.last_name": employee?.last_name || "",
     "employee.role": employee?.role || "",
     "employee.hire_date": hireDate,
+  };
+}
+
+/** Build employee, company, and payment variables for a pay slip document. */
+export function buildPayslipVariables(paySlip, employee, currentUser, settings) {
+  const variables = buildEmployeeVariables(employee, currentUser, settings);
+  const money = (value) => `$${Number(value || 0).toFixed(2)}`;
+  const paidAt = paySlip?.created_at ? new Date(paySlip.created_at).toLocaleString() : "";
+  const logoUrl = String(settings?.company_logo_data_url || "").trim();
+  return {
+    ...variables,
+    "company.logo": logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(settings?.company_name || "Company")} logo" style="max-width:180px;max-height:80px;object-fit:contain;" />` : "",
+    "payslip.number": paySlip?.id ? String(paySlip.id).slice(0, 8).toUpperCase() : "",
+    "payslip.paid_at": paidAt,
+    "payslip.period_start": paySlip?.pay_period_start ? new Date(paySlip.pay_period_start).toLocaleDateString() : "",
+    "payslip.period_end": paySlip?.pay_period_end ? new Date(paySlip.pay_period_end).toLocaleDateString() : "",
+    "payslip.gross": money(paySlip?.gross_amount),
+    "payslip.insurance_deduction": money(paySlip?.insurance_deduction),
+    "payslip.other_deductions": money(paySlip?.other_deductions),
+    "payslip.net": money(paySlip?.net_amount),
+    "payslip.service_revenue": money(paySlip?.service_revenue),
+    "payslip.base_pay": money(paySlip?.base_pay_snapshot),
+    "payslip.compensation_percentage": `${Number(paySlip?.compensation_percentage_snapshot || 0).toFixed(2)}%`,
   };
 }
 

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 import { templatesAPI, clientsAPI, clientCartAPI } from "../../services/api";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
-import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildSalesVariables, buildScheduleVariables } from "./Utils_TemplateVariables";
+import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables } from "./Utils_TemplateVariables";
 
 const TYPE_BADGE_COLOR = {
   email: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
   invoice: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
   receipt: "bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300",
+  payslip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
   memo: "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300",
   quote: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
   custom: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
@@ -41,6 +42,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const pdfCacheRef = useRef(new Map());
   const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || "Invoice";
   const recipientEmail = (client?.email || entity?.email || "").trim();
+  const isPayslip = filterType === "payslip";
 
   const parseSelectedOptions = useCallback((item) => {
     if (Array.isArray(item?.selectedOptions)) {
@@ -220,11 +222,12 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       const invoiceVars = buildSalesVariables(txForInvoice, entity, currentUser, settings, itemsForInvoice);
       return { ...invoiceVars, ...baseVars };
     }
+    if (page === "employees" && filterType === "payslip") return buildPayslipVariables(entity, employee || currentUser, currentUser, settings);
     if (page === "employees") return buildEmployeeVariables(entity, currentUser, settings);
     if (page === "sales") return buildSalesVariables(entity, client || entity, currentUser, settings, items);
     if (page === "schedule") return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
     return {};
-  }, [page, entity, currentUser, settings, items, client, employee, service, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal]);
+  }, [page, entity, currentUser, settings, items, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal]);
 
   useEffect(() => {
     if (!selected) {
@@ -417,16 +420,22 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
   const visibleTemplates = filterType ? templates.filter((t) => t.template_type === filterType) : templates;
 
+  useEffect(() => {
+    if (!loading && filterType === "payslip" && visibleTemplates.length > 0 && !selected) {
+      setSelected(visibleTemplates[0]);
+    }
+  }, [filterType, loading, selected, visibleTemplates]);
+
   return (
     <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0 z-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center justify-between px-1 py-1">
-        <h2 className="dark:text-white font-semibold text-base text-gray-900">Use Template</h2>
+        <h2 className="dark:text-white font-semibold text-base text-gray-900">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left: template list */}
-        <div className="border-gray-200 border-r dark:border-gray-700 flex-shrink-0 overflow-y-auto" style={{ width: "200px" }}>
+        {!isPayslip && <div className="border-gray-200 border-r dark:border-gray-700 flex-shrink-0 overflow-y-auto" style={{ width: "200px" }}>
           {loading ? (
             <div className="p-1 text-gray-500 text-sm">Loading...</div>
           ) : visibleTemplates.length === 0 ? (
@@ -443,7 +452,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               ))}
             </ul>
           )}
-        </div>
+        </div>}
 
         {/* Right: preview */}
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -476,10 +485,9 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               <XMarkIcon className="ui-icon-4" />
               Close
             </button>
-            <button type="button" onClick={() => setIsEditorOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
-              <PencilSquareIcon className="ui-icon-4" />
-              Edit
-            </button>
+            {!isPayslip && <button type="button" onClick={() => setIsEditorOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+              <PencilSquareIcon className="ui-icon-4" /> Edit
+            </button>}
             <button type="button" onClick={handlePrint} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
               <PrinterIcon className="ui-icon-4" />
               Print
@@ -488,10 +496,10 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               <ArrowDownTrayIcon className="ui-icon-4" />
               {isDownloadingPdf ? "…" : "PDF"}
             </button>
-            <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+            {!isPayslip && <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
               <EnvelopeIcon className="ui-icon-4" />
               Email
-            </button>
+            </button>}
           </div>
         </div>
       </div>

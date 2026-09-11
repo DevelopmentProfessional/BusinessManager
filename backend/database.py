@@ -1406,6 +1406,7 @@ def create_db_and_tables():
     _ensure_service_and_schedule_addons_if_needed()
     _ensure_permissiontype_enum_values_if_needed()
     _ensure_payroll_compensation_columns_if_needed()
+    _seed_document_templates_for_existing_companies_if_needed()
 
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():
@@ -1450,7 +1451,6 @@ def create_db_and_tables():
     _ensure_schedule_client_nullable_if_needed()
     _ensure_document_template_name_unique_if_needed()
     _ensure_company_multitenancy_if_needed()
-    _seed_document_templates_for_existing_companies_if_needed()
     _backfill_company_logo_from_settings_if_needed()
     _ensure_user_username_composite_unique_if_needed()
     _ensure_userrole_enum_values_if_needed()
