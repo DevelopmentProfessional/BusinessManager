@@ -54,6 +54,7 @@
  *   2026-07-31 | GitHub Copilot | Added appointment service add-ons to schedule save, cart sync, and Sales checkout handoff
  *   2026-09-11 | GitHub Copilot | Applied completed checkout state immediately and rendered paid controls as solid white circles
  *   2026-09-11 | GitHub Copilot | Removed unused dark-mode toggle binding and aligned query-open effect dependencies
+ *   2026-09-11 | GitHub Copilot | Made paid circles non-interactive and hid checkout after full payment
  * ============================================================
  */
 
@@ -482,10 +483,6 @@ export default function Schedule() {
     return hasPermission("schedule", "approve_payments") || hasPermission("schedule", "admin");
   }, [hasPermission]);
 
-  const canInitiateRefunds = useCallback(() => {
-    return hasPermission("schedule", "initiate_refunds") || hasPermission("schedule", "admin");
-  }, [hasPermission]);
-
   const canEditAppointment = useCallback(
     (appointment) => {
       if (!appointment) return false;
@@ -820,46 +817,21 @@ export default function Schedule() {
   const canShowPaymentAction = useCallback(
     (appointment) => {
       if (!canTogglePaidForAppointment(appointment)) return false;
-      if (appointment?.is_paid) return canInitiateRefunds();
-      return canApprovePayments();
+      return !appointment?.is_paid && canApprovePayments();
     },
-    [canApprovePayments, canInitiateRefunds, canTogglePaidForAppointment]
+    [canApprovePayments, canTogglePaidForAppointment]
   );
 
   const handleToggleAppointmentPaid = useCallback(
-    async (e, appointment) => {
+    (e, appointment) => {
       e.stopPropagation();
       if (!appointment?.id) return;
       if (!canEditAppointment(appointment)) return;
       if (!canTogglePaidForAppointment(appointment)) return;
-
-      if (!appointment.is_paid) {
-        if (!canApprovePayments()) return;
-        launchScheduleCheckout(appointment);
-        return;
-      }
-
-      if (!canInitiateRefunds()) return;
-      const shouldProceed = window.confirm("Initiate refund and unlock this appointment from paid status?");
-      if (!shouldProceed) return;
-
-      try {
-        await scheduleAPI.initiateRefund(appointment.id, {
-          reason: "Refund initiated from calendar payment toggle",
-        });
-        setAppointments(appointments.map((item) => (item.id === appointment.id ? { ...item, is_paid: false, sale_transaction_id: null } : item)));
-      } catch (error) {
-        console.error("Failed to initiate appointment refund:", error);
-        setPastDateError("Refund initiation failed. Please verify manager permissions and payment state.");
-        if (pastDateErrorTimer) clearTimeout(pastDateErrorTimer);
-        const timer = setTimeout(() => {
-          setPastDateError("");
-          setPastDateErrorTimer(null);
-        }, 2500);
-        setPastDateErrorTimer(timer);
-      }
+      if (appointment.is_paid || !canApprovePayments()) return;
+      launchScheduleCheckout(appointment);
     },
-    [appointments, canApprovePayments, canEditAppointment, canInitiateRefunds, canTogglePaidForAppointment, launchScheduleCheckout, pastDateErrorTimer, setAppointments]
+    [canApprovePayments, canEditAppointment, canTogglePaidForAppointment, launchScheduleCheckout]
   );
 
   // ─── 14 DRAG & DROP HANDLERS ─────────────────────────────────────────────────

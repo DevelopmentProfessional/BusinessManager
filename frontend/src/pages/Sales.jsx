@@ -31,6 +31,7 @@
  *   2026-09-11 | GitHub Copilot | Returned completed schedule payment state after cash and external checkout flows
  *   2026-09-11 | GitHub Copilot | Removed unused imports and added scoped effect dependency suppressions for stable POS flow
  *   2026-09-11 | GitHub Copilot | Moved checkout handoff effects below callback initialization to prevent payment-route TDZ crashes
+ *   2026-09-11 | GitHub Copilot | Reused schedule purchase transactions and skipped duplicate checkout side effects
  * ============================================================
  */
 
@@ -1198,22 +1199,25 @@ export default function Sales() {
       };
       const txResponse = await saleTransactionsAPI.create(txData);
       const txId = txResponse?.data?.id || txResponse?.id;
+      const reusedExisting = Boolean(txResponse?.data?.reused_existing || txResponse?.reused_existing);
       if (txId) {
-        await Promise.all(
-          checkoutItems.map((item) =>
-            saleTransactionsAPI.createItem({
-              sale_transaction_id: txId,
-              item_id: item.id || null,
-              item_type: item.itemType || "product",
-              item_name: item.name,
-              unit_price: item.price,
-              quantity: item.quantity,
-              line_total: item.price * item.quantity,
-              ...(item.itemType === "mix" && item.mixSelections ? { mix_selections: JSON.stringify(item.mixSelections) } : {}),
-              ...(item.selectedOptions?.length > 0 ? { options_json: JSON.stringify(item.selectedOptions) } : {}),
-            })
-          )
-        );
+        if (!reusedExisting) {
+          await Promise.all(
+            checkoutItems.map((item) =>
+              saleTransactionsAPI.createItem({
+                sale_transaction_id: txId,
+                item_id: item.id || null,
+                item_type: item.itemType || "product",
+                item_name: item.name,
+                unit_price: item.price,
+                quantity: item.quantity,
+                line_total: item.price * item.quantity,
+                ...(item.itemType === "mix" && item.mixSelections ? { mix_selections: JSON.stringify(item.mixSelections) } : {}),
+                ...(item.selectedOptions?.length > 0 ? { options_json: JSON.stringify(item.selectedOptions) } : {}),
+              })
+            )
+          );
+        }
 
         const soldSubscriptions = checkoutItems.filter((item) => item.itemType === "subscription");
 
@@ -1245,7 +1249,7 @@ export default function Sales() {
           return paymentResult;
         }
 
-        if (selectedClient?.id && soldSubscriptions.length > 0) {
+        if (!reusedExisting && selectedClient?.id && soldSubscriptions.length > 0) {
           await applySubscriptionsForSale(selectedClient.id, soldSubscriptions);
         }
 
@@ -1257,7 +1261,7 @@ export default function Sales() {
         const addonInventoryDeductions = new Map();
         const allSoldMap = {}; // used only for immediate local UI update
 
-        checkoutItems.forEach((item) => {
+        if (!reusedExisting) checkoutItems.forEach((item) => {
           if (item.itemType === "product" && item.id) {
             allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
             if (item.selectedOptions?.length > 0) {
@@ -1320,11 +1324,13 @@ export default function Sales() {
           setCheckoutContext(null);
         }
         persistedSuccessfully = true;
-        paymentResult = { completed: true, sale_id: txId, txResponse };
+        paymentResult = { completed: true, sale_id: txId, txResponse, reused_existing: reusedExisting };
       }
     } catch (err) {
       console.error("Failed to persist sale transaction:", err);
-      // Keep provisional record when persistence fails.
+      setSalesHistory((previous) => previous.filter((entry) => entry.id !== provisionalSaleId));
+      setError(getDetailedApiErrorMessage(err, "Failed to process payment"));
+      return { completed: false, error: err };
     }
 
     if (persistedSuccessfully) {
@@ -1369,7 +1375,7 @@ export default function Sales() {
     );
     clearError();
     if (String(paymentMethod || "").toLowerCase() === "cash") {
-      setSuccessNotice("Payment confirmed.");
+      setSuccessNotice(paymentResult.reused_existing ? "Existing appointment payment updated." : "Payment confirmed.");
     }
 
     return paymentResult.completed || paymentResult.checkout_url ? paymentResult : { completed: persistedSuccessfully };
