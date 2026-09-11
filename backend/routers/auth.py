@@ -33,6 +33,7 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-07-26 | GitHub Copilot | Added initiate_refunds permission aliasing and admin permission expansion
 #   2026-09-11 | GitHub Copilot | Normalized and validated permission updates before PostgreSQL enum persistence
+#   2026-09-11 | GitHub Copilot | Allowed employees:admin assignment, company-scoped permissions, and idempotent re-grants
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -237,6 +238,15 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
             permission_strings.add(f"{perm.page}:{str(val).lower()}")
 
     return list(permission_strings)
+
+
+def require_employee_permission_admin(current_user: User, session: Session) -> None:
+    """Require a base admin role or an explicit employees:admin permission."""
+    if current_user.role == UserRole.ADMIN:
+        return
+    if "employees:admin" in get_user_permissions_list(current_user, session):
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Employee permission administration required")
 
 # ─── [4] LOGIN / TOKEN ENDPOINTS ──────────────────────────────────────────────
 @router.get("/initialize")
@@ -738,7 +748,7 @@ def create_user_permission(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Create user permission (admin only)"""
+    """Create or re-grant a user permission."""
     # Convert user_id to UUID with error handling
     try:
         user_uuid = UUID(user_id)
@@ -758,11 +768,7 @@ def create_user_permission(
             detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
         )
 
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    require_employee_permission_admin(current_user, session)
 
     user = session.get(User, user_uuid)
     if not user:
@@ -770,6 +776,8 @@ def create_user_permission(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    if current_user.company_id and user.company_id != current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Check if permission already exists
     existing_permission = session.exec(
@@ -781,16 +789,19 @@ def create_user_permission(
     ).first()
 
     if existing_permission:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Permission already exists"
-        )
+        existing_permission.granted = permission_data.granted
+        existing_permission.updated_at = datetime.utcnow()
+        session.add(existing_permission)
+        session.commit()
+        session.refresh(existing_permission)
+        return UserPermissionRead.from_orm(existing_permission)
 
     permission = UserPermission(
         user_id=user_uuid,
         page=permission_data.page,
         permission=perm_type,
-        granted=permission_data.granted
+        granted=permission_data.granted,
+        company_id=current_user.company_id,
     )
 
     session.add(permission)
@@ -810,7 +821,7 @@ def create_user_permission_with_body(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Create user permission (admin only) with user_id provided in the body.
+    """Create or re-grant a user permission with user_id provided in the body.
     This complements POST /auth/users/{user_id}/permissions for clients that send payload-only data.
     """
     # Validate/normalize user_id
@@ -832,14 +843,12 @@ def create_user_permission_with_body(
             detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
         )
 
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    require_employee_permission_admin(current_user, session)
 
     user = session.get(User, body_user_id)
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if current_user.company_id and user.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="User not found")
 
     existing_permission = session.exec(
@@ -850,13 +859,19 @@ def create_user_permission_with_body(
         )
     ).first()
     if existing_permission:
-        raise HTTPException(status_code=400, detail="Permission already exists")
+        existing_permission.granted = permission_data.granted
+        existing_permission.updated_at = datetime.utcnow()
+        session.add(existing_permission)
+        session.commit()
+        session.refresh(existing_permission)
+        return UserPermissionRead.from_orm(existing_permission)
 
     permission = UserPermission(
         user_id=body_user_id,
         page=permission_data.page,
         permission=perm_type,
-        granted=permission_data.granted
+        granted=permission_data.granted,
+        company_id=current_user.company_id,
     )
     session.add(permission)
     session.commit()
@@ -869,12 +884,8 @@ def get_user_permissions(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get user permissions (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    """Get user permissions for an employee permission administrator."""
+    require_employee_permission_admin(current_user, session)
     
     # Convert user_id to UUID with error handling
     try:
@@ -891,6 +902,8 @@ def get_user_permissions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    if current_user.company_id and user.company_id != current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
     permissions = session.exec(
         select(UserPermission).where(UserPermission.user_id == user_uuid)
@@ -906,12 +919,8 @@ def update_user_permission(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Update user permission (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    """Update a user permission."""
+    require_employee_permission_admin(current_user, session)
     
     # Convert IDs to UUID with error handling
     try:
@@ -929,6 +938,8 @@ def update_user_permission(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
+    if current_user.company_id and permission.company_id not in {None, current_user.company_id}:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
 
     incoming = permission_data.dict(exclude_unset=True)
     if "permission" in incoming:
@@ -961,7 +972,7 @@ def delete_user_permission(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Delete user permission (admin only)"""
+    """Delete a user permission."""
     # Convert IDs to UUID with error handling
     try:
         user_uuid = UUID(user_id)
@@ -972,11 +983,7 @@ def delete_user_permission(
             detail="Invalid ID format. Both user_id and permission_id must be valid UUIDs."
         )
 
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    require_employee_permission_admin(current_user, session)
 
     permission = session.get(UserPermission, permission_uuid)
     if not permission:
@@ -990,6 +997,8 @@ def delete_user_permission(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
+    if current_user.company_id and permission.company_id not in {None, current_user.company_id}:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
 
     session.delete(permission)
     try:
