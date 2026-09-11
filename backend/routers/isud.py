@@ -38,6 +38,7 @@
 #   2026-07-25 | GitHub Copilot | Aligned schedule payment update behavior with schedule write access
 #   2026-07-26 | GitHub Copilot | Added manager-gated schedule refund initiation endpoint and protected schedule paid-state transitions
 #   2026-09-02 | GitHub Copilot | Scoped schedule list reads to own/attended appointments unless view-all access is granted
+#   2026-09-11 | GitHub Copilot | Made schedule-linked sales idempotent and rejected duplicate payment rows/items
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, Head
 from fastapi.responses import FileResponse, Response
 from starlette.datastructures import UploadFile as StarletteUploadFile
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, text
 from sqlmodel import SQLModel, select as sql_select
 import stripe
 
@@ -1287,6 +1288,7 @@ async def initiate_schedule_refund(
 async def insert(
     table_name: str,
     record_data: Dict[str, Any],
+    request: Request,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -1310,6 +1312,75 @@ async def insert(
     # Auto-inject company_id for tenant-scoped tables
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         record_data['company_id'] = current_user.company_id or ""
+
+    normalized_table = table_name.lower()
+    if normalized_table in ("sale_transaction", "sale_transactions") and record_data.get("schedule_id"):
+        try:
+            schedule_id = UUID(str(record_data["schedule_id"]))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Invalid schedule_id")
+
+        # Serialize payment attempts for one appointment across all API workers.
+        session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:schedule_id))"), {"schedule_id": str(schedule_id)})
+        schedule = session.exec(
+            sql_select(Schedule).where(
+                Schedule.id == schedule_id,
+                Schedule.company_id == (current_user.company_id or ""),
+            )
+        ).first()
+        if not schedule:
+            session.rollback()
+            raise HTTPException(status_code=404, detail="Schedule not found")
+
+        existing_sale = session.exec(
+            sql_select(SaleTransaction).where(
+                SaleTransaction.schedule_id == schedule_id,
+                SaleTransaction.company_id == (current_user.company_id or ""),
+            ).order_by(SaleTransaction.created_at)
+        ).first()
+        if existing_sale:
+            existing_is_paid = bool(schedule.is_paid or existing_sale.paid_at or str(existing_sale.payment_method or "").lower() == "cash")
+            if not existing_is_paid:
+                session.rollback()
+                raise HTTPException(status_code=409, detail="Payment is already in progress for this appointment")
+
+            for field in ("client_id", "employee_id", "subtotal", "discount_amount", "tax_amount", "total", "payment_method"):
+                if field in record_data:
+                    setattr(existing_sale, field, record_data[field])
+            existing_sale.updated_at = datetime.utcnow()
+            schedule.is_paid = True
+            schedule.sale_transaction_id = existing_sale.id
+            schedule.updated_at = datetime.utcnow()
+            session.add(existing_sale)
+            session.add(schedule)
+            session.commit()
+            session.refresh(existing_sale)
+            result = _serialize_record(existing_sale, table_name, session)
+            result["reused_existing"] = True
+            result["duplicate_payment_rejected"] = True
+            return result
+
+    if normalized_table in ("sale_transaction_item", "sale_transaction_items") and record_data.get("sale_transaction_id"):
+        sale = session.get(SaleTransaction, UUID(str(record_data["sale_transaction_id"])))
+        if sale and sale.schedule_id:
+            existing_item = session.exec(
+                sql_select(SaleTransactionItem).where(
+                    SaleTransactionItem.sale_transaction_id == sale.id,
+                    SaleTransactionItem.item_type == record_data.get("item_type"),
+                    SaleTransactionItem.item_id == record_data.get("item_id"),
+                )
+            ).first()
+            if existing_item:
+                for field in ("item_name", "unit_price", "quantity", "line_total", "mix_selections", "options_json"):
+                    if field in record_data:
+                        setattr(existing_item, field, record_data[field])
+                existing_item.updated_at = datetime.utcnow()
+                session.add(existing_item)
+                session.commit()
+                session.refresh(existing_item)
+                result = _serialize_record(existing_item, table_name, session)
+                result["reused_existing"] = True
+                return result
 
     if is_inventory_table:
         _normalize_inventory_cost_fields(record_data, apply_default_purchase_date=True)
