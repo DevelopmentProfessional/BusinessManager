@@ -91,6 +91,11 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
     )
     monkeypatch.setattr(
         database,
+        "_seed_document_templates_for_existing_companies_if_needed",
+        lambda: calls.append("seed_templates"),
+    )
+    monkeypatch.setattr(
+        database,
         "_schema_is_current",
         lambda: calls.append("schema_current") or True,
     )
@@ -107,6 +112,7 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
         "repair_addons",
         "repair_permissions",
         "repair_compensation",
+        "seed_templates",
         "schema_current",
         "required_artifacts",
     ]

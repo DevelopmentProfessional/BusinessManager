@@ -23,7 +23,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 try:
     from backend.database import get_session
@@ -85,16 +85,13 @@ def _calculate_compensation_gross(
     service_revenue: float,
     base_pay: float,
     compensation_percentage: float,
-    base_pay_included: bool,
 ) -> float:
-    """Calculate gross pay from base pay and service revenue compensation."""
+    """Pay base until revenue exceeds twice base, then share the excess."""
     revenue = max(0.0, float(service_revenue or 0.0))
     base = max(0.0, float(base_pay or 0.0))
     rate = min(100.0, max(0.0, float(compensation_percentage or 0.0))) / 100.0
-    if base_pay_included:
-        gross = base + max(0.0, revenue - base) * rate
-    else:
-        gross = max(base, revenue * rate)
+    threshold = base * 2
+    gross = base + max(0.0, revenue - threshold) * rate
     return round(gross, 2)
 
 
@@ -106,7 +103,7 @@ def _service_revenue_for_period(
     period_end: datetime,
 ) -> float:
     """Sum paid service line totals linked to this employee's appointments."""
-    period_end_exclusive = period_end + timedelta(days=1)
+    period_end_exclusive = datetime.combine(period_end.date() + timedelta(days=1), time.min, tzinfo=period_end.tzinfo)
     statement = (
         select(SaleTransactionItem.line_total)
         .join(SaleTransaction, SaleTransactionItem.sale_transaction_id == SaleTransaction.id)
@@ -170,7 +167,7 @@ def process_payment(
     compensation_schedule = _get_employee_compensation_schedule(session, employee_id, company_id)
     base_pay = float(compensation_schedule.base_pay or 0.0) if compensation_schedule else 0.0
     compensation_percentage = float(compensation_schedule.compensation_percentage or 0.0) if compensation_schedule else 0.0
-    base_pay_included = compensation_schedule.base_pay_included if compensation_schedule else True
+    base_pay_included = True
     compensation_active = base_pay > 0 or compensation_percentage > 0
     service_revenue = 0.0
 
@@ -184,7 +181,7 @@ def process_payment(
             data.pay_period_start,
             data.pay_period_end,
         )
-        gross = _calculate_compensation_gross(service_revenue, base_pay, compensation_percentage, base_pay_included)
+        gross = _calculate_compensation_gross(service_revenue, base_pay, compensation_percentage)
     elif emp_type == "hourly":
         gross = hourly_rate * (data.hours_worked or 0.0)
     else:
@@ -258,7 +255,7 @@ def get_compensation_preview(
     schedule = _get_employee_compensation_schedule(session, employee_id, company_id)
     base_pay = float(schedule.base_pay or 0.0) if schedule else 0.0
     percentage = float(schedule.compensation_percentage or 0.0) if schedule else 0.0
-    included = schedule.base_pay_included if schedule else True
+    included = True
     revenue = _service_revenue_for_period(session, employee_id, company_id, start, end)
     return {
         "service_revenue": revenue,
@@ -266,7 +263,7 @@ def get_compensation_preview(
         "compensation_percentage": percentage,
         "base_pay_included": included,
         "compensation_active": base_pay > 0 or percentage > 0,
-        "gross_amount": _calculate_compensation_gross(revenue, base_pay, percentage, included),
+        "gross_amount": _calculate_compensation_gross(revenue, base_pay, percentage),
     }
 
 

@@ -63,6 +63,7 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
               <thead className="sticky-top table-light">
                 <tr>
                   <th>Period</th>
+                  <th>Paid At</th>
                   <th className="text-end">Gross</th>
                   <th className="text-end">Deductions</th>
                   <th className="text-end">Net</th>
@@ -73,6 +74,7 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
                 {filteredSlips.map((slip) => (
                   <tr key={slip.id}>
                     <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
+                    <td>{slip.created_at ? new Date(slip.created_at).toLocaleString() : "—"}</td>
                     <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="text-danger text-end">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="fw-semibold text-end">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>

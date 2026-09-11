@@ -30,6 +30,7 @@
  *   2026-05-26 | GitHub Copilot | Updated Events dropup sizing/icon behavior and refined Financial Controls footer actions
  *   2026-06-13 | GitHub Copilot | Added report controls visibility toggle and normalized report selector dropup behavior
  *   2026-09-04 | GitHub Copilot | Added persisted employee activity workday report
+ *   2026-09-11 | GitHub Copilot | Added compensation metrics, explicit activity filters, and report pay action
  *   2026-09-11 | GitHub Copilot | Removed unused report symbols and stabilized report reload effect dependencies
  * ============================================================
  */
@@ -64,7 +65,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import useStore from "../services/useStore";
-import { reportsAPI, employeesAPI, servicesAPI } from "../services/api";
+import { reportsAPI, employeesAPI, servicesAPI, payrollAPI } from "../services/api";
 import useBranding from "../services/useBranding";
 import Chart_Report from "./components/Chart_Report";
 import Button_Toolbar from "./components/Button_Toolbar";
@@ -406,6 +407,15 @@ export default function Reports() {
   const [eventTypeMenuOpen, setEventTypeMenuOpen] = useState(false);
   const [showReportControls, setShowReportControls] = useState(false);
   const [employeeActivitySections, setEmployeeActivitySections] = useState({ services: true, sales: true });
+  const [activityStartDate, setActivityStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 29);
+    return date.toISOString().slice(0, 10);
+  });
+  const [activityEndDate, setActivityEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [activityPayProcessing, setActivityPayProcessing] = useState(false);
+  const [activityPayError, setActivityPayError] = useState("");
+  const [reportRefreshKey, setReportRefreshKey] = useState(0);
   const eventTypeRef = useRef(null);
 
   // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
@@ -788,8 +798,8 @@ export default function Reports() {
       setLoading(true);
       try {
         const apiParams = {
-          start_date: getStartDate(filters.dateRange, currentPeriodOffset),
-          end_date: getEndDate(filters.dateRange, currentPeriodOffset),
+          start_date: activeReportId === "employee-activity" ? activityStartDate : getStartDate(filters.dateRange, currentPeriodOffset),
+          end_date: activeReportId === "employee-activity" ? activityEndDate : getEndDate(filters.dateRange, currentPeriodOffset),
           group_by: filters.groupBy,
           ...(filters.status && filters.status !== "all" ? { status: filters.status } : {}),
           ...(filters.employeeId && filters.employeeId !== "all" ? { employee_id: filters.employeeId } : {}),
@@ -839,6 +849,8 @@ export default function Reports() {
     reportFilters.serviceId,
     reportFilters.status,
     activeReportId,
+    activityEndDate,
+    activityStartDate,
     getEndDate,
     getStartDate,
     transformClientsData,
@@ -848,6 +860,7 @@ export default function Reports() {
     transformServicesData,
     setError,
     setLoading,
+    reportRefreshKey,
   ]);
 
   useEffect(() => {
@@ -867,6 +880,30 @@ export default function Reports() {
   const isEmployeeActivityReport = selectedReport?.id === "employee-activity";
   const canUseService = ["appointments", "services", "revenue"].includes(selectedReport?.id || "");
   const canUseEmployee = ["appointments", "employees", "attendance", "employee-activity"].includes(selectedReport?.id || "");
+
+  const handleEmployeeActivityPay = async () => {
+    const employee = employees.find((entry) => String(entry.id) === String(reportFilters.employeeId));
+    if (!employee || !activityStartDate || !activityEndDate || reportData?.compensation?.is_paid) return;
+    const calculatedPay = Number(reportData?.compensation?.calculated_gross || 0);
+    const confirmed = window.confirm(`Record $${calculatedPay.toFixed(2)} as paid to ${FILTER_CONFIG.employee.labelKey(employee)} for ${activityStartDate} through ${activityEndDate}?`);
+    if (!confirmed) return;
+
+    setActivityPayProcessing(true);
+    setActivityPayError("");
+    try {
+      await payrollAPI.processPayment(employee.id, {
+        pay_period_start: new Date(`${activityStartDate}T00:00:00`).toISOString(),
+        pay_period_end: new Date(`${activityEndDate}T00:00:00`).toISOString(),
+        employment_type: employee.employment_type || "salary",
+        notes: "Paid from Employee Activity report",
+      });
+      setReportRefreshKey((current) => current + 1);
+    } catch (paymentError) {
+      setActivityPayError(paymentError?.response?.data?.detail || "Failed to record wage payment");
+    } finally {
+      setActivityPayProcessing(false);
+    }
+  };
 
   const handleEventTypeKeyDown = (e) => {
     if (!eventTypeMenuOpen) {
@@ -893,12 +930,13 @@ export default function Reports() {
   const kpis = useMemo(() => {
     if (isEmployeeActivityReport) {
       const totals = reportData?.totals;
+      const compensation = reportData?.compensation;
       if (!totals) return null;
       return [
         { label: "Work Days", value: totals.work_days || 0 },
-        { label: "Services", value: totals.appointments || 0 },
-        { label: "Sales", value: totals.sales || 0 },
-        { label: "Total", value: `$${Number(totals.total || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+        { label: "Paid Services", value: `$${Number(compensation?.paid_service_revenue || 0).toFixed(2)}` },
+        { label: "Base Variance", value: `${Number(compensation?.base_variance || 0) < 0 ? "-" : "+"}$${Math.abs(Number(compensation?.base_variance || 0)).toFixed(2)}` },
+        { label: "Calculated Pay", value: `$${Number(compensation?.calculated_gross || 0).toFixed(2)}` },
       ];
     }
     const values = reportData?.datasets?.[0]?.data;
@@ -1050,6 +1088,33 @@ export default function Reports() {
 
             {isEmployeeActivityReport ? (
               <div id="report-export-section" className="d-flex flex-column gap-2" style={{ maxHeight: fullScreenMode ? "100%" : "60vh" }}>
+                <div className="align-items-end bg-white border border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-wrap gap-2 p-2 rounded-lg">
+                  <div>
+                    <label htmlFor="activity-start-date" className="form-label ui-form-label-sm">Start Date</label>
+                    <input id="activity-start-date" type="date" className="form-control ui-control-sm" value={activityStartDate} max={activityEndDate || undefined} onChange={(event) => setActivityStartDate(event.target.value)} />
+                  </div>
+                  <div>
+                    <label htmlFor="activity-end-date" className="form-label ui-form-label-sm">End Date</label>
+                    <input id="activity-end-date" type="date" className="form-control ui-control-sm" value={activityEndDate} min={activityStartDate || undefined} onChange={(event) => setActivityEndDate(event.target.value)} />
+                  </div>
+                  <div className="flex-grow-1" style={{ minWidth: "12rem" }}>
+                    <label className="form-label ui-form-label-sm">Employee</label>
+                    <Dropdown_Custom className="ui-control-sm" value={reportFilters.employeeId} onChange={(event) => setReportFilters((current) => ({ ...current, employeeId: event.target.value }))} options={[{ value: "all", label: "Select Employee" }, ...employees.map((employee) => ({ value: employee.id, label: FILTER_CONFIG.employee.labelKey(employee) }))]} placeholder="Select Employee" closeOnSelect />
+                  </div>
+                  <button type="button" className="btn btn-primary btn-sm" disabled={activityPayProcessing || reportFilters.employeeId === "all" || !activityStartDate || !activityEndDate || Boolean(reportData?.compensation?.is_paid)} onClick={handleEmployeeActivityPay}>{activityPayProcessing ? "Paying…" : reportData?.compensation?.is_paid ? "Paid" : "Pay"}</button>
+                </div>
+                {activityPayError && <div className="alert alert-danger mb-0 py-1 small">{activityPayError}</div>}
+                {reportFilters.employeeId !== "all" && reportData?.compensation && (
+                  <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-2 rounded-lg">
+                    <div className="d-flex flex-wrap gap-3 justify-content-between">
+                      <div><div className="ui-small-muted">Base Pay</div><strong>${Number(reportData.compensation.base_pay || 0).toFixed(2)}</strong></div>
+                      <div><div className="ui-small-muted">Compensation Threshold</div><strong>${Number(reportData.compensation.threshold || 0).toFixed(2)}</strong></div>
+                      <div><div className="ui-small-muted">Revenue vs Base</div><strong className={Number(reportData.compensation.base_variance || 0) < 0 ? "text-danger" : "text-success"}>{Number(reportData.compensation.base_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.base_variance || 0)).toFixed(2)}</strong></div>
+                      <div><div className="ui-small-muted">Revenue vs Threshold</div><strong className={Number(reportData.compensation.threshold_variance || 0) < 0 ? "text-danger" : "text-success"}>{Number(reportData.compensation.threshold_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.threshold_variance || 0)).toFixed(2)}</strong></div>
+                      <div><div className="ui-small-muted">Wage Status</div><strong>{reportData.compensation.is_paid ? `Paid ${new Date(reportData.compensation.paid_at).toLocaleString()}` : "Unpaid"}</strong></div>
+                    </div>
+                  </div>
+                )}
                 {reportFilters.employeeId === "all" ? (
                   <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-3 rounded-lg text-center text-gray-500">Select an employee to view their activity.</div>
                 ) : !reportData?.days?.length ? (
@@ -1154,6 +1219,7 @@ export default function Reports() {
           </>
         )}
       </div>
+
 
       {selectedReport && (
         <PageTableFooter

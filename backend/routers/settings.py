@@ -15,10 +15,11 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-09-11 | GitHub Copilot | Added authenticated company logo endpoint for generated documents
 # ============================================================
 
 import os
-from fastapi import APIRouter, Depends, HTTPException, status, Header, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Header, UploadFile, File, Response
 from sqlmodel import Session, select
 from datetime import datetime
 from uuid import UUID
@@ -451,6 +452,29 @@ def create_stripe_test_checkout(
 
 ALLOWED_LOGO_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_LOGO_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+def _logo_media_type(content: bytes) -> str:
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if content.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if content.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if content.startswith(b"RIFF") and content[8:12] == b"WEBP":
+        return "image/webp"
+    return "application/octet-stream"
+
+
+@router.get("/logo", include_in_schema=False)
+def get_company_logo(
+    current_user=Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    company = get_company(session, resolve_company_id(session, current_user))
+    if not company or not company.logo_data:
+        raise HTTPException(status_code=404, detail="Company logo not found")
+    return Response(content=company.logo_data, media_type=_logo_media_type(company.logo_data), headers={"Cache-Control": "private, max-age=300"})
 
 
 @router.put("/logo", response_model=AppSettingsRead)

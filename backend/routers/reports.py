@@ -28,6 +28,7 @@
 #   2026-05-19 | GitHub Copilot | Added integrated inventory expenses report with recurring and one-time cost behavior
 #   2026-08-01 | GitHub Copilot | Added base-vs-add-on service revenue split datasets for sales analytics
 #   2026-09-04 | GitHub Copilot | Added employee activity workday report with appointments and sales
+#   2026-09-11 | GitHub Copilot | Added compensation performance metrics and wage payment status to employee activity
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -38,8 +39,9 @@ import json
 import logging
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoSuchTableError
 from backend.database import get_session
-from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, SaleTransactionItem, Attendance, PaySlip, ClientOrder, Task
+from backend.models import Schedule, Client, Service, User, Inventory, SaleTransaction, SaleTransactionItem, Attendance, PaySlip, ClientOrder, Task, EmployeePaySchedule
 from backend.routers.auth import get_current_user
+from backend.routers.payroll import _calculate_compensation_gross, _service_revenue_for_period
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -598,7 +600,46 @@ def get_employee_activity_report(
 
     start = _parse_date(start_date)
     end = _parse_date(end_date, end_of_day=True)
+    effective_start = start or datetime.min
+    effective_end = end or datetime.now()
     days: dict = {}
+
+    pay_schedule = session.exec(
+        select(EmployeePaySchedule).where(
+            EmployeePaySchedule.company_id == current_user.company_id,
+            EmployeePaySchedule.employee_id == employee.id,
+        )
+    ).first()
+    base_pay = float(pay_schedule.base_pay or 0.0) if pay_schedule else 0.0
+    compensation_percentage = float(pay_schedule.compensation_percentage or 0.0) if pay_schedule else 0.0
+    compensation_threshold = round(base_pay * 2, 2)
+    paid_service_revenue = _service_revenue_for_period(
+        session,
+        employee.id,
+        current_user.company_id or "",
+        effective_start,
+        effective_end,
+    )
+    calculated_gross = _calculate_compensation_gross(
+        paid_service_revenue,
+        base_pay,
+        compensation_percentage,
+    )
+
+    pay_slips = session.exec(
+        select(PaySlip).where(
+            PaySlip.company_id == current_user.company_id,
+            PaySlip.employee_id == employee.id,
+            PaySlip.pay_period_start >= effective_start,
+            PaySlip.pay_period_end <= effective_end,
+        ).order_by(PaySlip.created_at.desc())
+    ).all()
+    matching_pay_slips = [
+        slip for slip in pay_slips
+        if slip.pay_period_start.date() == effective_start.date()
+        and slip.pay_period_end.date() == effective_end.date()
+    ]
+    latest_pay_slip = matching_pay_slips[0] if matching_pay_slips else None
 
     services = session.exec(
         select(Service).where(Service.company_id == current_user.company_id)
@@ -683,6 +724,18 @@ def get_employee_activity_report(
             "sales": sum(day["sales_count"] for day in ordered_days),
             "sales_total": round(sum(day["sales_total"] for day in ordered_days), 2),
             "total": round(sum(day["services_total"] + day["sales_total"] for day in ordered_days), 2),
+        },
+        "compensation": {
+            "base_pay": base_pay,
+            "compensation_percentage": compensation_percentage,
+            "threshold": compensation_threshold,
+            "paid_service_revenue": paid_service_revenue,
+            "base_variance": round(paid_service_revenue - base_pay, 2),
+            "threshold_variance": round(paid_service_revenue - compensation_threshold, 2),
+            "calculated_gross": calculated_gross,
+            "is_paid": latest_pay_slip is not None,
+            "paid_at": latest_pay_slip.created_at.isoformat() if latest_pay_slip and latest_pay_slip.created_at else None,
+            "pay_slip_id": str(latest_pay_slip.id) if latest_pay_slip else None,
         },
     }
 

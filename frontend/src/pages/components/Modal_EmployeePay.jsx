@@ -224,7 +224,7 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
     return () => {
       cancelled = true;
     };
-  }, [isOpen, employee, normalizedPayFrequency]);
+  }, [employee, isOpen, normalizedPayFrequency]);
 
   const usesCompensationPlan = Number(compensationSettings?.base_pay || 0) > 0 || Number(compensationSettings?.compensation_percentage || 0) > 0;
 
