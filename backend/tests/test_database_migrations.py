@@ -1,4 +1,39 @@
 from backend import database
+from backend.models import UserPermission
+
+
+def test_permissiontype_storage_labels_include_payment_permissions():
+    labels = set(UserPermission.__table__.c.permission.type.enums)
+
+    assert "APPROVE_PAYMENTS" in labels
+    assert "INITIATE_REFUNDS" in labels
+    assert "approve_payments" not in labels
+
+
+def test_permissiontype_migration_uses_storage_labels(monkeypatch):
+    statements = []
+
+    class Connection:
+        def execute(self, statement):
+            statements.append(str(statement))
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    monkeypatch.setattr(database, "engine", Engine())
+
+    database._ensure_permissiontype_enum_values_if_needed()
+
+    assert "ALTER TYPE permissiontype ADD VALUE IF NOT EXISTS 'APPROVE_PAYMENTS'" in statements
+    assert not any("'approve_payments'" in statement for statement in statements)
 
 
 def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):

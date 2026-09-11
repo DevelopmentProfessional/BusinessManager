@@ -43,7 +43,7 @@
 #   2026-07-28 | GitHub Copilot | Added Stripe test/live mode app_settings migrations with legacy key backfill
 #   2026-08-09 | GitHub Copilot | Required service and schedule add-on columns in schema drift checks
 #   2026-08-09 | GitHub Copilot | Moved add-on column repair ahead of schema fast-path checks
-#   2026-09-11 | GitHub Copilot | Synchronized PostgreSQL permissiontype enum values before schema fast-path checks
+#   2026-09-11 | GitHub Copilot | Synchronized PostgreSQL permissiontype storage labels before schema fast-path checks
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -489,16 +489,18 @@ def _ensure_userrole_enum_values_if_needed():
 
 # ─── MIGRATION: ENSURE permissiontype ENUM HAS ALL EXPECTED VALUES ─────────────
 def _ensure_permissiontype_enum_values_if_needed():
-    """Add any missing application permission values to PostgreSQL."""
+    """Add any missing SQLAlchemy storage labels to PostgreSQL."""
     try:
-        from backend.models import PermissionType
+        from backend.models import UserPermission
     except ModuleNotFoundError:
-        from models import PermissionType  # type: ignore
+        from models import UserPermission  # type: ignore
+
+    required_values = UserPermission.__table__.c.permission.type.enums
 
     try:
         with engine.begin() as conn:
-            for permission_type in PermissionType:
-                conn.execute(text(f"ALTER TYPE permissiontype ADD VALUE IF NOT EXISTS '{permission_type.value}'"))
+            for value in required_values:
+                conn.execute(text(f"ALTER TYPE permissiontype ADD VALUE IF NOT EXISTS '{value}'"))
     except Exception as e:
         print(f"  Warning: Could not patch permissiontype enum: {e}")
 
