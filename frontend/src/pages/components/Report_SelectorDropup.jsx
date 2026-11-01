@@ -3,6 +3,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { ChartBarIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import Button_Toolbar from "./Button_Toolbar";
 
 const ITEM_STYLE = {
   fontSize: "var(--app-input-font-size, 0.875rem)",
@@ -46,22 +47,12 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
 
   return (
     <div ref={rootRef} className="position-relative reports-selector-dropup w-100" style={{ textAlign: "left" }}>
-      <button
-        type="button"
-        onClick={() => onToggle(!open)}
-        className="align-items-center btn btn-outline-secondary btn-sm d-inline-flex gap-1 justify-content-center w-100"
-        style={{ fontSize: "var(--app-btn-label-font-size, 0.875rem)", whiteSpace: "nowrap", minHeight: "2rem" }}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        title={selectedTitle || "Report"}
-      >
-        <ChartBarIcon className="flex-shrink-0 h-4 w-4" style={{ width: "1rem", height: "1rem" }} />
-      </button>
+      <Button_Toolbar icon={ChartBarIcon} label="Reports" onClick={() => onToggle(!open)} className="btn-outline-secondary app-menu-trigger" style={{ whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox" title={selectedTitle || "Reports"} />
 
       {open && (
         <div
           role="listbox"
-          className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-2 position-absolute rounded-3 shadow-lg start-50 translate-middle-x"
+          className="app-menu-panel bg-white bottom-100 dark:bg-gray-900 mb-2 position-absolute shadow-lg start-50 translate-middle-x"
           style={{
             zIndex: 1050,
             width: "100%",

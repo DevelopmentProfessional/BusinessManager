@@ -124,7 +124,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
       {isOpen &&
         createPortal(
           <div
-            className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 rounded shadow-lg"
+            className="app-menu-panel bg-white dark:bg-gray-800 shadow-lg"
             style={{
               ...panelStyle,
               maxHeight: "300px",

@@ -21,7 +21,7 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
 
   return (
     <div className="bg-gray-100 border-bottom dark:bg-gray-700 flex-shrink-0" style={{ zIndex: 5 }}>
-      <table className="bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900">
+      <table className="bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900 w-100">
         <colgroup>
           {columns.map((col, i) => (
             <col key={i} style={col.width ? { width: col.width } : undefined} />

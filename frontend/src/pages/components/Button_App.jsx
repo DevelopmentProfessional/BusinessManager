@@ -31,7 +31,7 @@ function adjustTrainingMargins(className) {
     .join(" ");
 }
 
-export default function Button_App({ icon: Icon, label, onClick, variant, className="", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
+export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const training = isTrainingMode && !compact;
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
@@ -51,14 +51,15 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       aria-label={tooltipLabel}
       className={`btn flex-shrink-0 d-flex align-items-center
         app-action-btn
-        ${training ? (showText ? "rounded-pill ps-0 pe-1 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
+        ${showText ? "" : "app-action-btn--icon-only"}
+        ${training ? (showText ? "rounded-pill ps-0 pe-0 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
         ${variantClass} ${effectiveClass}
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}
     >
       {Icon && <Icon className={iconClass} />}
       {showText && (
-        <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1 }}>
+        <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, minWidth: 0 }}>
           {displayLabel}
         </span>
       )}

@@ -26,7 +26,7 @@ export function getButtonDimensions(textSize, isTrainingMode) {
 export function getButtonTypography(textSize, isTrainingMode) {
   const { height } = getButtonDimensions(textSize, isTrainingMode);
   const iconSize = Math.round(height * 0.5625 * 1000) / 1000;
-  const labelBySize = { small: 0.7, medium: 0.78, large: 0.9 };
+  const labelBySize = { small: 0.64, medium: 0.72, large: 0.84 };
   const labelFontSize = labelBySize[textSize] ?? labelBySize.medium;
   return {
     iconSize,

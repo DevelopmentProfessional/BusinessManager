@@ -850,7 +850,7 @@ export default function Documents() {
               </div>
             ) : (
               /* List View */
-              <table className="mb-0 table table-borderless table-hover">
+              <table className="mb-0 table table-borderless table-hover w-100">
                 <colgroup>
                   <col style={{ width: "56px" }} />
                   <col />
