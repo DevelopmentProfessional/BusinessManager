@@ -201,22 +201,22 @@ const AVAILABLE_REPORTS = [
 ];
 
 const DATE_RANGE_OPTIONS = [
-  { value: "last7days", label: "7D" },
-  { value: "last30days", label: "1M" },
-  { value: "last3months", label: "3M" },
-  { value: "last6months", label: "6M" },
-  { value: "lastyear", label: "1Y" },
+  { value: "last7days", label: "7 Days" },
+  { value: "last30days", label: "30 Days" },
+  { value: "last3months", label: "3 Months" },
+  { value: "last6months", label: "6 Months" },
+  { value: "lastyear", label: "1 Year" },
 ];
 
 const GROUP_BY_OPTIONS = [
-  { value: "day", label: "1D" },
-  { value: "week", label: "2W" },
-  { value: "month", label: "1M" },
+  { value: "day", label: "Day" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
 ];
 
 const DATE_RANGE_DURATION_LABELS = {
   last7days: "7 Days",
-  last30days: "1 Month",
+  last30days: "30 Days",
   last3months: "3 Months",
   last6months: "6 Months",
   lastyear: "1 Year",
@@ -540,37 +540,43 @@ export default function Reports() {
     }
   }, []);
 
-  const getStartDate = useCallback((dateRange, offset = 0) => {
-    const duration = getPeriodDuration(dateRange);
-    const base = new Date();
+  const getStartDate = useCallback(
+    (dateRange, offset = 0) => {
+      const duration = getPeriodDuration(dateRange);
+      const base = new Date();
 
-    // Calculate the offset distance: positive offset = future, negative = past
-    if (offset !== 0) {
+      // Calculate the offset distance: positive offset = future, negative = past
+      if (offset !== 0) {
+        if (duration.days) base.setDate(base.getDate() + duration.days * offset);
+        else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
+        else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
+      }
+
+      // Then go back one period for the start date
+      if (duration.days) base.setDate(base.getDate() - duration.days);
+      else if (duration.months) base.setMonth(base.getMonth() - duration.months);
+      else if (duration.years) base.setFullYear(base.getFullYear() - duration.years);
+
+      return base.toISOString().split("T")[0];
+    },
+    [getPeriodDuration]
+  );
+
+  const getEndDate = useCallback(
+    (dateRange, offset = 0) => {
+      if (offset === 0) return new Date().toISOString().split("T")[0];
+
+      const duration = getPeriodDuration(dateRange);
+      const base = new Date();
+
       if (duration.days) base.setDate(base.getDate() + duration.days * offset);
       else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
       else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
-    }
 
-    // Then go back one period for the start date
-    if (duration.days) base.setDate(base.getDate() - duration.days);
-    else if (duration.months) base.setMonth(base.getMonth() - duration.months);
-    else if (duration.years) base.setFullYear(base.getFullYear() - duration.years);
-
-    return base.toISOString().split("T")[0];
-  }, [getPeriodDuration]);
-
-  const getEndDate = useCallback((dateRange, offset = 0) => {
-    if (offset === 0) return new Date().toISOString().split("T")[0];
-
-    const duration = getPeriodDuration(dateRange);
-    const base = new Date();
-
-    if (duration.days) base.setDate(base.getDate() + duration.days * offset);
-    else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
-    else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
-
-    return base.toISOString().split("T")[0];
-  }, [getPeriodDuration]);
+      return base.toISOString().split("T")[0];
+    },
+    [getPeriodDuration]
+  );
 
   // ─── 8 DATA TRANSFORM FUNCTIONS — map API responses to Chart.js datasets ─
   const getPalette = useCallback((count, alpha = 0.5) => Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`), []);
@@ -588,70 +594,79 @@ export default function Reports() {
     ],
   });
 
-  const transformRevenueData = useCallback((data, chartType) => ({
-    labels: data.labels,
-    datasets:
-      Array.isArray(data.datasets) && data.datasets.length > 0
-        ? data.datasets.map((dataset, idx) => {
-            const hue = [142, 204, 25, 276][idx % 4];
-            const values = dataset.data || [];
-            return {
-              label: dataset.label || `Revenue ${idx + 1}`,
-              data: values,
-              backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
-              borderColor: `hsl(${hue}, 70%, 45%)`,
-              borderWidth: 2,
-            };
-          })
-        : [
-            {
-              label: "Revenue ($)",
-              data: data.data || [],
-              backgroundColor: chartType === "pie" || chartType === "doughnut" ? (data.data || []).map((_, i) => `hsl(${(i * 360) / Math.max((data.data || []).length, 1)}, 70%, 60%)`) : "rgba(34, 197, 94, 0.5)",
-              borderColor: "rgb(34, 197, 94)",
-              borderWidth: 2,
-            },
-          ],
-  }), [getPalette]);
+  const transformRevenueData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets:
+        Array.isArray(data.datasets) && data.datasets.length > 0
+          ? data.datasets.map((dataset, idx) => {
+              const hue = [142, 204, 25, 276][idx % 4];
+              const values = dataset.data || [];
+              return {
+                label: dataset.label || `Revenue ${idx + 1}`,
+                data: values,
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
+                borderColor: `hsl(${hue}, 70%, 45%)`,
+                borderWidth: 2,
+              };
+            })
+          : [
+              {
+                label: "Revenue ($)",
+                data: data.data || [],
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? (data.data || []).map((_, i) => `hsl(${(i * 360) / Math.max((data.data || []).length, 1)}, 70%, 60%)`) : "rgba(34, 197, 94, 0.5)",
+                borderColor: "rgb(34, 197, 94)",
+                borderWidth: 2,
+              },
+            ],
+    }),
+    [getPalette]
+  );
 
-  const transformClientsData = useCallback((data, chartType) => ({
-    labels: data.labels,
-    datasets:
-      Array.isArray(data.datasets) && data.datasets.length > 0
-        ? data.datasets.map((dataset, idx) => {
-            const palette = getPalette((data.labels || []).length, chartType === "pie" || chartType === "doughnut" ? 0.6 : 0.35);
-            const hue = (idx * 120) % 360;
-            return {
-              label: dataset.label || `Series ${idx + 1}`,
-              data: dataset.data || [],
-              backgroundColor: chartType === "pie" || chartType === "doughnut" ? palette : `hsla(${hue}, 70%, 55%, 0.35)`,
-              borderColor: `hsl(${hue}, 70%, 45%)`,
-              borderWidth: 2,
-            };
-          })
-        : [
-            {
-              label: "Clients",
-              data: data.data || [],
-              backgroundColor: ["rgba(147, 51, 234, 0.5)", "rgba(59, 130, 246, 0.5)", "rgba(107, 114, 128, 0.5)"],
-              borderColor: ["rgb(147, 51, 234)", "rgb(59, 130, 246)", "rgb(107, 114, 128)"],
-              borderWidth: 2,
-            },
-          ],
-  }), [getPalette]);
+  const transformClientsData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets:
+        Array.isArray(data.datasets) && data.datasets.length > 0
+          ? data.datasets.map((dataset, idx) => {
+              const palette = getPalette((data.labels || []).length, chartType === "pie" || chartType === "doughnut" ? 0.6 : 0.35);
+              const hue = (idx * 120) % 360;
+              return {
+                label: dataset.label || `Series ${idx + 1}`,
+                data: dataset.data || [],
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? palette : `hsla(${hue}, 70%, 55%, 0.35)`,
+                borderColor: `hsl(${hue}, 70%, 45%)`,
+                borderWidth: 2,
+              };
+            })
+          : [
+              {
+                label: "Clients",
+                data: data.data || [],
+                backgroundColor: ["rgba(147, 51, 234, 0.5)", "rgba(59, 130, 246, 0.5)", "rgba(107, 114, 128, 0.5)"],
+                borderColor: ["rgb(147, 51, 234)", "rgb(59, 130, 246)", "rgb(107, 114, 128)"],
+                borderWidth: 2,
+              },
+            ],
+    }),
+    [getPalette]
+  );
 
-  const transformServicesData = useCallback((data, chartType) => ({
-    labels: data.labels,
-    datasets: [
-      {
-        label: "Service Usage",
-        data: data.data || [],
-        backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette((data.labels || []).length) : "rgba(251, 146, 60, 0.5)",
-        borderColor: "rgb(251, 146, 60)",
-        borderWidth: 2,
-      },
-    ],
-  }), [getPalette]);
+  const transformServicesData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets: [
+        {
+          label: "Service Usage",
+          data: data.data || [],
+          backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette((data.labels || []).length) : "rgba(251, 146, 60, 0.5)",
+          borderColor: "rgb(251, 146, 60)",
+          borderWidth: 2,
+        },
+      ],
+    }),
+    [getPalette]
+  );
 
   const transformInventoryData = (data, _chartType) => ({
     labels: data.labels,
@@ -694,31 +709,34 @@ export default function Reports() {
     ],
   });
 
-  const transformSalesData = useCallback((data, chartType) => ({
-    labels: data.labels,
-    datasets:
-      Array.isArray(data.datasets) && data.datasets.length > 0
-        ? data.datasets.map((dataset, idx) => {
-            const hue = [160, 205, 285][idx % 3];
-            const values = dataset.data || [];
-            return {
-              label: dataset.label || `Sales ${idx + 1}`,
-              data: values,
-              backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
-              borderColor: `hsl(${hue}, 70%, 45%)`,
-              borderWidth: 2,
-            };
-          })
-        : [
-            {
-              label: "Sales Total ($)",
-              data: data.data || [],
-              backgroundColor: "rgba(16, 185, 129, 0.5)",
-              borderColor: "rgb(16, 185, 129)",
-              borderWidth: 2,
-            },
-          ],
-  }), [getPalette]);
+  const transformSalesData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets:
+        Array.isArray(data.datasets) && data.datasets.length > 0
+          ? data.datasets.map((dataset, idx) => {
+              const hue = [160, 205, 285][idx % 3];
+              const values = dataset.data || [];
+              return {
+                label: dataset.label || `Sales ${idx + 1}`,
+                data: values,
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
+                borderColor: `hsl(${hue}, 70%, 45%)`,
+                borderWidth: 2,
+              };
+            })
+          : [
+              {
+                label: "Sales Total ($)",
+                data: data.data || [],
+                backgroundColor: "rgba(16, 185, 129, 0.5)",
+                borderColor: "rgb(16, 185, 129)",
+                borderWidth: 2,
+              },
+            ],
+    }),
+    [getPalette]
+  );
 
   const transformPayrollData = (data, _chartType) => ({
     labels: data.labels,
@@ -734,31 +752,34 @@ export default function Reports() {
   });
 
   // Generic multi-dataset transform for reports that already return datasets array
-  const transformMultiDatasetData = useCallback((data, chartType) => {
-    if (!Array.isArray(data.datasets) || data.datasets.length === 0) {
-      return { labels: data.labels || [], datasets: [] };
-    }
-    const palette = [
-      { bg: "rgba(59,130,246,0.5)", border: "rgb(59,130,246)" },
-      { bg: "rgba(239,68,68,0.5)", border: "rgb(239,68,68)" },
-      { bg: "rgba(16,185,129,0.5)", border: "rgb(16,185,129)" },
-      { bg: "rgba(245,158,11,0.5)", border: "rgb(245,158,11)" },
-    ];
-    return {
-      labels: data.labels,
-      datasets: data.datasets.map((dataset, idx) => {
-        const colors = palette[idx % palette.length];
-        const values = dataset.data || [];
-        return {
-          label: dataset.label || `Series ${idx + 1}`,
-          data: values,
-          backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(values.length, 0.6) : colors.bg,
-          borderColor: colors.border,
-          borderWidth: 2,
-        };
-      }),
-    };
-  }, [getPalette]);
+  const transformMultiDatasetData = useCallback(
+    (data, chartType) => {
+      if (!Array.isArray(data.datasets) || data.datasets.length === 0) {
+        return { labels: data.labels || [], datasets: [] };
+      }
+      const palette = [
+        { bg: "rgba(59,130,246,0.5)", border: "rgb(59,130,246)" },
+        { bg: "rgba(239,68,68,0.5)", border: "rgb(239,68,68)" },
+        { bg: "rgba(16,185,129,0.5)", border: "rgb(16,185,129)" },
+        { bg: "rgba(245,158,11,0.5)", border: "rgb(245,158,11)" },
+      ];
+      return {
+        labels: data.labels,
+        datasets: data.datasets.map((dataset, idx) => {
+          const colors = palette[idx % palette.length];
+          const values = dataset.data || [];
+          return {
+            label: dataset.label || `Series ${idx + 1}`,
+            data: values,
+            backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(values.length, 0.6) : colors.bg,
+            borderColor: colors.border,
+            borderWidth: 2,
+          };
+        }),
+      };
+    },
+    [getPalette]
+  );
 
   // ─── 9 LIFECYCLE HOOKS ───────────────────────────────────────────────────
   useEffect(() => {
@@ -1090,28 +1111,60 @@ export default function Reports() {
               <div id="report-export-section" className="d-flex flex-column gap-2" style={{ maxHeight: fullScreenMode ? "100%" : "60vh" }}>
                 <div className="align-items-end bg-white border border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-wrap gap-2 p-2 rounded-lg">
                   <div>
-                    <label htmlFor="activity-start-date" className="form-label ui-form-label-sm">Start Date</label>
+                    <label htmlFor="activity-start-date" className="form-label ui-form-label-sm">
+                      Start Date
+                    </label>
                     <input id="activity-start-date" type="date" className="form-control ui-control-sm" value={activityStartDate} max={activityEndDate || undefined} onChange={(event) => setActivityStartDate(event.target.value)} />
                   </div>
                   <div>
-                    <label htmlFor="activity-end-date" className="form-label ui-form-label-sm">End Date</label>
+                    <label htmlFor="activity-end-date" className="form-label ui-form-label-sm">
+                      End Date
+                    </label>
                     <input id="activity-end-date" type="date" className="form-control ui-control-sm" value={activityEndDate} min={activityStartDate || undefined} onChange={(event) => setActivityEndDate(event.target.value)} />
                   </div>
                   <div className="flex-grow-1" style={{ minWidth: "12rem" }}>
                     <label className="form-label ui-form-label-sm">Employee</label>
-                    <Dropdown_Custom className="ui-control-sm" value={reportFilters.employeeId} onChange={(event) => setReportFilters((current) => ({ ...current, employeeId: event.target.value }))} options={[{ value: "all", label: "Select Employee" }, ...employees.map((employee) => ({ value: employee.id, label: FILTER_CONFIG.employee.labelKey(employee) }))]} placeholder="Select Employee" closeOnSelect />
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      value={reportFilters.employeeId}
+                      onChange={(event) => setReportFilters((current) => ({ ...current, employeeId: event.target.value }))}
+                      options={[{ value: "all", label: "Select Employee" }, ...employees.map((employee) => ({ value: employee.id, label: FILTER_CONFIG.employee.labelKey(employee) }))]}
+                      placeholder="Select Employee"
+                      closeOnSelect
+                    />
                   </div>
-                  <button type="button" className="btn btn-primary btn-sm" disabled={activityPayProcessing || reportFilters.employeeId === "all" || !activityStartDate || !activityEndDate || Boolean(reportData?.compensation?.is_paid)} onClick={handleEmployeeActivityPay}>{activityPayProcessing ? "Paying…" : reportData?.compensation?.is_paid ? "Paid" : "Pay"}</button>
+                  <button type="button" className="btn btn-primary btn-sm" disabled={activityPayProcessing || reportFilters.employeeId === "all" || !activityStartDate || !activityEndDate || Boolean(reportData?.compensation?.is_paid)} onClick={handleEmployeeActivityPay}>
+                    {activityPayProcessing ? "Paying…" : reportData?.compensation?.is_paid ? "Paid" : "Pay"}
+                  </button>
                 </div>
                 {activityPayError && <div className="alert alert-danger mb-0 py-1 small">{activityPayError}</div>}
                 {reportFilters.employeeId !== "all" && reportData?.compensation && (
                   <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-2 rounded-lg">
                     <div className="d-flex flex-wrap gap-3 justify-content-between">
-                      <div><div className="ui-small-muted">Base Pay</div><strong>${Number(reportData.compensation.base_pay || 0).toFixed(2)}</strong></div>
-                      <div><div className="ui-small-muted">Compensation Threshold</div><strong>${Number(reportData.compensation.threshold || 0).toFixed(2)}</strong></div>
-                      <div><div className="ui-small-muted">Revenue vs Base</div><strong className={Number(reportData.compensation.base_variance || 0) < 0 ? "text-danger" : "text-success"}>{Number(reportData.compensation.base_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.base_variance || 0)).toFixed(2)}</strong></div>
-                      <div><div className="ui-small-muted">Revenue vs Threshold</div><strong className={Number(reportData.compensation.threshold_variance || 0) < 0 ? "text-danger" : "text-success"}>{Number(reportData.compensation.threshold_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.threshold_variance || 0)).toFixed(2)}</strong></div>
-                      <div><div className="ui-small-muted">Wage Status</div><strong>{reportData.compensation.is_paid ? `Paid ${new Date(reportData.compensation.paid_at).toLocaleString()}` : "Unpaid"}</strong></div>
+                      <div>
+                        <div className="ui-small-muted">Base Pay</div>
+                        <strong>${Number(reportData.compensation.base_pay || 0).toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Compensation Threshold</div>
+                        <strong>${Number(reportData.compensation.threshold || 0).toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Revenue vs Base</div>
+                        <strong className={Number(reportData.compensation.base_variance || 0) < 0 ? "text-danger" : "text-success"}>
+                          {Number(reportData.compensation.base_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.base_variance || 0)).toFixed(2)}
+                        </strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Revenue vs Threshold</div>
+                        <strong className={Number(reportData.compensation.threshold_variance || 0) < 0 ? "text-danger" : "text-success"}>
+                          {Number(reportData.compensation.threshold_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.threshold_variance || 0)).toFixed(2)}
+                        </strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Wage Status</div>
+                        <strong>{reportData.compensation.is_paid ? `Paid ${new Date(reportData.compensation.paid_at).toLocaleString()}` : "Unpaid"}</strong>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1122,24 +1175,99 @@ export default function Reports() {
                 ) : (
                   <>
                     <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <button type="button" className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100" onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, services: !sections.services }))} aria-expanded={employeeActivitySections.services}>
-                        <span>Services</span><span className="text-gray-500">Subtotal: ${Number(reportData.totals.services_total || 0).toFixed(2)}</span>
+                      <button
+                        type="button"
+                        className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100"
+                        onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, services: !sections.services }))}
+                        aria-expanded={employeeActivitySections.services}
+                      >
+                        <span>Services</span>
+                        <span className="text-gray-500">Subtotal: ${Number(reportData.totals.services_total || 0).toFixed(2)}</span>
                       </button>
-                      {employeeActivitySections.services && <div className="overflow-auto"><table className="mb-0 table table-sm align-middle"><thead className="bg-white dark:bg-gray-900 sticky-top"><tr><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Service</th><th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th></tr></thead><tbody>{reportData.days.flatMap((day) => day.appointments.map((appointment, index) => <tr key={`${day.date}-service-${index}`}><td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.time}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.service}</td><td className="dark:text-white font-medium text-end text-gray-900 text-sm">${Number(appointment.amount || 0).toFixed(2)}</td></tr>))}</tbody></table></div>}
+                      {employeeActivitySections.services && (
+                        <div className="overflow-auto">
+                          <table className="mb-0 table table-sm align-middle">
+                            <thead className="bg-white dark:bg-gray-900 sticky-top">
+                              <tr>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Service</th>
+                                <th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reportData.days.flatMap((day) =>
+                                day.appointments.map((appointment, index) => (
+                                  <tr key={`${day.date}-service-${index}`}>
+                                    <td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.time}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.service}</td>
+                                    <td className="dark:text-white font-medium text-end text-gray-900 text-sm">${Number(appointment.amount || 0).toFixed(2)}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                     <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <button type="button" className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100" onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, sales: !sections.sales }))} aria-expanded={employeeActivitySections.sales}>
-                        <span>Sales</span><span className="text-gray-500">Total: ${Number(reportData.totals.sales_total || 0).toFixed(2)}</span>
+                      <button
+                        type="button"
+                        className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100"
+                        onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, sales: !sections.sales }))}
+                        aria-expanded={employeeActivitySections.sales}
+                      >
+                        <span>Sales</span>
+                        <span className="text-gray-500">Total: ${Number(reportData.totals.sales_total || 0).toFixed(2)}</span>
                       </button>
-                      {employeeActivitySections.sales && <div className="overflow-auto"><table className="mb-0 table table-sm align-middle"><thead className="bg-white dark:bg-gray-900 sticky-top"><tr><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th><th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Items</th><th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th></tr></thead><tbody>{reportData.days.flatMap((day) => day.sales.map((sale, index) => <tr key={`${day.date}-sale-${index}`}><td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{sale.time}</td><td className="dark:text-gray-300 text-gray-700 text-sm">{sale.items.join(", ") || "Sale"}</td><td className="dark:text-white font-medium text-end text-gray-900 text-sm">${sale.total.toFixed(2)}</td></tr>))}</tbody></table></div>}
+                      {employeeActivitySections.sales && (
+                        <div className="overflow-auto">
+                          <table className="mb-0 table table-sm align-middle">
+                            <thead className="bg-white dark:bg-gray-900 sticky-top">
+                              <tr>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Items</th>
+                                <th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reportData.days.flatMap((day) =>
+                                day.sales.map((sale, index) => (
+                                  <tr key={`${day.date}-sale-${index}`}>
+                                    <td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{sale.time}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{sale.items.join(", ") || "Sale"}</td>
+                                    <td className="dark:text-white font-medium text-end text-gray-900 text-sm">${sale.total.toFixed(2)}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
               </div>
             ) : (
-              <div id="report-export-section" className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-0 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1"}>
+              <div
+                id="report-export-section"
+                className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-0 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1"}
+              >
                 <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
-                  <div className="end-0 position-absolute top-0" style={{ zIndex: 12 }}><button type="button" onClick={() => setFullScreenMode((v) => !v)} className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`} style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }} title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}>Full</button></div>
+                  <div className="end-0 position-absolute top-0" style={{ zIndex: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => setFullScreenMode((v) => !v)}
+                      className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`}
+                      style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
+                      title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
+                    >
+                      Full
+                    </button>
+                  </div>
                   <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
                 </div>
               </div>
@@ -1219,7 +1347,6 @@ export default function Reports() {
           </>
         )}
       </div>
-
 
       {selectedReport && (
         <PageTableFooter

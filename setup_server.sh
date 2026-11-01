@@ -93,14 +93,14 @@ server {
     # Staff API routes
     location /api/v1/ {
         add_header Access-Control-Allow-Origin $cors_allow_origin always;
-        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
-        add_header Access-Control-Allow-Credentials "true" always;
-        add_header Access-Control-Expose-Headers "*" always;
-        add_header Vary "Origin" always;
 
         if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $cors_allow_origin always;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+            add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 86400 always;
+            add_header Vary "Origin" always;
             return 204;
         }
 
@@ -120,14 +120,14 @@ server {
     # Client API routes
     location /api/client/ {
         add_header Access-Control-Allow-Origin $cors_allow_origin always;
-        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
-        add_header Access-Control-Allow-Credentials "true" always;
-        add_header Access-Control-Expose-Headers "*" always;
-        add_header Vary "Origin" always;
 
         if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $cors_allow_origin always;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+            add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 86400 always;
+            add_header Vary "Origin" always;
             return 204;
         }
 

@@ -46,7 +46,7 @@ export default function Dropdown_Filter({
       <Button_Toolbar icon={Icon} label={compactButtonLabel(label)} title={label} onClick={handleToggle} className={`border-0 shadow-lg transition-all ${isActive ? activeClass : inactiveClass}`} data-active={isActive} />
 
       {isOpen && (
-        <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={dropdownStyle}>
+        <div className="app-dropdown--min app-menu-panel bg-white bottom-100 dark:bg-gray-800 mb-2 p-0 position-absolute shadow-lg start-0 z-50" style={dropdownStyle}>
           <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-0 py-0">
             <input type="search" className="form-control ui-control-sm" placeholder={`Search ${String(label || "filter").toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
@@ -89,7 +89,7 @@ export default function Dropdown_Filter({
 
                     {isHelpOpen && (
                       <div
-                        className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
+                        className="app-menu-panel bg-white bottom-100 dark:bg-gray-800 mb-2 p-0 position-absolute shadow-lg start-50 text-start"
                         style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
                         onMouseEnter={() => setHelpKey(option.value)}
                         onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}

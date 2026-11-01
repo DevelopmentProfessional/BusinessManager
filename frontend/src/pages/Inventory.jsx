@@ -574,7 +574,7 @@ export default function Inventory() {
         {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
         <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
           {sortedAndFiltered.length > 0 ? (
-            <table className="mb-0 table table-borderless table-hover">
+            <table className="mb-0 table table-borderless table-hover w-100">
               <colgroup>
                 <col style={{ width: "40px" }} />
                 <col />

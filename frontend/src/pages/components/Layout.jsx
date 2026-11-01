@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, EllipsisHorizontalIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";
@@ -173,7 +173,7 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Navigation toggle — pill: training shows +Nav, compact shows ⋯ only */}
+      {/* Navigation toggle — icon-only in every view mode */}
       <button
         type="button"
         onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
@@ -181,8 +181,8 @@ export default function Layout({ children }) {
         aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
         className={classNames(
           expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
-          "btn-app-nav app-nav-bottom-toggle position-absolute shadow-lg d-flex align-items-center rounded-pill position-relative",
-          isTrainingMode ? "ps-0 pe-0 justify-content-start" : "p-0 justify-content-center"
+          "btn-app-nav app-nav-bottom-toggle app-action-btn--icon-only position-absolute shadow-lg d-flex align-items-center rounded-circle position-relative",
+          "p-0 justify-content-center"
         )}
         style={{
           zIndex: APP_NAV_Z_INDEX,
@@ -191,12 +191,7 @@ export default function Layout({ children }) {
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
         }}
       >
-        {!isTrainingMode && <EllipsisHorizontalIcon className="app-icon flex-shrink-0" />}
-        {isTrainingMode && (
-          <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, marginLeft: "-0.125rem" }}>
-            Menu
-          </span>
-        )}
+        {expandedMenuOpen ? <XMarkIcon className="app-icon flex-shrink-0" /> : <Bars3Icon className="app-icon flex-shrink-0" />}
         <Badge_PendingOrder clientId={user?.client_id} />
       </button>
     </div>

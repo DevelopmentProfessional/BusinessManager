@@ -28,9 +28,9 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
         {/* Controls: optional top row + search + buttons */}
         <div className="app-footer-padding app-standard-footer bg-white dark:bg-gray-800">
           <div className="app-footer-stack">
-            {beforeSearch && <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`}>{beforeSearch}</div>}
+            {beforeSearch && <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100 ${alignClass}`}>{beforeSearch}</div>}
             {/* Buttons row - now above search */}
-            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${alignClass}`}>{children}</div>
+            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100 ${alignClass}`}>{children}</div>
             {/* Search row - Add button + search input */}
             {!hideSearch && (
               <div className="align-items-center app-footer-search-row d-flex gap-1 w-100">

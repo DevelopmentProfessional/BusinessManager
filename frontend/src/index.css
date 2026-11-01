@@ -72,7 +72,7 @@
   --app-btn-label-font-size: 0.78rem;
   --app-footer-btn-gap: 0.25rem;
   --app-footer-padding-x: 0.25rem;
-  --app-footer-padding-y: 0.25rem;
+  --app-footer-padding-y: 0.125rem;
   --app-standard-footer-height: calc(var(--app-btn-height) + (var(--app-footer-padding-y) * 2));
   /* Width + gap reserved for bottom-right nav (matches left inset) */
   --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
@@ -245,10 +245,37 @@ body,
 }
 
 .ui-control-sm {
-  min-height: calc(1.5em + 0.5rem + 2px);
+  box-sizing: border-box;
+  min-height: var(--app-input-height);
   padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--app-input-font-size) !important;
+  line-height: 1.2;
   border-radius: var(--bs-border-radius-sm);
+}
+
+.form-control.ui-control-sm,
+.form-select.ui-control-sm {
+  height: var(--app-input-height);
+  min-height: var(--app-input-height);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--app-input-font-size) !important;
+  line-height: 1.2;
+}
+
+.ui-dropdown-trigger {
+  box-sizing: border-box;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: var(--app-input-font-size) !important;
+  line-height: 1.2;
+}
+
+.ui-dropdown-trigger:focus,
+.ui-dropdown-trigger:focus-visible {
+  outline: 2px solid var(--app-active-color) !important;
+  outline-offset: 2px;
+  box-shadow: none !important;
 }
 
 .ui-text-sm {
@@ -410,7 +437,7 @@ footer[aria-label="Actions"] .btn.app-action-btn.rounded-pill {
   width: auto !important;
   min-width: var(--app-btn-width) !important;
   max-width: none !important;
-  flex: 0 1 auto !important;
+  flex: 0 0 auto !important;
   margin: 0 !important;
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
@@ -439,12 +466,13 @@ footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   padding-left: 0.25rem !important;
-  padding-right: 0.25rem !important;
+  padding-right: 0.125rem !important;
   box-shadow: none !important;
   --bs-btn-focus-box-shadow: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  gap: 2px !important;
 }
 
 .btn.app-action-btn.rounded-circle {
@@ -580,7 +608,7 @@ footer[aria-label="Actions"].app-footer-reserve {
 
 /* Modals/forms without nav reserve — keep symmetric horizontal inset only */
 .app-form-footer:not(.app-footer-reserve) {
-  padding-right: var(--app-footer-padding-x) !important;
+  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
 }
 
 /* Global footer contract: every app footer sticks to the bottom */
@@ -900,6 +928,31 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
   text-align: left !important;
 }
 
+/* Icon-only controls stay centered even when training mode styles rounded pills. */
+.btn.app-action-btn--icon-only,
+.app-nav-bottom-toggle.app-action-btn--icon-only {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* The bottom-right toggle is always an icon-only control in every view mode. */
+.btn.app-nav-bottom-toggle.app-action-btn--icon-only {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: var(--app-btn-height) !important;
+  min-width: var(--app-btn-height) !important;
+  max-width: var(--app-btn-height) !important;
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  border-radius: 50% !important;
+}
+
 .app-nav-bottom-menu-panel {
   right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px));
   bottom: calc(var(--app-footer-padding-y) + var(--app-btn-height) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0px));
@@ -920,12 +973,12 @@ body.training-mode .app-footer-search .btn.rounded-pill,
 body.training-mode .schedule-footer .btn.rounded-pill,
 body.training-mode .profile-footer-nav .btn.rounded-pill,
 body.training-mode footer[aria-label="Actions"] .btn.rounded-pill {
-  width: var(--app-btn-width) !important;
+  width: auto !important;
   min-width: var(--app-btn-width) !important;
-  max-width: var(--app-btn-width) !important;
-  flex: 0 0 var(--app-btn-width) !important;
-  padding-left: 0.25rem !important;
-  padding-right: 0.25rem !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
 }
 
 body.training-mode .app-footer-search .btn:not(.rounded-circle),
@@ -1743,6 +1796,9 @@ textarea.form-control {
 
 .app-menu-panel {
   font-size: var(--app-input-font-size) !important;
+  border: 1px solid var(--bs-border-color) !important;
+  border-radius: 0.5rem;
+  background-clip: padding-box;
 }
 
 .app-menu-trigger {
@@ -1759,6 +1815,25 @@ textarea.form-control {
 .app-menu-action,
 .app-menu-summary {
   font-size: var(--app-input-font-size) !important;
+}
+
+.app-menu-item,
+.app-menu-item button,
+.app-menu-action,
+.app-menu-search input {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-menu-item:focus,
+.app-menu-item:focus-visible,
+.app-menu-action:focus,
+.app-menu-action:focus-visible,
+.app-menu-search input:focus,
+.app-menu-search input:focus-visible {
+  outline: 2px solid var(--app-active-color) !important;
+  outline-offset: -2px;
+  box-shadow: none !important;
 }
 
 .app-menu-panel .small,

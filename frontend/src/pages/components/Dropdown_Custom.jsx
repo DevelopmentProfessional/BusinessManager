@@ -10,7 +10,7 @@ export default function Dropdown_Custom({
   options = [],
   placeholder = "",
   required = false,
-  className="",
+  className = "",
   disabled = false,
   name = "",
   id = "",
@@ -135,7 +135,7 @@ export default function Dropdown_Custom({
               setSearchTerm("");
             }}
             placeholder={placeholder}
-            className={`
+            className={`ui-dropdown-trigger
               w-full px-1 py-0 border rounded-lg 
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
               border-gray-300 dark:border-gray-600
@@ -154,7 +154,7 @@ export default function Dropdown_Custom({
             if (!isOpen && onOpen) onOpen();
             setIsOpen(!isOpen);
           }}
-          className={`
+          className={`ui-dropdown-trigger
             w-full px-1 py-0 border rounded-lg 
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
             flex items-center justify-start
@@ -173,17 +173,10 @@ export default function Dropdown_Custom({
       {multiSelect && showSelectionSummary && <div className="dark:text-gray-300 mt-1 text-gray-600 text-xs">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
 
       {isOpen && (
-        <div className={`app-menu-panel absolute z-50 w-full border rounded-lg shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
+        <div className={`app-menu-panel absolute z-50 w-full shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
           {searchable && !footerSearch && (
             <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 px-0 py-0">
-              <input
-                type="search"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="form-control ui-control-sm"
-                placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"}
-                autoFocus
-              />
+              <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} autoFocus />
             </div>
           )}
 
