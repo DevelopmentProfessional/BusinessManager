@@ -179,11 +179,7 @@ export default function Layout({ children }) {
         onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
         title={expandedMenuOpen ? "Close menu" : "Open menu"}
         aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
-        className={classNames(
-          expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
-          "btn-app-nav app-nav-bottom-toggle app-action-btn--icon-only position-absolute shadow-lg d-flex align-items-center rounded-circle position-relative",
-          "p-0 justify-content-center"
-        )}
+        className={classNames(expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary", "btn-app-nav app-nav-bottom-toggle app-action-btn--icon-only position-absolute shadow-lg d-flex align-items-center rounded-circle position-relative", "p-0 justify-content-center")}
         style={{
           zIndex: APP_NAV_Z_INDEX,
           backgroundColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",

@@ -232,27 +232,27 @@ export default function Dropup_ScheduleFilter({ isOpen, onClose, employees, clie
   // Prepare options for dropups
   const employeeOptions = sortItemsAlphabetically(
     employees.map((e) => ({
-    id: e.id,
-    label: `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
-    searchText: [e.first_name, e.last_name, e.username, e.email, e.role].filter(Boolean).join(" "),
+      id: e.id,
+      label: `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
+      searchText: [e.first_name, e.last_name, e.username, e.email, e.role].filter(Boolean).join(" "),
     })),
     ["label"]
   );
 
   const clientOptions = sortItemsAlphabetically(
     clients.map((c) => ({
-    id: c.id,
-    label: c.name,
-    searchText: [c.name, c.email, c.phone].filter(Boolean).join(" "),
+      id: c.id,
+      label: c.name,
+      searchText: [c.name, c.email, c.phone].filter(Boolean).join(" "),
     })),
     ["label"]
   );
 
   const serviceOptions = sortItemsAlphabetically(
     services.map((s) => ({
-    id: s.id,
-    label: s.name,
-    searchText: [s.name, s.category, s.description].filter(Boolean).join(" "),
+      id: s.id,
+      label: s.name,
+      searchText: [s.name, s.category, s.description].filter(Boolean).join(" "),
     })),
     ["label"]
   );
