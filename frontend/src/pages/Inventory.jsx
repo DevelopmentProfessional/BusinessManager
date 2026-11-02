@@ -387,11 +387,14 @@ export default function Inventory() {
     return upperType === "LOCATION" || upperType === "ASSET";
   }, []);
 
-  const isLowStock = useCallback((item) => {
-    // Location and Asset items are always "OK"
-    if (isLocationOrAsset(item)) return false;
-    return item.quantity <= item.min_stock_level;
-  }, [isLocationOrAsset]);
+  const isLowStock = useCallback(
+    (item) => {
+      // Location and Asset items are always "OK"
+      if (isLocationOrAsset(item)) return false;
+      return item.quantity <= item.min_stock_level;
+    },
+    [isLocationOrAsset]
+  );
 
   const getTypeFilterButtonClass = () => {
     if (typeFilter === "all") return "btn-app-secondary";
@@ -418,14 +421,17 @@ export default function Inventory() {
     return `$${price.toFixed(2)}`;
   };
 
-  const getCountDisplay = useCallback((item) => {
-    const isAsset = (item?.type || "").toUpperCase() === "ASSET";
-    if (isAsset) {
-      const assetCount = assetUnitCounts[item.id];
-      if (typeof assetCount === "number") return assetCount;
-    }
-    return item.quantity ?? 0;
-  }, [assetUnitCounts]);
+  const getCountDisplay = useCallback(
+    (item) => {
+      const isAsset = (item?.type || "").toUpperCase() === "ASSET";
+      if (isAsset) {
+        const assetCount = assetUnitCounts[item.id];
+        if (typeof assetCount === "number") return assetCount;
+      }
+      return item.quantity ?? 0;
+    },
+    [assetUnitCounts]
+  );
 
   const handleDeleteSelectedInv = async () => {
     if (selectedIds.size === 0) return;

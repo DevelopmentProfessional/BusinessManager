@@ -443,7 +443,12 @@ export default function Documents() {
   const handleSaveTemplate = async (data) => {
     if (editingTemplate?.id) {
       const res = await templatesAPI.update(editingTemplate.id, data);
-      setTemplates((prev) => sortItemsAlphabetically(prev.map((t) => (t.id === editingTemplate.id ? res.data : t)), ["name", "template_type"]));
+      setTemplates((prev) =>
+        sortItemsAlphabetically(
+          prev.map((t) => (t.id === editingTemplate.id ? res.data : t)),
+          ["name", "template_type"]
+        )
+      );
     } else {
       const res = await templatesAPI.create(data);
       setTemplates((prev) => sortItemsAlphabetically([...prev, res.data], ["name", "template_type"]));
@@ -704,7 +709,12 @@ export default function Documents() {
         description: editingCatDesc,
       };
       const res = await documentCategoriesAPI.update(catId, payload);
-      setCategories((prev) => sortItemsAlphabetically(prev.map((c) => (c.id === catId ? res.data : c)), ["name"]));
+      setCategories((prev) =>
+        sortItemsAlphabetically(
+          prev.map((c) => (c.id === catId ? res.data : c)),
+          ["name"]
+        )
+      );
       cancelEditCategory();
     } catch (err) {
       console.error("Failed to update category", err);
@@ -774,9 +784,7 @@ export default function Documents() {
                 quote: "bg-yellow-100 text-yellow-800",
                 custom: "bg-gray-100 text-gray-700",
               };
-              const filtered = templates
-                .filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter)
-                .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
+              const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
               return filtered.length > 0 ? (
                 <table className="mb-0 table table-borderless table-hover">
                   <colgroup>
