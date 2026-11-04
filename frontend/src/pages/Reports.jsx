@@ -32,6 +32,7 @@
  *   2026-09-04 | GitHub Copilot | Added persisted employee activity workday report
  *   2026-09-11 | GitHub Copilot | Added compensation metrics, explicit activity filters, and report pay action
  *   2026-09-11 | GitHub Copilot | Removed unused report symbols and stabilized report reload effect dependencies
+ *   2026-11-04 | GitHub Copilot | Added weekly activity report and labeled report filter controls
  * ============================================================
  */
 
@@ -106,6 +107,15 @@ const AVAILABLE_REPORTS = [
     icon: UsersIcon,
     color: "purple",
     tables: ["clients", "schedule"],
+    chartTypes: ["bar", "pie", "doughnut"],
+  },
+  {
+    id: "weekly-activity",
+    title: "Weekly Activity",
+    description: "See which days of the week have the most and least appointments",
+    icon: CalendarIcon,
+    color: "pink",
+    tables: ["schedule", "clients"],
     chartTypes: ["bar", "pie", "doughnut"],
   },
   {
@@ -201,11 +211,11 @@ const AVAILABLE_REPORTS = [
 ];
 
 const DATE_RANGE_OPTIONS = [
-  { value: "last7days", label: "7 Days" },
-  { value: "last30days", label: "30 Days" },
-  { value: "last3months", label: "3 Months" },
-  { value: "last6months", label: "6 Months" },
-  { value: "lastyear", label: "1 Year" },
+  { value: "last7days", label: "Last 7 Days" },
+  { value: "last30days", label: "Last 30 Days" },
+  { value: "last3months", label: "Last 3 Months" },
+  { value: "last6months", label: "Last 6 Months" },
+  { value: "lastyear", label: "Last Year" },
 ];
 
 const GROUP_BY_OPTIONS = [
@@ -317,7 +327,7 @@ const INLINE_SELECT_STYLE = {
 const FILTER_CONFIG = {
   status: {
     key: "status",
-    condition: (reportId) => ["appointments", "attendance", "tasks", "orders"].includes(reportId),
+    condition: (reportId) => ["appointments", "attendance", "tasks", "orders", "weekly-activity"].includes(reportId),
     options: [
       { value: "all", label: "All Statuses" },
       { value: "scheduled", label: "Scheduled" },
@@ -339,19 +349,32 @@ const FILTER_CONFIG = {
   },
   service: {
     key: "serviceId",
-    condition: (reportId) => ["appointments", "revenue", "services"].includes(reportId),
+    condition: (reportId) => ["appointments", "revenue", "services", "weekly-activity"].includes(reportId),
     dataSource: "services",
     labelKey: "name",
     allLabel: "All Services",
   },
   employee: {
     key: "employeeId",
-    condition: (reportId) => ["appointments", "revenue", "attendance", "payroll", "tasks", "employee-activity"].includes(reportId),
+    condition: (reportId) => ["appointments", "revenue", "attendance", "payroll", "tasks", "employee-activity", "weekly-activity"].includes(reportId),
     dataSource: "employees",
     labelKey: (e) => `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
     allLabel: "All Employees",
   },
 };
+
+// ─── LABELED FILTER FIELD WRAPPER ───────────────────────────────────────────
+// Gives each compact footer filter control a small caption so its purpose is clear
+function FilterField({ label, children }) {
+  return (
+    <div className="align-items-start d-flex flex-column">
+      <span className="ui-muted-xs text-nowrap" style={{ fontSize: "0.65rem", lineHeight: 1.1, paddingLeft: "0.5rem" }}>
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
 
 // ─── REPORT API & TRANSFORM MAPPING ─────────────────────────────────────────
 // Eliminates repetitive switch statement cases
@@ -359,6 +382,7 @@ const REPORT_HANDLERS = {
   appointments: { api: (p) => reportsAPI.getAppointmentsReport(p), transform: "transformAppointmentsData" },
   revenue: { api: (p) => reportsAPI.getRevenueReport(p), transform: "transformRevenueData" },
   clients: { api: (p) => reportsAPI.getClientsReport(p), transform: "transformClientsData" },
+  "weekly-activity": { api: (p) => reportsAPI.getWeeklyActivityReport(p), transform: "transformWeeklyActivityData" },
   services: { api: (p) => reportsAPI.getServicesReport(p), transform: "transformServicesData" },
   inventory: { api: () => reportsAPI.getInventoryReport(), transform: "transformInventoryData" },
   employees: { api: (p) => reportsAPI.getEmployeesReport(p), transform: "transformEmployeesData" },
@@ -652,6 +676,31 @@ export default function Reports() {
     [getPalette]
   );
 
+  // Weekday appointment counts — busiest day shown green, slowest red
+  const transformWeeklyActivityData = useCallback(
+    (data, chartType) => {
+      const values = (data.data || []).map(Number);
+      const maxVal = values.length ? Math.max(...values) : 0;
+      const minVal = values.length ? Math.min(...values) : 0;
+      const highlight = maxVal !== minVal;
+      const backgroundColor = highlight ? values.map((v) => (v === maxVal ? "rgba(34, 197, 94, 0.6)" : v === minVal ? "rgba(239, 68, 68, 0.6)" : "rgba(59, 130, 246, 0.5)")) : "rgba(59, 130, 246, 0.5)";
+      const borderColor = highlight ? values.map((v) => (v === maxVal ? "rgb(34, 197, 94)" : v === minVal ? "rgb(239, 68, 68)" : "rgb(59, 130, 246)")) : "rgb(59, 130, 246)";
+      return {
+        labels: data.labels,
+        datasets: [
+          {
+            label: "Appointments",
+            data: values,
+            backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(values.length, 0.6) : backgroundColor,
+            borderColor: chartType === "pie" || chartType === "doughnut" ? undefined : borderColor,
+            borderWidth: 2,
+          },
+        ],
+      };
+    },
+    [getPalette]
+  );
+
   const transformServicesData = useCallback(
     (data, chartType) => ({
       labels: data.labels,
@@ -837,6 +886,7 @@ export default function Reports() {
             transformAppointmentsData,
             transformRevenueData,
             transformClientsData,
+            transformWeeklyActivityData,
             transformServicesData,
             transformInventoryData,
             transformEmployeesData,
@@ -879,6 +929,7 @@ export default function Reports() {
     transformRevenueData,
     transformSalesData,
     transformServicesData,
+    transformWeeklyActivityData,
     setError,
     setLoading,
     reportRefreshKey,
@@ -896,11 +947,13 @@ export default function Reports() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [eventTypeMenuOpen]);
 
-  const canUseStatus = selectedReport?.id === "appointments";
+  const canUseStatus = ["appointments", "weekly-activity"].includes(selectedReport?.id || "");
   const canUseEventType = selectedReport?.id === "appointments";
   const isEmployeeActivityReport = selectedReport?.id === "employee-activity";
-  const canUseService = ["appointments", "services", "revenue"].includes(selectedReport?.id || "");
-  const canUseEmployee = ["appointments", "employees", "attendance", "employee-activity"].includes(selectedReport?.id || "");
+  const isWeeklyActivityReport = selectedReport?.id === "weekly-activity";
+  const canUseGroupBy = !isWeeklyActivityReport;
+  const canUseService = ["appointments", "services", "revenue", "weekly-activity"].includes(selectedReport?.id || "");
+  const canUseEmployee = ["appointments", "employees", "attendance", "employee-activity", "weekly-activity"].includes(selectedReport?.id || "");
 
   const handleEmployeeActivityPay = async () => {
     const employee = employees.find((entry) => String(entry.id) === String(reportFilters.employeeId));
@@ -965,6 +1018,16 @@ export default function Reports() {
     const nums = values.map(Number);
     const labels = reportData.labels || [];
     const total = nums.reduce((s, v) => s + v, 0);
+    if (isWeeklyActivityReport) {
+      const maxVal = Math.max(...nums);
+      const minVal = Math.min(...nums);
+      return [
+        { label: "Busiest Day", value: labels[nums.indexOf(maxVal)] || "—", sub: `${maxVal} appointment${maxVal === 1 ? "" : "s"}` },
+        { label: "Slowest Day", value: labels[nums.indexOf(minVal)] || "—", sub: `${minVal} appointment${minVal === 1 ? "" : "s"}` },
+        { label: "Total", value: total.toLocaleString("en-US") },
+        { label: "Avg / Day", value: (total / 7).toLocaleString("en-US", { maximumFractionDigits: 1 }) },
+      ];
+    }
     const avg = total / nums.length;
     const maxVal = Math.max(...nums);
     const maxIdx = nums.indexOf(maxVal);
@@ -976,7 +1039,7 @@ export default function Reports() {
       { label: "Peak", value: fmt(maxVal), sub: labels[maxIdx] || "" },
       { label: "Periods", value: nums.length },
     ];
-  }, [isEmployeeActivityReport, reportData]);
+  }, [isEmployeeActivityReport, isWeeklyActivityReport, reportData]);
 
   // ─── 10 PDF EXPORT HANDLER ───────────────────────────────────────────────
   const handleExportPdf = () => {
@@ -1354,77 +1417,92 @@ export default function Reports() {
           searchTerm=""
           onSearch={() => {}}
           beforeSearch={
-            <div className="align-items-center d-flex flex-wrap gap-2 w-100">
+            <div className="align-items-end d-flex flex-wrap gap-2 w-100">
               {showReportControls && (
                 <>
-                  <Dropdown_Custom
-                    className="ui-control-sm"
-                    style={CIRCULAR_SELECT_STYLE}
-                    value={reportFilters.dateRange}
-                    onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
-                    options={DATE_RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                    placeholder="Date range"
-                    closeOnSelect
-                  />
-
-                  <Dropdown_Custom
-                    className="ui-control-sm"
-                    style={CIRCULAR_SELECT_STYLE}
-                    value={reportFilters.groupBy}
-                    onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
-                    options={GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                    placeholder="Group by"
-                    closeOnSelect
-                  />
-
-                  <Dropdown_Custom
-                    className="ui-control-sm"
-                    style={CIRCULAR_SELECT_STYLE}
-                    value={reportFilters.chartType}
-                    onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
-                    options={selectedReport.chartTypes.map((chartType) => ({ value: chartType, label: chartType === "doughnut" ? "Ring" : chartType }))}
-                    placeholder="Chart type"
-                    closeOnSelect
-                  />
-
-                  {canUseStatus && (
+                  <FilterField label="Time Range">
                     <Dropdown_Custom
                       className="ui-control-sm"
-                      style={INLINE_SELECT_STYLE}
-                      value={reportFilters.status}
-                      onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
-                      options={FILTER_CONFIG.status.options.map((o) => ({ value: o.value, label: o.label }))}
-                      placeholder="Status"
+                      style={CIRCULAR_SELECT_STYLE}
+                      value={reportFilters.dateRange}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
+                      options={DATE_RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                      placeholder="Date range"
                       closeOnSelect
                     />
+                  </FilterField>
+
+                  {canUseGroupBy && (
+                    <FilterField label="Group By">
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={CIRCULAR_SELECT_STYLE}
+                        value={reportFilters.groupBy}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
+                        options={GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                        placeholder="Group by"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
+
+                  <FilterField label="Chart Type">
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={CIRCULAR_SELECT_STYLE}
+                      value={reportFilters.chartType}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
+                      options={selectedReport.chartTypes.map((chartType) => ({ value: chartType, label: formatChartTypeLabel(chartType) }))}
+                      placeholder="Chart type"
+                      closeOnSelect
+                    />
+                  </FilterField>
+
+                  {canUseStatus && (
+                    <FilterField label="Status">
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.status}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
+                        options={FILTER_CONFIG.status.options.map((o) => ({ value: o.value, label: o.label }))}
+                        placeholder="Status"
+                        closeOnSelect
+                      />
+                    </FilterField>
                   )}
 
                   {canUseService && (
-                    <Dropdown_Custom
-                      className="ui-control-sm"
-                      style={INLINE_SELECT_STYLE}
-                      value={reportFilters.serviceId}
-                      onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
-                      options={[{ value: "all", label: FILTER_CONFIG.service.allLabel }, ...services.map((s) => ({ value: s.id, label: s[FILTER_CONFIG.service.labelKey] }))]}
-                      placeholder="Service"
-                      closeOnSelect
-                    />
+                    <FilterField label="Service">
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.serviceId}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
+                        options={[{ value: "all", label: FILTER_CONFIG.service.allLabel }, ...services.map((s) => ({ value: s.id, label: s[FILTER_CONFIG.service.labelKey] }))]}
+                        placeholder="Service"
+                        closeOnSelect
+                      />
+                    </FilterField>
                   )}
 
                   {canUseEmployee && (
-                    <Dropdown_Custom
-                      className="ui-control-sm"
-                      style={INLINE_SELECT_STYLE}
-                      value={reportFilters.employeeId}
-                      onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
-                      options={[{ value: "all", label: FILTER_CONFIG.employee.allLabel }, ...employees.map((employeeOption) => ({ value: employeeOption.id, label: FILTER_CONFIG.employee.labelKey(employeeOption) }))]}
-                      placeholder="Employee"
-                      closeOnSelect
-                    />
+                    <FilterField label="Employee">
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.employeeId}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
+                        options={[{ value: "all", label: FILTER_CONFIG.employee.allLabel }, ...employees.map((employeeOption) => ({ value: employeeOption.id, label: FILTER_CONFIG.employee.labelKey(employeeOption) }))]}
+                        placeholder="Employee"
+                        closeOnSelect
+                      />
+                    </FilterField>
                   )}
 
                   {canUseEventType && (
-                    <div className="ui-pos-rel" ref={eventTypeRef}>
+                    <FilterField label="Event Type">
+                      <div className="ui-pos-rel" ref={eventTypeRef}>
                       <button
                         type="button"
                         onClick={() => setEventTypeMenuOpen((v) => !v)}
@@ -1479,6 +1557,7 @@ export default function Reports() {
                         </div>
                       )}
                     </div>
+                    </FilterField>
                   )}
                 </>
               )}
