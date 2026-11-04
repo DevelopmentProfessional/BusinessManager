@@ -29,6 +29,7 @@
 #   2026-08-01 | GitHub Copilot | Added base-vs-add-on service revenue split datasets for sales analytics
 #   2026-09-04 | GitHub Copilot | Added employee activity workday report with appointments and sales
 #   2026-09-11 | GitHub Copilot | Added compensation performance metrics and wage payment status to employee activity
+#   2026-11-04 | GitHub Copilot | Added weekly activity report grouping appointments by day of week
 # ============================================================
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -321,6 +322,58 @@ def get_clients_report(
             {"label": "New Clients", "data": [new_clients.get(k, 0) for k in all_labels]},
             {"label": "Appointments", "data": [appt_counts.get(k, 0) for k in all_labels]},
         ]
+    }
+
+
+# ─── 4B WEEKLY ACTIVITY REPORT ─────────────────────────────────────────────────
+
+WEEKDAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+
+@router.get("/reports/weekly-activity")
+def get_weekly_activity_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    employee_id: Optional[str] = Query(None),
+    service_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Appointment counts per day of week, highlighting busiest and slowest days."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date, end_of_day=True)
+
+    stmt = select(Schedule).where(Schedule.company_id == current_user.company_id)
+    schedules = session.exec(stmt).all()
+
+    counts = [0] * 7
+    for s in schedules:
+        dt = s.appointment_date
+        if dt is None:
+            continue
+        if start and dt < start:
+            continue
+        if end and dt > end:
+            continue
+        if status and status != "all" and s.status != status:
+            continue
+        if employee_id and employee_id != "all" and str(s.employee_id) != employee_id:
+            continue
+        if service_id and service_id != "all" and str(s.service_id) != service_id:
+            continue
+        counts[dt.weekday()] += 1
+
+    total = sum(counts)
+    busiest_day = WEEKDAY_LABELS[counts.index(max(counts))] if total else None
+    slowest_day = WEEKDAY_LABELS[counts.index(min(counts))] if total else None
+
+    return {
+        "labels": WEEKDAY_LABELS,
+        "data": counts,
+        "busiest_day": busiest_day,
+        "slowest_day": slowest_day,
+        "total": total,
     }
 
 

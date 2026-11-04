@@ -839,6 +839,10 @@ export const reportsAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return api.get(`/reports/clients?${queryParams}`);
   },
+  getWeeklyActivityReport: (params) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return api.get(`/reports/weekly-activity?${queryParams}`);
+  },
   getInventoryReport: () => {
     return api.get("/reports/inventory");
   },
