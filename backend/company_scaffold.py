@@ -598,7 +598,6 @@ def _seed_discount_rules(conn, company_id: str) -> int:
     rules = [
         {
             "name": "Welcome Offer",
-            "description": "Starter discount for first-time campaigns.",
             "applies_to": "all",
             "discount_type": "percentage",
             "discount_value": 10.0,
@@ -607,7 +606,6 @@ def _seed_discount_rules(conn, company_id: str) -> int:
         },
         {
             "name": "Midweek Promo",
-            "description": "Recurring promotion for slower weekdays.",
             "applies_to": "all",
             "discount_type": "percentage",
             "discount_value": 15.0,
@@ -620,7 +618,6 @@ def _seed_discount_rules(conn, company_id: str) -> int:
         },
         {
             "name": "Clearance Markdown",
-            "description": "Fixed amount markdown for clearing overstock.",
             "applies_to": "selected",
             "discount_type": "fixed",
             "discount_value": 5.0,
@@ -642,10 +639,10 @@ def _seed_discount_rules(conn, company_id: str) -> int:
         conn.execute(
             text(
                 "INSERT INTO discount_rule "
-                "(id, created_at, updated_at, name, description, applies_to, item_ids, discount_type, discount_value, "
+                "(id, created_at, updated_at, name, applies_to, item_ids, discount_type, discount_value, "
                 "start_date, end_date, is_recurring, recur_frequency, recur_days, recur_count, times_per_day, "
                 "day_start_time, day_end_time, is_active, company_id) "
-                "VALUES (:id, :created_at, :updated_at, :name, :description, :applies_to, :item_ids, :discount_type, :discount_value, "
+                "VALUES (:id, :created_at, :updated_at, :name, :applies_to, :item_ids, :discount_type, :discount_value, "
                 ":start_date, :end_date, :is_recurring, :recur_frequency, :recur_days, :recur_count, :times_per_day, "
                 ":day_start_time, :day_end_time, :is_active, :company_id)"
             ),
@@ -654,7 +651,6 @@ def _seed_discount_rules(conn, company_id: str) -> int:
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
                 "name": rule["name"],
-                "description": rule.get("description"),
                 "applies_to": rule.get("applies_to", "all"),
                 "item_ids": rule.get("item_ids"),
                 "discount_type": rule.get("discount_type", "percentage"),
