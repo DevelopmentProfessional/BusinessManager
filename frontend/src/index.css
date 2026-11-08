@@ -1606,6 +1606,12 @@ footer[aria-label="Actions"] {
   }
 }
 
+/* Main page footer internals sit flush while the outer footer keeps its edge padding. */
+.app-table-footer .app-footer-padding,
+.app-table-footer .app-footer-stack {
+  padding-bottom: 0 !important;
+}
+
 /* ─── App icons — scale with Profile → Text size (buttonTextSize.js → --app-icon-size) ───
    Add class "app-icon" to any SVG/Heroicon, or rely on auto rules inside action buttons. */
 .app-icon,
