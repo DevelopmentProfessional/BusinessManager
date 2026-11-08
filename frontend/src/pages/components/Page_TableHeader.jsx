@@ -20,11 +20,11 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
   };
 
   return (
-    <div className={`app-table-header bg-gray-100 border-bottom dark:bg-gray-700 flex-shrink-0 ${className}`.trim()} style={{ zIndex: 5 }}>
-      <table className="app-table bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900 w-100">
+    <div className={`app-table-header bg-gray-100 border-bottom dark:bg-gray-700 flex-shrink-0 ${className}`.trim()}>
+      <table className="app-main-page-table app-table bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900 w-100">
         <colgroup>
           {columns.map((col, i) => (
-            <col key={i} style={col.width ? { width: col.width } : undefined} />
+            <col key={i} className={col.className} style={col.width ? { width: col.width } : undefined} />
           ))}
         </colgroup>
         <thead>
@@ -37,7 +37,7 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
               return (
                 <th
                   key={i}
-                  className={["app-table-th text-start", col.className, isSortable ? "app-table-th--sortable user-select-none" : ""].filter(Boolean).join(" ")}
+                  className={["app-table-th", col.className, isSortable ? "app-table-th--sortable user-select-none" : ""].filter(Boolean).join(" ")}
                   style={isSortable ? { cursor: "pointer" } : undefined}
                   onClick={() => handleHeaderClick(col.sortKey)}
                   title={isSortable ? "Click to sort" : undefined}
@@ -45,8 +45,8 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
                   {isString && isSortable ? (
                     <span className="align-items-center d-inline-flex gap-2">
                       {col.label}
-                      <span className="d-inline-flex" style={{ fontSize: "0.75rem", opacity: isActive ? 1 : 0.4, transition: "opacity 0.15s" }}>
-                        {isActive ? sortAsc ? <ArrowUpIcon style={{ width: 14, height: 14 }} /> : <ArrowDownIcon style={{ width: 14, height: 14 }} /> : <ArrowUpIcon style={{ width: 14, height: 14 }} />}
+                      <span className="app-sort-indicator d-inline-flex" style={{ opacity: isActive ? 1 : 0.4 }}>
+                        {isActive ? sortAsc ? <ArrowUpIcon className="app-icon-14" /> : <ArrowDownIcon className="app-icon-14" /> : <ArrowUpIcon className="app-icon-14" />}
                       </span>
                     </span>
                   ) : (

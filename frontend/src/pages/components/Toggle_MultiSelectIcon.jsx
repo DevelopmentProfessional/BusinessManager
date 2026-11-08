@@ -11,7 +11,7 @@ export default function Toggle_MultiSelectIcon({ selected = false, onToggle, tit
 
   return (
     <button type="button" title={title} aria-label={title} aria-pressed={selected} onClick={onToggle} className={`app-select-icon ${selected ? "app-select-icon--active" : ""} ${className}`.trim()}>
-      <Icon style={{ width: "var(--app-select-icon-inner-size, 1.125rem)", height: "var(--app-select-icon-inner-size, 1.125rem)" }} />
+      <Icon />
     </button>
   );
 }

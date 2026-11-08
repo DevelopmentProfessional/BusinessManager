@@ -296,19 +296,19 @@ export default function Services() {
   return (
     <PageLayout title="Services" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
       {/* Scrollable rows – grow upwards from bottom */}
-      <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
+      <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
         {sortedAndFiltered.length > 0 ? (
-          <table className="mb-0 table table-borderless table-hover w-100">
+          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
             <colgroup>
-              <col style={{ width: "56px" }} />
-              <col />
-              <col style={{ width: "80px" }} />
-              <col style={{ width: "70px" }} />
+              <col className="app-col-select" />
+              <col className="app-col-flex" />
+              <col className="app-col-action-80" />
+              <col className="app-col-action-70" />
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((service, index) => (
                 <PageTableRow key={service.id || index} onClick={() => !selectionMode && handleEditService(service)}>
-                  <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                  <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                     <Toggle_MultiSelectIcon selected={selectedIds.has(service.id)} onToggle={() => toggleSelectSvc(service.id)} title="Select service" />
                   </td>
                   {/* Name + Category stacked */}
@@ -346,25 +346,25 @@ export default function Services() {
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected services" onClick={() => setShowMultiEdit(true)}>
-              <PencilSquareIcon style={{ width: 14, height: 14 }} />
+              <PencilSquareIcon className="app-icon-14" />
             </button>
             <Gate_Permission page="services" permission="delete">
               <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected services" onClick={handleDeleteSelectedSvc}>
-                <TrashIcon style={{ width: 14, height: 14 }} />
+                <TrashIcon className="app-icon-14" />
               </button>
             </Gate_Permission>
           </div>
           <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionSvc}>
-            <XMarkIcon style={{ width: 14, height: 14 }} />
+            <XMarkIcon className="app-icon-14" />
           </button>
         </div>
       )}
       <PageTableHeader
         columns={[
-          { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedSvc} onToggle={handleSelectAllSvc} title="Select all visible services" />, width: 56, className: "p-0 text-center" },
-          { label: "Service", sortKey: "name" },
-          { label: "Price", width: 80, sortKey: "price" },
-          { label: "Duration", width: 70 },
+          { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedSvc} onToggle={handleSelectAllSvc} title="Select all visible services" />, className: "app-col-select p-0 text-center" },
+          { label: "Service", className: "app-col-flex", sortKey: "name" },
+          { label: "Price", className: "app-col-action-80", sortKey: "price" },
+          { label: "Duration", className: "app-col-action-70" },
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}

@@ -67,13 +67,9 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-/** Same layer as bottom +Nav menu (1100); above page footers (1050); below dedicated overlays (1990+). */
-const MODAL_Z_INDEX = 1100;
-
 export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, contentGravity = "top" }) {
   if (!isOpen) return null;
 
-  const modalLayerStyle = { zIndex: MODAL_Z_INDEX };
   const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
@@ -82,7 +78,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   // ─── 2 FULLSCREEN VARIANT ──────────────────────────────────────────────────────
   if (fullScreen) {
     return (
-      <div className="fixed inset-0" style={modalLayerStyle}>
+      <div className="app-modal-layer fixed inset-0">
         {Overlay}
         <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
@@ -96,7 +92,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   // ─── 3 CENTERED VARIANT ────────────────────────────────────────────────────────
   if (centered) {
     return (
-      <div className="fixed inset-0" style={modalLayerStyle}>
+      <div className="app-modal-layer fixed inset-0">
         {Overlay}
         <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
@@ -111,7 +107,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
 
   // ─── 4 DEFAULT VARIANT (BOTTOM SHEET) ──────────────────────────────────────────
   return (
-    <div className="fixed inset-0 overflow-y-auto" style={modalLayerStyle}>
+    <div className="app-modal-layer fixed inset-0 overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen">
         {Overlay}
         <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-screen overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full">

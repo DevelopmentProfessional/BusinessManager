@@ -481,24 +481,24 @@ export default function Clients() {
       contentGravity="bottom"
       headerRight={
         <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+          <Cog6ToothIcon className="app-icon-18" />
         </button>
       }
     >
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-      <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
+      <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
         {sortedAndFiltered.length > 0 ? (
-          <table className="mb-0 table table-borderless table-hover w-100">
+          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
             <colgroup>
-              <col style={{ width: "56px" }} />
-              <col />
-              <col style={{ width: "120px" }} />
-              <col style={{ width: "56px" }} />
+              <col className="app-col-select" />
+              <col className="app-col-flex" />
+              <col className="app-col-action-120" />
+              <col className="app-col-action-56" />
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((client, index) => (
                 <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
-                  <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                  <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                     <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
                   </td>
 
@@ -551,25 +551,25 @@ export default function Clients() {
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
             <button type="button" className="btn btn-circle btn-primary" title="Edit selected clients" onClick={() => setShowMultiEdit(true)}>
-              <PencilSquareIcon style={{ width: 14, height: 14 }} />
+              <PencilSquareIcon className="app-icon-14" />
             </button>
             <Gate_Permission page="clients" permission="delete">
               <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected clients" onClick={handleDeleteSelectedClients}>
-                <TrashIcon style={{ width: 14, height: 14 }} />
+                <TrashIcon className="app-icon-14" />
               </button>
             </Gate_Permission>
           </div>
           <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionCl}>
-            <XMarkIcon style={{ width: 14, height: 14 }} />
+            <XMarkIcon className="app-icon-14" />
           </button>
         </div>
       )}
       <PageTableHeader
         columns={[
-          { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedCl} onToggle={handleSelectAllCl} title="Select all visible clients" />, width: 56, className: "p-0 text-center" },
-          { label: "Client", className: "text-start ps-0", sortKey: "name" },
-          { label: "Subs", width: 120, className: "text-start ps-0", sortKey: "email" },
-          { label: "Notify", width: 56, className: "text-start ps-0" },
+          { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedCl} onToggle={handleSelectAllCl} title="Select all visible clients" />, className: "app-col-select p-0" },
+          { label: "Client", className: "app-col-flex ps-0", sortKey: "name" },
+          { label: "Subs", className: "app-col-action-120", sortKey: "email" },
+          { label: "Notify", className: "app-col-action-56" },
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}

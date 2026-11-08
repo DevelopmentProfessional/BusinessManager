@@ -118,7 +118,7 @@ export default function Dropdown_Custom({
   const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
 
   return (
-    <div ref={dropdownRef} className={`relative ${className}`} style={style}>
+    <div ref={dropdownRef} className={`app-dropdown-root relative ${className}`} style={style}>
       {searchable && !footerSearch ? (
         <div className="relative">
           <input

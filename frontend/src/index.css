@@ -48,8 +48,8 @@
   --color-secondary: rgb(var(--color-secondary-500));
   --color-accent: rgb(var(--color-accent-500));
 
-  /* Mobile keyboard offset (px) used to keep search inputs visible */
-  --keyboard-offset: 0px;
+  /* Mobile keyboard offset (rem) used to keep search inputs visible */
+  --keyboard-offset: 0rem;
 
   /* App-wide active color (synced from Profile calendar color) */
   --app-active-color: #3b82f6;
@@ -64,7 +64,7 @@
   /* Button dimensions — set at runtime from Profile TextSize + training/compact (see buttonTextSize.js) */
   --app-btn-height: 2rem;
   --app-btn-width: 4rem;
-  --app-btn-nav-width: 1rem;
+  --app-btn-nav-width: 2.25rem;
   --app-icon-size: 1rem;
   --app-icon-size-active: 1.25rem;
   --app-btn-icon-size: var(--app-icon-size);
@@ -83,13 +83,13 @@
   /* Tables, Rows, Headers & Columns */
   --app-table-header-height: 2.25rem;
   --app-table-row-height: 2.25rem;
-  --app-table-select-col-width: 56px;
-  --app-table-action-col-width: 56px;
-  --app-table-cell-padding-x: 0.5rem;
+  --app-table-select-col-width: 2rem;
+  --app-table-action-col-width: 2rem;
+  --app-table-cell-padding-x: 0.25rem;
   --app-table-cell-padding-y: 0.25rem;
 
   /* Select Icons */
-  --app-select-icon-size: 2rem;
+  --app-select-icon-size: 1.5rem;
   --app-select-icon-inner-size: 1.125rem;
 
   /* Search Boxes */
@@ -106,7 +106,7 @@
   /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
   --app-footer-padding-x: 0.125rem;
-  --app-footer-padding-y: 0.125rem;
+  --app-footer-padding-y: 0rem;
   --app-standard-footer-height: calc(var(--app-btn-height) + (var(--app-footer-padding-y) * 2));
   /* Width + gap reserved for bottom-right nav (matches left inset) */
   --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
@@ -133,12 +133,12 @@
   --app-accordion-body-border-radius: 1rem;
 
   /* Charts */
-  --app-chart-min-height: 280px;
+  --app-chart-min-height: 17.5rem;
   --app-chart-container-border-radius: 0.5rem;
 
   /* Badges & Tags */
   --app-badge-font-size: 0.65rem;
-  --app-badge-padding-x: 0.5rem;
+  --app-badge-padding-x: 0rem;
   --app-badge-padding-y: 0.15rem;
 }
 
@@ -156,8 +156,8 @@
 
 /* Visible focus indicator for keyboard navigation overriding Bootstrap's outline: 0 */
 :focus-visible {
-  outline: 2px solid var(--app-active-color, #3b82f6) !important;
-  outline-offset: 2px !important;
+  outline: 0.125rem solid var(--app-active-color, #3b82f6) !important;
+  outline-offset: 0.125rem !important;
 }
 
 html,
@@ -207,7 +207,7 @@ body,
   gap: 0.25rem !important;
   line-height: 1 !important;
   white-space: nowrap !important;
-  border: 1px solid transparent;
+  border: 0.0625rem solid transparent;
   cursor: pointer;
   user-select: none;
   transition: all 0.15s ease;
@@ -261,10 +261,10 @@ body,
 .app-menu-panel {
   min-width: var(--app-dropdown-min-width);
   background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   border-radius: var(--app-dropdown-border-radius);
   padding: 0.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
   z-index: 1050;
 }
 
@@ -325,7 +325,7 @@ body,
   padding-left: var(--app-search-input-padding-x) !important;
   padding-right: var(--app-search-input-padding-x) !important;
   background-color: var(--bs-body-bg) !important;
-  border: 1px solid var(--bs-border-color) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
   color: var(--bs-body-color) !important;
   box-sizing: border-box;
 }
@@ -355,7 +355,7 @@ body,
   width: var(--app-select-icon-size) !important;
   height: var(--app-select-icon-size) !important;
   border-radius: 9999px !important;
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   background: transparent;
   color: var(--bs-secondary-color);
   display: inline-flex !important;
@@ -411,7 +411,24 @@ body,
   width: 100%;
   margin-bottom: 0;
   border-collapse: collapse;
+  table-layout: fixed;
   vertical-align: middle;
+}
+
+.app-main-page-table {
+  table-layout: fixed;
+}
+
+.app-main-page-table td,
+.app-main-page-table th {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.app-main-page-table .main-page-table-data,
+.app-main-page-table .app-table-th:not(.app-col-select) {
+  padding-left: var(--app-table-cell-padding-x) !important;
+  padding-right: var(--app-table-cell-padding-x) !important;
 }
 
 /* ─── 6. TABLE HEADERS ─── */
@@ -420,7 +437,7 @@ body,
   top: 0;
   z-index: 5;
   background: var(--bs-tertiary-bg);
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   min-height: var(--app-table-header-height);
   width: 100%;
   flex-shrink: 0;
@@ -432,7 +449,7 @@ body,
   color: var(--bs-secondary-color);
   padding: var(--app-table-cell-padding-y) var(--app-table-cell-padding-x);
   vertical-align: middle;
-  text-align: left;
+  text-align: left !important;
 }
 
 .app-table-th--sortable {
@@ -449,7 +466,7 @@ body,
   height: var(--app-table-row-height);
   min-height: var(--app-table-row-height);
   vertical-align: middle;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
@@ -510,7 +527,7 @@ body,
   bottom: 0;
   z-index: 10;
   background: var(--bs-body-bg);
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
   padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
   padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve));
 }
@@ -533,7 +550,7 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
   flex-shrink: 0;
 }
@@ -568,7 +585,7 @@ body,
   width: 100%;
   min-height: var(--app-chart-min-height);
   background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   border-radius: var(--app-chart-container-border-radius);
   padding: 0.75rem;
   position: relative;
@@ -616,7 +633,7 @@ body,
   padding: 0.5rem;
   border-radius: 0.5rem;
   background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   text-align: center;
 }
 
@@ -634,7 +651,7 @@ body,
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(0.125rem);
 }
 
 .app-modal-dialog {
@@ -644,7 +661,7 @@ body,
   max-width: 32rem;
   background: var(--bs-body-bg);
   border-radius: var(--app-modal-border-radius);
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -674,7 +691,7 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
   flex-shrink: 0;
 }
@@ -705,7 +722,7 @@ body,
   align-items: center;
   justify-content: flex-end;
   gap: var(--app-footer-btn-gap);
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
   flex-shrink: 0;
 }
@@ -721,7 +738,7 @@ body,
   display: flex;
   flex-direction: column;
   background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   border-radius: var(--app-panel-border-radius);
   overflow: hidden;
 }
@@ -733,7 +750,7 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
   flex-shrink: 0;
 }
@@ -750,7 +767,7 @@ body,
   padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
   display: flex;
   align-items: center;
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
   flex-shrink: 0;
 }
@@ -758,7 +775,7 @@ body,
 /* ─── 16. CARDS ─── */
 .app-card {
   background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   border-radius: var(--app-card-border-radius);
   display: flex;
   flex-direction: column;
@@ -770,7 +787,7 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   font-weight: 600;
   font-size: 0.9375rem;
 }
@@ -784,7 +801,7 @@ body,
   padding: var(--app-card-header-padding);
   display: flex;
   align-items: center;
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
 }
 
 /* ─── 17. ACCORDIONS ─── */
@@ -815,7 +832,7 @@ body,
   justify-content: space-between !important;
   width: 100% !important;
   background-color: var(--bs-body-bg) !important;
-  border: 1px solid var(--bs-border-color) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
   cursor: pointer;
   user-select: none;
   box-sizing: border-box !important;
@@ -835,8 +852,8 @@ body,
 }
 
 .app-accordion-body {
-  border: 1px solid var(--bs-border-color) !important;
-  border-top: 1px solid var(--bs-border-color) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) 0 0 !important;
   margin-bottom: calc(var(--app-accordion-header-height) * -0.5) !important;
   padding-bottom: calc(var(--app-accordion-header-height) * 0.5 + 0.5rem) !important;
@@ -849,7 +866,7 @@ body,
 
 .app-accordion-footer {
   padding: 0.5rem;
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
 }
 
@@ -910,7 +927,7 @@ body,
   height: var(--app-input-height) !important;
   font-size: var(--app-input-font-size) !important;
   border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color);
+  border: 0.0625rem solid var(--bs-border-color);
   background-color: var(--bs-body-bg);
   color: var(--bs-body-color);
   padding: 0 0.5rem;
@@ -957,8 +974,8 @@ body,
 /* ─── 22. FLOATING OVERLAYS & NAV TOGGLES ─── */
 .app-floating-nav {
   position: fixed;
-  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px));
-  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0rem));
+  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0rem));
   z-index: 1060;
 }
 
@@ -1016,7 +1033,7 @@ body,
 }
 
 .ui-card-border {
-  border: 1px solid rgb(229 231 235);
+  border: 0.0625rem solid rgb(229 231 235);
   border-radius: 0.5rem;
 }
 
@@ -1055,7 +1072,7 @@ body,
 
 .ui-form-footer-shell {
   flex-shrink: 0;
-  border-top: 1px solid rgb(229 231 235);
+  border-top: 0.0625rem solid rgb(229 231 235);
   background-color: #ffffff;
 }
 
@@ -1113,10 +1130,20 @@ body,
   line-height: 1.2;
 }
 
+/* Dropdown_Custom owns the bordered trigger; sizing classes belong on that trigger, not its wrapper. */
+.app-dropdown-root.ui-control-sm,
+.app-dropdown-root.form-select,
+.app-dropdown-root.form-select-sm {
+  min-height: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
 .ui-dropdown-trigger:focus,
 .ui-dropdown-trigger:focus-visible {
-  outline: 2px solid var(--app-active-color) !important;
-  outline-offset: 2px;
+  outline: 0.125rem solid var(--app-active-color) !important;
+  outline-offset: 0.125rem;
   box-shadow: none !important;
 }
 
@@ -1134,7 +1161,7 @@ body,
 
 .ui-btn-outline-secondary-sm {
   color: var(--bs-secondary);
-  border: 1px solid var(--bs-secondary);
+  border: 0.0625rem solid var(--bs-secondary);
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -1151,7 +1178,7 @@ body,
 
 .ui-btn-circle-outline-secondary {
   color: var(--bs-secondary);
-  border: 1px solid var(--bs-secondary);
+  border: 0.0625rem solid var(--bs-secondary);
 }
 
 .ui-btn-circle-outline-secondary:hover,
@@ -1177,8 +1204,8 @@ body,
 
 /* Bulk import grid: keep horizontal scrollbar visible, hide vertical scrollbar */
 .bulk-import-grid-scroll::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 0.625rem;
+  height: 0.625rem;
 }
 
 .bulk-import-grid-scroll::-webkit-scrollbar:vertical {
@@ -1191,7 +1218,7 @@ body,
 
 .bulk-import-grid-scroll::-webkit-scrollbar-thumb:horizontal {
   background: rgba(107, 114, 128, 0.5);
-  border-radius: 999px;
+  border-radius: 9999px;
 }
 
 .bulk-import-grid-scroll::-webkit-scrollbar-thumb:horizontal:hover {
@@ -1202,25 +1229,66 @@ body,
   padding-top: env(safe-area-inset-top);
 }
 
+.app-page-loader {
+  min-height: 12.5rem;
+}
+
+.app-page-header,
+.app-table-header {
+  z-index: 5;
+}
+
+.app-table-footer {
+  z-index: 10;
+}
+
+.app-modal-layer {
+  z-index: 1100;
+}
+
+.app-error-boundary {
+  min-height: 60vh;
+}
+
+.app-error-boundary__icon {
+  font-size: 2.5rem;
+}
+
+.app-error-boundary__message {
+  max-width: 30rem;
+}
+
+.app-error-boundary__details {
+  max-width: 35rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ─── TABLE ROW ──────────────────────────────────────────── */
 .app-table-row {
-  height: 56px;
+  height: 3.5rem;
   cursor: pointer;
 }
 
 /* Main-page data table row — use on <tr> inside PageTableRow */
 .main-page-table-row {
-  height: var(--app-table-row-height, 36px);
+  height: var(--app-table-row-height, 2.25rem);
   cursor: pointer;
   vertical-align: middle;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
 }
 
 /* Main-page data table cell — use on <td> inside main page tables */
 .main-page-table-data {
-  padding-left: var(--app-table-cell-padding-x, 0.5rem);
+  padding-left: var(--app-table-cell-padding-x, 0rem);
   padding-right: var(--app-table-cell-padding-x, 0.5rem);
   vertical-align: middle;
+  text-align: left !important;
+}
+
+.app-main-page-table .app-select-icon-cell,
+.app-main-page-table .app-table-th.app-col-select {
+  text-align: center !important;
 }
 
 /* Remove border from all footer navigation bars */
@@ -1248,13 +1316,13 @@ footer[aria-label="Actions"] {
 }
 
 /* Restore Bootstrap responsive hide/show (display:flex !important above overrides d-none / d-lg-*) */
-@media (min-width: 992px) {
+@media (min-width: 62rem) {
   .d-lg-none.app-footer-toolbar,
   .d-lg-none.profile-footer-wrap-row {
     display: none !important;
   }
 }
-@media (max-width: 991.98px) {
+@media (max-width: 61.9988rem) {
   .d-none.d-lg-flex.app-footer-toolbar,
   .d-none.d-lg-flex.profile-footer-wrap-row {
     display: none !important;
@@ -1316,7 +1384,7 @@ footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 2px !important;
+  gap: 0.125rem !important;
 }
 
 .btn.app-action-btn.rounded-circle {
@@ -1417,8 +1485,8 @@ div[role="combobox"] {
 /* Keep Bootstrap floating labels readable; compact global input sizing makes these overlap. */
 .form-floating > .form-control,
 .form-floating > .form-select {
-  height: calc(3.5rem + 2px) !important;
-  min-height: calc(3.5rem + 2px) !important;
+  height: calc(3.5rem + 0.125rem) !important;
+  min-height: calc(3.5rem + 0.125rem) !important;
   padding-top: 1.625rem !important;
   padding-bottom: 0.625rem !important;
   font-size: 1rem !important;
@@ -1499,13 +1567,13 @@ footer[aria-label="Actions"] {
   padding-bottom: 0 !important;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 64rem) {
   .app-footer-search > .app-footer-padding,
   .schedule-footer,
   .profile-footer-nav,
   .app-form-footer,
   .app-standard-footer {
-    padding-bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0rem) !important;
   }
 }
 
@@ -1578,7 +1646,7 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
 
 /* Profile → Wage accordion: history scrolls; filters pinned to bottom of panel */
 .profile-wage-history__filters {
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -0.125rem 0.5rem rgba(0, 0, 0, 0.06);
 }
 
 /* Profile page accordion headers — rounded pills at the ends, sizing scales with buttons */
@@ -1597,7 +1665,7 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
   justify-content: space-between !important;
   width: 100% !important;
   background-color: var(--bs-body-bg) !important;
-  border: 1px solid var(--bs-border-color) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
   cursor: pointer;
   user-select: none;
   box-sizing: border-box !important;
@@ -1636,8 +1704,8 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
 
 /* Profile page accordion body — bordered container extending down to middle of pill header */
 .profile-accordion-body {
-  border: 1px solid var(--bs-border-color) !important;
-  border-top: 1px solid var(--bs-border-color) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: 1rem 1rem 0 0 !important;
   margin-bottom: calc(var(--app-btn-height) * -0.5) !important;
   padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.5rem) !important;
@@ -1679,23 +1747,23 @@ body.training-mode .btn.rounded-pill .text-nowrap {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border: 0.0625rem solid rgba(148, 163, 184, 0.35);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 0.75rem 1.875rem rgba(15, 23, 42, 0.16);
+  -webkit-backdrop-filter: blur(0.875rem);
+  backdrop-filter: blur(0.875rem);
 }
 
 [data-bs-theme="dark"] .searchable-select-panel {
   background: rgba(31, 41, 55, 0.96);
   border-color: rgba(100, 116, 139, 0.4);
-  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.45);
+  box-shadow: 0 1.25rem 2.8125rem rgba(2, 6, 23, 0.45);
 }
 
 .searchable-select-panel-header {
   padding: 0.5rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  border-top: 0.0625rem solid rgba(148, 163, 184, 0.2);
 }
 
 .searchable-select-panel-footer {
@@ -1828,8 +1896,8 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
 
 /* Bottom-right nav toggle — same bottom/right inset as page footers */
 .app-nav-bottom-toggle {
-  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px)) !important;
-  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px)) !important;
+  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0rem)) !important;
+  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0rem)) !important;
 }
 
 body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
@@ -1858,12 +1926,12 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: var(--app-btn-height) !important;
-  min-width: var(--app-btn-height) !important;
-  max-width: var(--app-btn-height) !important;
-  height: var(--app-btn-height) !important;
-  min-height: var(--app-btn-height) !important;
-  max-height: var(--app-btn-height) !important;
+  width: var(--app-btn-nav-width) !important;
+  min-width: var(--app-btn-nav-width) !important;
+  max-width: var(--app-btn-nav-width) !important;
+  height: var(--app-btn-nav-width) !important;
+  min-height: var(--app-btn-nav-width) !important;
+  max-height: var(--app-btn-nav-width) !important;
   padding: 0 !important;
   gap: 0 !important;
   font-size: 0 !important;
@@ -1872,8 +1940,8 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
 }
 
 .app-nav-bottom-menu-panel {
-  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px));
-  bottom: calc(var(--app-footer-padding-y) + var(--app-btn-height) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0px));
+  right:  calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0rem));
+  bottom: calc(var(--app-footer-padding-y) + var(--app-btn-nav-width) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0rem));
 }
 
 .app-nav-bottom-menu {
@@ -2006,13 +2074,13 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
   gap: 0.35rem;
 }
 
-@media (min-width: 576px) {
+@media (min-width: 36rem) {
   .sales-history-filter-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 62rem) {
   .sales-history-filter-grid {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
@@ -2030,7 +2098,7 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
 }
 
 /* Keep table/search footer anchored to bottom across mobile layouts. */
-@media (max-width: 1024px) {
+@media (max-width: 64rem) {
   .app-footer-search {
     position: sticky;
     bottom: 0;
@@ -2238,7 +2306,7 @@ textarea.form-control {
     padding-bottom: 100%; /* Creates a 1:1 aspect ratio */
     overflow: hidden;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 8px;
+    border-radius: 0.5rem;
   }
 
   .square-image {
@@ -2272,41 +2340,41 @@ textarea.form-control {
 
   /* Fixed size square containers for specific use cases */
   .square-sm {
-    width: 80px;
-    height: 80px;
+    width: 5rem;
+    height: 5rem;
     position: relative;
     overflow: hidden;
-    border-radius: 6px;
+    border-radius: 0.375rem;
   }
 
   .square-md {
-    width: 120px;
-    height: 120px;
+    width: 7.5rem;
+    height: 7.5rem;
     position: relative;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 0.5rem;
   }
 
   .square-lg {
-    width: 200px;
-    height: 200px;
+    width: 12.5rem;
+    height: 12.5rem;
     position: relative;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: 0.625rem;
   }
 
   .square-xl {
-    width: 300px;
-    height: 300px;
+    width: 18.75rem;
+    height: 18.75rem;
     position: relative;
     overflow: hidden;
-    border-radius: 12px;
+    border-radius: 0.75rem;
   }
 
   /* Responsive variations for different screen sizes */
-  @media (max-width: 576px) {
+  @media (max-width: 36rem) {
     .square-image-container {
-      border-radius: 6px;
+      border-radius: 0.375rem;
     }
 
     .square-image:hover {
@@ -2314,15 +2382,15 @@ textarea.form-control {
     }
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 48rem) {
     .square-image-container {
-      border-radius: 10px;
+      border-radius: 0.625rem;
     }
   }
 
-  @media (min-width: 992px) {
+  @media (min-width: 62rem) {
     .square-image-container {
-      border-radius: 12px;
+      border-radius: 0.75rem;
     }
   }
 
@@ -2524,7 +2592,7 @@ textarea.form-control {
     max-width: 100% !important;
     margin: 0.5rem 0 !important;
     padding: 0.75rem 1rem !important;
-    border-left: 3px solid #d1d5db !important;
+    border-left: 0.1875rem solid #d1d5db !important;
   }
 
   /* Code blocks */
@@ -2549,7 +2617,7 @@ textarea.form-control {
     max-width: 100% !important;
     margin: 1rem 0 !important;
     border: none !important;
-    border-top: 1px solid #d1d5db !important;
+    border-top: 0.0625rem solid #d1d5db !important;
   }
 
   /* Ensure all elements respect 100% width */
@@ -2700,21 +2768,94 @@ textarea.form-control {
 }
 
 .app-progress-bar {
-  height: 4px;
+  height: 0.25rem;
 }
 
 .app-textarea--sm {
-  height: 80px;
+  height: 5rem;
   resize: none;
 }
 
+.app-page-scroll-surface {
+  background: var(--bs-body-bg);
+}
+
+.app-col-select {
+  width: var(--app-table-select-col-width);
+}
+
+.app-main-page-table .app-table-th.app-col-action-header {
+  text-align: center !important;
+}
+
+.app-col-flex {
+  width: auto;
+}
+
+.app-col-action-56 {
+  width: 3.5rem;
+}
+
+.app-col-action-60 {
+  width: 3.75rem;
+}
+
+.app-col-action-70 {
+  width: 4.375rem;
+}
+
+.app-col-action-80 {
+  width: 5rem;
+}
+
+.app-col-action-54 {
+  width: 3.375rem;
+}
+
+.app-col-action-90 {
+  width: 5.625rem;
+}
+
+.app-col-action-120 {
+  width: 7.5rem;
+}
+
+.app-clickable-row,
+.app-clickable-card {
+  cursor: pointer;
+}
+
+.app-clickable-card {
+  transition: background 0.2s;
+}
+
+.app-icon-14 {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.app-icon-18 {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.app-icon-40 {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.app-sort-indicator {
+  font-size: 0.75rem;
+  transition: opacity 0.15s;
+}
+
 .app-dropdown--min {
-  min-width: 200px;
+  min-width: 12.5rem;
 }
 
 .app-menu-panel {
   font-size: var(--app-input-font-size) !important;
-  border: 1px solid var(--bs-border-color) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: 0.5rem;
   background-clip: padding-box;
 }
@@ -2749,8 +2890,8 @@ textarea.form-control {
 .app-menu-action:focus-visible,
 .app-menu-search input:focus,
 .app-menu-search input:focus-visible {
-  outline: 2px solid var(--app-active-color) !important;
-  outline-offset: -2px;
+  outline: 0.125rem solid var(--app-active-color) !important;
+  outline-offset: -0.125rem;
   box-shadow: none !important;
 }
 
@@ -2829,7 +2970,7 @@ select.form-select {
   transition: bottom 0.2s ease;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 64rem) {
   .reports-nav-floating {
     position: fixed !important;
     bottom: calc(var(--app-standard-footer-height, 3rem) + 0.625rem);
@@ -2837,13 +2978,13 @@ select.form-select {
     transform: translateX(-50%) !important;
     z-index: 35 !important;
     background-color: var(--bs-body-bg) !important;
-    border: 1px solid var(--bs-border-color) !important;
+    border: 0.0625rem solid var(--bs-border-color) !important;
     border-radius: 9999px !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.18) !important;
     padding: 0.25rem 0.625rem !important;
     width: max-content !important;
     max-width: calc(100vw - 2rem) !important;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(0.5rem);
   }
 
   .reports-page__chart-area {
@@ -2887,7 +3028,7 @@ select.form-select {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
 }
 
@@ -2912,7 +3053,7 @@ select.form-select {
 
 .component-header--bottom {
   border-bottom: 0;
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
 }
 
 /* ── Body ── */
@@ -2949,7 +3090,7 @@ select.form-select {
   position: sticky;
   bottom: 0;
   z-index: 40;
-  border-top: 1px solid var(--bs-border-color);
+  border-top: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
 }
 
@@ -3020,13 +3161,13 @@ select.form-select {
   right: 0;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
+  border-radius: 9999px;
   font-size: 0.8125rem;
 }
 
 .bulk-import-top-actions {
   align-items: center;
-  border-bottom: 1px solid var(--bs-border-color);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
   display: flex;
   justify-content: flex-end;
   padding: 0.5rem;
@@ -3055,4 +3196,59 @@ select.form-select {
 
 .template-editor-richtext-wrap .tiptap-editor .tiptap {
   padding-bottom: calc(var(--app-standard-footer-height) * 3);
+}
+
+.template-editor-toolbar-shell,
+.template-editor-meta-row {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.template-editor-toolbar-shell .editor-toolbar {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.template-editor-toolbar-shell .editor-toolbar-row {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.template-editor-toolbar-shell .editor-toolbar-row > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.template-editor-meta-group {
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+}
+
+.template-editor-meta-controls {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.template-editor-meta-controls .form-control {
+  min-width: 0 !important;
+  max-width: min(16.25rem, 100%) !important;
+}
+
+@media (max-width: 40rem) {
+  .template-editor-toolbar-shell {
+    max-height: 8rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .template-editor-meta-controls {
+    width: 100%;
+  }
+
+  .template-editor-meta-controls .app-dropdown-root {
+    flex: 1 1 7.5rem;
+  }
 }
