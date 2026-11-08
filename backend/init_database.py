@@ -6,6 +6,7 @@ Pre-start script run by Render via:
 
 Responsibilities (in order):
   1. Run all SQLModel table creation / schema migrations (create_db_and_tables)
+    2. Optionally seed a configured company after schema setup
 
 This runs as a standalone process before uvicorn starts, so it is guaranteed
 to finish schema setup before API startup.
@@ -36,6 +37,20 @@ def main() -> None:
     except Exception as exc:
         log.error(f"create_db_and_tables failed: {exc}")
         sys.exit(1)
+
+    seed_company_id = os.getenv("SEED_COMPANY_ID", "").strip()
+    if seed_company_id:
+        log.info("Seeding configured company %s …", seed_company_id)
+        try:
+            from backend.database import engine
+            from sqlmodel import Session
+            from backend.seed_consulting_company import seed_consulting_company
+            with Session(engine) as session:
+                seed_consulting_company(session, company_id=seed_company_id)
+            log.info("Company seed complete.")
+        except Exception as exc:
+            log.error("Company seed failed: %s", exc)
+            sys.exit(1)
 
     log.info("init_database.py complete.")
 
