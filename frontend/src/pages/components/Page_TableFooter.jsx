@@ -24,7 +24,7 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
   const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
   return (
     <>
-      <footer ref={footerRef} className="app-footer-search app-footer-shell app-table-footer bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm" style={{ zIndex: 10 }}>
+      <footer ref={footerRef} className="app-footer-search app-footer-shell app-table-footer bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm">
         {/* Controls: optional top row + search + buttons */}
         <div className="app-footer-padding app-standard-footer bg-white dark:bg-gray-800">
           <div className="app-footer-stack">

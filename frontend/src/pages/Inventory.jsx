@@ -103,32 +103,40 @@ export default function Inventory() {
   const { isTrainingMode } = useViewMode();
   const scrollRef = useRef(null);
 
-  const multiEditFields = [
-    {
-      key: "type",
-      label: "Type",
-      type: "select",
-      options: [
-        { value: "PRODUCT", label: "Product" },
-        { value: "RESOURCE", label: "Resource" },
-        { value: "ASSET", label: "Asset" },
-        { value: "LOCATION", label: "Location" },
-        { value: "ITEM", label: "Item" },
-      ],
-    },
-    { key: "location", label: "Location", type: "text", placeholder: "e.g. Warehouse A" },
-    { key: "min_stock_level", label: "Min Stock Level", type: "number", placeholder: "e.g. 10", min: 0 },
-    { key: "category", label: "Category", type: "text", placeholder: "e.g. Electronics" },
-    {
-      key: "cost_type",
-      label: "Cost Type",
-      type: "select",
-      options: [
-        { value: "one_time", label: "One-time" },
-        { value: "recurring", label: "Recurring" },
-      ],
-    },
-  ];
+  const multiEditFields = useMemo(() => {
+    const clearOption = { value: "__CLEAR__", label: "— Clear value —" };
+    const locations = [...new Set(inventory.flatMap((item) => [item.location, (item.type || "").toUpperCase() === "LOCATION" ? item.name : ""]).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const categories = [...new Set(inventory.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+    return [
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        options: [
+          { value: "PRODUCT", label: "Product" },
+          { value: "BUNDLE", label: "Bundle" },
+          { value: "MIX", label: "Mix" },
+          { value: "RESOURCE", label: "Resource" },
+          { value: "ASSET", label: "Asset" },
+          { value: "LOCATION", label: "Location" },
+          { value: "ITEM", label: "Item" },
+        ],
+      },
+      { key: "location", label: "Location", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, clearOption, ...locations.map((location) => ({ value: location, label: location }))] },
+      { key: "min_stock_level", label: "Min Stock Level", type: "number", placeholder: "e.g. 10", min: 0 },
+      { key: "category", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, clearOption, ...categories.map((category) => ({ value: category, label: category }))] },
+      {
+        key: "cost_type",
+        label: "Cost Type",
+        type: "select",
+        options: [
+          { value: "one_time", label: "One-time" },
+          { value: "recurring", label: "Recurring" },
+        ],
+      },
+    ];
+  }, [inventory]);
 
   const typeFilterOptions = useMemo(
     () => [
@@ -547,6 +555,9 @@ export default function Inventory() {
         if (Number.isNaN(parsedMinStock)) delete coerced.min_stock_level;
         else coerced.min_stock_level = parsedMinStock;
       }
+      for (const key of ["location", "category"]) {
+        if (coerced[key] === "__CLEAR__") coerced[key] = null;
+      }
       await Promise.all([...selectedIds].map((id) => inventoryAPI.update(id, coerced)));
       await loadInventoryData();
       setShowMultiEdit(false);
@@ -578,19 +589,19 @@ export default function Inventory() {
     <PageLayout title="Inventory" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
       <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-        <div ref={scrollRef} className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
+        <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {sortedAndFiltered.length > 0 ? (
-            <table className="mb-0 table table-borderless table-hover w-100">
+            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
               <colgroup>
-                <col style={{ width: "56px" }} />
-                <col />
-                <col style={{ width: "80px" }} />
-                <col style={{ width: "60px" }} />
+                <col className="app-col-select" />
+                <col className="app-col-flex" />
+                <col className="app-col-action-80" />
+                <col className="app-col-action-60" />
               </colgroup>
               <tbody>
                 {sortedAndFiltered.map((inv, index) => (
                   <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
-                    <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                    <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                     </td>
                     <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
@@ -620,25 +631,25 @@ export default function Inventory() {
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
-                <PencilSquareIcon style={{ width: 14, height: 14 }} />
+                <PencilSquareIcon className="app-icon-14" />
               </button>
               <Gate_Permission page="inventory" permission="delete">
                 <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected items" onClick={handleDeleteSelectedInv} disabled={multiSaving}>
-                  <TrashIcon style={{ width: 14, height: 14 }} />
+                  <TrashIcon className="app-icon-14" />
                 </button>
               </Gate_Permission>
             </div>
             <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionInv}>
-              <XMarkIcon style={{ width: 14, height: 14 }} />
+              <XMarkIcon className="app-icon-14" />
             </button>
           </div>
         )}
         <PageTableHeader
           columns={[
-            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, width: 56, className: "p-0 text-center" },
-            { label: "Item", sortKey: "name" },
-            { label: "Type", width: 80, sortKey: "type" },
-            { label: "Count", width: 60, sortKey: "count" },
+            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, className: "app-col-select p-0 text-center" },
+            { label: "Item", className: "app-col-flex", sortKey: "name" },
+            { label: "Type", className: "app-col-action-80", sortKey: "type" },
+            { label: "Count", className: "app-col-action-60", sortKey: "count" },
           ]}
           sortColumn={sortColumn}
           sortAsc={sortAsc}

@@ -331,11 +331,13 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
         <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
           {/* Row 1: editor controls */}
-          <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} />
+          <div className="template-editor-toolbar-shell">
+            <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} wrapToolbar />
+          </div>
           {/* Row 2: template metadata + dropups */}
-          <div className="align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0">
-            <div className="ui-flex-center-gap-1" style={{ minWidth: "240px", flex: "1 1 240px" }}>
-              <div className="ui-flex-center-gap-1">
+          <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0">
+            <div className="template-editor-meta-group ui-flex-center-gap-1">
+              <div className="template-editor-meta-controls ui-flex-center-gap-1">
                 <input
                   type="text"
                   value={name}

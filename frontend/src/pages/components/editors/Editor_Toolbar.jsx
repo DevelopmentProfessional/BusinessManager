@@ -30,7 +30,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 
 // ─── 1 REUSABLE UI PRIMITIVES ──────────────────────────────────────────────────
 
-function ToolButton({ active, onClick, title, children, disabled, className="" }) {
+function ToolButton({ active, onClick, title, children, disabled, className = "" }) {
   return (
     <button
       type="button"
@@ -129,7 +129,7 @@ const THEMES = [
 
 // ─── 4 TAB PANELS ──────────────────────────────────────────────────────────────
 
-function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus }) {
+function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus, wrapToolbar }) {
   if (!editor) return null;
 
   const currentFontFamily = editor.getAttributes("textStyle").fontFamily || "";
@@ -161,8 +161,8 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
   return (
     <div className="flex flex-col gap-1">
       {/* Row 1: Save, Undo/Redo, Font controls, Inline formatting */}
-      <div className="no-scrollbar overflow-x-auto">
-        <div className="flex flex-nowrap gap-1 items-center min-w-max pb-1">
+      <div className={`editor-toolbar-row ${wrapToolbar ? "editor-toolbar-row--wrap" : "no-scrollbar overflow-x-auto"}`}>
+        <div className={`flex gap-1 items-center pb-1 ${wrapToolbar ? "flex-wrap" : "flex-nowrap min-w-max"}`}>
           {/* Save */}
           <ToolButton onClick={onSave} disabled={!isDirty || isSaving} title="Save (Ctrl+S)">
             {isSaving ? (
@@ -284,8 +284,8 @@ function HomeTab({ editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus
       </div>
 
       {/* Row 2: Headings, Lists, Indent, Alignment, Line Spacing, HR */}
-      <div className="no-scrollbar overflow-x-auto">
-        <div className="flex flex-nowrap gap-1 items-center min-w-max pb-1">
+      <div className={`editor-toolbar-row ${wrapToolbar ? "editor-toolbar-row--wrap" : "no-scrollbar overflow-x-auto"}`}>
+        <div className={`flex gap-1 items-center pb-1 ${wrapToolbar ? "flex-wrap" : "flex-nowrap min-w-max"}`}>
           {/* Heading */}
           <select
             className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 px-1 py-0.5 rounded text-gray-700 text-xs"
@@ -595,7 +595,7 @@ function Badge_Status({ saveStatus, isDirty }) {
 
 // ─── 8 EDITORTOOLBAR (MAIN EXPORT) ─────────────────────────────────────────────
 
-export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus, showDesignTab = true }) {
+export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onRedo, isDirty, isSaving, saveStatus, showDesignTab = true, wrapToolbar = false }) {
   const [activeTab, setActiveTab] = useState("home");
 
   useEffect(() => {
@@ -652,7 +652,7 @@ export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onR
 
   // Rich text editor: tabbed ribbon
   return (
-    <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+    <div className="editor-toolbar bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
       {/* Tab bar */}
       <div className="border-b border-gray-200 dark:border-gray-700 flex gap-0 items-center px-0">
         {["home", "find", ...(showDesignTab ? ["design"] : [])].map((tab) => (
@@ -669,7 +669,7 @@ export default function Editor_Toolbar({ editorType, editor, onSave, onUndo, onR
 
       {/* Tab content */}
       <div className="px-0 py-1">
-        {activeTab === "home" && <HomeTab editor={editor} onSave={onSave} onUndo={onUndo} onRedo={onRedo} isDirty={isDirty} isSaving={isSaving} saveStatus={saveStatus} />}
+        {activeTab === "home" && <HomeTab editor={editor} onSave={onSave} onUndo={onUndo} onRedo={onRedo} isDirty={isDirty} isSaving={isSaving} saveStatus={saveStatus} wrapToolbar={wrapToolbar} />}
         {activeTab === "find" && <FindTab editor={editor} />}
         {showDesignTab && activeTab === "design" && <DesignTab editor={editor} />}
       </div>

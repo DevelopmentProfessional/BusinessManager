@@ -960,15 +960,15 @@ export default function Employees() {
       {/* Main upside-down table container */}
       <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom */}
-        <div className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
+        <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {sortedAndFiltered.length > 0 ? (
-            <table className="mb-0 table table-borderless table-hover w-100">
+            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
               <colgroup>
-                <col style={{ width: "56px" }} />
-                <col />
-                {isAdmin && <col style={{ width: "54px" }} />}
-                <col style={{ width: "90px" }} />
-                <col style={{ width: "54px" }} />
+                <col className="app-col-select" />
+                <col className="app-col-flex" />
+                {isAdmin && <col className="app-col-action-54" />}
+                <col className="app-col-action-90" />
+                <col className="app-col-action-54" />
               </colgroup>
               <tbody>
                 {sortedAndFiltered.map((employee, index) => (
@@ -982,7 +982,7 @@ export default function Employees() {
                       handleEdit(employee);
                     }}
                   >
-                    <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                    <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(employee.id)} onToggle={() => toggleSelectEmp(employee.id)} title="Select employee" />
                     </td>
 
@@ -1057,26 +1057,26 @@ export default function Employees() {
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected employees" onClick={() => setShowMultiEdit(true)}>
-                <PencilSquareIcon style={{ width: 14, height: 14 }} />
+                <PencilSquareIcon className="app-icon-14" />
               </button>
               <Gate_Permission page="employees" permission="delete">
                 <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected employees" onClick={handleDeleteSelectedEmployees}>
-                  <TrashIcon style={{ width: 14, height: 14 }} />
+                  <TrashIcon className="app-icon-14" />
                 </button>
               </Gate_Permission>
             </div>
             <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionEmp}>
-              <XMarkIcon style={{ width: 14, height: 14 }} />
+              <XMarkIcon className="app-icon-14" />
             </button>
           </div>
         )}
         <PageTableHeader
           columns={[
-            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedEmp} onToggle={handleSelectAllEmp} title="Select all visible employees" />, width: 56, className: "p-0 text-center" },
-            { label: "Employee", className: "text-start ps-0", sortKey: "name" },
-            ...(isAdmin ? [{ label: "", width: 54, className: "p-0" }] : []),
-            { label: "Role", width: 90, className: "text-start ps-0", sortKey: "role" },
-            { label: "", width: 54, className: "p-0" },
+            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedEmp} onToggle={handleSelectAllEmp} title="Select all visible employees" />, className: "app-col-select p-0 text-center" },
+            { label: "Employee", className: "app-col-flex text-start ps-0", sortKey: "name" },
+            ...(isAdmin ? [{ label: "", className: "app-col-action-54 p-0" }] : []),
+            { label: "Role", className: "app-col-action-90", sortKey: "role" },
+            { label: "", className: "app-col-action-54 p-0" },
           ]}
           sortColumn={sortColumn}
           sortAsc={sortAsc}

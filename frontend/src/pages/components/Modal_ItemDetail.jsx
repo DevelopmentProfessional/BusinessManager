@@ -36,7 +36,7 @@ import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import useViewMode from "../../services/useViewMode";
-import { inventoryAPI, inventoryFeaturesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from "../../services/api";
+import { inventoryAPI, inventoryFeaturesAPI, inventoryCategoriesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Modal from "./Modal";
 import cacheService from "../../services/cacheService";
@@ -208,12 +208,7 @@ function ProductionRelationsPanel({ productId }) {
                   value={newResourceId}
                   onChange={(e) => setNewResourceId(e.target.value)}
                   style={{ ...inputSm, flex: 1 }}
-                  options={[
-                    { value: "", label: "Select resource…" },
-                    ...resourceItems
-                      .filter((i) => !resources.some((r) => r.resource_id === i.id))
-                      .map((i) => ({ value: i.id, label: i.name })),
-                  ]}
+                  options={[{ value: "", label: "Select resource…" }, ...resourceItems.filter((i) => !resources.some((r) => r.resource_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
                 />
                 <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddResource}>
@@ -266,12 +261,7 @@ function ProductionRelationsPanel({ productId }) {
                   value={newAssetId}
                   onChange={(e) => setNewAssetId(e.target.value)}
                   style={{ ...inputSm, flex: "1 1 120px" }}
-                  options={[
-                    { value: "", label: "Select asset…" },
-                    ...assetItems
-                      .filter((i) => !assets.some((a) => a.asset_id === i.id))
-                      .map((i) => ({ value: i.id, label: i.name })),
-                  ]}
+                  options={[{ value: "", label: "Select asset…" }, ...assetItems.filter((i) => !assets.some((a) => a.asset_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
                 />
                 <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
@@ -489,12 +479,7 @@ function MixSetupPanel({ mixId }) {
               value={newCompId}
               onChange={(e) => setNewCompId(e.target.value)}
               style={{ ...s.input, flex: 1 }}
-              options={[
-                { value: "", label: "Select product…" },
-                ...productItems
-                  .filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id))
-                  .map((i) => ({ value: i.id, label: i.name })),
-              ]}
+              options={[{ value: "", label: "Select product…" }, ...productItems.filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
             />
             <input type="number" min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
             <button type="button" className={mixBtnPrimary} onClick={handleAddComponent}>
@@ -641,12 +626,7 @@ function BundleComponentsPanel({ bundleId }) {
               value={newComponentId}
               onChange={(e) => setNewComponentId(e.target.value)}
               style={{ ...inputSm, flex: 1 }}
-              options={[
-                { value: "", label: "Select product…" },
-                ...productItems
-                  .filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id))
-                  .map((i) => ({ value: i.id, label: i.name })),
-              ]}
+              options={[{ value: "", label: "Select product…" }, ...productItems.filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
             />
             <input type="number" min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
             <button type="button" className={btnPrimaryClass} onClick={handleAdd}>
@@ -690,6 +670,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [imageError, setImageError] = useState("");
   const [editingImageId, setEditingImageId] = useState(null);
   const [editingImageUrl, setEditingImageUrl] = useState("");
+  const [itemCategories, setItemCategories] = useState([]);
+  const originalItemTypeRef = useRef("");
   // Feature-derived values (updated by FeatureSection callbacks)
   const [, setFeatureStock] = useState(null); // total qty from features, or null
   const [featuresPriceRange, setFeaturesPriceRange] = useState(null); // { min, max } or null
@@ -779,6 +761,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         supplier_id: item.supplier_id || "",
         category: item.category || "",
       });
+      originalItemTypeRef.current = String(item.type || itemType || "PRODUCT").toUpperCase();
       if (isSalesMode) {
         setQuantity(cartQuantity > 0 ? cartQuantity : 1);
       }
@@ -831,6 +814,35 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     }
   }, [isOpen, item, cartQuantity, isSalesMode, loadAvailableLocations]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const itemTypeForCategories = String(formData.type || "PRODUCT").toLowerCase();
+    inventoryCategoriesAPI
+      .getByType(itemTypeForCategories)
+      .then((res) => {
+        if (cancelled) return;
+        const categories = Array.isArray(res?.data) ? res.data : [];
+        const currentCategory = String(formData.category || "").trim();
+        const typeChanged = originalItemTypeRef.current && itemTypeForCategories.toUpperCase() !== originalItemTypeRef.current;
+        if (typeChanged && currentCategory) {
+          setFormData((previous) => (previous.category ? { ...previous, category: "" } : previous));
+        }
+        if (!typeChanged && currentCategory && !categories.some((category) => category.name === currentCategory)) {
+          categories.push({ id: `current-${currentCategory}`, name: currentCategory });
+        }
+        setItemCategories(categories.sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .catch(() => {
+        const typeChanged = originalItemTypeRef.current && itemTypeForCategories.toUpperCase() !== originalItemTypeRef.current;
+        if (!cancelled) setItemCategories(!typeChanged && formData.category ? [{ id: `current-${formData.category}`, name: formData.category }] : []);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, formData.type, formData.category]);
+
   // ─── 2 DATA LOADERS ───────────────────────────────────────────────────────
   const loadImages = async (inventoryId) => {
     try {
@@ -862,6 +874,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     setFormData((prev) => ({
       ...prev,
       [name]: nextValue,
+      ...(name === "type" && String(nextValue).toUpperCase() !== originalItemTypeRef.current ? { category: "" } : {}),
     }));
     if (name === "sku" && scanError) {
       setScanError(isDuplicateSku(nextValue) ? scanError : "");
@@ -1461,7 +1474,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                   <div className={inventoryRowClass}>
                     <div style={equalFieldStyle}>
-                      <label htmlFor="detail_cost_type" className="form-label ui-form-label-sm">Cost Type</label>
+                      <label htmlFor="detail_cost_type" className="form-label ui-form-label-sm">
+                        Cost Type
+                      </label>
                       <Dropdown_Custom
                         id="detail_cost_type"
                         name="cost_type"
@@ -1483,17 +1498,16 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   {!isLocation ? (
                     <div className={inventoryRowClass}>
                       <div style={equalFieldStyle}>
-                        <label htmlFor="detail_location" className="form-label ui-form-label-sm">Location</label>
+                        <label htmlFor="detail_location" className="form-label ui-form-label-sm">
+                          Location
+                        </label>
                         <Dropdown_Custom
                           id="detail_location"
                           name="location"
                           value={formData.location || ""}
                           onChange={handleChange}
                           className="form-select ui-control-sm"
-                          options={[
-                            { value: "", label: "Select location" },
-                            ...availableLocations.map((location) => ({ value: location, label: location })),
-                          ]}
+                          options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
                         />
                       </div>
 
@@ -1517,7 +1531,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                 <div className={inventoryRowClass}>
                   <div style={equalFieldStyle}>
-                    <label htmlFor="detail_type" className="form-label ui-form-label-sm">Type</label>
+                    <label htmlFor="detail_type" className="form-label ui-form-label-sm">
+                      Type
+                    </label>
                     <Dropdown_Custom
                       id="detail_type"
                       name="type"
@@ -1543,18 +1559,10 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                 <div className={inventoryRowClass}>
                   <div style={equalFieldStyle}>
-                    <label htmlFor="detail_supplier" className="form-label ui-form-label-sm">Supplier</label>
-                    <Dropdown_Custom
-                      id="detail_supplier"
-                      name="supplier_id"
-                      value={formData.supplier_id || ""}
-                      onChange={handleChange}
-                      className="form-select ui-control-sm"
-                      options={[
-                        { value: "", label: "— None —" },
-                        ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name })),
-                      ]}
-                    />
+                    <label htmlFor="detail_supplier" className="form-label ui-form-label-sm">
+                      Supplier
+                    </label>
+                    <Dropdown_Custom id="detail_supplier" name="supplier_id" value={formData.supplier_id || ""} onChange={handleChange} className="form-select ui-control-sm" options={[{ value: "", label: "— None —" }, ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name }))]} />
                   </div>
                   <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
@@ -1563,38 +1571,21 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                 </div>
                 {saleDateError && <div className="alert alert-danger mb-2 mt-1 py-1 small">{saleDateError}</div>}
 
-                {/* Category picker disabled for now; re-enable later once the flow is ready. */}
-                {/* {!isLocation && (
+                {String(formData.type || "").toUpperCase() !== "LOCATION" && (
                   <div className="mb-2 mt-2">
-                    {showCategoryManager && (
-                      <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 p-0 rounded">
-                        {itemCategories.length === 0 && <div className="mb-2 ui-small-muted">No categories yet for this type.</div>}
-                        <div className="d-flex flex-wrap gap-1 mb-2">
-                          {itemCategories.map((cat) => (
-                            <span key={cat.id} className="align-items-center badge bg-secondary-subtle d-flex gap-1 text-secondary-emphasis" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
-                              {cat.name}
-                              <button type="button" onClick={() => handleDeleteCategory(cat.id)} className="btn-close btn-close-sm ms-1" style={{ fontSize: "0.55rem", padding: "0.1rem" }} aria-label="Remove" />
-                            </span>
-                          ))}
-                        </div>
-                        <div className="d-flex gap-1">
-                          <input
-                            type="text"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
-                            placeholder="New category name..."
-                            className="form-control ui-control-sm"
-                            style={{ fontSize: "0.8rem" }}
-                          />
-                          <button type="button" onClick={handleAddCategory} className="btn btn-outline-primary btn-sm flex-shrink-0" style={{ fontSize: "0.78rem" }}>
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    <label htmlFor="detail_category" className="form-label ui-form-label-sm">
+                      Category
+                    </label>
+                    <Dropdown_Custom
+                      id="detail_category"
+                      name="category"
+                      value={formData.category || ""}
+                      onChange={handleChange}
+                      className="form-select ui-control-sm"
+                      options={[{ value: "", label: "— None —" }, ...itemCategories.map((category) => ({ value: category.name, label: category.name }))]}
+                    />
                   </div>
-                )} */}
+                )}
               </form>
 
               {/* Descriptive Features — most types, shown after item is saved */}

@@ -145,7 +145,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
         <div className={`border border-2 border-dashed rounded p-1 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
           {formData.file ? (
             <>
-              {formData.file.type.startsWith("image/") ? <img src={previewUrl} alt="preview" className="mb-2 mx-auto rounded" style={{ maxHeight: "8rem" }} /> : <DocumentIcon className="mb-2 mx-auto text-muted" style={{ width: 40, height: 40 }} />}
+              {formData.file.type.startsWith("image/") ? <img src={previewUrl} alt="preview" className="mb-2 mx-auto rounded" style={{ maxHeight: "8rem" }} /> : <DocumentIcon className="app-icon-40 mb-2 mx-auto text-muted" />}
               <p className="fw-medium mb-1 small">{formData.file.name}</p>
               <p className="mb-2 ui-small-muted">{formatFileSize(formData.file.size)}</p>
               <button
@@ -161,7 +161,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
             </>
           ) : (
             <>
-              <DocumentIcon className="mb-2 mx-auto text-muted" style={{ width: 40, height: 40 }} />
+              <DocumentIcon className="app-icon-40 mb-2 mx-auto text-muted" />
               <p className="mb-2 ui-small-muted">Drag and drop or choose a file</p>
               <input type="file" id="documents-page-upload-file" name="file" onChange={handleFileChange} className="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" />
               <label htmlFor="documents-page-upload-file" className="btn btn-outline-primary btn-sm mb-0">
@@ -749,7 +749,7 @@ export default function Documents() {
       <div className="align-items-center border-bottom d-flex flex-shrink-0 justify-content-between p-1">
         <h1 className="fw-bold h-4 mb-0 text-body-emphasis">{showTemplates ? "Templates" : "Documents"}</h1>
         <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+          <Cog6ToothIcon className="app-icon-18" />
         </button>
       </div>
 
@@ -773,7 +773,7 @@ export default function Documents() {
       {/* Main table container */}
       <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
         {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
-        <div className="bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto" style={{ background: "var(--bs-body-bg)" }}>
+        <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {showTemplates ? (
             /* ── Templates list ── */
             (() => {
@@ -788,18 +788,17 @@ export default function Documents() {
               };
               const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
               return filtered.length > 0 ? (
-                <table className="mb-0 table table-borderless table-hover">
+                <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
                   <colgroup>
-                    <col style={{ width: "56px" }} />
-                    <col />
-                    <col style={{ width: "56px" }} />
+                    <col className="app-col-action-56" />
+                    <col className="app-col-flex" />
+                    <col className="app-col-action-56" />
                   </colgroup>
                   <tbody>
                     {filtered.map((tpl) => (
                       <tr
                         key={tpl.id}
-                        className="align-middle border-bottom"
-                        style={{ cursor: "pointer" }}
+                        className="app-clickable-row align-middle border-bottom"
                         tabIndex={0}
                         onClick={() => handleEditTemplate(tpl)}
                         onKeyDown={(e) => {
@@ -858,7 +857,7 @@ export default function Documents() {
                   const FileIcon = getFileTypeIcon(doc.original_filename, doc.content_type);
                   const isImage = doc.content_type?.startsWith("image/");
                   return (
-                    <div key={doc.id || index} className="align-items-center d-flex flex-column gap-2 hover-highlight p-0 rounded-lg" style={{ cursor: "pointer", transition: "background 0.2s" }} role="button" onClick={() => handleView(doc)}>
+                    <div key={doc.id || index} className="app-clickable-card align-items-center d-flex flex-column gap-2 hover-highlight p-0 rounded-lg" role="button" onClick={() => handleView(doc)}>
                       {isImage ? (
                         <img src={documentsAPI.fileUrl(doc.id)} alt={doc.original_filename} style={{ width: "100%", height: "100px", objectFit: "cover", borderRadius: "6px", border: "1px solid var(--bs-border-color)" }} />
                       ) : (
@@ -887,16 +886,16 @@ export default function Documents() {
               </div>
             ) : (
               /* List View */
-              <table className="mb-0 table table-borderless table-hover w-100">
+              <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
                 <colgroup>
-                  <col style={{ width: "56px" }} />
-                  <col />
-                  <col style={{ width: "60px" }} />
+                  <col className="app-col-select" />
+                  <col className="app-col-flex" />
+                  <col className="app-col-action-60" />
                 </colgroup>
                 <tbody>
                   {sortedAndFiltered.map((doc, index) => (
-                    <tr key={doc.id || index} className="main-page-table-row app-table-row align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
-                      <td className="app-select-icon-cell px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                    <tr key={doc.id || index} className="app-clickable-row main-page-table-row app-table-row align-middle border-bottom" onClick={() => !selectionMode && handleView(doc)}>
+                      <td className="app-col-select app-select-icon-cell text-center" onClick={(e) => e.stopPropagation()}>
                         <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
                       </td>
 
@@ -938,27 +937,31 @@ export default function Documents() {
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
-                <PencilSquareIcon style={{ width: 14, height: 14 }} />
+                <PencilSquareIcon className="app-icon-14" />
               </button>
               <Gate_Permission page="documents" permission="delete">
                 <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected documents" onClick={handleDeleteSelectedDocuments}>
-                  <TrashIcon style={{ width: 14, height: 14 }} />
+                  <TrashIcon className="app-icon-14" />
                 </button>
               </Gate_Permission>
             </div>
             <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionDoc}>
-              <XMarkIcon style={{ width: 14, height: 14 }} />
+              <XMarkIcon className="app-icon-14" />
             </button>
           </div>
         )}
         <PageTableHeader
           columns={
             showTemplates
-              ? [{ label: "", width: 56 }, { label: "Template" }, { label: "Actions", width: 56, className: "text-center" }]
+              ? [
+                  { label: "", className: "app-col-action-56" },
+                  { label: "Template", className: "app-col-flex" },
+                  { label: "Actions", className: "app-col-action-56 app-col-action-header" },
+                ]
               : [
-                  { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedDoc} onToggle={handleSelectAllDoc} title="Select all visible documents" />, width: 56, className: "p-0 text-center" },
-                  { label: "Document", sortKey: "filename" },
-                  { label: "View", width: 60, className: "text-center" },
+                  { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedDoc} onToggle={handleSelectAllDoc} title="Select all visible documents" />, className: "app-col-select p-0 text-center" },
+                  { label: "Document", className: "app-col-flex", sortKey: "filename" },
+                  { label: "View", className: "app-col-action-60 text-center" },
                 ]
           }
           sortColumn={sortColumn}

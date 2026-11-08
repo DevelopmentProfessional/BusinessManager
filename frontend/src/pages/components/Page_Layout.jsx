@@ -5,7 +5,7 @@ export default function PageLayout({ title, error, children, headerRight = null,
 
   return (
     <div className="bg-body d-flex flex-column flex-grow-1 h-100 min-h-0 overflow-hidden">
-      <div className="align-items-center bg-body border-bottom d-flex flex-shrink-0 justify-content-between p-1" style={{ zIndex: 5 }}>
+      <div className="app-page-header align-items-center bg-body border-bottom d-flex flex-shrink-0 justify-content-between p-1">
         <h1 className="fw-bold h4 mb-0 text-body-emphasis">{title}</h1>
         {headerRight ? <div className="ui-flex-center-gap-2">{headerRight}</div> : null}
       </div>
