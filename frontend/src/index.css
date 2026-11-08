@@ -106,7 +106,8 @@
   /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
   --app-footer-padding-x: 0.125rem;
-  --app-footer-padding-y: 0rem;
+  --app-footer-padding-y: 0.125rem;
+  --app-nav-bottom-right-inset: 0.5rem;
   --app-standard-footer-height: calc(var(--app-btn-height) + (var(--app-footer-padding-y) * 2));
   /* Width + gap reserved for bottom-right nav (matches left inset) */
   --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
@@ -1518,6 +1519,12 @@ footer[aria-label="Actions"].app-footer-reserve {
   padding-bottom: var(--app-footer-padding-y) !important;
 }
 
+.profile-footer-nav .profile-footer-btn {
+  height: var(--app-btn-nav-width) !important;
+  min-height: var(--app-btn-nav-width) !important;
+  max-height: var(--app-btn-nav-width) !important;
+}
+
 /* Modals/forms without nav reserve — keep symmetric horizontal inset only */
 .app-form-footer:not(.app-footer-reserve) {
   padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
@@ -1545,6 +1552,7 @@ footer[aria-label="Actions"] {
   flex-direction: column;
   gap: var(--app-footer-btn-gap);
   width: 100%;
+  padding-bottom:.5rem;
 }
 
 .app-footer-stack > .app-footer-toolbar,
@@ -1897,7 +1905,7 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
 /* Bottom-right nav toggle — same bottom/right inset as page footers */
 .app-nav-bottom-toggle {
   bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0rem)) !important;
-  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0rem)) !important;
+  right: calc(var(--app-nav-bottom-right-inset) + env(safe-area-inset-right, 0rem)) !important;
 }
 
 body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
@@ -1940,7 +1948,7 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
 }
 
 .app-nav-bottom-menu-panel {
-  right:  calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0rem));
+  right: calc(var(--app-nav-bottom-right-inset) + env(safe-area-inset-right, 0rem));
   bottom: calc(var(--app-footer-padding-y) + var(--app-btn-nav-width) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0rem));
 }
 
@@ -2017,6 +2025,12 @@ body.training-mode [class*="footer"] .btn.rounded-circle {
   height: var(--app-btn-height) !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+.profile-footer-nav .btn.profile-footer-btn {
+  height: var(--app-btn-nav-width) !important;
+  min-height: var(--app-btn-nav-width) !important;
+  max-height: var(--app-btn-nav-width) !important;
 }
 
 /* Profile footer General gear — icon-only; center gear in pill/circle (after training pill rules) */
