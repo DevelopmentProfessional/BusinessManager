@@ -10,9 +10,9 @@ import React from "react";
  *   onClick?: () => void  — row click handler
  *   children: <td> cells
  */
-export default function PageTableRow({ onClick, children }) {
+export default function PageTableRow({ onClick, children, className = "" }) {
   return (
-    <tr className="main-page-table-row pb-1" onClick={onClick}>
+    <tr className={`main-page-table-row app-table-row pb-1 ${className}`.trim()} onClick={onClick}>
       {children}
     </tr>
   );

@@ -24,7 +24,7 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
   const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
   return (
     <>
-      <footer ref={footerRef} className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm" style={{ zIndex: 10 }}>
+      <footer ref={footerRef} className="app-footer-search app-footer-shell app-table-footer bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm" style={{ zIndex: 10 }}>
         {/* Controls: optional top row + search + buttons */}
         <div className="app-footer-padding app-standard-footer bg-white dark:bg-gray-800">
           <div className="app-footer-stack">
@@ -33,7 +33,7 @@ export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholde
             <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100 ${alignClass}`}>{children}</div>
             {/* Search row - Add button + search input */}
             {!hideSearch && (
-              <div className="align-items-center app-footer-search-row d-flex gap-1 w-100">
+              <div className="align-items-center app-footer-search-row app-search-row d-flex gap-1 w-100">
                 {addButton && <div>{addButton}</div>}
                 <input type="text" placeholder={searchPlaceholder} value={searchTerm} onChange={(e) => onSearch(e.target.value)} className="app-search-input form-control rounded-pill w-100" />
               </div>

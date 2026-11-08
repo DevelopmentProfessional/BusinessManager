@@ -498,7 +498,7 @@ export default function Clients() {
             <tbody>
               {sortedAndFiltered.map((client, index) => (
                 <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
-                  <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                  <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                     <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
                   </td>
 
@@ -506,11 +506,7 @@ export default function Clients() {
                   <td className="main-page-table-data" style={{ position: "relative", overflow: "visible" }}>
                     {/* Red badge — top-left, straddles left border, shown only when > 0 */}
                     {internalActionCounts[client.id] > 0 && (
-                      <span
-                        className="badge bg-danger rounded-circle"
-                        style={{ position: "absolute", left: "-9px", top: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, zIndex: 2, textAlign: "center" }}
-                        title="Pending internal staff action"
-                      >
+                      <span className="badge bg-danger rounded-circle" style={{ position: "absolute", left: "-9px", top: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, zIndex: 2, textAlign: "center" }} title="Pending internal staff action">
                         {internalActionCounts[client.id]}
                       </span>
                     )}

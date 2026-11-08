@@ -17,6 +17,7 @@ const TEMPLATE_TYPES = [
   { value: "receipt", label: "Receipt" },
   { value: "memo", label: "Memo" },
   { value: "quote", label: "Quote" },
+  { value: "payslip", label: "Payslip" },
   { value: "custom", label: "Custom" },
 ];
 
@@ -123,7 +124,12 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     try {
       const res = await documentsAPI.getAll();
       const docs = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-      setImages(sortItemsAlphabetically(docs.filter((d) => (d.content_type || "").startsWith("image/")), ["original_filename", "filename"]));
+      setImages(
+        sortItemsAlphabetically(
+          docs.filter((d) => (d.content_type || "").startsWith("image/")),
+          ["original_filename", "filename"]
+        )
+      );
     } catch {
       setImages([]);
     } finally {

@@ -34,6 +34,7 @@
  *   2026-05-26 | GitHub Copilot | Added left-column delete action for documents list and removed delete action from viewer modal wiring
  *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete and combined selected edit/delete actions
  *   2026-09-11 | GitHub Copilot | Removed unused imports and dead handlers to clear ESLint warnings
+ *   2026-11-08 | GitHub Copilot | Made template rows clickable to open the template editor
  * ============================================================
  */
 
@@ -782,6 +783,7 @@ export default function Documents() {
                 receipt: "bg-teal-100 text-teal-800",
                 memo: "bg-purple-100 text-purple-800",
                 quote: "bg-yellow-100 text-yellow-800",
+                payslip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
                 custom: "bg-gray-100 text-gray-700",
               };
               const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
@@ -794,9 +796,29 @@ export default function Documents() {
                   </colgroup>
                   <tbody>
                     {filtered.map((tpl) => (
-                      <tr key={tpl.id} className="align-middle border-bottom">
-                        <td className="px-1 text-center">
-                          <button onClick={() => handleDeleteTemplate(tpl)} className="align-items-center border-0 btn btn-outline-danger btn-sm d-flex justify-content-center p-1" title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"} disabled={tpl.is_standard}>
+                      <tr
+                        key={tpl.id}
+                        className="align-middle border-bottom"
+                        style={{ cursor: "pointer" }}
+                        tabIndex={0}
+                        onClick={() => handleEditTemplate(tpl)}
+                        onKeyDown={(e) => {
+                          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            handleEditTemplate(tpl);
+                          }
+                        }}
+                      >
+                        <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTemplate(tpl);
+                            }}
+                            className="align-items-center border-0 btn btn-outline-danger btn-sm d-flex justify-content-center p-1"
+                            title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
+                            disabled={tpl.is_standard}
+                          >
                             <XMarkIcon className="ui-icon-4" />
                           </button>
                         </td>
@@ -807,8 +829,15 @@ export default function Documents() {
                           </div>
                           <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>{tpl.template_type}</span>
                         </td>
-                        <td className="px-1 text-center">
-                          <button onClick={() => handleEditTemplate(tpl)} className="align-items-center border-0 btn btn-outline-primary btn-sm d-flex justify-content-center p-1" title="Edit">
+                        <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTemplate(tpl);
+                            }}
+                            className="align-items-center border-0 btn btn-outline-primary btn-sm d-flex justify-content-center p-1"
+                            title="Edit"
+                          >
                             <PencilIcon className="ui-icon-4" />
                           </button>
                         </td>
@@ -866,8 +895,8 @@ export default function Documents() {
                 </colgroup>
                 <tbody>
                   {sortedAndFiltered.map((doc, index) => (
-                    <tr key={doc.id || index} className="align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
-                      <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                    <tr key={doc.id || index} className="main-page-table-row app-table-row align-middle border-bottom" style={{ cursor: "pointer" }} onClick={() => !selectionMode && handleView(doc)}>
+                      <td className="app-select-icon-cell px-1 text-center" onClick={(e) => e.stopPropagation()}>
                         <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
                       </td>
 
@@ -984,6 +1013,7 @@ export default function Documents() {
                       { value: "receipt", label: "Receipt" },
                       { value: "memo", label: "Memo" },
                       { value: "quote", label: "Quote" },
+                      { value: "payslip", label: "Payslip" },
                       { value: "custom", label: "Custom" },
                     ].map((option, index, arr) => {
                       const isLast = index === arr.length - 1;

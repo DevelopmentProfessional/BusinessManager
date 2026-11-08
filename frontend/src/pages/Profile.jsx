@@ -38,6 +38,7 @@
  *   2026-07-25 | GitHub Copilot | Added environment metadata (last updated + app version/build timestamp) to settings accordion
  *   2026-09-11 | GitHub Copilot | Removed unused settings helpers/state and fixed useEffect dependency warnings
  *   2026-09-11 | GitHub Copilot | Rendered company-branded payslip templates from Wage history
+ *   2026-11-08 | GitHub Copilot | Made accordion headers rounded pills and scaled sizing with button text size
  * ============================================================
  */
 
@@ -1293,7 +1294,7 @@ const Profile = () => {
 
   // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="d-flex flex-column flex-grow-1 h-100 min-h-0 overflow-hidden profile-page" style={{ height: "var(--vvp-height, 100dvh)" }}>
+    <div className="d-flex flex-column flex-grow-1 h-100 min-h-0 overflow-hidden profile-page " style={{ height: "var(--vvp-height, 100dvh)" }}>
       <div
         className="d-flex flex-column flex-grow-1 min-h-0 overflow-auto"
         style={{
@@ -1312,9 +1313,9 @@ const Profile = () => {
 
             <div style={{ flexShrink: 0, minHeight: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
-                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "profile" && (
-                    <div className="p-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="p-1 profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <div className="row">
                         <div className="col-sm-6">
                           <div className="flex mb-1 wrap">
@@ -1386,8 +1387,8 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
-                    style={{ cursor: "pointer", userSelect: "none" }}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "profile"}
                     onClick={() => toggleMeSection("profile")}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -1404,7 +1405,7 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
                   <div
                     ref={(el) => {
@@ -1412,8 +1413,8 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
-                    style={{ cursor: "pointer", userSelect: "none" }}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "wage"}
                     onClick={() => toggleMeSection("wage")}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -1430,9 +1431,9 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "benefits" && (
-                    <div className="p-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="p-1 profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <div className="g-2 mb-3 row">
                         <div className="col-sm-6">
                           <div className="ui-small-muted">Salary</div>
@@ -1514,8 +1515,8 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
-                    style={{ cursor: "pointer", userSelect: "none" }}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "benefits"}
                     onClick={() => toggleMeSection("benefits")}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -1532,9 +1533,9 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
+                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "settings" && (
-                    <div className="p-0" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="p-0 profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <Modal_Settings
                         embedded={true}
                         isMobile={isMobile}
@@ -1580,8 +1581,8 @@ const Profile = () => {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="align-items-center d-flex justify-content-between px-1 py-0 w-100"
-                    style={{ cursor: "pointer", userSelect: "none" }}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "settings"}
                     onClick={() => toggleMeSection("settings")}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -1761,10 +1762,10 @@ const Profile = () => {
                 : null),
             }}
           >
-            <div className="app-footer-padding bg-white dark:bg-gray-800">
+            <div className="bg-white dark:bg-gray-800 ps-2">
               <div className="app-footer-stack">
                 <div className="align-items-center app-footer-toolbar d-flex search-hide-on-focus w-100">
-                  <div className={`d-flex align-items-center gap-1 flex-grow-1 min-w-0 ${footerJustify}`}>
+                  <div className={`d-flex align-items-center gap-1 flex-grow-1 min-w-0 mt-1 ${footerJustify}`}>
                     {canAccessSettings && (
                       <Button_Toolbar
                         icon={CircleStackIcon}
@@ -1892,17 +1893,7 @@ const Profile = () => {
         </div>
       )}
 
-      {selectedSlip && (
-        <Modal_TemplateUse
-          page="employees"
-          entity={selectedSlip}
-          employee={user}
-          currentUser={user}
-          settings={{ ...companyInfo, company_logo_data_url: companyLogoDataUrl }}
-          filterType="payslip"
-          onClose={() => setSelectedSlip(null)}
-        />
-      )}
+      {selectedSlip && <Modal_TemplateUse page="employees" entity={selectedSlip} employee={user} currentUser={user} settings={{ ...companyInfo, company_logo_data_url: companyLogoDataUrl }} filterType="payslip" onClose={() => setSelectedSlip(null)} />}
     </div>
   );
 };
