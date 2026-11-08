@@ -23,7 +23,7 @@ function ProtectedRoute({ children }) {
 function Spinner() {
   return (
     <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
-      <div className="spinner-border text-primary" />
+      <img src="/icons/icon-192.png" alt="Loading" style={{ width: 64, height: 64, objectFit: "contain" }} />
     </div>
   );
 }

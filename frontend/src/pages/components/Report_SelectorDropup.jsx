@@ -46,7 +46,7 @@ export default function Report_SelectorDropup({ open, onToggle, selectedTitle, r
   }, [open, onToggle]);
 
   return (
-    <div ref={rootRef} className="position-relative reports-selector-dropup w-100" style={{ textAlign: "left" }}>
+    <div ref={rootRef} className="app-dropup position-relative reports-selector-dropup w-100" style={{ textAlign: "left" }}>
       <Button_Toolbar icon={ChartBarIcon} label="Reports" onClick={() => onToggle(!open)} className="btn-outline-secondary app-menu-trigger" style={{ whiteSpace: "nowrap" }} aria-expanded={open} aria-haspopup="listbox" title={selectedTitle || "Reports"} />
 
       {open && (

@@ -93,7 +93,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
   const selectedCount = selectedIds.length;
 
   return (
-    <div ref={dropupRef} className="position-relative w-100">
+    <div ref={dropupRef} className="app-dropup position-relative w-100">
       {/* Trigger Button */}
       <button
         ref={triggerRef}
