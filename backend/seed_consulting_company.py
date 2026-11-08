@@ -1,8 +1,8 @@
 """Seed a realistic consulting company dataset in dependency order.
 
-The seed is intentionally company-scoped and idempotent so it can run on every
-deployment. Existing records with the same stable business key are updated or
-reused instead of duplicated.
+The seed is intentionally company-scoped and additive-only. Existing records
+with the same stable business key are reused untouched instead of duplicated
+or modified.
 """
 
 from datetime import datetime, timedelta
@@ -30,11 +30,6 @@ def _get_or_add(session: Session, model, filters: dict, values: dict):
     if record is None:
         record = model(id=uuid4(), **values)
         session.add(record)
-    else:
-        for field, value in values.items():
-            if field != "id":
-                setattr(record, field, value)
-    session.flush()
     return record
 
 
@@ -96,18 +91,32 @@ def _seed_users(session: Session, User, UserRole, Department, now: datetime):
             },
         )
 
-    users["caroline"].reports_to = None
-    for username in ("marcus.lee", "priya.shah", "daniel.ortiz", "harper.gray", "benjamin.king", "chloe.adams", "henry.brooks"):
-        users[username].reports_to = users["caroline"].id
-    for username in ("elena.ross", "jamal.wright", "sofia.kim", "noah.bennett"):
-        users[username].reports_to = users["marcus.lee"].id
-    for username in ("maya.patel", "liam.carter", "zoe.hughes", "owen.foster"):
-        users[username].reports_to = users["priya.shah"].id
-    for username in ("isla.mitchell", "ethan.reed"):
-        users[username].reports_to = users["daniel.ortiz"].id
-    for username in ("ava.sullivan", "lucas.morris"):
-        users[username].reports_to = users["caroline"].id
-    session.flush()
+    new_user_ids = {user.id for user in session.new if isinstance(user, User)}
+    hierarchy = {
+        "caroline": (),
+        "marcus.lee": ("caroline",),
+        "priya.shah": ("caroline",),
+        "daniel.ortiz": ("caroline",),
+        "harper.gray": ("caroline",),
+        "benjamin.king": ("caroline",),
+        "chloe.adams": ("caroline",),
+        "henry.brooks": ("caroline",),
+        "elena.ross": ("marcus.lee",),
+        "jamal.wright": ("marcus.lee",),
+        "sofia.kim": ("marcus.lee",),
+        "noah.bennett": ("marcus.lee",),
+        "maya.patel": ("priya.shah",),
+        "liam.carter": ("priya.shah",),
+        "zoe.hughes": ("priya.shah",),
+        "owen.foster": ("priya.shah",),
+        "isla.mitchell": ("daniel.ortiz",),
+        "ethan.reed": ("daniel.ortiz",),
+        "ava.sullivan": ("caroline",),
+        "lucas.morris": ("caroline",),
+    }
+    for username, manager_names in hierarchy.items():
+        if users[username].id in new_user_ids and manager_names:
+            users[username].reports_to = users[manager_names[0]].id
     return users
 
 
