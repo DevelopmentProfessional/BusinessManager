@@ -1,8 +1,8 @@
 """
 init_database.py
 ================
-Pre-start script run by Render via:
-    preDeployCommand: python backend/init_database.py
+Pre-start script used by the AWS CodeDeploy hook:
+    scripts/seed_company_75597.sh
 
 Responsibilities (in order):
   1. Run all SQLModel table creation / schema migrations (create_db_and_tables)
