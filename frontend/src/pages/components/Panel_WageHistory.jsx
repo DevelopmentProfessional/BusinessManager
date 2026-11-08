@@ -33,23 +33,14 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
       list = list.filter((s) => {
         const period = s.pay_period_start ? new Date(s.pay_period_start).toLocaleDateString() : "";
         const end = s.pay_period_end ? new Date(s.pay_period_end).toLocaleDateString() : "";
-        return (
-          period.toLowerCase().includes(q) ||
-          end.toLowerCase().includes(q) ||
-          (s.notes || "").toLowerCase().includes(q) ||
-          String(s.gross_amount ?? "").includes(q) ||
-          String(s.net_amount ?? "").includes(q)
-        );
+        return period.toLowerCase().includes(q) || end.toLowerCase().includes(q) || (s.notes || "").toLowerCase().includes(q) || String(s.gross_amount ?? "").includes(q) || String(s.net_amount ?? "").includes(q);
       });
     }
     return list;
   }, [paySlips, search, yearFilter]);
 
   return (
-    <div
-      className="d-flex flex-column min-h-0 profile-wage-history"
-      style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight, minHeight: "10rem" }}
-    >
+    <div className="d-flex flex-column min-h-0 profile-wage-history profile-accordion-body" style={{ maxHeight, minHeight: "10rem" }}>
       <div className="flex-grow-1 min-h-0 overflow-auto profile-wage-history__list pt-0 px-0">
         {paySlipsLoading ? (
           <div className="py-1 text-center">
@@ -93,24 +84,8 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
 
       <div className="bg-body border-top flex-shrink-0 profile-wage-history__filters px-0 py-0">
         <div className="align-items-center d-flex flex-wrap gap-2">
-          <input
-            type="text"
-            className="app-search-input flex-grow-1 form-control form-control-sm"
-            placeholder="Search period, notes, amount…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search pay history"
-          />
-          <Dropdown_Custom
-            className="flex-shrink-0 form-select form-select-sm"
-            style={{ width: "5.75rem" }}
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            options={[
-              { value: "all", label: "All years" },
-              ...years.map((y) => ({ value: String(y), label: String(y) })),
-            ]}
-          />
+          <input type="text" className="app-search-input flex-grow-1 form-control form-control-sm" placeholder="Search period, notes, amount…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pay history" />
+          <Dropdown_Custom className="flex-shrink-0 form-select form-select-sm" style={{ width: "5.75rem" }} value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} options={[{ value: "all", label: "All years" }, ...years.map((y) => ({ value: String(y), label: String(y) }))]} />
         </div>
       </div>
     </div>

@@ -308,7 +308,7 @@ export default function Services() {
             <tbody>
               {sortedAndFiltered.map((service, index) => (
                 <PageTableRow key={service.id || index} onClick={() => !selectionMode && handleEditService(service)}>
-                  <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                  <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                     <Toggle_MultiSelectIcon selected={selectedIds.has(service.id)} onToggle={() => toggleSelectSvc(service.id)} title="Select service" />
                   </td>
                   {/* Name + Category stacked */}

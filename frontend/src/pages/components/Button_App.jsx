@@ -50,7 +50,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       title={tooltipLabel}
       aria-label={tooltipLabel}
       className={`btn flex-shrink-0 d-flex align-items-center
-        app-action-btn
+        app-btn app-action-btn
         ${showText ? "" : "app-action-btn--icon-only"}
         ${training ? (showText ? "rounded-pill ps-0 pe-0 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
         ${variantClass} ${effectiveClass}

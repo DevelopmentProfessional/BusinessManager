@@ -13,15 +13,15 @@ import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
  *   sortAsc: boolean (true for ascending, false for descending)
  *   onSort: func(sortKey: string) — called when a header with sortKey is clicked
  */
-export default function PageTableHeader({ columns, sortColumn = null, sortAsc = true, onSort = null }) {
+export default function PageTableHeader({ columns, sortColumn = null, sortAsc = true, onSort = null, className = "" }) {
   const handleHeaderClick = (sortKey) => {
     if (!sortKey || !onSort) return;
     onSort(sortKey);
   };
 
   return (
-    <div className="bg-gray-100 border-bottom dark:bg-gray-700 flex-shrink-0" style={{ zIndex: 5 }}>
-      <table className="bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900 w-100">
+    <div className={`app-table-header bg-gray-100 border-bottom dark:bg-gray-700 flex-shrink-0 ${className}`.trim()} style={{ zIndex: 5 }}>
+      <table className="app-table bg-gray-100 dark:bg-gray-700 dark:text-gray-100 mb-0 table table-borderless text-gray-900 w-100">
         <colgroup>
           {columns.map((col, i) => (
             <col key={i} style={col.width ? { width: col.width } : undefined} />
@@ -35,7 +35,13 @@ export default function PageTableHeader({ columns, sortColumn = null, sortAsc = 
               const isString = typeof col.label === "string";
 
               return (
-                <th key={i} className={["text-start", col.className, isSortable ? "user-select-none" : ""].filter(Boolean).join(" ")} style={isSortable ? { cursor: "pointer" } : undefined} onClick={() => handleHeaderClick(col.sortKey)} title={isSortable ? "Click to sort" : undefined}>
+                <th
+                  key={i}
+                  className={["app-table-th text-start", col.className, isSortable ? "app-table-th--sortable user-select-none" : ""].filter(Boolean).join(" ")}
+                  style={isSortable ? { cursor: "pointer" } : undefined}
+                  onClick={() => handleHeaderClick(col.sortKey)}
+                  title={isSortable ? "Click to sort" : undefined}
+                >
                   {isString && isSortable ? (
                     <span className="align-items-center d-inline-flex gap-2">
                       {col.label}

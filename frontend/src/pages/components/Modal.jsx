@@ -38,12 +38,12 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
  *   showClose?: boolean — header X button (default true)
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalHeader({ title, onClose, showClose = true, className="" }) {
+export function ModalHeader({ title, onClose, showClose = true, className = "" }) {
   return (
-    <div className={`d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`}>
-      <h3 className="align-items-center d-flex h5 mb-0 text-body">{title}</h3>
+    <div className={`app-modal-header d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`.trim()}>
+      <h3 className="app-modal-title align-items-center d-flex h5 mb-0 text-body">{title}</h3>
       {showClose && onClose ? (
-        <button type="button" onClick={onClose} title="Close" aria-label="Close" className="align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
+        <button type="button" onClick={onClose} title="Close" aria-label="Close" className="app-modal-close align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
           <XMarkIcon className="h-6 w-6" />
         </button>
       ) : null}
@@ -61,8 +61,8 @@ export function ModalHeader({ title, onClose, showClose = true, className="" }) 
  *   children: ReactNode
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalFooter({ children, className="" }) {
-  return <div className={`app-modal-footer app-form-footer app-standard-footer border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 ${className}`}>{children}</div>;
+export function ModalFooter({ children, className = "" }) {
+  return <div className={`app-modal-footer app-form-footer app-standard-footer border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0 ${className}`.trim()}>{children}</div>;
 }
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
@@ -86,9 +86,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         {Overlay}
         <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0">
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
-          <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>
-            {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
-          </div>
+          <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}</div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>
       </div>

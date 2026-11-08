@@ -582,7 +582,7 @@ export default function Inventory() {
           {sortedAndFiltered.length > 0 ? (
             <table className="mb-0 table table-borderless table-hover w-100">
               <colgroup>
-                <col style={{ width: "40px" }} />
+                <col style={{ width: "56px" }} />
                 <col />
                 <col style={{ width: "80px" }} />
                 <col style={{ width: "60px" }} />
@@ -590,7 +590,7 @@ export default function Inventory() {
               <tbody>
                 {sortedAndFiltered.map((inv, index) => (
                   <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
-                    <td style={{ width: "40px" }} onClick={(e) => e.stopPropagation()}>
+                    <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                     </td>
                     <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
@@ -635,7 +635,7 @@ export default function Inventory() {
         )}
         <PageTableHeader
           columns={[
-            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, width: 40, className: "p-0 text-center" },
+            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, width: 56, className: "p-0 text-center" },
             { label: "Item", sortKey: "name" },
             { label: "Type", width: 80, sortKey: "type" },
             { label: "Count", width: 60, sortKey: "count" },

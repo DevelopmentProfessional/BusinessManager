@@ -65,19 +65,81 @@
   --app-btn-height: 2rem;
   --app-btn-width: 4rem;
   --app-btn-nav-width: 1rem;
-  --app-icon-size: 1.125rem;
+  --app-icon-size: 1rem;
   --app-icon-size-active: 1.25rem;
   --app-btn-icon-size: var(--app-icon-size);
   --app-btn-icon-size-active: var(--app-icon-size-active);
   --app-btn-label-font-size: 0.78rem;
+  --app-btn-border-radius: 9999px;
+  --app-btn-circle-border-radius: 50%;
+
+  /* Page Layout */
+  --app-page-padding-x: 0.5rem;
+  --app-page-padding-y: 0.5rem;
+  --app-page-header-height: 3rem;
+  --app-page-header-padding-x: 0.5rem;
+  --app-page-header-padding-y: 0.5rem;
+
+  /* Tables, Rows, Headers & Columns */
+  --app-table-header-height: 2.25rem;
+  --app-table-row-height: 2.25rem;
+  --app-table-select-col-width: 56px;
+  --app-table-action-col-width: 56px;
+  --app-table-cell-padding-x: 0.5rem;
+  --app-table-cell-padding-y: 0.25rem;
+
+  /* Select Icons */
+  --app-select-icon-size: 2rem;
+  --app-select-icon-inner-size: 1.125rem;
+
+  /* Search Boxes */
+  --app-input-height: 2rem;
+  --app-input-font-size: 0.78rem;
+  --app-search-input-padding-x: 0.75rem;
+
+  /* Dropups & Dropdowns */
+  --app-dropdown-min-width: 11rem;
+  --app-dropdown-border-radius: 0.75rem;
+  --app-dropdown-item-height: 2rem;
+  --app-dropdown-item-padding-x: 0.75rem;
+
+  /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
-  --app-footer-padding-x: 0.25rem;
+  --app-footer-padding-x: 0.125rem;
   --app-footer-padding-y: 0.125rem;
   --app-standard-footer-height: calc(var(--app-btn-height) + (var(--app-footer-padding-y) * 2));
   /* Width + gap reserved for bottom-right nav (matches left inset) */
   --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
-  --app-input-height: 2rem;
-  --app-input-font-size: 0.78rem;
+
+  /* Modals */
+  --app-modal-border-radius: 0.75rem;
+  --app-modal-header-height: 3rem;
+  --app-modal-padding: 1rem;
+  --app-modal-z-index: 1100;
+
+  /* Cards */
+  --app-card-border-radius: 0.5rem;
+  --app-card-padding: 0.75rem;
+  --app-card-header-padding: 0.5rem 0.75rem;
+
+  /* Panels */
+  --app-panel-border-radius: 0.75rem;
+  --app-panel-header-height: 2.75rem;
+  --app-panel-padding: 0.75rem;
+
+  /* Accordions */
+  --app-accordion-border-radius: 9999px;
+  --app-accordion-header-height: var(--app-btn-height);
+  --app-accordion-body-border-radius: 1rem;
+
+  /* Charts */
+  --app-chart-min-height: 280px;
+  --app-chart-container-border-radius: 0.5rem;
+
+  /* Badges & Tags */
+  --app-badge-font-size: 0.65rem;
+  --app-badge-padding-x: 0.5rem;
+  --app-badge-padding-y: 0.15rem;
 }
 
 /* Global shadow reset (requested app-wide) */
@@ -90,6 +152,12 @@
   --tw-shadow-colored: 0 0 #0000 !important;
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+/* Visible focus indicator for keyboard navigation overriding Bootstrap's outline: 0 */
+:focus-visible {
+  outline: 2px solid var(--app-active-color, #3b82f6) !important;
+  outline-offset: 2px !important;
 }
 
 html,
@@ -118,6 +186,780 @@ body,
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome / Safari / Opera */
+}
+
+/* ==========================================================================
+   PREDEFINED COMPONENT STYLES
+   Foundational styles derived from runtime tokens for standard UI elements.
+   ========================================================================== */
+
+/* ─── 1. BUTTONS ─── */
+.app-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: var(--app-btn-border-radius) !important;
+  padding: 0 0.75rem !important;
+  gap: 0.25rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.app-btn--circle {
+  width: var(--app-btn-height) !important;
+  min-width: var(--app-btn-height) !important;
+  max-width: var(--app-btn-height) !important;
+  border-radius: var(--app-btn-circle-border-radius) !important;
+  padding: 0 !important;
+}
+
+.app-btn--pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  border-radius: var(--app-btn-border-radius) !important;
+}
+
+.app-btn--primary {
+  background-color: var(--app-active-color, var(--bs-primary)) !important;
+  color: #fff !important;
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+}
+
+.app-btn--secondary {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+.app-btn--danger {
+  background-color: #ef4444 !important;
+  color: #fff !important;
+  border-color: #dc2626 !important;
+}
+
+.app-btn--cancel {
+  background-color: transparent !important;
+  color: var(--bs-secondary-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+/* ─── 2. DROPUPS & DROPDOWNS ─── */
+.app-dropdown,
+.app-dropup {
+  position: relative;
+  display: inline-flex;
+}
+
+.app-menu-panel {
+  min-width: var(--app-dropdown-min-width);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--app-dropdown-border-radius);
+  padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1050;
+}
+
+.app-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: var(--app-dropdown-item-height) !important;
+  padding: 0.25rem var(--app-dropdown-item-padding-x) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: 0.375rem !important;
+  color: var(--bs-body-color) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.app-menu-item:hover,
+.app-menu-item:focus {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.app-menu-item[data-active="true"],
+.app-menu-item--active {
+  background-color: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.12) !important;
+  color: var(--app-active-color, var(--bs-primary)) !important;
+  font-weight: 600;
+}
+
+.app-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-menu-empty {
+  padding: 0.5rem var(--app-dropdown-item-padding-x);
+  font-size: var(--app-btn-label-font-size);
+  color: var(--bs-secondary-color);
+  text-align: center;
+}
+
+/* ─── 3. SEARCH BOXES ─── */
+.app-search-box {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.app-search-input {
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+  border-radius: var(--app-btn-border-radius) !important;
+  padding-left: var(--app-search-input-padding-x) !important;
+  padding-right: var(--app-search-input-padding-x) !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 1px solid var(--bs-border-color) !important;
+  color: var(--bs-body-color) !important;
+  box-sizing: border-box;
+}
+
+.app-search-input:focus {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  outline: none;
+}
+
+.app-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+/* ─── 4. SELECT ICONS ─── */
+.app-select-col {
+  width: var(--app-table-select-col-width) !important;
+  min-width: var(--app-table-select-col-width) !important;
+  max-width: var(--app-table-select-col-width) !important;
+  text-align: center !important;
+  padding: 0 !important;
+}
+
+.app-select-icon {
+  width: var(--app-select-icon-size) !important;
+  height: var(--app-select-icon-size) !important;
+  border-radius: 9999px !important;
+  border: 1px solid var(--bs-border-color);
+  background: transparent;
+  color: var(--bs-secondary-color);
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer;
+  line-height: 1 !important;
+  transition: all 0.15s ease;
+}
+
+.app-select-icon svg {
+  width: var(--app-select-icon-inner-size) !important;
+  height: var(--app-select-icon-inner-size) !important;
+}
+
+.app-select-icon--active,
+.app-select-icon[aria-pressed="true"] {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  background: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.16) !important;
+  color: var(--app-active-color, var(--bs-primary)) !important;
+}
+
+.app-select-icon-cell {
+  width: var(--app-table-select-col-width) !important;
+  min-width: var(--app-table-select-col-width) !important;
+  max-width: var(--app-table-select-col-width) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0 !important;
+}
+
+/* ─── 5. TABLES ─── */
+.app-table-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.app-table-scrollable {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bs-body-bg);
+}
+
+.app-table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
+  vertical-align: middle;
+}
+
+/* ─── 6. TABLE HEADERS ─── */
+.app-table-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bs-tertiary-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+  min-height: var(--app-table-header-height);
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.app-table-th {
+  font-size: var(--app-btn-label-font-size);
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  padding: var(--app-table-cell-padding-y) var(--app-table-cell-padding-x);
+  vertical-align: middle;
+  text-align: left;
+}
+
+.app-table-th--sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-table-th--sortable:hover {
+  color: var(--bs-body-color);
+}
+
+/* ─── 7. TABLE ROWS ─── */
+.app-table-row {
+  height: var(--app-table-row-height);
+  min-height: var(--app-table-row-height);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--bs-border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.app-table-row:hover {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.app-table-row--selected {
+  background-color: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08) !important;
+}
+
+/* ─── 8. TABLE COLUMNS & DATA CELLS ─── */
+.app-table-col {
+  vertical-align: middle;
+}
+
+.app-table-cell {
+  padding: var(--app-table-cell-padding-y) var(--app-table-cell-padding-x);
+  vertical-align: middle;
+  font-size: var(--app-btn-label-font-size);
+  color: var(--bs-body-color);
+}
+
+.app-table-cell--select {
+  width: var(--app-table-select-col-width);
+  min-width: var(--app-table-select-col-width);
+  max-width: var(--app-table-select-col-width);
+  text-align: center;
+  padding: 0;
+}
+
+.app-table-cell--actions {
+  width: var(--app-table-action-col-width);
+  min-width: var(--app-table-action-col-width);
+  max-width: var(--app-table-action-col-width);
+  text-align: center;
+  padding: 0;
+}
+
+.app-table-cell--primary {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-table-cell--numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── 9. TABLE FOOTERS ─── */
+.app-table-footer {
+  width: 100%;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
+  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve));
+}
+
+/* ─── 10. PAGE LAYOUT ─── */
+.app-page-layout {
+  display: flex;
+  flex-direction: column;
+  height: var(--vvp-height, 100dvh);
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bs-body-bg);
+}
+
+.app-page-header {
+  height: var(--app-page-header-height);
+  min-height: var(--app-page-header-height);
+  padding: var(--app-page-header-padding-y) var(--app-page-header-padding-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+.app-page-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--app-page-padding-y) var(--app-page-padding-x);
+}
+
+.app-page-footer {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.app-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ─── 11. CHARTS ─── */
+.app-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: var(--app-chart-min-height);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--app-chart-container-border-radius);
+  padding: 0.75rem;
+  position: relative;
+}
+
+.app-chart-container {
+  flex-grow: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.app-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.app-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  text-align: left;
+}
+
+.app-chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-chart-kpi-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.app-chart-kpi-card {
+  flex: 1 1 6rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  text-align: center;
+}
+
+/* ─── 12. MODALS ─── */
+.app-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--app-modal-z-index);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.app-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 32rem;
+  background: var(--bs-body-bg);
+  border-radius: var(--app-modal-border-radius);
+  border: 1px solid var(--bs-border-color);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.app-modal-dialog--fullscreen {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+.app-modal-content {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--app-modal-padding);
+}
+
+/* ─── 13. MODAL HEADER ─── */
+.app-modal-header {
+  height: var(--app-modal-header-height);
+  min-height: var(--app-modal-header-height);
+  padding: 0 var(--app-modal-padding);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+.app-modal-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.app-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--bs-secondary-color);
+  padding: 0.25rem;
+}
+
+/* ─── 14. MODAL FOOTER ─── */
+.app-modal-footer {
+  min-height: var(--app-standard-footer-height);
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--app-footer-btn-gap);
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+.app-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--app-footer-btn-gap);
+}
+
+/* ─── 15. PANELS ─── */
+.app-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--app-panel-border-radius);
+  overflow: hidden;
+}
+
+.app-panel-header {
+  height: var(--app-panel-header-height);
+  min-height: var(--app-panel-header-height);
+  padding: 0 var(--app-panel-padding);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+.app-panel-body {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--app-panel-padding);
+}
+
+.app-panel-footer {
+  min-height: var(--app-standard-footer-height);
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+/* ─── 16. CARDS ─── */
+.app-card {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--app-card-border-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-card-header {
+  padding: var(--app-card-header-padding);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bs-border-color);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.app-card-body {
+  padding: var(--app-card-padding);
+  flex-grow: 1;
+}
+
+.app-card-footer {
+  padding: var(--app-card-header-padding);
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/* ─── 17. ACCORDIONS ─── */
+.app-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.app-accordion-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+}
+
+.app-accordion-header {
+  height: var(--app-accordion-header-height) !important;
+  min-height: var(--app-accordion-header-height) !important;
+  max-height: var(--app-accordion-header-height) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: var(--app-accordion-border-radius) !important;
+  padding-left: max(0.875rem, calc(var(--app-accordion-header-height) * 0.45)) !important;
+  padding-right: max(0.875rem, calc(var(--app-accordion-header-height) * 0.45)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 1px solid var(--bs-border-color) !important;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 2 !important;
+  transition: all 0.15s ease;
+}
+
+.app-accordion-header:hover {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.app-accordion-header[data-active="true"] {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  background-color: var(--bs-body-bg) !important;
+  background-image: linear-gradient(rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08), rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08)) !important;
+}
+
+.app-accordion-body {
+  border: 1px solid var(--bs-border-color) !important;
+  border-top: 1px solid var(--bs-border-color) !important;
+  border-radius: var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) 0 0 !important;
+  margin-bottom: calc(var(--app-accordion-header-height) * -0.5) !important;
+  padding-bottom: calc(var(--app-accordion-header-height) * 0.5 + 0.5rem) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  background-color: var(--bs-body-bg) !important;
+  box-sizing: border-box !important;
+  overflow-y: auto;
+}
+
+.app-accordion-footer {
+  padding: 0.5rem;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+/* ─── 18. BADGES & PILL TAGS ─── */
+.app-badge,
+.app-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--app-badge-font-size);
+  padding: var(--app-badge-padding-y) var(--app-badge-padding-x);
+  border-radius: 9999px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.app-badge--pill {
+  border-radius: 9999px;
+}
+
+.app-badge--primary {
+  background-color: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.15);
+  color: var(--app-active-color, var(--bs-primary));
+}
+
+.app-badge--success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.app-badge--warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.app-badge--danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ─── 19. FORM CONTROLS & INPUTS ─── */
+.app-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.app-form-label {
+  font-size: var(--app-btn-label-font-size);
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+}
+
+.app-form-control,
+.app-form-select {
+  height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+  border-radius: 0.375rem;
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+}
+
+/* ─── 20. TOOLBARS & ACTION GROUPS ─── */
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--app-footer-btn-gap);
+  flex-wrap: wrap;
+}
+
+.app-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-toolbar-spacer {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* ─── 21. STATUS TRACKERS & STEPPERS ─── */
+.app-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0;
+}
+
+.app-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+  flex: 1 1 0;
+}
+
+/* ─── 22. FLOATING OVERLAYS & NAV TOGGLES ─── */
+.app-floating-nav {
+  position: fixed;
+  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0px));
+  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0px));
+  z-index: 1060;
 }
 
 /* Reusable grouped utilities to reduce repeated JSX className token blocks */
@@ -368,7 +1210,7 @@ body,
 
 /* Main-page data table row — use on <tr> inside PageTableRow */
 .main-page-table-row {
-  height: 36px;
+  height: var(--app-table-row-height, 36px);
   cursor: pointer;
   vertical-align: middle;
   border-bottom: 1px solid var(--bs-border-color);
@@ -376,6 +1218,8 @@ body,
 
 /* Main-page data table cell — use on <td> inside main page tables */
 .main-page-table-data {
+  padding-left: var(--app-table-cell-padding-x, 0.5rem);
+  padding-right: var(--app-table-cell-padding-x, 0.5rem);
   vertical-align: middle;
 }
 
@@ -735,6 +1579,80 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
 /* Profile → Wage accordion: history scrolls; filters pinned to bottom of panel */
 .profile-wage-history__filters {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Profile page accordion headers — rounded pills at the ends, sizing scales with buttons */
+.profile-accordion-header {
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: 9999px !important;
+  padding-left: max(0.875rem, calc(var(--app-btn-height) * 0.45)) !important;
+  padding-right: max(0.875rem, calc(var(--app-btn-height) * 0.45)) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 1px solid var(--bs-border-color) !important;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 2 !important;
+  transition:
+    height 0.15s ease,
+    min-height 0.15s ease,
+    max-height 0.15s ease,
+    font-size 0.15s ease,
+    padding 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.profile-accordion-header:hover {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.profile-accordion-header[data-active="true"] {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  background-color: var(--bs-body-bg) !important;
+  background-image: linear-gradient(rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08), rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08)) !important;
+}
+
+.profile-accordion-header[data-active="true"] svg,
+.profile-accordion-header[data-active="true"] .app-icon {
+  width: var(--app-icon-size-active) !important;
+  height: var(--app-icon-size-active) !important;
+}
+
+.profile-accordion-header span,
+.profile-accordion-header div {
+  font-size: inherit;
+}
+
+/* Profile page accordion body — bordered container extending down to middle of pill header */
+.profile-accordion-body {
+  border: 1px solid var(--bs-border-color) !important;
+  border-top: 1px solid var(--bs-border-color) !important;
+  border-radius: 1rem 1rem 0 0 !important;
+  margin-bottom: calc(var(--app-btn-height) * -0.5) !important;
+  padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.5rem) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  background-color: var(--bs-body-bg) !important;
+  box-sizing: border-box !important;
+}
+
+.profile-wage-history.profile-accordion-body {
+  padding-bottom: 0 !important;
+}
+
+.profile-wage-history.profile-accordion-body .profile-wage-history__filters {
+  padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.25rem) !important;
 }
 
 body.training-mode .btn.rounded-pill svg + span,
@@ -1902,6 +2820,35 @@ select.form-select {
 .reports-selector-dropup,
 .reports-selector-dropup * {
   text-align: left !important;
+}
+
+/* Reports period navigation — floating toolbar above footer on mobile */
+.reports-nav-floating {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  transition: bottom 0.2s ease;
+}
+
+@media (max-width: 1024px) {
+  .reports-nav-floating {
+    position: fixed !important;
+    bottom: calc(var(--app-standard-footer-height, 3rem) + 0.625rem);
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 35 !important;
+    background-color: var(--bs-body-bg) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+    padding: 0.25rem 0.625rem !important;
+    width: max-content !important;
+    max-width: calc(100vw - 2rem) !important;
+    backdrop-filter: blur(8px);
+  }
+
+  .reports-page__chart-area {
+    padding-bottom: 5.5rem !important;
+  }
 }
 
 /* Bulk import / procurement — always circular icon buttons (ignore training/compact) */

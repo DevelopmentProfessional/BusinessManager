@@ -19,6 +19,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-11-08 | GitHub Copilot | Left-aligned chart legends for clean layout across mobile and desktop
  * ============================================================
  */
 import React from "react";
@@ -37,6 +38,7 @@ const defaultOptions = {
   plugins: {
     legend: {
       position: "top",
+      align: "start",
     },
   },
 };
@@ -99,6 +101,7 @@ const Chart_Report = ({ data, type, title, loading }) => {
       // Remove scales for pie/doughnut charts
       delete chartOptions.scales;
       chartOptions.plugins.legend.position = "bottom";
+      chartOptions.plugins.legend.align = "start";
       break;
     default:
       chartOptions.scales = {
@@ -109,18 +112,22 @@ const Chart_Report = ({ data, type, title, loading }) => {
   }
 
   // Render appropriate chart component based on type
-  switch (type) {
-    case "line":
-      return <Line data={data} options={chartOptions} />;
-    case "bar":
-      return <Bar data={data} options={chartOptions} />;
-    case "pie":
-      return <Pie data={data} options={chartOptions} />;
-    case "doughnut":
-      return <Doughnut data={data} options={chartOptions} />;
-    default:
-      return <Line data={data} options={chartOptions} />;
-  }
+  const renderChart = () => {
+    switch (type) {
+      case "line":
+        return <Line data={data} options={chartOptions} />;
+      case "bar":
+        return <Bar data={data} options={chartOptions} />;
+      case "pie":
+        return <Pie data={data} options={chartOptions} />;
+      case "doughnut":
+        return <Doughnut data={data} options={chartOptions} />;
+      default:
+        return <Line data={data} options={chartOptions} />;
+    }
+  };
+
+  return <div className="app-chart-container h-full w-full">{renderChart()}</div>;
 };
 
 export default Chart_Report;

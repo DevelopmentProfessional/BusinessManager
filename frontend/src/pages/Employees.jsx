@@ -982,7 +982,7 @@ export default function Employees() {
                       handleEdit(employee);
                     }}
                   >
-                    <td style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
+                    <td className="app-select-icon-cell" style={{ width: "56px" }} onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(employee.id)} onToggle={() => toggleSelectEmp(employee.id)} title="Select employee" />
                     </td>
 
@@ -1105,7 +1105,7 @@ export default function Employees() {
                     ) : null
                   }
                 />
-                <Button_Toolbar icon={ShieldCheckIcon} label="Ins" onClick={handleOpenInsurance} className="btn-outline-secondary" title="Insurance plans" />
+                <Button_Toolbar icon={ShieldCheckIcon} label="Insurance" onClick={handleOpenInsurance} className="btn-outline-secondary" title="Insurance plans" />
                 <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-secondary" title="Wages & payroll" />
               </div>
             ) : null
