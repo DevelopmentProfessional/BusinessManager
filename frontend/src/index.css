@@ -102,6 +102,7 @@
   --app-dropdown-border-radius: 0.75rem;
   --app-dropdown-item-height: 2rem;
   --app-dropdown-item-padding-x: 0.75rem;
+  --app-dropup-z-index: 3000;
 
   /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
@@ -257,6 +258,7 @@ body,
 .app-dropup {
   position: relative;
   display: inline-flex;
+  z-index: var(--app-dropup-z-index);
 }
 
 .app-menu-panel {
@@ -266,7 +268,7 @@ body,
   border-radius: var(--app-dropdown-border-radius);
   padding: 0.25rem;
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
-  z-index: 1050;
+  z-index: var(--app-dropup-z-index) !important;
 }
 
 .app-menu-item {
@@ -1234,6 +1236,25 @@ body,
   min-height: 12.5rem;
 }
 
+.app-page-loader__logo {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  animation: app-page-loader-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes app-page-loader-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .app-page-header,
 .app-table-header {
   z-index: 5;
@@ -1739,7 +1760,7 @@ body.training-mode .btn.rounded-pill .text-nowrap {
 .searchable-select-overlay-root {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: var(--app-dropup-z-index);
 }
 
 .searchable-select-backdrop {
