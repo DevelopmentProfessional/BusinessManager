@@ -26,10 +26,6 @@ const Badge_PendingOrder = ({ clientId }) => {
 
   useEffect(() => {
     loadPendingCount();
-
-    // Refresh every 30 seconds
-    const interval = setInterval(loadPendingCount, 30000);
-    return () => clearInterval(interval);
   }, [loadPendingCount]);
 
   if (!count) {
