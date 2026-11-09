@@ -88,6 +88,19 @@ const PAGE_OPTION_GROUPS = [
 ];
 const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "approve_payments", "initiate_refunds", "admin"];
 
+const PERMISSION_DESCRIPTIONS = {
+  read: "View records and details on this page.",
+  read_all: "View all records across the entire company.",
+  view_all: "View all schedule appointments across all employees.",
+  write: "Create and edit records on this page.",
+  write_all: "Create and edit schedule appointments for any employee.",
+  write_self_only: "Create and edit schedule appointments only for yourself.",
+  delete: "Delete records from this page.",
+  approve_payments: "Approve wage and compensation payout records.",
+  initiate_refunds: "Initiate client payment refunds and reversals.",
+  admin: "Full administrative control and configuration for this page.",
+};
+
 const PAY_SCHEDULE_DAYS = [
   { key: "mon", label: "Mon", full: "Monday" },
   { key: "tue", label: "Tue", full: "Tuesday" },
@@ -179,6 +192,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const [isPayFrequencyDropdownOpen, setIsPayFrequencyDropdownOpen] = useState(false);
   const [payFrequencyHelpKey, setPayFrequencyHelpKey] = useState(null);
   const [payFrequencyHelpPos, setPayFrequencyHelpPos] = useState({ top: 0, left: 0 });
+  const [showCompensationHelp, setShowCompensationHelp] = useState(false);
 
   const roleOptions = [
     { value: "EMPLOYEE", label: "Employee", description: "Standard employee with basic access. Can view their own profile and schedule." },
@@ -1157,12 +1171,24 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           {userPermissions.map((perm) => (
                             <tr key={perm.id}>
                               <td>
-                                <div className="d-flex gap-1">
-                                  <button type="button" onClick={() => handleDeletePermission(perm.id)} className="btn btn-outline-danger btn-sm p-1" title="Delete">
-                                    <XMarkIcon style={{ width: 12, height: 12 }} />
+                                <div className="d-flex align-items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeletePermission(perm.id)}
+                                    className="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0"
+                                    style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                                    title="Delete permission"
+                                  >
+                                    <XMarkIcon style={{ width: 14, height: 14 }} />
                                   </button>
-                                  <button type="button" onClick={() => handleTogglePermission(perm.id, !perm.granted)} className={`btn btn-sm p-1 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`} title={perm.granted ? "Deny" : "Grant"}>
-                                    <i className={`bi ${perm.granted ? "bi-x-circle" : "bi-check-circle"}`}></i>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTogglePermission(perm.id, !perm.granted)}
+                                    className={`btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`}
+                                    style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                                    title={perm.granted ? "Deny permission" : "Grant permission"}
+                                  >
+                                    <i className={`bi ${perm.granted ? "bi-x-circle" : "bi-check-circle"}`} style={{ fontSize: "1rem" }}></i>
                                   </button>
                                 </div>
                               </td>
@@ -1438,24 +1464,18 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                   {formData.employment_type !== "hourly" && (
                     <div className="col-md-6">
-                      <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <div className="form-floating">
-                          <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder={salaryFieldMeta.placeholder} step="0.01" min="0" />
-                          <label htmlFor="salary">{salaryFieldMeta.label}</label>
-                        </div>
+                      <div className="form-floating">
+                        <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder={salaryFieldMeta.placeholder} step="0.01" min="0" />
+                        <label htmlFor="salary">{salaryFieldMeta.label} ($)</label>
                       </div>
                       <div className="mt-1 ui-small-muted">Amount follows selected pay frequency.</div>
                     </div>
                   )}
                   {formData.employment_type === "hourly" && (
                     <div className="col-md-6">
-                      <div className="input-group">
-                        <span className="input-group-text">$</span>
-                        <div className="form-floating">
-                          <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
-                          <label htmlFor="hourly_rate">Hourly Rate</label>
-                        </div>
+                      <div className="form-floating">
+                        <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
+                        <label htmlFor="hourly_rate">Hourly Rate ($)</label>
                       </div>
                     </div>
                   )}
@@ -1483,25 +1503,41 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                         <hr className="mb-2 mt-1" />
                       </div>
                       <div className="col-md-6">
-                        <div className="input-group">
-                          <span className="input-group-text">$</span>
-                          <div className="form-floating">
-                            <input type="number" id="base_pay" value={employeePaySchedule.base_pay ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
-                            <label htmlFor="base_pay">Base Pay</label>
-                          </div>
+                        <div className="form-floating">
+                          <input type="number" id="base_pay" value={employeePaySchedule.base_pay ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
+                          <label htmlFor="base_pay">Base Pay ($)</label>
                         </div>
                       </div>
                       <div className="col-md-6">
-                        <div className="input-group">
-                          <div className="form-floating">
-                            <input type="number" id="compensation_percentage" value={employeePaySchedule.compensation_percentage ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))} className="form-control ui-control-sm" placeholder="0" step="0.01" min="0" max="100" />
-                            <label htmlFor="compensation_percentage">Compensation</label>
-                          </div>
-                          <span className="input-group-text">%</span>
+                        <div className="form-floating position-relative">
+                          <input type="number" id="compensation_percentage" value={employeePaySchedule.compensation_percentage ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))} className="form-control ui-control-sm" placeholder="0" step="0.01" min="0" max="100" style={{ paddingRight: "2.5rem" }} />
+                          <label htmlFor="compensation_percentage">Compensation (%)</label>
+                          <button
+                            type="button"
+                            className="align-items-center app-label--bold app-menu-action btn btn-link btn-sm d-flex justify-content-center position-absolute top-50 translate-middle-y text-muted text-decoration-none app-input-icon-btn"
+                            style={{ right: "0.25rem", width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.8rem", border: "none" }}
+                            aria-label="Compensation help"
+                            onMouseEnter={() => setShowCompensationHelp(true)}
+                            onMouseLeave={() => setShowCompensationHelp(false)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowCompensationHelp((prev) => !prev);
+                            }}
+                          >
+                            ?
+                          </button>
+                          {showCompensationHelp && (
+                            <div
+                              className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start"
+                              onMouseEnter={() => setShowCompensationHelp(true)}
+                              onMouseLeave={() => setShowCompensationHelp(false)}
+                            >
+                              <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">Service Compensation</div>
+                              <div className="dark:text-gray-300 small text-gray-700">Base pay is guaranteed. Compensation applies only to paid service revenue above twice the base pay.</div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="col-12">
-                        <div className="ui-small-muted">Base pay is guaranteed. Compensation applies only to paid service revenue above twice the base pay.</div>
                       </div>
                     </>
                   )}
@@ -1773,15 +1809,20 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       {/* Footer */}
       <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
         {/* Tab Navigation */}
-        <ul className="mb-2 nav nav-tabs">
+        <div className="d-flex gap-1 overflow-x-auto no-scrollbar mb-2 py-1 px-1">
           {tabs.map((tab) => (
-            <li key={tab.key} className="nav-item">
-              <button className={`nav-link ${activeTab === tab.key ? "active" : ""} px-0 py-1 px-md-3 py-md-2`} onClick={() => setActiveTab(tab.key)} type="button" disabled={tab.disabled} style={{ fontSize: "clamp(0.75rem, 2vw, 1rem)" }}>
-                {tab.label}
-              </button>
-            </li>
+            <button
+              key={tab.key}
+              className={`btn btn-sm rounded-pill text-nowrap flex-shrink-0 ${activeTab === tab.key ? "btn-primary" : "btn-outline-secondary"}`}
+              onClick={() => setActiveTab(tab.key)}
+              type="button"
+              disabled={tab.disabled}
+              style={{ fontSize: "0.8rem", padding: "0.25rem 0.75rem" }}
+            >
+              {tab.label}
+            </button>
           ))}
-        </ul>
+        </div>
 
         {/* Signature tab footer controls */}
         {activeTab === "signature" && employee && !showSignaturePad && !signatureLoading && (
@@ -1819,7 +1860,14 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   className="ui-control-sm"
                   value={newPermission.permission}
                   onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))}
-                  options={[{ value: "", label: "Select Permission" }, ...PERMISSION_TYPES.map((permissionType) => ({ value: permissionType, label: permissionType }))]}
+                  options={[
+                    { value: "", label: "Select Permission" },
+                    ...PERMISSION_TYPES.map((pt) => ({
+                      value: pt,
+                      label: pt,
+                      description: PERMISSION_DESCRIPTIONS[pt] || `Allows ${pt} access.`,
+                    })),
+                  ]}
                   placeholder="Select Permission"
                   closeOnSelect
                 />

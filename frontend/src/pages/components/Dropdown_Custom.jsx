@@ -38,6 +38,7 @@ export default function Dropdown_Custom({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [helpKey, setHelpKey] = useState(null);
   const dropdownRef = useRef(null);
 
   // Call onOpen callback when dropdown opens
@@ -68,6 +69,7 @@ export default function Dropdown_Custom({
   useEffect(() => {
     if (!isOpen) {
       setSearchTerm("");
+      setHelpKey(null);
     }
   }, [isOpen]);
 
@@ -209,20 +211,54 @@ export default function Dropdown_Custom({
             <div className="overflow-y-auto">
               {filteredOptions.map((option) => {
                 const isSelected = multiSelect ? selectedSet.has(option.value) : option.value === value;
+                const isHelpOpen = helpKey === option.value;
                 return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option)}
-                    className={`
-                    app-menu-item w-full px-1 py-0 text-left focus:outline-none
-                    hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
-                    ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-gray-200"}
-                  `}
-                    aria-pressed={isSelected}
-                  >
-                    {option.label}
-                  </button>
+                  <div key={option.value} className="d-flex align-items-center justify-content-between gap-1 w-100 position-relative px-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(option)}
+                      className={`
+                      app-menu-item flex-grow-1 text-start focus:outline-none rounded
+                      hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600
+                      ${isSelected ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold" : "text-gray-900 dark:text-gray-200"}
+                    `}
+                      style={{ padding: "0.35rem 0.5rem" }}
+                      aria-pressed={isSelected}
+                    >
+                      {option.label}
+                    </button>
+
+                    {option.description && (
+                      <div className="flex-shrink-0 position-relative">
+                        <button
+                          type="button"
+                          aria-label={`${option.label} help`}
+                          className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex justify-content-center text-muted"
+                          style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
+                          onMouseEnter={() => setHelpKey(option.value)}
+                          onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setHelpKey((prev) => (prev === option.value ? null : option.value));
+                          }}
+                        >
+                          ?
+                        </button>
+
+                        {isHelpOpen && (
+                          <div
+                            className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start"
+                            onMouseEnter={() => setHelpKey(option.value)}
+                            onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
+                          >
+                            <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
+                            <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
