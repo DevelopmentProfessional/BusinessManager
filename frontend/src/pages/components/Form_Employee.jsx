@@ -824,7 +824,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               return (
                                 <div
                                   style={{ position: "fixed", top: roleHelpPos.top, left: roleHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                  className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
+                                  className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
                                 >
                                   <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                                     {opt.label}
@@ -1338,7 +1338,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             return (
                               <div
                                 style={{ position: "fixed", top: employmentTypeHelpPos.top, left: employmentTypeHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
+                                className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
                               >
                                 <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                                   {opt.label}
@@ -1423,7 +1423,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             return (
                               <div
                                 style={{ position: "fixed", top: payFrequencyHelpPos.top, left: payFrequencyHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
+                                className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
                               >
                                 <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                                   {opt.label}

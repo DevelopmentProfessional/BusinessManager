@@ -460,8 +460,7 @@ export default function Services() {
 
                         {isHelpOpen && (
                           <div
-                            className="bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
-                            style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                            className="app-help-popover bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 rounded-lg text-start"
                             onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
                             onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
                           >

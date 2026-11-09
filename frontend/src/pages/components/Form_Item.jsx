@@ -783,7 +783,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     zIndex: 9999,
                     pointerEvents: "none",
                   }}
-                  className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 p-0 rounded-lg shadow-lg text-gray-900"
+                  className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
                 >
                   <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
                     {opt.label}

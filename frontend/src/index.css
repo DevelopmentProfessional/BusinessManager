@@ -271,6 +271,37 @@ body,
   z-index: var(--app-dropup-z-index) !important;
 }
 
+/* ─── Question Mark (?) Help Popovers ───
+   Anchored near the button on tablet/desktop, centered on viewport on mobile */
+.app-help-popover {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-55%);
+  margin-bottom: 0.5rem;
+  width: 260px;
+  max-width: calc(100vw - 1rem);
+  z-index: 1200 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  padding: 0.5rem !important;
+}
+
+@media (max-width: 48rem) {
+  .app-help-popover {
+    position: fixed !important;
+    top: 50% !important;
+    bottom: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(18rem, calc(100vw - 2rem)) !important;
+    max-width: calc(100vw - 2rem) !important;
+    z-index: 9999 !important;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35) !important;
+    pointer-events: auto !important;
+  }
+}
+
 .app-menu-item {
   display: flex !important;
   align-items: center !important;
