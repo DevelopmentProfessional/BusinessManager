@@ -45,7 +45,7 @@ import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
-import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Dropdown_Custom from "./components/Dropdown_Custom";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
@@ -686,7 +686,7 @@ export default function Inventory() {
           beforeSearch={
             <div className="align-items-center app-footer-toolbar d-flex">
               <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
-              <Button_Toolbar icon={TagIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
+              <Button_Toolbar icon={DocumentCurrencyDollarIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
             </div>
           }
           addButton={

@@ -33,6 +33,8 @@ export default function Dropdown_Custom({
   onToggleMultiMode = null,
   wordSafeTruncate = true,
   style,
+  label = "",
+  floatingLabel = "",
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -117,8 +119,16 @@ export default function Dropdown_Custom({
   // Filter options based on search term
   const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
 
+  const effectiveFloatingLabel = floatingLabel || label;
+  const hasValue = multiSelect ? selectedOptions.length > 0 : Boolean(selectedOption && selectedOption.value !== "");
+  const isFloating = Boolean(effectiveFloatingLabel);
+
   return (
-    <div ref={dropdownRef} className={`app-dropdown-root relative ${className}`} style={style}>
+    <div
+      ref={dropdownRef}
+      className={`app-dropdown-root relative ${isFloating ? "form-floating app-dropdown-floating" : ""} ${hasValue ? "has-value" : ""} ${isOpen ? "is-open" : ""} ${className}`.trim()}
+      style={style}
+    >
       {searchable && !footerSearch ? (
         <div className="relative">
           <input
@@ -134,11 +144,12 @@ export default function Dropdown_Custom({
               handleOpen();
               setSearchTerm("");
             }}
-            placeholder={placeholder}
+            placeholder={isFloating ? effectiveFloatingLabel : placeholder}
             className={`ui-dropdown-trigger
-              w-full px-1 py-0 border rounded-lg 
+              w-full border rounded-lg 
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
               border-gray-300 dark:border-gray-600
+              ${isFloating ? "app-dropdown-floating-trigger form-control form-select ui-control-sm" : "px-1 py-0"}
               ${disabled ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500"}
               ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
             `}
@@ -155,19 +166,26 @@ export default function Dropdown_Custom({
             setIsOpen(!isOpen);
           }}
           className={`ui-dropdown-trigger
-            w-full px-1 py-0 border rounded-lg 
+            w-full border rounded-lg 
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
             flex items-center justify-start
             border-gray-300 dark:border-gray-600
+            ${isFloating ? "app-dropdown-floating-trigger form-control form-select ui-control-sm" : "px-1 py-0"}
             ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
             ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
           `}
           disabled={disabled}
         >
           <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`}>
-            {wordSafeDisplayValue}
+            {isFloating && !hasValue && !isOpen ? "" : wordSafeDisplayValue}
           </span>
         </button>
+      )}
+
+      {isFloating && (
+        <label htmlFor={id || undefined} className="app-floating-label">
+          {effectiveFloatingLabel}
+        </label>
       )}
 
       {multiSelect && showSelectionSummary && <div className="dark:text-gray-300 mt-1 text-gray-600 text-xs">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
