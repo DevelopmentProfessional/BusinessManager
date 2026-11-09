@@ -362,22 +362,20 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
               {/* ── Owner + Review Date ───────────────────────────────────────────── */}
               <div className="gap-4 grid grid-cols-1 sm:grid-cols-2">
-                <div>
-                  <label className="block dark:text-gray-300 font-medium text-gray-700 text-sm">Owner</label>
-                  <Dropdown_Custom
-                    name="owner_id"
-                    value={ownerId || ""}
-                    onChange={(e) => setOwnerId(e.target.value)}
-                    options={[
-                      { value: "", label: "Unassigned" },
-                      ...sortedEmployees.map((emp) => ({
-                        value: emp.id,
-                        label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
-                      })),
-                    ]}
-                    placeholder="Select owner"
-                  />
-                </div>
+                <Dropdown_Custom
+                  name="owner_id"
+                  floatingLabel="Owner"
+                  value={ownerId || ""}
+                  onChange={(e) => setOwnerId(e.target.value)}
+                  options={[
+                    { value: "", label: "Unassigned" },
+                    ...sortedEmployees.map((emp) => ({
+                      value: emp.id,
+                      label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
+                    })),
+                  ]}
+                  placeholder="Select owner"
+                />
                 <div className="form-floating">
                   <input type="date" id="doc_review_date" className="form-control ui-control-sm" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} placeholder="Review Date" />
                   <label htmlFor="doc_review_date">Review Date</label>
@@ -385,10 +383,14 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
               </div>
 
               {/* ── Category ─────────────────────────────────────────────────────── */}
-              <div>
-                <label className="block dark:text-gray-300 font-medium text-gray-700 text-sm">Category</label>
-                <Dropdown_Custom name="category_id" value={categoryId || ""} onChange={(e) => setCategoryId(e.target.value)} options={[{ value: "", label: "None" }, ...sortedCategories.map((cat) => ({ value: cat.id, label: cat.name }))]} placeholder="Select category" />
-              </div>
+              <Dropdown_Custom
+                name="category_id"
+                floatingLabel="Category"
+                value={categoryId || ""}
+                onChange={(e) => setCategoryId(e.target.value)}
+                options={[{ value: "", label: "None" }, ...sortedCategories.map((cat) => ({ value: cat.id, label: cat.name }))]}
+                placeholder="Select category"
+              />
 
               {/* ── Tags ─────────────────────────────────────────────────────────── */}
               <div>
@@ -409,12 +411,12 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
                 {/* Tag search + add */}
                 <div className="relative">
-                  <div className="ui-flex-items-gap-2">
-                    <div className="flex-1 relative">
-                      <MagnifyingGlassIcon className="-translate-y-1/2 absolute h-4 left-2 pointer-events-none text-gray-400 top-1/2 w-4" />
+                  <div className="d-flex align-items-center gap-2">
+                    <div className="flex-1 form-floating position-relative">
                       <input
                         ref={tagInputRef}
                         type="text"
+                        id="doc_tag_search"
                         value={tagSearch}
                         onChange={(e) => handleTagSearchChange(e.target.value)}
                         onFocus={() => {
@@ -428,11 +430,11 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                           }
                           if (e.key === "Escape") setShowTagDropdown(false);
                         }}
-                        placeholder="Search or create a tag…"
-                        className="form-control form-control-sm ps-1"
-                        style={{ fontSize: "0.82rem" }}
+                        placeholder="Search or create a tag"
+                        className="form-control ui-control-sm"
                         autoComplete="off"
                       />
+                      <label htmlFor="doc_tag_search">Search or create a tag</label>
                     </div>
                     <button
                       type="button"
@@ -440,8 +442,8 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                         if (tagSuggestions.length === 1) handleAddTag(tagSuggestions[0]);
                         else if (tagSearch.trim()) handleAddTag(tagSearch.trim());
                       }}
-                      className="btn btn-outline-primary btn-sm flex-shrink-0"
-                      style={{ fontSize: "0.8rem" }}
+                      className="btn btn-outline-primary flex-shrink-0"
+                      style={{ height: "var(--app-input-height)" }}
                       disabled={!tagSearch.trim()}
                     >
                       Add
@@ -514,18 +516,19 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                     );
                   })}
                 </div>
-                <div className="flex gap-2">
+                <div className="d-flex align-items-center gap-2">
                   <Dropdown_Custom
                     value={assignEmployeeId}
+                    floatingLabel="Assign employee"
                     onChange={(e) => setAssignEmployeeId(e.target.value)}
                     options={sortedEmployees.map((emp) => ({
                       value: emp.id,
                       label: emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : emp.name || emp.email || emp.id,
                     }))}
                     placeholder="Select employee"
-                    className="flex-1"
+                    className="flex-grow-1"
                   />
-                  <button type="button" onClick={handleAddAssignment} className="btn btn-secondary">
+                  <button type="button" onClick={handleAddAssignment} className="btn btn-secondary flex-shrink-0" style={{ height: "var(--app-input-height)" }}>
                     Add
                   </button>
                 </div>

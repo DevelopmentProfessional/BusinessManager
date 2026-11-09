@@ -77,53 +77,25 @@ export default function Dropdown_Custom({
   const normalizedValue = multiSelect ? (Array.isArray(value) ? value : value ? [value] : []) : value;
   const selectedOptions = multiSelect ? sortedOptions.filter((option) => normalizedValue.includes(option.value)) : [];
   const selectedOption = !multiSelect ? sortedOptions.find((option) => option.value === value) : null;
+  const rawDerived = placeholder ? placeholder.replace(/^(?:—\s*)?Select\s+/i, "").replace(/\s*—$/, "").replace(/[….]+$/, "").trim() : "";
+  const derivedPlaceholderLabel = rawDerived ? rawDerived.charAt(0).toUpperCase() + rawDerived.slice(1) : "";
+  const effectiveFloatingLabel = floatingLabel === false ? "" : (floatingLabel || label || derivedPlaceholderLabel);
+  const hasValue = multiSelect ? selectedOptions.length > 0 : Boolean(selectedOption && selectedOption.value !== "");
+  const isFloating = Boolean(effectiveFloatingLabel);
+
   const displayValue = multiSelect
     ? useCountLabelForMultiSelect
       ? `${selectedOptions.length} selected`
       : selectedOptions.length === 0
-        ? placeholder
+        ? (isFloating ? "" : placeholder)
         : selectedOptions.length <= 2
           ? selectedOptions.map((option) => option.label).join(", ")
           : `${selectedOptions.length} selected`
     : selectedOption
       ? selectedOption.label
-      : placeholder;
+      : (isFloating ? "" : placeholder);
   const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
   const { ref: triggerTextRef, displayLabel: wordSafeDisplayValue } = useWordSafeLabel(displayValue, { enabled: wordSafeTruncate && !isOpen });
-
-  const handleSelect = (option) => {
-    if (multiSelect) {
-      const next = new Set(selectedSet);
-      if (next.has(option.value)) {
-        next.delete(option.value);
-      } else {
-        next.add(option.value);
-      }
-      onChange({ target: { name, value: Array.from(next) } });
-      if (closeOnSelect) {
-        setIsOpen(false);
-      }
-      setSearchTerm("");
-      return;
-    }
-    onChange({ target: { name, value: option.value } });
-    if (closeOnSelect) {
-      setIsOpen(false);
-    }
-    setSearchTerm("");
-  };
-
-  const handleClearMultiSelect = () => {
-    onChange({ target: { name, value: multiSelect ? [] : "" } });
-    setSearchTerm("");
-  };
-
-  // Filter options based on search term
-  const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
-
-  const effectiveFloatingLabel = floatingLabel || label;
-  const hasValue = multiSelect ? selectedOptions.length > 0 : Boolean(selectedOption && selectedOption.value !== "");
-  const isFloating = Boolean(effectiveFloatingLabel);
 
   return (
     <div
@@ -146,7 +118,7 @@ export default function Dropdown_Custom({
               handleOpen();
               setSearchTerm("");
             }}
-            placeholder={isFloating ? effectiveFloatingLabel : placeholder}
+            placeholder={isFloating ? " " : placeholder}
             className={`ui-dropdown-trigger
               w-full border rounded-lg 
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
