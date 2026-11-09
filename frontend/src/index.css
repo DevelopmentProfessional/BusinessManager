@@ -255,10 +255,11 @@ body,
 
 /* ─── 2. DROPUPS & DROPDOWNS ─── */
 .app-dropdown,
-.app-dropup {
+.app-dropup,
+.app-dropdown-root.is-open {
   position: relative;
   display: inline-flex;
-  z-index: var(--app-dropup-z-index);
+  z-index: var(--app-dropup-z-index, 900) !important;
 }
 
 .app-menu-panel {
@@ -2233,11 +2234,17 @@ input[type="number"],
 }
 .form-floating > label,
 .form-floating > .app-floating-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  height: 100%;
   padding-left: 1.25rem !important;
   padding-top: 0.35rem;
   font-size: var(--app-input-font-size) !important;
   transform-origin: 0 0;
   pointer-events: none;
+  transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
 }
 .form-floating > .form-control:focus ~ label,
 .form-floating > .form-control:not(:placeholder-shown) ~ label,
