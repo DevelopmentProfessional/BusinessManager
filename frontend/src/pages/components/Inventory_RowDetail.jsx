@@ -8,14 +8,14 @@ const hasMoneyValue = (value) => {
   return !Number.isNaN(n) && n > 0;
 };
 
-export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [] }) {
+export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [], showPrice = true, showCost = true }) {
   const formatMoney = (value) => {
     if (!hasMoneyValue(value)) return null;
     return Number(value).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2 });
   };
 
-  const effectivePriceDisplay = priceDisplay ?? (hasMoneyValue(item.price) ? formatMoney(item.price) : null);
-  const costDisplay = hasMoneyValue(item.cost) ? formatMoney(item.cost) : null;
+  const effectivePriceDisplay = showPrice ? (priceDisplay ?? (hasMoneyValue(item.price) ? formatMoney(item.price) : null)) : null;
+  const costDisplay = showCost && hasMoneyValue(item.cost) ? formatMoney(item.cost) : null;
 
   return (
     <td className="main-page-table-data">

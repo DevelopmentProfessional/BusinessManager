@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { templatesAPI, clientsAPI, clientCartAPI } from "../../services/api";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
+import Button_Toolbar from "./Button_Toolbar";
 import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables } from "./Utils_TemplateVariables";
 
 const TYPE_BADGE_COLOR = {
@@ -38,11 +39,25 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const [clientInvoiceTx, setClientInvoiceTx] = useState(null);
   const [clientInvoiceItems, setClientInvoiceItems] = useState([]);
   const [clientCartItems, setClientCartItems] = useState([]);
+  const [templateDropupOpen, setTemplateDropupOpen] = useState(false);
+  const templateDropupRef = useRef(null);
   const printIframeRef = useRef(null);
   const pdfCacheRef = useRef(new Map());
   const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || "Invoice";
   const recipientEmail = (client?.email || entity?.email || "").trim();
   const isPayslip = filterType === "payslip";
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (templateDropupRef.current && !templateDropupRef.current.contains(e.target)) {
+        setTemplateDropupOpen(false);
+      }
+    };
+    if (templateDropupOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [templateDropupOpen]);
 
   const parseSelectedOptions = useCallback((item) => {
     if (Array.isArray(item?.selectedOptions)) {
@@ -421,86 +436,171 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const visibleTemplates = filterType ? templates.filter((t) => t.template_type === filterType) : templates;
 
   useEffect(() => {
-    if (!loading && filterType === "payslip" && visibleTemplates.length > 0 && !selected) {
+    if (!loading && visibleTemplates.length > 0 && !selected) {
       setSelected(visibleTemplates[0]);
     }
-  }, [filterType, loading, selected, visibleTemplates]);
+  }, [loading, selected, visibleTemplates]);
+
+  const handleUseAction = () => {
+    if (!selected) return;
+    if (selected.template_type === "email" || recipientEmail) {
+      setIsEmailPreviewOpen(true);
+    } else {
+      handlePrint();
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0 z-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center justify-between px-1 py-1">
-        <h2 className="dark:text-white font-semibold text-base text-gray-900">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
+      <div className="align-items-center bg-white border-b border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 justify-content-between px-3 py-2">
+        <div className="align-items-center d-flex gap-2 min-w-0">
+          <h2 className="dark:text-white font-semibold mb-0 text-base text-gray-900 text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
+          {selected && (
+            <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
+              {selected.template_type}
+            </span>
+          )}
+        </div>
+
+        {/* Top-right: Print and Download icon buttons */}
+        <div className="align-items-center d-flex gap-2">
+          <Button_Toolbar
+            icon={PrinterIcon}
+            label=""
+            compact
+            onClick={handlePrint}
+            disabled={!selected}
+            className="btn-outline-secondary rounded-circle"
+            title="Print"
+          />
+          <Button_Toolbar
+            icon={ArrowDownTrayIcon}
+            label=""
+            compact
+            onClick={handleDownloadPdf}
+            disabled={!selected || isDownloadingPdf}
+            className="btn-outline-secondary rounded-circle"
+            title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
+          />
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: template list */}
-        {!isPayslip && <div className="border-gray-200 border-r dark:border-gray-700 flex-shrink-0 overflow-y-auto" style={{ width: "200px" }}>
-          {loading ? (
-            <div className="p-1 text-gray-500 text-sm">Loading...</div>
-          ) : visibleTemplates.length === 0 ? (
-            <div className="p-1 text-gray-500 text-sm">No templates available for this page.</div>
-          ) : (
-            <ul className="py-1">
-              {visibleTemplates.map((tpl) => (
-                <li key={tpl.id}>
-                  <button type="button" onClick={() => setSelected(tpl)} className={`w-full text-left px-1 py-0 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${selected?.id === tpl.id ? "bg-primary-50 dark:bg-primary-900/20 border-r-2 border-primary-500" : ""}`}>
-                    <div className="dark:text-white font-medium leading-tight text-gray-900 text-xs">{tpl.name}</div>
-                    <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom}`}>{tpl.template_type}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>}
-
-        {/* Right: preview */}
+        {/* Full-width preview area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {selected ? (
-            <>
-              {/* Preview title bar */}
-              <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 gap-2 items-center px-1 py-0">
-                <span className="dark:text-gray-300 flex-1 font-medium text-gray-700 text-xs truncate">{selected.name}</span>
-                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>{selected.template_type}</span>
+            <div className="bg-gray-100 dark:bg-gray-800 flex-1 overflow-hidden p-2">
+              <div className="bg-white h-full overflow-hidden rounded shadow-sm">
+                <iframe ref={printIframeRef} srcDoc={iframeContent} className="border-0 h-full w-full" title="Template preview" sandbox="allow-same-origin allow-modals" />
               </div>
-
-              {/* Live HTML preview in iframe — same content used by Print */}
-              <div className="bg-gray-100 dark:bg-gray-800 flex-1 overflow-hidden p-1">
-                <div className="bg-white h-full overflow-hidden rounded shadow-sm">
-                  <iframe ref={printIframeRef} srcDoc={iframeContent} className="border-0 h-full w-full" title="Template preview" sandbox="allow-same-origin allow-modals" />
-                </div>
-              </div>
-            </>
+            </div>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">Select a template to preview</div>
+            <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">
+              {loading ? "Loading templates..." : "Select a template to preview"}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Footer actions */}
-      <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 px-1 py-1">
-        <div className="align-items-center d-flex position-relative" style={{ minHeight: "3rem" }}>
-          <div className="d-flex gap-2">
-            <button type="button" onClick={onClose} className="align-items-center btn btn-outline-secondary d-flex gap-1">
-              <XMarkIcon className="ui-icon-4" />
-              Close
-            </button>
-            {!isPayslip && <button type="button" onClick={() => setIsEditorOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
-              <PencilSquareIcon className="ui-icon-4" /> Edit
-            </button>}
-            <button type="button" onClick={handlePrint} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
-              <PrinterIcon className="ui-icon-4" />
-              Print
-            </button>
-            <button type="button" onClick={handleDownloadPdf} disabled={!selected || isDownloadingPdf} className="align-items-center btn btn-outline-primary d-flex gap-1">
-              <ArrowDownTrayIcon className="ui-icon-4" />
-              {isDownloadingPdf ? "…" : "PDF"}
-            </button>
-            {!isPayslip && <button type="button" onClick={() => setIsEmailPreviewOpen(true)} disabled={!selected} className="align-items-center btn btn-outline-secondary d-flex gap-1">
-              <EnvelopeIcon className="ui-icon-4" />
-              Email
-            </button>}
+      {/* Footer actions: Edit, Temp (dropup), Use on left; Close floating in center */}
+      <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 px-3 py-2">
+        <div className="align-items-center d-flex justify-content-between position-relative" style={{ minHeight: "2.5rem" }}>
+          {/* Left: Edit, Temp dropup, Use */}
+          <div className="align-items-center d-flex gap-2">
+            {!isPayslip && (
+              <Button_Toolbar
+                icon={PencilSquareIcon}
+                label="Edit"
+                onClick={() => setIsEditorOpen(true)}
+                disabled={!selected}
+                className="btn-outline-secondary"
+                title="Edit template"
+              />
+            )}
+
+            {!isPayslip && (
+              <div className="app-dropup position-relative" ref={templateDropupRef}>
+                <Button_Toolbar
+                  icon={DocumentTextIcon}
+                  label={selected?.name ? `Temp: ${selected.name}` : "Temp"}
+                  onClick={() => setTemplateDropupOpen((v) => !v)}
+                  className="btn-outline-secondary app-menu-trigger"
+                  aria-expanded={templateDropupOpen}
+                  aria-haspopup="listbox"
+                  title={selected?.name || "Template options"}
+                />
+
+                {templateDropupOpen && (
+                  <div
+                    className="app-menu-panel bg-white bottom-100 dark:bg-gray-900 mb-2 p-1 position-absolute shadow-lg start-0"
+                    style={{
+                      zIndex: 900,
+                      minWidth: "14rem",
+                      maxWidth: "22rem",
+                      maxHeight: "min(50vh, 22rem)",
+                      overflowY: "auto",
+                    }}
+                    role="listbox"
+                  >
+                    {visibleTemplates.length === 0 ? (
+                      <div className="px-2 py-1 text-gray-500 text-xs">No templates available</div>
+                    ) : (
+                      visibleTemplates.map((tpl) => (
+                        <div
+                          key={tpl.id}
+                          role="option"
+                          tabIndex={0}
+                          aria-selected={selected?.id === tpl.id}
+                          onClick={() => {
+                            setSelected(tpl);
+                            setTemplateDropupOpen(false);
+                          }}
+                          className={`app-menu-item d-flex align-items-center justify-content-between gap-2 px-2 py-1 rounded cursor-pointer ${
+                            selected?.id === tpl.id ? "bg-primary text-white" : "hover:bg-gray-100 dark:hover:bg-gray-800 text-body"
+                          }`}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <span className="text-truncate text-xs font-medium">{tpl.name}</span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-xxs font-medium flex-shrink-0 ${
+                              selected?.id === tpl.id ? "bg-white/20 text-white" : TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom
+                            }`}
+                          >
+                            {tpl.template_type}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!isPayslip && (
+              <Button_Toolbar
+                icon={selected?.template_type === "email" ? EnvelopeIcon : CheckIcon}
+                label={selected?.template_type === "email" ? "Send" : "Use"}
+                onClick={handleUseAction}
+                disabled={!selected}
+                className="btn-primary"
+                title={selected?.template_type === "email" ? "Send message" : "Use template"}
+              />
+            )}
           </div>
+
+          {/* Center: Close button floating in the middle */}
+          <Button_Toolbar
+            icon={XMarkIcon}
+            label="Close"
+            onClick={onClose}
+            className="btn-outline-secondary position-absolute"
+            style={{ left: "50%", transform: "translateX(-50%)" }}
+            title="Close"
+          />
+
+          {/* Right spacer for balanced flex layout */}
+          <div style={{ width: "2rem" }} />
         </div>
       </div>
 

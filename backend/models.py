@@ -197,6 +197,7 @@ class User(BaseModel, table=True):
     footer_align: str = Field(default="left")
     ui_scale: int = Field(default=100)
     db_environment: str = Field(default="production")  # User's preferred database environment
+    table_settings: Optional[str] = Field(default=None)  # JSON-encoded page table preferences (columns, font sizes)
 
     # Hierarchy - who this user reports to
     reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
@@ -1264,6 +1265,7 @@ class UserUpdate(SQLModel):
     footer_align: Optional[str] = None
     ui_scale: Optional[int] = Field(default=None, ge=90, le=150)
     db_environment: Optional[str] = None  # User's preferred database environment
+    table_settings: Optional[str] = None
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
@@ -1311,6 +1313,7 @@ class UserRead(SQLModel):
     footer_align: str = "left"
     ui_scale: int = 100
     db_environment: str = "production"  # User's preferred database environment
+    table_settings: Optional[str] = None
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None

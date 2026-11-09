@@ -46,12 +46,14 @@ import useStore from "../services/useStore";
 import { servicesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
+import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Service from "./components/Form_Service";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
@@ -68,6 +70,14 @@ export default function Services() {
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
+  const { getPageSettings, savePageSettings } = useTableSettings();
+  const pageSettings = getPageSettings("services");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
+
+  useEffect(() => {
+    setPendingSettings(pageSettings);
+  }, [pageSettings, showPageControls]);
+
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const selectionMode = selectedIds.size > 0;
@@ -298,7 +308,7 @@ export default function Services() {
       {/* Scrollable rows – grow upwards from bottom */}
       <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
         {sortedAndFiltered.length > 0 ? (
-          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
+          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
@@ -314,7 +324,7 @@ export default function Services() {
                   {/* Name + Category stacked */}
                   <td className="main-page-table-data">
                     <div className="fw-medium text-wrap-word">{service.name}</div>
-                    {service.category && (
+                    {pageSettings.showCategory !== false && service.category && (
                       <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs" style={{ width: "fit-content" }}>
                         {service.category}
                       </span>
@@ -517,9 +527,23 @@ export default function Services() {
         {isModalOpen && modalContent === "service-form" && <Form_Service service={editingService} onSubmit={handleSubmitService} onCancel={closeModal} onBulkImport={!editingService ? handleBulkImportServices : null} />}
       </Modal>
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Service Page Controls">
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Service Page Controls"
+        onSave={async () => {
+          await savePageSettings("services", pendingSettings);
+        }}
+      >
         <div className="ui-small-muted">Use these controls to manage the Services page view.</div>
         <div className="small">Search, category filter, and add actions are available in the footer.</div>
+        <TableSettingsControls
+          settings={pendingSettings}
+          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showCategory", label: "Show Category", description: "Display category badge under service name" },
+          ]}
+        />
       </PageControlsModal>
 
       <Modal_MultiEdit
