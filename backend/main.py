@@ -22,6 +22,7 @@
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-07-26 | GitHub Copilot | Expanded CORS to allow LAN Vite origins used during local network testing
+#   2026-11-09 | GitHub Copilot | Redeploy backend and restart staff-api service
 # ============================================================
 
 # ─── 1 IMPORTS & LOGGING ───────────────────────────────────────────────────────
