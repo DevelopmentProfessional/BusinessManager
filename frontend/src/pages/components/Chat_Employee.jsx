@@ -74,8 +74,6 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   useEffect(() => {
     loadMessages();
     chatAPI.markRead(employee.id).catch(() => {});
-    pollRef.current = setInterval(() => loadMessages(true), 5000);
-    return () => clearInterval(pollRef.current);
   }, [employee.id, loadMessages]);
 
   // ─── 3 AUTO-SCROLL ─────────────────────────────────────────────────────────
