@@ -102,7 +102,7 @@
   --app-dropdown-border-radius: 0.75rem;
   --app-dropdown-item-height: 2rem;
   --app-dropdown-item-padding-x: 0.75rem;
-  --app-dropup-z-index: 3000;
+  --app-dropup-z-index: 900;
 
   /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
@@ -3004,33 +3004,25 @@ select.form-select {
   text-align: left !important;
 }
 
-/* Reports period navigation — floating toolbar above footer on mobile */
+/* Reports period navigation — floating toolbar just above footer */
 .reports-nav-floating {
-  margin-top: 0.75rem;
-  margin-bottom: 0.5rem;
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 35 !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.18) !important;
+  padding: 0.25rem 0.625rem !important;
+  width: max-content !important;
+  max-width: calc(100vw - 2rem) !important;
+  backdrop-filter: blur(0.5rem);
   transition: bottom 0.2s ease;
 }
 
-@media (max-width: 64rem) {
-  .reports-nav-floating {
-    position: fixed !important;
-    bottom: calc(var(--app-standard-footer-height, 3rem) + 0.625rem);
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 35 !important;
-    background-color: var(--bs-body-bg) !important;
-    border: 0.0625rem solid var(--bs-border-color) !important;
-    border-radius: 9999px !important;
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.18) !important;
-    padding: 0.25rem 0.625rem !important;
-    width: max-content !important;
-    max-width: calc(100vw - 2rem) !important;
-    backdrop-filter: blur(0.5rem);
-  }
-
-  .reports-page__chart-area {
-    padding-bottom: 5.5rem !important;
-  }
+.reports-page__chart-area {
+  padding-bottom: 5.5rem !important;
 }
 
 /* Bulk import / procurement — always circular icon buttons (ignore training/compact) */
