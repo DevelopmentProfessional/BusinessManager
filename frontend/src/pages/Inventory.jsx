@@ -751,8 +751,7 @@ export default function Inventory() {
 
                           {isHelpOpen && (
                             <div
-                              className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
-                              style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                              className="app-menu-panel app-help-popover bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 text-start"
                               onMouseEnter={() => setTypeFilterHelpKey(option.value)}
                               onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             >
@@ -821,8 +820,7 @@ export default function Inventory() {
 
                           {isHelpOpen && (
                             <div
-                              className="bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-lg shadow-lg start-50 text-start"
-                              style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                              className="app-help-popover bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 rounded-lg text-start"
                               onMouseEnter={() => setStockFilterHelpKey(option.value)}
                               onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
                             >

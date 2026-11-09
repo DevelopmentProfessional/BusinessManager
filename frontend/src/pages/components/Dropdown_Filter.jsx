@@ -95,8 +95,7 @@ export default function Dropdown_Filter({
 
                       {isHelpOpen && (
                         <div
-                          className="app-menu-panel bg-white bottom-100 dark:bg-gray-800 mb-2 p-0 position-absolute shadow-lg start-50 text-start"
-                          style={{ width: "260px", maxWidth: "calc(100vw - 1rem)", transform: "translateX(-55%)" }}
+                          className="app-menu-panel app-help-popover bg-white bottom-100 dark:bg-gray-800 text-start"
                           onMouseEnter={() => setHelpKey(option.value)}
                           onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
                         >
