@@ -8,7 +8,7 @@ const hasMoneyValue = (value) => {
   return !Number.isNaN(n) && n > 0;
 };
 
-export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [], showPrice = true, showCost = true }) {
+export default function Inventory_RowDetail({ item, priceDisplay, featureNames = [], showPrice = true, showCost = true, showCategory = true }) {
   const formatMoney = (value) => {
     if (!hasMoneyValue(value)) return null;
     return Number(value).toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2 });
@@ -20,7 +20,7 @@ export default function Inventory_RowDetail({ item, priceDisplay, featureNames =
   return (
     <td className="main-page-table-data">
       <div className="fw-medium text-wrap-word">{item.name}</div>
-      {item.category && (
+      {showCategory && item.category && (
         <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs" style={{ width: "fit-content" }}>
           {item.category}
         </span>

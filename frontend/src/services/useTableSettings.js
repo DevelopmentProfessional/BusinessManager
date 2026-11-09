@@ -3,14 +3,16 @@ import { create } from "zustand";
 import useStore from "./useStore";
 
 export const DEFAULT_PAGE_SETTINGS = {
-  inventory: { showPrice: true, showCost: true, textSize: "medium" },
-  clients: { showEmail: true, textSize: "medium" },
-  employees: { showRole: true, textSize: "medium" },
-  documents: { showCategory: true, textSize: "medium" },
-  services: { showCategory: true, textSize: "medium" },
+  inventory: { showPrice: true, showCost: true, showCategory: true, showType: true, showStock: true, textSize: "medium" },
+  clients: { showEmail: true, showSubs: true, showNotify: true, textSize: "medium" },
+  employees: { showRole: true, showDepartment: true, showChat: true, textSize: "medium" },
+  documents: { showCategory: true, showTags: true, showType: true, showActions: true, textSize: "medium" },
+  services: { showCategory: true, showPrice: true, showDuration: true, textSize: "medium" },
+  reports: { textSize: "medium" },
 };
 
 export const TABLE_TEXT_SIZES = [
+  { id: "tiny", label: "Tiny", fontSize: "0.68rem" },
   { id: "small", label: "Small", fontSize: "0.78rem" },
   { id: "medium", label: "Medium", fontSize: "0.875rem" },
   { id: "large", label: "Large", fontSize: "1rem" },

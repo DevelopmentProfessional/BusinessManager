@@ -2898,6 +2898,7 @@ textarea.form-control {
   border: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: 0.5rem;
   background-clip: padding-box;
+  z-index:900;
 }
 
 .app-menu-trigger {

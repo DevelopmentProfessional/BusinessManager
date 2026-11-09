@@ -11,13 +11,13 @@ export default function TableSettingsControls({ settings, onChange, toggles = []
       {/* Text Size Controls */}
       <div className="mb-2">
         <label className="d-block mb-1 text-muted text-xs">Table Text Size</label>
-        <div className="btn-group btn-group-sm w-100" role="group" aria-label="Table text size">
+        <div className="d-flex gap-2 w-100" role="group" aria-label="Table text size">
           {TABLE_TEXT_SIZES.map((size) => (
             <button
               key={size.id}
               type="button"
               onClick={() => onChange({ textSize: size.id })}
-              className={`btn ${currentTextSize === size.id ? "btn-primary" : "btn-outline-secondary"}`}
+              className={`btn btn-sm flex-fill ${currentTextSize === size.id ? "btn-primary" : "btn-outline-secondary"}`}
             >
               {size.label}
             </button>

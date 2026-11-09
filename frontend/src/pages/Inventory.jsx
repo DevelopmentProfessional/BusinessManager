@@ -606,8 +606,8 @@ export default function Inventory() {
               <colgroup>
                 <col className="app-col-select" />
                 <col className="app-col-flex" />
-                <col className="app-col-action-80" />
-                <col className="app-col-action-60" />
+                {pageSettings.showType !== false && <col className="app-col-action-80" />}
+                {pageSettings.showStock !== false && <col className="app-col-action-60" />}
               </colgroup>
               <tbody>
                 {sortedAndFiltered.map((inv, index) => (
@@ -621,17 +621,22 @@ export default function Inventory() {
                       featureNames={featureSummary[inv.id]?.feature_names || []}
                       showPrice={pageSettings.showPrice !== false}
                       showCost={pageSettings.showCost !== false}
+                      showCategory={pageSettings.showCategory !== false}
                     />
 
                     {/* Type */}
-                    <td className="main-page-table-data">
-                      <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
-                    </td>
+                    {pageSettings.showType !== false && (
+                      <td className="main-page-table-data">
+                        <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
+                      </td>
+                    )}
 
                     {/* Count */}
-                    <td className="main-page-table-data text-center">
-                      <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
-                    </td>
+                    {pageSettings.showStock !== false && (
+                      <td className="main-page-table-data text-center">
+                        <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
+                      </td>
+                    )}
                   </PageTableRow>
                 ))}
               </tbody>
@@ -665,8 +670,8 @@ export default function Inventory() {
           columns={[
             { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, className: "app-col-select p-0 text-center" },
             { label: "Item", className: "app-col-flex", sortKey: "name" },
-            { label: "Type", className: "app-col-action-80", sortKey: "type" },
-            { label: "Count", className: "app-col-action-60", sortKey: "count" },
+            ...(pageSettings.showType !== false ? [{ label: "Type", className: "app-col-action-80", sortKey: "type" }] : []),
+            ...(pageSettings.showStock !== false ? [{ label: "Count", className: "app-col-action-60", sortKey: "count" }] : []),
           ]}
           sortColumn={sortColumn}
           sortAsc={sortAsc}
@@ -903,6 +908,9 @@ export default function Inventory() {
           toggles={[
             { key: "showPrice", label: "Show Price", description: "Display item selling price on table rows" },
             { key: "showCost", label: "Show Cost", description: "Display item cost on table rows" },
+            { key: "showCategory", label: "Show Category", description: "Display category badge under item name" },
+            { key: "showType", label: "Show Type Column", description: "Display item type column (Product, Resource, Asset, etc.)" },
+            { key: "showStock", label: "Show Count Column", description: "Display stock count column" },
           ]}
         />
       </PageControlsModal>
