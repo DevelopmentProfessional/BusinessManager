@@ -44,6 +44,7 @@ import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
+import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Client from "./components/Form_Client";
 import Modal_Detail_Client from "./components/Modal_ClientDetail";
 import Gate_Permission from "./components/Gate_Permission";
@@ -58,6 +59,7 @@ import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
 
 export default function Clients() {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
@@ -76,6 +78,14 @@ export default function Clients() {
   const [editingMembershipId, setEditingMembershipId] = useState(null);
   const [membershipForm, setMembershipForm] = useState({ name: "", description: "", price: 0, billing_frequency: "monthly", lock_term_count: 0, lock_term_unit: "months", is_active: true });
   const { isTrainingMode } = useViewMode();
+  const { getPageSettings, savePageSettings } = useTableSettings();
+  const pageSettings = getPageSettings("clients");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
+
+  useEffect(() => {
+    setPendingSettings(pageSettings);
+  }, [pageSettings, showPageControls]);
+
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const selectionMode = selectedIds.size > 0;
@@ -488,7 +498,7 @@ export default function Clients() {
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
       <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
         {sortedAndFiltered.length > 0 ? (
-          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
+          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
@@ -496,47 +506,50 @@ export default function Clients() {
               <col className="app-col-action-56" />
             </colgroup>
             <tbody>
-              {sortedAndFiltered.map((client, index) => (
-                <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
-                  <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
-                    <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
-                  </td>
+              {sortedAndFiltered.map((client, index) => {
+                const contactText = (pageSettings.showEmail !== false ? client.email : null) || client.phone || "No contact";
+                return (
+                  <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
+                    <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
+                      <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
+                    </td>
 
-                  {/* Name + contact */}
-                  <td className="main-page-table-data" style={{ position: "relative", overflow: "visible" }}>
-                    {/* Red badge — top-left, straddles left border, shown only when > 0 */}
-                    {internalActionCounts[client.id] > 0 && (
-                      <span className="badge bg-danger rounded-circle" style={{ position: "absolute", left: "-9px", top: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, zIndex: 2, textAlign: "center" }} title="Pending internal staff action">
-                        {internalActionCounts[client.id]}
-                      </span>
-                    )}
-                    {/* Yellow badge — bottom-left, straddles left border, shown only when > 0 */}
-                    {portalActionCounts[client.id] > 0 && (
-                      <span
-                        className="badge rounded-circle"
-                        style={{ position: "absolute", left: "-9px", bottom: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, backgroundColor: "#f59e0b", zIndex: 2, textAlign: "center" }}
-                        title="Pending client portal action"
-                      >
-                        {portalActionCounts[client.id]}
-                      </span>
-                    )}
-                    <div className="fw-medium text-truncate">{client.name}</div>
-                    <div className="small text-muted text-truncate">{client.email || client.phone || "No contact"}</div>
-                  </td>
+                    {/* Name + contact */}
+                    <td className="main-page-table-data" style={{ position: "relative", overflow: "visible" }}>
+                      {/* Red badge — top-left, straddles left border, shown only when > 0 */}
+                      {internalActionCounts[client.id] > 0 && (
+                        <span className="badge bg-danger rounded-circle" style={{ position: "absolute", left: "-9px", top: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, zIndex: 2, textAlign: "center" }} title="Pending internal staff action">
+                          {internalActionCounts[client.id]}
+                        </span>
+                      )}
+                      {/* Yellow badge — bottom-left, straddles left border, shown only when > 0 */}
+                      {portalActionCounts[client.id] > 0 && (
+                        <span
+                          className="badge rounded-circle"
+                          style={{ position: "absolute", left: "-9px", bottom: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, backgroundColor: "#f59e0b", zIndex: 2, textAlign: "center" }}
+                          title="Pending client portal action"
+                        >
+                          {portalActionCounts[client.id]}
+                        </span>
+                      )}
+                      <div className="fw-medium text-truncate">{client.name}</div>
+                      <div className="small text-muted text-truncate">{contactText}</div>
+                    </td>
 
-                  {/* Membership + template */}
-                  <td className="main-page-table-data">
-                    <div className="ui-flex-center-gap-1">
-                      <Badge variant={tierVariant(client.membership_tier || "none")} pill label={getTierLabel(client)} />
-                    </div>
-                  </td>
-                  <td className="main-page-table-data p-0 text-center">
-                    <button type="button" onClick={handleOpenTemplate(client)} className="align-items-center border-0 btn btn-sm d-flex dark:hover:bg-blue-900/20 hover:bg-blue-50 justify-content-center rounded text-blue-600" title="Use template">
-                      <EnvelopeIcon className="h-6 w-6" />
-                    </button>
-                  </td>
-                </PageTableRow>
-              ))}
+                    {/* Membership + template */}
+                    <td className="main-page-table-data">
+                      <div className="ui-flex-center-gap-1">
+                        <Badge variant={tierVariant(client.membership_tier || "none")} pill label={getTierLabel(client)} />
+                      </div>
+                    </td>
+                    <td className="main-page-table-data p-0 text-center">
+                      <button type="button" onClick={handleOpenTemplate(client)} className="align-items-center border-0 btn btn-sm d-flex dark:hover:bg-blue-900/20 hover:bg-blue-50 justify-content-center rounded text-blue-600" title="Use template">
+                        <EnvelopeIcon className="h-6 w-6" />
+                      </button>
+                    </td>
+                  </PageTableRow>
+                );
+              })}
             </tbody>
           </table>
         ) : (
@@ -606,7 +619,14 @@ export default function Clients() {
         {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={sortedMemberships} />}
       </Modal>
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Client Page Controls">
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Client Page Controls"
+        onSave={async () => {
+          await savePageSettings("clients", pendingSettings);
+        }}
+      >
         <div className="ui-small-muted">Use these controls to manage the Clients page view.</div>
         <div className="small">Subscription filter and search are available in the footer controls.</div>
         <Button_Toolbar
@@ -618,6 +638,13 @@ export default function Clients() {
           }}
           className="btn-primary"
           title="Manage subscriptions"
+        />
+        <TableSettingsControls
+          settings={pendingSettings}
+          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
+          ]}
         />
       </PageControlsModal>
 

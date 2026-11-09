@@ -1807,6 +1807,7 @@ def _ensure_user_extra_columns_if_needed():
         "button_text_size": "VARCHAR DEFAULT 'medium'",
         "footer_align": "VARCHAR DEFAULT 'left'",
         "ui_scale": "INTEGER DEFAULT 100",
+        "table_settings": "TEXT",
     }
     with engine.begin() as conn:
         cols = conn.execute(text(

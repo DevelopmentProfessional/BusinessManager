@@ -53,6 +53,7 @@ import Footer_Actions from "./components/Footer_Actions";
 import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
+import TableSettingsControls from "./components/TableSettingsControls";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Viewer_Document from "./components/Modal_DocumentView";
 import Modal_Edit_Document from "./components/Modal_DocumentEdit";
@@ -65,6 +66,7 @@ import Dropdown_Filter from "./components/Dropdown_Filter";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -272,6 +274,14 @@ export default function Documents() {
   const [categories, setCategories] = useState([]);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
+  const { getPageSettings, savePageSettings } = useTableSettings();
+  const pageSettings = getPageSettings("documents");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
+
+  useEffect(() => {
+    setPendingSettings(pageSettings);
+  }, [pageSettings, showPageControls]);
+
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
   const [editingCatId, setEditingCatId] = useState(null);
@@ -886,42 +896,52 @@ export default function Documents() {
               </div>
             ) : (
               /* List View */
-              <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
+              <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
                 <colgroup>
                   <col className="app-col-select" />
                   <col className="app-col-flex" />
                   <col className="app-col-action-60" />
                 </colgroup>
                 <tbody>
-                  {sortedAndFiltered.map((doc, index) => (
-                    <tr key={doc.id || index} className="app-clickable-row main-page-table-row app-table-row align-middle border-bottom" onClick={() => !selectionMode && handleView(doc)}>
-                      <td className="app-col-select app-select-icon-cell text-center" onClick={(e) => e.stopPropagation()}>
-                        <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
-                      </td>
+                  {sortedAndFiltered.map((doc, index) => {
+                    const catId = doc.category_id ?? doc.category?.id;
+                    const catName = catId != null ? categoryNameById.get(String(catId)) : null;
 
-                      {/* File Name */}
-                      <td className="px-1">
-                        <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
-                          {doc.original_filename ?? "(unnamed)"}
-                        </div>
-                        <div className="align-items-center d-flex flex-wrap gap-1 small text-muted">
-                          <span className="text-capitalize">{doc.entity_type || "Document"}</span>
-                          {(docTagMap[String(doc.id)] || []).map((tag) => (
-                            <span key={tag} className="badge fw-medium rounded-pill text-xxs" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
+                    return (
+                      <tr key={doc.id || index} className="app-clickable-row main-page-table-row app-table-row align-middle border-bottom" onClick={() => !selectionMode && handleView(doc)}>
+                        <td className="app-col-select app-select-icon-cell text-center" onClick={(e) => e.stopPropagation()}>
+                          <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
+                        </td>
 
-                      {/* View */}
-                      <td className="px-0 text-center">
-                        <button onClick={() => handleView(doc)} className="border-0 btn btn-outline-primary btn-sm p-1" title="View">
-                          <MagnifyingGlassIcon className="ui-icon-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* File Name */}
+                        <td className="px-1">
+                          <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
+                            {doc.original_filename ?? "(unnamed)"}
+                          </div>
+                          <div className="align-items-center d-flex flex-wrap gap-1 small text-muted">
+                            <span className="text-capitalize">{doc.entity_type || "Document"}</span>
+                            {pageSettings.showCategory !== false && catName && (
+                              <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs">
+                                {catName}
+                              </span>
+                            )}
+                            {(docTagMap[String(doc.id)] || []).map((tag) => (
+                              <span key={tag} className="badge fw-medium rounded-pill text-xxs" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+
+                        {/* View */}
+                        <td className="px-0 text-center">
+                          <button onClick={() => handleView(doc)} className="border-0 btn btn-outline-primary btn-sm p-1" title="View">
+                            <MagnifyingGlassIcon className="ui-icon-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )
@@ -1404,7 +1424,14 @@ export default function Documents() {
         </div>
       </Modal>
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Document Page Controls">
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Document Page Controls"
+        onSave={async () => {
+          await savePageSettings("documents", pendingSettings);
+        }}
+      >
         <div className="ui-small-muted">Use these controls to manage document and template views.</div>
         <div className="small">Search, filters, upload, and templates are in the page footer. Open Categories to add or edit category labels.</div>
         <Button_Toolbar
@@ -1416,6 +1443,13 @@ export default function Documents() {
             setIsCategoriesOpen(true);
           }}
           className="btn-outline-secondary"
+        />
+        <TableSettingsControls
+          settings={pendingSettings}
+          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showCategory", label: "Show Category", description: "Display category badge on document row items" },
+          ]}
         />
       </PageControlsModal>
 

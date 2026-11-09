@@ -532,7 +532,6 @@ body,
   background: var(--bs-body-bg);
   border-top: 0.0625rem solid var(--bs-border-color);
   padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
-  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve));
 }
 
 /* ─── 10. PAGE LAYOUT ─── */

@@ -7,6 +7,7 @@ import useStore from "./services/useStore";
 import api, { preloadStoreData } from "./services/api";
 import useDarkMode from "./services/useDarkMode";
 import useViewMode from "./services/useViewMode";
+import useTableSettings from "./services/useTableSettings";
 import { applyButtonDimensions } from "./constants/buttonTextSize";
 import useBranding from "./services/useBranding";
 import { initializeActiveColorTheme } from "./services/activeColorTheme";
@@ -186,6 +187,7 @@ function App() {
     if (user.button_text_size) setButtonTextSize(user.button_text_size);
     if (user.footer_align) setFooterAlign(user.footer_align);
     if (Number.isFinite(Number(user.ui_scale))) setUiScale(user.ui_scale);
+    useTableSettings.getState().loadFromUser(user);
   }, [user, setButtonTextSize, setFooterAlign, setUiScale]);
 
   useEffect(() => {

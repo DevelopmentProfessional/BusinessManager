@@ -58,10 +58,12 @@ import Suppliers_Panel from "./components/Panel_Suppliers";
 import Modal_Bulk_Import_Items from "./components/Modal_ImportItems";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
+import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
 
 const ASSET_UNITS_PAGE_SIZE_KEY = "inventory_asset_units_page_size";
 const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -101,6 +103,14 @@ export default function Inventory() {
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
   const { isTrainingMode } = useViewMode();
+  const { getPageSettings, savePageSettings } = useTableSettings();
+  const pageSettings = getPageSettings("inventory");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
+
+  useEffect(() => {
+    setPendingSettings(pageSettings);
+  }, [pageSettings, showPageControls]);
+
   const scrollRef = useRef(null);
 
   const multiEditFields = useMemo(() => {
@@ -591,7 +601,7 @@ export default function Inventory() {
         {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
         <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {sortedAndFiltered.length > 0 ? (
-            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
+            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
               <colgroup>
                 <col className="app-col-select" />
                 <col className="app-col-flex" />
@@ -604,7 +614,13 @@ export default function Inventory() {
                     <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                     </td>
-                    <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} />
+                    <Inventory_RowDetail
+                      item={inv}
+                      priceDisplay={getPriceDisplay(inv)}
+                      featureNames={featureSummary[inv.id]?.feature_names || []}
+                      showPrice={pageSettings.showPrice !== false}
+                      showCost={pageSettings.showCost !== false}
+                    />
 
                     {/* Type */}
                     <td className="main-page-table-data">
@@ -856,7 +872,14 @@ export default function Inventory() {
 
       <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Inventory Page Controls">
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Inventory Page Controls"
+        onSave={async () => {
+          await savePageSettings("inventory", pendingSettings);
+        }}
+      >
         <div className="ui-small-muted">Use these controls to manage inventory views and actions.</div>
         <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
         <div className="d-flex flex-column gap-1">
@@ -873,6 +896,14 @@ export default function Inventory() {
             closeOnSelect
           />
         </div>
+        <TableSettingsControls
+          settings={pendingSettings}
+          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showPrice", label: "Show Price", description: "Display item selling price on table rows" },
+            { key: "showCost", label: "Show Cost", description: "Display item cost on table rows" },
+          ]}
+        />
       </PageControlsModal>
 
       <Modal_MultiEdit

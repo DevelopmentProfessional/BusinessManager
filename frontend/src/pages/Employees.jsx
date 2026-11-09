@@ -65,12 +65,14 @@ import { showConfirm } from "../services/showConfirm";
 import api, { employeesAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
+import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Employee from "./components/Form_Employee";
 import Gate_Permission from "./components/Gate_Permission";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
 import useDarkMode from "../services/useDarkMode";
+import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
 import Modal_Create_User from "./components/Modal_UserCreate";
 import Modal_Permissions_User from "./components/Modal_UserPermissions";
 import Modal_Manage_Roles from "./components/Modal_RolesManage";
@@ -142,6 +144,13 @@ export default function Employees() {
   const [multiSaving, setMultiSaving] = useState(false);
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
+  const { getPageSettings, savePageSettings } = useTableSettings();
+  const pageSettings = getPageSettings("employees");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
+
+  useEffect(() => {
+    setPendingSettings(pageSettings);
+  }, [pageSettings, showPageControls]);
   // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
   // All modal open/close flags and their associated target object grouped here.
   const [showPayModal, setShowPayModal] = useState(false);
@@ -962,12 +971,12 @@ export default function Employees() {
         {/* Container_Scrollable rows – grow upwards from bottom */}
         <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {sortedAndFiltered.length > 0 ? (
-            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
+            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
               <colgroup>
                 <col className="app-col-select" />
                 <col className="app-col-flex" />
                 {isAdmin && <col className="app-col-action-54" />}
-                <col className="app-col-action-90" />
+                {pageSettings.showRole !== false && <col className="app-col-action-90" />}
                 <col className="app-col-action-54" />
               </colgroup>
               <tbody>
@@ -1010,9 +1019,11 @@ export default function Employees() {
                     )}
 
                     {/* Role */}
-                    <td className="main-page-table-data">
-                      <span className={`badge rounded-pill ${employee.role === "admin" ? "bg-danger" : employee.role === "manager" ? "bg-warning text-dark" : "bg-primary"}`}>{employee.role}</span>
-                    </td>
+                    {pageSettings.showRole !== false && (
+                      <td className="main-page-table-data">
+                        <span className={`badge rounded-pill ${employee.role === "admin" ? "bg-danger" : employee.role === "manager" ? "bg-warning text-dark" : "bg-primary"}`}>{employee.role}</span>
+                      </td>
+                    )}
 
                     {/* Chat */}
                     <td className="main-page-table-data p-0 text-center">
@@ -1075,7 +1086,7 @@ export default function Employees() {
             { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedEmp} onToggle={handleSelectAllEmp} title="Select all visible employees" />, className: "app-col-select p-0 text-center" },
             { label: "Employee", className: "app-col-flex text-start ps-0", sortKey: "name" },
             ...(isAdmin ? [{ label: "", className: "app-col-action-54 p-0" }] : []),
-            { label: "Role", className: "app-col-action-90", sortKey: "role" },
+            ...(pageSettings.showRole !== false ? [{ label: "Role", className: "app-col-action-90", sortKey: "role" }] : []),
             { label: "", className: "app-col-action-54 p-0" },
           ]}
           sortColumn={sortColumn}
@@ -1352,9 +1363,23 @@ export default function Employees() {
       {/* Wages Modal */}
       {showWagesModal && <Modal_Wages employees={employees} onClose={() => setShowWagesModal(false)} />}
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Employee Page Controls">
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Employee Page Controls"
+        onSave={async () => {
+          await savePageSettings("employees", pendingSettings);
+        }}
+      >
         <div className="ui-small-muted">Use these controls to manage employee views and actions.</div>
         <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
+        <TableSettingsControls
+          settings={pendingSettings}
+          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showRole", label: "Show Role", description: "Display employee role column in table" },
+          ]}
+        />
       </PageControlsModal>
 
       <Modal_MultiEdit
