@@ -2221,24 +2221,58 @@ input[type="number"],
 
 /* Floating label adjustments for pill-shaped inputs */
 .form-floating > .form-control:not(textarea),
-.form-floating > .form-select {
-  padding-left: 1rem;
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.25rem !important;
+.form-floating > .form-select,
+.form-floating > .app-dropdown-floating-trigger {
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.15rem !important;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
+  border-radius: 9999px !important;
 }
-.form-floating > label {
-  padding-left: 1rem;
+.form-floating > label,
+.form-floating > .app-floating-label {
+  padding-left: 1.25rem !important;
   padding-top: 0.35rem;
   font-size: var(--app-input-font-size) !important;
   transform-origin: 0 0;
+  pointer-events: none;
 }
 .form-floating > .form-control:focus ~ label,
 .form-floating > .form-control:not(:placeholder-shown) ~ label,
-.form-floating > .form-select ~ label {
+.form-floating > .form-select ~ label,
+.form-floating.has-value > label,
+.form-floating.is-open > label,
+.form-floating.has-value > .app-floating-label,
+.form-floating.is-open > .app-floating-label {
   transform: scale(0.75) translateY(-0.75rem) !important;
-  opacity: 0.8;
+  opacity: 0.85;
+}
+
+/* Action icons inside form inputs (scanner, clear, date indicators) */
+.form-floating > .btn.position-absolute,
+.form-floating > button.position-absolute,
+.form-floating .app-input-icon-btn {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  right: 0.25rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--bs-secondary-color) !important;
+}
+
+.form-floating input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-right: 0.25rem !important;
+  padding: 0 !important;
+  cursor: pointer;
 }
 
 /* Inventory edit form: tighter field padding and non-truncated floating labels. */
@@ -2247,13 +2281,15 @@ input[type="number"],
 }
 
 .inventory-edit-form .form-floating > .form-control:not(textarea),
-.inventory-edit-form .form-floating > .form-select {
-  padding-left: 0.45rem;
-  padding-right: 0.45rem;
+.inventory-edit-form .form-floating > .form-select,
+.inventory-edit-form .form-floating > .app-dropdown-floating-trigger {
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
 }
 
-.inventory-edit-form .form-floating > label {
-  padding-left: 0;
+.inventory-edit-form .form-floating > label,
+.inventory-edit-form .form-floating > .app-floating-label {
+  padding-left: 1.25rem !important;
   padding-right: 0;
   width: max-content;
   max-width: none;

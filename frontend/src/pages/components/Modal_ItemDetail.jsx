@@ -1473,22 +1473,18 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   )}
 
                   <div className={inventoryRowClass}>
-                    <div style={equalFieldStyle}>
-                      <label htmlFor="detail_cost_type" className="form-label ui-form-label-sm">
-                        Cost Type
-                      </label>
-                      <Dropdown_Custom
-                        id="detail_cost_type"
-                        name="cost_type"
-                        value={formData.cost_type}
-                        onChange={handleChange}
-                        className="form-select ui-control-sm"
-                        options={[
-                          { value: "one_time", label: "One-Time Purchase" },
-                          { value: "recurring", label: "Recurring Rental" },
-                        ]}
-                      />
-                    </div>
+                    <Dropdown_Custom
+                      id="detail_cost_type"
+                      name="cost_type"
+                      floatingLabel="Cost Type"
+                      value={formData.cost_type}
+                      onChange={handleChange}
+                      style={equalFieldStyle}
+                      options={[
+                        { value: "one_time", label: "One-Time Purchase" },
+                        { value: "recurring", label: "Recurring Rental" },
+                      ]}
+                    />
                     <div className="form-floating" style={equalFieldStyle}>
                       <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
                       <label htmlFor="detail_name">Name *</label>
@@ -1497,25 +1493,21 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                   {!isLocation ? (
                     <div className={inventoryRowClass}>
-                      <div style={equalFieldStyle}>
-                        <label htmlFor="detail_location" className="form-label ui-form-label-sm">
-                          Location
-                        </label>
-                        <Dropdown_Custom
-                          id="detail_location"
-                          name="location"
-                          value={formData.location || ""}
-                          onChange={handleChange}
-                          className="form-select ui-control-sm"
-                          options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
-                        />
-                      </div>
+                      <Dropdown_Custom
+                        id="detail_location"
+                        name="location"
+                        floatingLabel="Location"
+                        value={formData.location || ""}
+                        onChange={handleChange}
+                        style={equalFieldStyle}
+                        options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
+                      />
 
-                      <div className="form-floating" style={equalFieldStyle}>
-                        <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "3.25rem" } : undefined} />
+                      <div className="form-floating position-relative" style={equalFieldStyle}>
+                        <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "2.5rem" } : undefined} />
                         <label htmlFor="detail_sku">Serial Number</label>
                         {!isSalesMode && (
-                          <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm m-0 p-0 position-absolute top-50 translate-middle-y" style={{ right: "0.5rem" }} title="Scan Barcode">
+                          <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm m-0 p-0 position-absolute top-50 translate-middle-y app-input-icon-btn" style={{ right: "0.25rem" }} title="Scan Barcode">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                               <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
                               <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
@@ -1530,27 +1522,23 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                 {scanError && <div className="alert alert-danger mb-2 mt-0 py-1 small">{scanError}</div>}
 
                 <div className={inventoryRowClass}>
-                  <div style={equalFieldStyle}>
-                    <label htmlFor="detail_type" className="form-label ui-form-label-sm">
-                      Type
-                    </label>
-                    <Dropdown_Custom
-                      id="detail_type"
-                      name="type"
-                      value={formData.type}
-                      onChange={handleChange}
-                      className="form-select ui-control-sm"
-                      options={[
-                        { value: "PRODUCT", label: "Product" },
-                        { value: "BUNDLE", label: "Bundle" },
-                        { value: "MIX", label: "Mix" },
-                        { value: "RESOURCE", label: "Resource" },
-                        { value: "ASSET", label: "Asset" },
-                        { value: "LOCATION", label: "Location" },
-                        { value: "ITEM", label: "Item" },
-                      ]}
-                    />
-                  </div>
+                  <Dropdown_Custom
+                    id="detail_type"
+                    name="type"
+                    floatingLabel="Type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    style={equalFieldStyle}
+                    options={[
+                      { value: "PRODUCT", label: "Product" },
+                      { value: "BUNDLE", label: "Bundle" },
+                      { value: "MIX", label: "Mix" },
+                      { value: "RESOURCE", label: "Resource" },
+                      { value: "ASSET", label: "Asset" },
+                      { value: "LOCATION", label: "Location" },
+                      { value: "ITEM", label: "Item" },
+                    ]}
+                  />
                   <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
                     <label htmlFor="detail_date_of_purchase">Date of Purchase</label>
@@ -1558,12 +1546,15 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                 </div>
 
                 <div className={inventoryRowClass}>
-                  <div style={equalFieldStyle}>
-                    <label htmlFor="detail_supplier" className="form-label ui-form-label-sm">
-                      Supplier
-                    </label>
-                    <Dropdown_Custom id="detail_supplier" name="supplier_id" value={formData.supplier_id || ""} onChange={handleChange} className="form-select ui-control-sm" options={[{ value: "", label: "— None —" }, ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name }))]} />
-                  </div>
+                  <Dropdown_Custom
+                    id="detail_supplier"
+                    name="supplier_id"
+                    floatingLabel="Supplier"
+                    value={formData.supplier_id || ""}
+                    onChange={handleChange}
+                    style={equalFieldStyle}
+                    options={[{ value: "", label: "— None —" }, ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name }))]}
+                  />
                   <div className="form-floating" style={equalFieldStyle}>
                     <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
                     <label htmlFor="detail_date_of_sale">Date of Sale</label>
@@ -1573,16 +1564,16 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                 {String(formData.type || "").toUpperCase() !== "LOCATION" && (
                   <div className="mb-2 mt-2">
-                    <label htmlFor="detail_category" className="form-label ui-form-label-sm">
-                      Category
-                    </label>
                     <Dropdown_Custom
                       id="detail_category"
                       name="category"
+                      floatingLabel="Category"
                       value={formData.category || ""}
                       onChange={handleChange}
-                      className="form-select ui-control-sm"
                       options={[{ value: "", label: "— None —" }, ...itemCategories.map((category) => ({ value: category.name, label: category.name }))]}
+                    />
+                  </div>
+                )}
                     />
                   </div>
                 )}
