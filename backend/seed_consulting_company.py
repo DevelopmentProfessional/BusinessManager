@@ -239,9 +239,18 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
         clients.append(client)
 
     # 7. Appointments, spanning 1 year of past engagements and 3 weeks of future schedule.
-    schedules = []
     service_list = list(services.values())
     consultants = [users[name] for name in ("caroline", "marcus.lee", "priya.shah", "elena.ross", "jamal.wright", "sofia.kim", "noah.bennett")]
+
+    # Pre-fetch existing schedule keys for this company in a single bulk query
+    existing_schedule_keys = {
+        (str(row[0]), str(row[1]), row[2])
+        for row in session.exec(
+            select(Schedule.client_id, Schedule.employee_id, Schedule.appointment_date).where(
+                Schedule.company_id == COMPANY_ID
+            )
+        ).all()
+    }
 
     # Generate business-day appointments across past 365 days up to +21 days into the future (~52 weeks).
     for day_offset in range(-365, 22):
@@ -260,6 +269,10 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             minute = 0 if (abs(day_offset) + slot) % 2 == 0 else 30
             appointment_date = datetime(target_date.year, target_date.month, target_date.day, hour, minute, 0)
 
+            sched_key = (str(client.id), str(employee.id), appointment_date)
+            if sched_key in existing_schedule_keys:
+                continue
+
             if appointment_date < now:
                 # Realistic past appointment outcomes: ~93% completed, ~4% cancelled, ~3% no-show
                 if (abs(day_offset) * 7 + slot) % 25 == 0:
@@ -275,20 +288,29 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
                 status = "scheduled"
                 is_paid = False
 
-            schedule = _get_or_add(session, Schedule, {
-                "company_id": COMPANY_ID, "client_id": client.id, "employee_id": employee.id,
-                "appointment_date": appointment_date,
-            }, {
-                "company_id": COMPANY_ID, "client_id": client.id, "service_id": service.id,
-                "employee_id": employee.id, "appointment_date": appointment_date,
-                "status": status, "notes": f"{SEED_TAG}: {service.name} with {client.name}",
-                "appointment_type": "workshop" if service.category == "Workshops" else "meeting",
-                "duration_minutes": service.duration_minutes,
-                "is_paid": is_paid, "send_reminder": status == "scheduled",
-            })
-            schedules.append(schedule)
+            schedule = Schedule(
+                id=uuid4(),
+                company_id=COMPANY_ID,
+                client_id=client.id,
+                service_id=service.id,
+                employee_id=employee.id,
+                appointment_date=appointment_date,
+                status=status,
+                notes=f"{SEED_TAG}: {service.name} with {client.name}",
+                appointment_type="workshop" if service.category == "Workshops" else "meeting",
+                duration_minutes=service.duration_minutes,
+                is_paid=is_paid,
+                send_reminder=status == "scheduled",
+            )
+            session.add(schedule)
+            existing_schedule_keys.add(sched_key)
 
     session.flush()
+
+    # Load all company schedules for sales linking
+    all_schedules = session.exec(
+        select(Schedule).where(Schedule.company_id == COMPANY_ID)
+    ).all()
 
     # 8. Sales history — completed appointment sales + direct client product/package sales over time.
     product_keys = [
@@ -300,11 +322,22 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
         "Legacy Consulting Guide",
     ]
 
+    existing_sale_schedule_ids = {
+        row[0]
+        for row in session.exec(
+            select(SaleTransaction.schedule_id).where(
+                SaleTransaction.company_id == COMPANY_ID,
+                SaleTransaction.schedule_id.is_not(None),
+            )
+        ).all()
+        if row[0] is not None
+    }
+
     # 8A. Sales attached to completed appointments.
-    for index, schedule in enumerate(schedules):
+    for index, schedule in enumerate(all_schedules):
         if schedule.status != "completed":
             continue
-        if _one(session, SaleTransaction, schedule_id=schedule.id, company_id=COMPANY_ID):
+        if schedule.id in existing_sale_schedule_ids:
             continue
 
         service = session.get(Service, schedule.service_id)
@@ -332,10 +365,9 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             company_id=COMPANY_ID,
         )
         session.add(sale)
-        session.flush()
-
         schedule.sale_transaction_id = sale.id
         schedule.is_paid = True
+        existing_sale_schedule_ids.add(schedule.id)
 
         session.add(SaleTransactionItem(
             id=uuid4(),
@@ -362,14 +394,26 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
                 company_id=COMPANY_ID,
             ))
 
+    session.flush()
+
     # 8B. Direct standalone client sales over time (toolkits, guides, offsite packages).
+    existing_standalone_sales = {
+        (str(row[0]), row[1])
+        for row in session.exec(
+            select(SaleTransaction.client_id, SaleTransaction.paid_at).where(
+                SaleTransaction.company_id == COMPANY_ID,
+                SaleTransaction.schedule_id.is_(None),
+            )
+        ).all()
+    }
+
     for day_step in range(12, 365, 5):
         sale_date = (now - timedelta(days=day_step)).replace(hour=10 + (day_step % 6), minute=15, second=0)
         client = clients[day_step % len(clients)]
         consultant = consultants[day_step % len(consultants)]
         product_record = inventory[product_keys[(day_step // 5) % len(product_keys)]]
 
-        if _one(session, SaleTransaction, client_id=client.id, paid_at=sale_date, company_id=COMPANY_ID):
+        if (str(client.id), sale_date) in existing_standalone_sales:
             continue
 
         quantity = 2 if (day_step % 7 == 0 and product_record.price < 200) else 1
@@ -390,7 +434,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             company_id=COMPANY_ID,
         )
         session.add(direct_sale)
-        session.flush()
+        existing_standalone_sales.add((str(client.id), sale_date))
 
         session.add(SaleTransactionItem(
             id=uuid4(),
@@ -407,6 +451,19 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
     session.flush()
 
     # 9. Purchase orders and accounts payable across the past 12 months (~24 procurement cycles).
+    existing_po_numbers = {
+        row[0]
+        for row in session.exec(
+            select(ProcurementOrder.po_number).where(ProcurementOrder.company_id == COMPANY_ID)
+        ).all()
+    }
+    existing_ap_numbers = {
+        row[0]
+        for row in session.exec(
+            select(AccountsPayable.invoice_number).where(AccountsPayable.company_id == COMPANY_ID)
+        ).all()
+    }
+
     po_inventory_items = [
         ("Insight Research Partners", "Printed Workshop Materials", 120, 7.0),
         ("OfficeWorks Business Supply", "Executive Strategy Workbook", 60, 24.0),
@@ -430,73 +487,100 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
         amount_paid = 0.0 if is_recent else total_amount
         amount_remaining = total_amount if is_recent else 0.0
 
-        po = _get_or_add(session, ProcurementOrder, {"po_number": po_number}, {
-            "po_number": po_number,
-            "supplier_id": suppliers[supplier_name].id,
-            "order_date": order_date,
-            "expected_delivery_date": order_date + timedelta(days=7),
-            "actual_delivery_date": None if is_recent else (order_date + timedelta(days=6)),
-            "total_amount": total_amount,
-            "status": po_status,
-            "created_by": caroline.id,
-            "notes": SEED_TAG,
-            "company_id": COMPANY_ID,
-        })
+        if po_number not in existing_po_numbers:
+            po = ProcurementOrder(
+                id=uuid4(),
+                po_number=po_number,
+                supplier_id=suppliers[supplier_name].id,
+                order_date=order_date,
+                expected_delivery_date=order_date + timedelta(days=7),
+                actual_delivery_date=None if is_recent else (order_date + timedelta(days=6)),
+                total_amount=total_amount,
+                status=po_status,
+                created_by=caroline.id,
+                notes=SEED_TAG,
+                company_id=COMPANY_ID,
+            )
+            session.add(po)
+            existing_po_numbers.add(po_number)
 
-        _get_or_add(session, ProcurementOrderLine, {"po_id": po.id, "inventory_id": inventory[item_name].id}, {
-            "po_id": po.id,
-            "inventory_id": inventory[item_name].id,
-            "quantity_ordered": quantity,
-            "quantity_received": 0 if is_recent else quantity,
-            "unit_price": unit_price,
-            "line_total": total_amount,
-        })
+            session.add(ProcurementOrderLine(
+                id=uuid4(),
+                po_id=po.id,
+                inventory_id=inventory[item_name].id,
+                quantity_ordered=quantity,
+                quantity_received=0 if is_recent else quantity,
+                unit_price=unit_price,
+                line_total=total_amount,
+            ))
 
-        _get_or_add(session, AccountsPayable, {"company_id": COMPANY_ID, "invoice_number": inv_number}, {
-            "company_id": COMPANY_ID,
-            "invoice_number": inv_number,
-            "supplier_id": suppliers[supplier_name].id,
-            "invoice_date": order_date,
-            "due_date": order_date + timedelta(days=30),
-            "amount": total_amount,
-            "amount_paid": amount_paid,
-            "amount_remaining": amount_remaining,
-            "status": ap_status,
-        })
+        if inv_number not in existing_ap_numbers:
+            session.add(AccountsPayable(
+                id=uuid4(),
+                company_id=COMPANY_ID,
+                invoice_number=inv_number,
+                supplier_id=suppliers[supplier_name].id,
+                invoice_date=order_date,
+                due_date=order_date + timedelta(days=30),
+                amount=total_amount,
+                amount_paid=amount_paid,
+                amount_remaining=amount_remaining,
+                status=ap_status,
+            ))
+            existing_ap_numbers.add(inv_number)
 
     session.flush()
 
     # 10. Accounts receivable across the year (monthly client consulting invoices).
+    existing_ar_numbers = {
+        row[0]
+        for row in session.exec(
+            select(AccountsReceivable.invoice_number).where(AccountsReceivable.company_id == COMPANY_ID)
+        ).all()
+    }
+
     for month_idx in range(12):
         inv_date = (now - timedelta(days=30 * (12 - month_idx))).replace(day=15, hour=10, minute=0, second=0)
         for client_idx in range(3):
             client = clients[(month_idx * 3 + client_idx) % len(clients)]
             inv_number = f"NS-AR-{inv_date.year}-{(month_idx * 3 + client_idx + 1):03d}"
+            if inv_number in existing_ar_numbers:
+                continue
+
             amount = round(1500.0 + ((month_idx + client_idx) % 4) * 450.0, 2)
             is_recent_ar = (inv_date >= now - timedelta(days=25))
             ar_status = "outstanding" if (is_recent_ar and client_idx == 0) else "paid"
             ar_paid = 0.0 if ar_status == "outstanding" else amount
             ar_rem = amount if ar_status == "outstanding" else 0.0
 
-            _get_or_add(session, AccountsReceivable, {"company_id": COMPANY_ID, "invoice_number": inv_number}, {
-                "company_id": COMPANY_ID,
-                "invoice_number": inv_number,
-                "client_id": client.id,
-                "invoice_date": inv_date,
-                "due_date": inv_date + timedelta(days=30),
-                "amount": amount,
-                "amount_paid": ar_paid,
-                "amount_remaining": ar_rem,
-                "status": ar_status,
-                "notes": f"{SEED_TAG}: monthly consulting retainer",
-            })
+            session.add(AccountsReceivable(
+                id=uuid4(),
+                company_id=COMPANY_ID,
+                invoice_number=inv_number,
+                client_id=client.id,
+                invoice_date=inv_date,
+                due_date=inv_date + timedelta(days=30),
+                amount=amount,
+                amount_paid=ar_paid,
+                amount_remaining=ar_rem,
+                status=ar_status,
+                notes=f"{SEED_TAG}: monthly consulting retainer",
+            ))
+            existing_ar_numbers.add(inv_number)
 
     session.flush()
 
     # 11. Twelve months of compensation configuration and paid pay slips.
+    existing_slip_keys = {
+        (str(row[0]), row[1])
+        for row in session.exec(
+            select(PaySlip.employee_id, PaySlip.pay_period_start).where(PaySlip.company_id == COMPANY_ID)
+        ).all()
+    }
+
     for user in users.values():
         base_pay = user.salary if user.salary else (user.hourly_rate or 0) * 80
-        pay_schedule = _get_or_add(session, EmployeePaySchedule, {"company_id": COMPANY_ID, "employee_id": user.id}, {
+        _get_or_add(session, EmployeePaySchedule, {"company_id": COMPANY_ID, "employee_id": user.id}, {
             "company_id": COMPANY_ID, "employee_id": user.id, "frequency": "monthly" if user.salary else "biweekly",
             "work_days": "mon,tue,wed,thu,fri", "pay_timing": "arrears", "base_pay": base_pay,
             "compensation_percentage": 0.0, "base_pay_included": True,
@@ -504,7 +588,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
         for month in range(12):
             period_end = (now.replace(day=1) - timedelta(days=month * 30)).replace(day=1) - timedelta(days=1)
             period_start = period_end.replace(day=1)
-            if _one(session, PaySlip, employee_id=user.id, company_id=COMPANY_ID, pay_period_start=period_start):
+            if (str(user.id), period_start) in existing_slip_keys:
                 continue
             gross = round(base_pay / 12 if user.salary else base_pay * 2, 2)
             insurance = 180.0 if user.salary else 0.0
@@ -516,6 +600,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
                 salary_snapshot=user.salary, pay_frequency=user.pay_frequency, status="paid",
                 notes=SEED_TAG, company_id=COMPANY_ID,
             ))
+            existing_slip_keys.add((str(user.id), period_start))
 
     session.commit()
 

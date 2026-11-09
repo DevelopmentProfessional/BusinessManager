@@ -86,22 +86,6 @@ const useTableSettings = create((set, get) => ({
     try {
       localStorage.setItem(storageKey, JSON.stringify(updatedAll));
     } catch {}
-
-    if (user?.id) {
-      try {
-        const jsonStr = JSON.stringify(updatedAll);
-        const res = await profileAPI.updateMyProfile({ table_settings: jsonStr });
-        const updatedUser = res?.data ?? res;
-        if (updatedUser && typeof updatedUser === "object") {
-          const merged = { ...user, ...updatedUser, table_settings: jsonStr };
-          useStore.getState().setUser(merged);
-          if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(merged));
-          if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(merged));
-        }
-      } catch (err) {
-        console.warn("Failed to persist table_settings to profile API:", err);
-      }
-    }
   },
 }));
 

@@ -49,8 +49,7 @@ def main() -> None:
                 seed_consulting_company(session, company_id=seed_company_id)
             log.info("Company seed complete.")
         except Exception as exc:
-            log.error("Company seed failed: %s", exc)
-            sys.exit(1)
+            log.error("Company seed encountered an error (continuing startup): %s", exc)
 
     log.info("init_database.py complete.")
 
