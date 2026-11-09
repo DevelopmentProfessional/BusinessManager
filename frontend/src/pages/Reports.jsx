@@ -34,6 +34,7 @@
  *   2026-09-11 | GitHub Copilot | Removed unused report symbols and stabilized report reload effect dependencies
  *   2026-11-04 | GitHub Copilot | Added weekly activity report and labeled report filter controls
  *   2026-11-08 | GitHub Copilot | Upgraded report period navigation buttons to Button_Toolbar with labels and floating mobile positioning
+ *   2026-11-09 | GitHub Copilot | Floated period navigation toolbar above footer across all viewports below footer dropups
  * ============================================================
  */
 
@@ -1355,7 +1356,9 @@ export default function Reports() {
                       style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
                       title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
                     >
-                      Full
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrows-fullscreen" viewBox="0 0 16 16">
+  <path fillRule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707m4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707m0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707m-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707"/>
+</svg>
                     </button>
                   </div>
                   <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
@@ -1367,19 +1370,15 @@ export default function Reports() {
             {!fullScreenMode && (
               <div
                 className="align-items-center d-flex gap-2 justify-content-center reports-nav-floating"
-                style={
-                  isMobile
-                    ? {
-                        position: "fixed",
-                        bottom: `${(footerHeight || 56) + 10}px`,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        zIndex: 35,
-                      }
-                    : undefined
-                }
+                style={{
+                  position: "fixed",
+                  bottom: `${(footerHeight || 56) + 10}px`,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  zIndex: 20,
+                }}
               >
-                <Button_Toolbar icon={ChevronLeftIcon} label="Prev" onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary" title="Previous period" />
+                <Button_Toolbar icon={ChevronLeftIcon} label="" onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary" title="Previous period" />
 
                 <div className="align-items-center d-flex flex-column px-1 text-center" style={{ minWidth: 0 }}>
                   <span className="fw-semibold text-nowrap text-xs">{currentPeriodOffset === 0 ? "Current Period" : `${Math.abs(currentPeriodOffset)} period${Math.abs(currentPeriodOffset) > 1 ? "s" : ""} prior`}</span>
@@ -1390,7 +1389,7 @@ export default function Reports() {
                   )}
                 </div>
 
-                <Button_Toolbar icon={ChevronRightIcon} label="Next" onClick={() => handleNavigatePeriod(1)} disabled={currentPeriodOffset >= 0} className="btn-outline-secondary" title="Next period" />
+                <Button_Toolbar icon={ChevronRightIcon} label="" onClick={() => handleNavigatePeriod(1)} disabled={currentPeriodOffset >= 0} className="btn-outline-secondary" title="Next period" />
 
                 {!isEmployeeActivityReport && reportData?.labels?.length > 0 && (
                   <Button_Toolbar icon={ChevronUpDownIcon} label={showDataTable ? "Hide" : "Table"} onClick={() => setShowDataTable((v) => !v)} className={showDataTable ? "btn-primary" : "btn-outline-secondary"} title={showDataTable ? "Hide data table" : "Show data table"} />
@@ -1430,7 +1429,7 @@ export default function Reports() {
       </div>
 
       {selectedReport && (
-        <div ref={footerRef}>
+        <div ref={footerRef} className="position-relative" style={{ zIndex: 50 }}>
           <PageTableFooter
             hideSearch
             searchTerm=""
@@ -1600,7 +1599,7 @@ export default function Reports() {
                 <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
                 <Button_Toolbar
                   icon={showReportControls ? EyeSlashIcon : EyeIcon}
-                  label={isTrainingMode ? (showReportControls ? "Hide" : "Show") : ""}
+                  label={isTrainingMode ? (showReportControls ? "" : "") : ""}
                   onClick={() => {
                     setShowReportControls((prev) => {
                       const next = !prev;
