@@ -313,8 +313,8 @@ export default function Services() {
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
-              <col className="app-col-action-80" />
-              <col className="app-col-action-70" />
+              {pageSettings.showPrice !== false && <col className="app-col-action-80" />}
+              {pageSettings.showDuration !== false && <col className="app-col-action-70" />}
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((service, index) => (
@@ -333,14 +333,18 @@ export default function Services() {
                   </td>
 
                   {/* Price */}
-                  <td className="main-page-table-data text-center">
-                    <span className="fw-medium">${(service.price || 0).toFixed(2)}</span>
-                  </td>
+                  {pageSettings.showPrice !== false && (
+                    <td className="main-page-table-data text-center">
+                      <span className="fw-medium">${(service.price || 0).toFixed(2)}</span>
+                    </td>
+                  )}
 
                   {/* Duration */}
-                  <td className="main-page-table-data text-center">
-                    <span className="badge bg-info-subtle rounded-pill text-info">{service.duration_minutes || 30}m</span>
-                  </td>
+                  {pageSettings.showDuration !== false && (
+                    <td className="main-page-table-data text-center">
+                      <span className="badge bg-info-subtle rounded-pill text-info">{service.duration_minutes || 30}m</span>
+                    </td>
+                  )}
                 </PageTableRow>
               ))}
             </tbody>
@@ -374,8 +378,8 @@ export default function Services() {
         columns={[
           { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedSvc} onToggle={handleSelectAllSvc} title="Select all visible services" />, className: "app-col-select p-0 text-center" },
           { label: "Service", className: "app-col-flex", sortKey: "name" },
-          { label: "Price", className: "app-col-action-80", sortKey: "price" },
-          { label: "Duration", className: "app-col-action-70" },
+          ...(pageSettings.showPrice !== false ? [{ label: "Price", className: "app-col-action-80", sortKey: "price" }] : []),
+          ...(pageSettings.showDuration !== false ? [{ label: "Duration", className: "app-col-action-70" }] : []),
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}
@@ -543,6 +547,8 @@ export default function Services() {
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
           toggles={[
             { key: "showCategory", label: "Show Category", description: "Display category badge under service name" },
+            { key: "showPrice", label: "Show Price Column", description: "Display service price column" },
+            { key: "showDuration", label: "Show Duration Column", description: "Display service duration column" },
           ]}
         />
       </PageControlsModal>

@@ -978,7 +978,7 @@ export default function Employees() {
                 <col className="app-col-flex" />
                 {isAdmin && <col className="app-col-action-54" />}
                 {pageSettings.showRole !== false && <col className="app-col-action-90" />}
-                <col className="app-col-action-54" />
+                {pageSettings.showChat !== false && <col className="app-col-action-54" />}
               </colgroup>
               <tbody>
                 {sortedAndFiltered.map((employee, index) => (
@@ -1001,7 +1001,8 @@ export default function Employees() {
                       <div className={`fw-medium text-truncate ${employee.is_active ? "text-success" : "text-muted"}`} style={{ maxWidth: "100%" }}>
                         {employee.first_name} {employee.last_name}
                       </div>
-                      {employee.department_id &&
+                      {pageSettings.showDepartment !== false &&
+                        employee.department_id &&
                         (() => {
                           const dept = departments.find((d) => d.id === employee.department_id);
                           return dept ? <span className="badge bg-info-subtle rounded-pill text-info text-xxs">{dept.name}</span> : null;
@@ -1027,22 +1028,34 @@ export default function Employees() {
                     )}
 
                     {/* Chat */}
-                    <td className="main-page-table-data p-0 text-center">
-                      {employee.id !== currentUser?.id && (
-                        <button
-                          type="button"
-                          className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? "btn-primary" : "btn-outline-secondary"}`}
-                          title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ""}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setChattingEmployee(employee);
-                            setShowChatModal(true);
-                            setUnreadCounts((prev) => {
-                              const next = { ...prev };
-                              delete next[employee.id];
-                              return next;
-                            });
-                          }}
+                    {pageSettings.showChat !== false && (
+                      <td className="main-page-table-data p-0 text-center">
+                        {employee.id !== currentUser?.id && (
+                          <button
+                            type="button"
+                            className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? "btn-primary" : "btn-outline-secondary"}`}
+                            title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setChattingEmployee(employee);
+                              setShowChatModal(true);
+                              setUnreadCounts((prev) => {
+                                const next = { ...prev };
+                                delete next[employee.id];
+                                return next;
+                              });
+                            }}
+                          >
+                            <ChatBubbleLeftIcon style={{ width: 22, height: 22 }} />
+                            {unreadCounts[employee.id] > 0 && (
+                              <span className="badge bg-danger position-absolute rounded-pill" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
+                                {unreadCounts[employee.id] > 9 ? "9+" : unreadCounts[employee.id]}
+                              </span>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                    )}
                         >
                           <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
                           {!!unreadCounts[employee.id] && (
@@ -1088,7 +1101,7 @@ export default function Employees() {
             { label: "Employee", className: "app-col-flex text-start ps-0", sortKey: "name" },
             ...(isAdmin ? [{ label: "", className: "app-col-action-54 p-0" }] : []),
             ...(pageSettings.showRole !== false ? [{ label: "Role", className: "app-col-action-90", sortKey: "role" }] : []),
-            { label: "", className: "app-col-action-54 p-0" },
+            ...(pageSettings.showChat !== false ? [{ label: "", className: "app-col-action-54 p-0" }] : []),
           ]}
           sortColumn={sortColumn}
           sortAsc={sortAsc}
@@ -1378,7 +1391,9 @@ export default function Employees() {
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
           toggles={[
-            { key: "showRole", label: "Show Role", description: "Display employee role column in table" },
+            { key: "showRole", label: "Show Role Column", description: "Display employee role column in table" },
+            { key: "showDepartment", label: "Show Department Badge", description: "Display department badge under employee name" },
+            { key: "showChat", label: "Show Chat Action", description: "Display quick-chat button column" },
           ]}
         />
       </PageControlsModal>

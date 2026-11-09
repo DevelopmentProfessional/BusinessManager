@@ -503,8 +503,8 @@ export default function Clients() {
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
-              <col className="app-col-action-120" />
-              <col className="app-col-action-56" />
+              {pageSettings.showSubs !== false && <col className="app-col-action-120" />}
+              {pageSettings.showNotify !== false && <col className="app-col-action-56" />}
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((client, index) => {
@@ -538,16 +538,20 @@ export default function Clients() {
                     </td>
 
                     {/* Membership + template */}
-                    <td className="main-page-table-data">
-                      <div className="ui-flex-center-gap-1">
-                        <Badge variant={tierVariant(client.membership_tier || "none")} pill label={getTierLabel(client)} />
-                      </div>
-                    </td>
-                    <td className="main-page-table-data p-0 text-center">
-                      <button type="button" onClick={handleOpenTemplate(client)} className="align-items-center border-0 btn btn-sm d-flex dark:hover:bg-blue-900/20 hover:bg-blue-50 justify-content-center rounded text-blue-600" title="Use template">
-                        <EnvelopeIcon className="h-6 w-6" />
-                      </button>
-                    </td>
+                    {pageSettings.showSubs !== false && (
+                      <td className="main-page-table-data">
+                        <div className="ui-flex-center-gap-1">
+                          <Badge variant={tierVariant(client.membership_tier || "none")} pill label={getTierLabel(client)} />
+                        </div>
+                      </td>
+                    )}
+                    {pageSettings.showNotify !== false && (
+                      <td className="main-page-table-data p-0 text-center">
+                        <button type="button" onClick={handleOpenTemplate(client)} className="align-items-center border-0 btn btn-sm d-flex dark:hover:bg-blue-900/20 hover:bg-blue-50 justify-content-center rounded text-blue-600" title="Use template">
+                          <EnvelopeIcon className="h-6 w-6" />
+                        </button>
+                      </td>
+                    )}
                   </PageTableRow>
                 );
               })}
@@ -582,8 +586,8 @@ export default function Clients() {
         columns={[
           { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedCl} onToggle={handleSelectAllCl} title="Select all visible clients" />, className: "app-col-select p-0" },
           { label: "Client", className: "app-col-flex ps-0", sortKey: "name" },
-          { label: "Subs", className: "app-col-action-120", sortKey: "email" },
-          { label: "Notify", className: "app-col-action-56" },
+          ...(pageSettings.showSubs !== false ? [{ label: "Subs", className: "app-col-action-120", sortKey: "email" }] : []),
+          ...(pageSettings.showNotify !== false ? [{ label: "Notify", className: "app-col-action-56" }] : []),
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}
@@ -645,6 +649,8 @@ export default function Clients() {
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
           toggles={[
             { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
+            { key: "showSubs", label: "Show Subscription Column", description: "Display client membership tier column" },
+            { key: "showNotify", label: "Show Notify Column", description: "Display quick-template notify button" },
           ]}
         />
       </PageControlsModal>

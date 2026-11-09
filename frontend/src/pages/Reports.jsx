@@ -80,9 +80,11 @@ import useViewMode from "../services/useViewMode";
 import Modal_ForecastCalculator from "./components/Modal_ForecastCalculator";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
+import TableSettingsControls from "./components/TableSettingsControls";
 import PageTableFooter from "./components/Page_TableFooter";
 import Dashboard_Financial from "./components/Dashboard_Financial";
 import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
 const AVAILABLE_REPORTS = [
   {
@@ -448,6 +450,14 @@ export default function Reports() {
   const footerRef = useRef(null);
   const [footerHeight, setFooterHeight] = useState(0);
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
+  const { settings: reportsTableSettings, savePageSettings } = usePageTableSettings("reports");
+  const [pendingReportsSettings, setPendingReportsSettings] = useState(reportsTableSettings);
+
+  useEffect(() => {
+    if (showPageControls) {
+      setPendingReportsSettings(reportsTableSettings);
+    }
+  }, [showPageControls]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(getMobileEnvironment().isMobileViewport);
@@ -1399,7 +1409,7 @@ export default function Reports() {
             )}
             {!fullScreenMode && !isEmployeeActivityReport && showDataTable && reportData?.labels?.length > 0 && (
               <div className="border border-gray-200 dark:border-gray-700 mt-2 overflow-auto rounded-lg" style={{ maxHeight: "16rem" }}>
-                <table className="mb-0 table table-sm">
+                <table className="mb-0 table table-sm" style={getTextSizeStyle(reportsTableSettings.textSize)}>
                   <thead className="bg-white dark:bg-gray-900 sticky-top">
                     <tr>
                       <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Period</th>
@@ -1688,7 +1698,14 @@ export default function Reports() {
         </div>
       </Modal>
 
-      <PageControlsModal isOpen={showPageControls} onClose={() => setShowPageControls(false)} title="Report Page Controls">
+      <PageControlsModal
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        title="Report Page Controls"
+        onSave={async () => {
+          await savePageSettings("reports", pendingReportsSettings);
+        }}
+      >
         <div className="mb-2 ui-small-muted">Configure report display and export options.</div>
         <div className="fw-semibold mb-1 small">Summary Cards</div>
         {Object.keys(kpiVisibility).map((label) => (
@@ -1699,6 +1716,10 @@ export default function Reports() {
             </label>
           </div>
         ))}
+        <TableSettingsControls
+          settings={pendingReportsSettings}
+          onChange={(patch) => setPendingReportsSettings((prev) => ({ ...prev, ...patch }))}
+        />
       </PageControlsModal>
 
       {/* Save Filter Modal */}

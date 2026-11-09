@@ -901,7 +901,7 @@ export default function Documents() {
                 <colgroup>
                   <col className="app-col-select" />
                   <col className="app-col-flex" />
-                  <col className="app-col-action-60" />
+                  {pageSettings.showActions !== false && <col className="app-col-action-60" />}
                 </colgroup>
                 <tbody>
                   {sortedAndFiltered.map((doc, index) => {
@@ -920,26 +920,29 @@ export default function Documents() {
                             {doc.original_filename ?? "(unnamed)"}
                           </div>
                           <div className="align-items-center d-flex flex-wrap gap-1 small text-muted">
-                            <span className="text-capitalize">{doc.entity_type || "Document"}</span>
+                            {pageSettings.showType !== false && <span className="text-capitalize">{doc.entity_type || "Document"}</span>}
                             {pageSettings.showCategory !== false && catName && (
                               <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs">
                                 {catName}
                               </span>
                             )}
-                            {(docTagMap[String(doc.id)] || []).map((tag) => (
-                              <span key={tag} className="badge fw-medium rounded-pill text-xxs" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
-                                {tag}
-                              </span>
-                            ))}
+                            {pageSettings.showTags !== false &&
+                              (docTagMap[String(doc.id)] || []).map((tag) => (
+                                <span key={tag} className="badge fw-medium rounded-pill text-xxs" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
+                                  {tag}
+                                </span>
+                              ))}
                           </div>
                         </td>
 
                         {/* View */}
-                        <td className="px-0 text-center">
-                          <button onClick={() => handleView(doc)} className="border-0 btn btn-outline-primary btn-sm p-1" title="View">
-                            <MagnifyingGlassIcon className="ui-icon-4" />
-                          </button>
-                        </td>
+                        {pageSettings.showActions !== false && (
+                          <td className="px-0 text-center">
+                            <button onClick={() => handleView(doc)} className="border-0 btn btn-outline-primary btn-sm p-1" title="View">
+                              <MagnifyingGlassIcon className="ui-icon-4" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -982,7 +985,7 @@ export default function Documents() {
               : [
                   { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedDoc} onToggle={handleSelectAllDoc} title="Select all visible documents" />, className: "app-col-select p-0 text-center" },
                   { label: "Document", className: "app-col-flex", sortKey: "filename" },
-                  { label: "View", className: "app-col-action-60 text-center" },
+                  ...(pageSettings.showActions !== false ? [{ label: "View", className: "app-col-action-60 text-center" }] : []),
                 ]
           }
           sortColumn={sortColumn}
@@ -1450,6 +1453,9 @@ export default function Documents() {
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
           toggles={[
             { key: "showCategory", label: "Show Category", description: "Display category badge on document row items" },
+            { key: "showType", label: "Show Document Type", description: "Display document entity type under filename" },
+            { key: "showTags", label: "Show Document Tags", description: "Display tag badges on row items" },
+            { key: "showActions", label: "Show View Action", description: "Display quick-view button column" },
           ]}
         />
       </PageControlsModal>
