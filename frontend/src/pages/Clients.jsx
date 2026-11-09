@@ -59,7 +59,7 @@ import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
-import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
 export default function Clients() {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────
@@ -78,13 +78,14 @@ export default function Clients() {
   const [editingMembershipId, setEditingMembershipId] = useState(null);
   const [membershipForm, setMembershipForm] = useState({ name: "", description: "", price: 0, billing_frequency: "monthly", lock_term_count: 0, lock_term_unit: "months", is_active: true });
   const { isTrainingMode } = useViewMode();
-  const { getPageSettings, savePageSettings } = useTableSettings();
-  const pageSettings = getPageSettings("clients");
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("clients");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
 
   useEffect(() => {
-    setPendingSettings(pageSettings);
-  }, [pageSettings, showPageControls]);
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
 
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
