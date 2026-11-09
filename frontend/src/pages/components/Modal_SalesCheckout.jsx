@@ -412,12 +412,10 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                   </button>
                 </div>
               ) : (
-                <div className="py-0 text-center">
-                  <div className="bg-emerald-100 dark:bg-emerald-900/50 flex h-20 items-center justify-center mb-2 mx-auto rounded-full w-20">
+                <div className="py-2 text-center">
+                  <div className="bg-emerald-100 dark:bg-emerald-900/50 flex h-20 items-center justify-center mb-3 mx-auto rounded-full w-20">
                     <BanknotesIcon className="app-icon app-icon--lg dark:text-emerald-400 text-emerald-600" />
                   </div>
-                  <p className="dark:text-gray-400 mb-2 text-gray-600">Amount to collect</p>
-                  <p className="dark:text-emerald-400 font-bold mb-2 text-4xl text-emerald-600">${total.toFixed(2)}</p>
                   <button
                     onClick={handleSubmit}
                     disabled={isProcessing || selectedLineCount === 0}
