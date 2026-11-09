@@ -1056,16 +1056,6 @@ export default function Employees() {
                         )}
                       </td>
                     )}
-                        >
-                          <ChatBubbleLeftIcon style={{ width: 24, height: 24 }} />
-                          {!!unreadCounts[employee.id] && (
-                            <span className="badge bg-danger position-absolute rounded-pill" style={{ top: 2, right: 2, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
-                              {unreadCounts[employee.id] > 9 ? "9+" : unreadCounts[employee.id]}
-                            </span>
-                          )}
-                        </button>
-                      )}
-                    </td>
                   </PageTableRow>
                 ))}
               </tbody>

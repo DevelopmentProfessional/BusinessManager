@@ -1574,9 +1574,6 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     />
                   </div>
                 )}
-                    />
-                  </div>
-                )}
               </form>
 
               {/* Descriptive Features — most types, shown after item is saved */}
