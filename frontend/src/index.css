@@ -3025,6 +3025,18 @@ select.form-select {
   padding-bottom: 5.5rem !important;
 }
 
+.reports-nav-floating .btn.rounded-circle {
+  border-radius: 50% !important;
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 /* Bulk import / procurement — always circular icon buttons (ignore training/compact) */
 .btn.btn-bulk-circle {
   width: var(--app-btn-height, 2.5rem) !important;
