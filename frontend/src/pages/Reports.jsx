@@ -35,6 +35,7 @@
  *   2026-11-04 | GitHub Copilot | Added weekly activity report and labeled report filter controls
  *   2026-11-08 | GitHub Copilot | Upgraded report period navigation buttons to Button_Toolbar with labels and floating mobile positioning
  *   2026-11-09 | GitHub Copilot | Floated period navigation toolbar above footer across all viewports below footer dropups
+ *   2026-11-09 | GitHub Copilot | Made period navigation buttons circular and conditionally rendered footer beforeSearch to eliminate double-height footer
  * ============================================================
  */
 
@@ -1378,9 +1379,9 @@ export default function Reports() {
                   zIndex: 20,
                 }}
               >
-                <Button_Toolbar icon={ChevronLeftIcon} label="" onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary" title="Previous period" />
+                <Button_Toolbar icon={ChevronLeftIcon} label="" compact onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary rounded-circle" title="Previous period" />
 
-                <div className="align-items-center d-flex flex-column px-1 text-center" style={{ minWidth: 0 }}>
+                <div className="align-items-center d-flex flex-column px-1 text-center" style={{ minWidth: 0, cursor: currentPeriodOffset !== 0 ? "pointer" : "default" }} onClick={currentPeriodOffset !== 0 ? handleResetPeriod : undefined} title={currentPeriodOffset !== 0 ? "Click to reset to current period" : undefined}>
                   <span className="fw-semibold text-nowrap text-xs">{currentPeriodOffset === 0 ? "Current Period" : `${Math.abs(currentPeriodOffset)} period${Math.abs(currentPeriodOffset) > 1 ? "s" : ""} prior`}</span>
                   {activeStartDate && activeEndDate && (
                     <span className="text-muted text-nowrap text-xxs">
@@ -1389,7 +1390,7 @@ export default function Reports() {
                   )}
                 </div>
 
-                <Button_Toolbar icon={ChevronRightIcon} label="" onClick={() => handleNavigatePeriod(1)} disabled={currentPeriodOffset >= 0} className="btn-outline-secondary" title="Next period" />
+                <Button_Toolbar icon={ChevronRightIcon} label="" compact onClick={() => handleNavigatePeriod(1)} disabled={currentPeriodOffset >= 0} className="btn-outline-secondary rounded-circle" title="Next period" />
 
                 {!isEmployeeActivityReport && reportData?.labels?.length > 0 && (
                   <Button_Toolbar icon={ChevronUpDownIcon} label={showDataTable ? "Hide" : "Table"} onClick={() => setShowDataTable((v) => !v)} className={showDataTable ? "btn-primary" : "btn-outline-secondary"} title={showDataTable ? "Hide data table" : "Show data table"} />
@@ -1435,10 +1436,9 @@ export default function Reports() {
             searchTerm=""
             onSearch={() => {}}
             beforeSearch={
-              <div className="align-items-end d-flex flex-wrap gap-2 w-100">
-                {showReportControls && (
-                  <>
-                    <FilterField label="Time Range">
+              showReportControls ? (
+                <div className="align-items-end d-flex flex-wrap gap-2 w-100">
+                  <FilterField label="Time Range">
                       <Dropdown_Custom
                         className="ui-control-sm"
                         style={CIRCULAR_SELECT_STYLE}
@@ -1581,35 +1581,39 @@ export default function Reports() {
                         </div>
                       </FilterField>
                     )}
-                  </>
-                )}
 
-                {/* Time Navigation */}
-                {currentPeriodOffset !== 0 && (
-                  <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
-                    Today
-                  </button>
-                )}
-              </div>
-            }
-          >
-            <div className="align-items-center d-flex justify-content-between position-relative w-100">
-              {/* Left: Save + Filter */}
-              <div className="ui-flex-center-gap-1">
-                <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
-                <Button_Toolbar
-                  icon={showReportControls ? EyeSlashIcon : EyeIcon}
-                  label={isTrainingMode ? (showReportControls ? "" : "") : ""}
-                  onClick={() => {
-                    setShowReportControls((prev) => {
-                      const next = !prev;
-                      if (!next) setEventTypeMenuOpen(false);
-                      return next;
-                    });
-                  }}
-                  className="btn-outline-secondary"
-                  title={showReportControls ? "Hide report controls" : "Show report controls"}
-                />
+                    {/* Time Navigation */}
+                    {currentPeriodOffset !== 0 && (
+                      <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
+                        Today
+                      </button>
+                    )}
+                  </div>
+                ) : null
+              }
+            >
+              <div className="align-items-center d-flex justify-content-between position-relative w-100">
+                {/* Left: Save + Filter */}
+                <div className="ui-flex-center-gap-1">
+                  <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
+                  <Button_Toolbar
+                    icon={showReportControls ? EyeSlashIcon : EyeIcon}
+                    label={isTrainingMode ? (showReportControls ? "" : "") : ""}
+                    onClick={() => {
+                      setShowReportControls((prev) => {
+                        const next = !prev;
+                        if (!next) setEventTypeMenuOpen(false);
+                        return next;
+                      });
+                    }}
+                    className="btn-outline-secondary"
+                    title={showReportControls ? "Hide report controls" : "Show report controls"}
+                  />
+                  {currentPeriodOffset !== 0 && !showReportControls && (
+                    <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
+                      Today
+                    </button>
+                  )}
                 {/* Saved Filters Dropup */}
                 <div className="ui-pos-rel">
                   <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
