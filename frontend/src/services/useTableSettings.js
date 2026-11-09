@@ -12,9 +12,9 @@ export const DEFAULT_PAGE_SETTINGS = {
 };
 
 export const TABLE_TEXT_SIZES = [
-  { id: "tiny", label: "Tiny", fontSize: "0.68rem" },
-  { id: "small", label: "Small", fontSize: "0.78rem" },
-  { id: "medium", label: "Medium", fontSize: "0.875rem" },
+  { id: "tiny", label: "Tiny", fontSize: "0.4rem" },
+  { id: "small", label: "Small", fontSize: "0.6rem" },
+  { id: "medium", label: "Medium", fontSize: "0.8rem" },
   { id: "large", label: "Large", fontSize: "1rem" },
 ];
 

@@ -28,8 +28,22 @@ import Modal from "./Modal";
 import { XMarkIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 
+const PERMISSION_DESCRIPTIONS = {
+  read: "View records and details on this page.",
+  read_all: "View all records across the company.",
+  view_all: "View all schedule appointments across all employees.",
+  write: "Create and edit records on this page.",
+  write_all: "Create and edit schedule appointments for any employee.",
+  write_self_only: "Create and edit schedule appointments only for yourself.",
+  delete: "Delete records from this page.",
+  approve_payments: "Approve wage and compensation payout records.",
+  initiate_refunds: "Initiate client payment refunds and reversals.",
+  admin: "Full administrative control and configuration for this page.",
+};
+
 function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
   const [open, setOpen] = useState(false);
+  const [helpKey, setHelpKey] = useState(null);
   const btnRef = useRef(null);
   const menuIdRef = useRef(`dropup-menu-${Math.random().toString(36).slice(2)}`);
   const selectedLabel = value || placeholder;
@@ -42,14 +56,14 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
       position: "fixed",
       left: rect.left,
       bottom: window.innerHeight - rect.top + 4,
-      width: rect.width,
+      width: Math.max(rect.width, 220),
       zIndex: 9999,
       background: isDarkMode ? "#1f2937" : "#fff",
       border: `1px solid ${isDarkMode ? "#374151" : "#dee2e6"}`,
       borderRadius: 6,
       boxShadow: isDarkMode ? "0 -4px 10px rgba(0,0,0,0.35)" : "0 -4px 12px rgba(0,0,0,0.15)",
       overflowY: "auto",
-      maxHeight: 200,
+      maxHeight: 240,
     };
   };
 
@@ -76,16 +90,61 @@ function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
       </button>
       {open && ReactDOM.createPortal(
         <>
-          <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
+          <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => { setOpen(false); setHelpKey(null); }} />
           <ul id={menuIdRef.current} role="menu" style={getMenuStyle()} className="list-unstyled mb-0 py-1">
             <li>
-              <button type="button" role="menuitem" className="dropdown-item small text-muted" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
+              <button type="button" role="menuitem" className="dropdown-item small text-muted px-2 py-1" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
             </li>
-            {options.map(opt => (
-              <li key={opt}>
-                <button type="button" role="menuitem" className={`dropdown-item small ${opt === value ? "fw-semibold text-primary" : ""}`} onClick={() => { onChange(opt); setOpen(false); }}>{opt}</button>
-              </li>
-            ))}
+            {options.map((opt) => {
+              const optVal = typeof opt === "object" ? opt.value : opt;
+              const optLabel = typeof opt === "object" ? opt.label : opt;
+              const optDesc = typeof opt === "object" ? opt.description : PERMISSION_DESCRIPTIONS[opt];
+              const isSelected = optVal === value;
+              const isHelpOpen = helpKey === optVal;
+
+              return (
+                <li key={optVal} className="d-flex align-items-center justify-content-between px-2 py-0.5 position-relative">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={`dropdown-item small p-1 rounded flex-grow-1 text-start ${isSelected ? "fw-semibold text-primary" : ""}`}
+                    onClick={() => { onChange(optVal); setOpen(false); }}
+                  >
+                    {optLabel}
+                  </button>
+
+                  {optDesc && (
+                    <div className="flex-shrink-0 position-relative">
+                      <button
+                        type="button"
+                        className="btn btn-sm text-muted p-0 d-flex align-items-center justify-content-center"
+                        style={{ width: "1.5rem", height: "1.5rem", fontSize: "0.75rem", fontWeight: 700 }}
+                        onMouseEnter={() => setHelpKey(optVal)}
+                        onMouseLeave={() => setHelpKey((prev) => (prev === optVal ? null : prev))}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setHelpKey((prev) => (prev === optVal ? null : optVal));
+                        }}
+                      >
+                        ?
+                      </button>
+
+                      {isHelpOpen && (
+                        <div
+                          className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start"
+                          onMouseEnter={() => setHelpKey(optVal)}
+                          onMouseLeave={() => setHelpKey((prev) => (prev === optVal ? null : prev))}
+                        >
+                          <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{optLabel}</div>
+                          <div className="dark:text-gray-300 small text-gray-700">{optDesc}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </>,
         document.body
@@ -199,14 +258,21 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                         <span className={`badge ${permission.granted ? "bg-success" : "bg-danger"}`}>{permission.granted ? "Granted" : "Denied"}</span>
                       </td>
                       <td>
-                        <div className="ui-flex-center-gap-1">
-                          <button onClick={() => onDeletePermission(permission.id)} className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" title="Delete Permission" type="button">
-                            <XMarkIcon style={{ width: 16, height: 16 }} />
+                        <div className="d-flex align-items-center gap-1">
+                          <button
+                            onClick={() => onDeletePermission(permission.id)}
+                            className="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0"
+                            style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                            title="Delete Permission"
+                            type="button"
+                          >
+                            <XMarkIcon style={{ width: 14, height: 14 }} />
                           </button>
                           <button
                             type="button"
                             onClick={() => onUpdatePermission(permission.id, !permission.granted)}
-                            className={`btn btn-sm d-flex align-items-center justify-content-center ms-auto ${permission.granted ? "btn-outline-warning" : "btn-outline-success"}`}
+                            className={`btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0 ${permission.granted ? "btn-outline-warning" : "btn-outline-success"}`}
+                            style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
                             title={permission.granted ? "Deny Permission" : "Grant Permission"}
                           >
                             {permission.granted ? <XCircleIcon style={{ width: 16, height: 16 }} /> : <CheckCircleIcon style={{ width: 16, height: 16 }} />}
