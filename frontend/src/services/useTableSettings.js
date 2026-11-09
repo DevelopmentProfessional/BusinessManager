@@ -1,5 +1,5 @@
+import { useMemo } from "react";
 import { create } from "zustand";
-import { profileAPI } from "./api";
 import useStore from "./useStore";
 
 export const DEFAULT_PAGE_SETTINGS = {
@@ -26,10 +26,6 @@ function getInitialSettings() {
     const rawUser = localStorage.getItem("user") || sessionStorage.getItem("user");
     if (rawUser) {
       const parsed = JSON.parse(rawUser);
-      if (parsed?.table_settings) {
-        const settings = typeof parsed.table_settings === "string" ? JSON.parse(parsed.table_settings) : parsed.table_settings;
-        return { ...DEFAULT_PAGE_SETTINGS, ...settings };
-      }
       const local = localStorage.getItem(`table_settings_${parsed.id}`);
       if (local) {
         return { ...DEFAULT_PAGE_SETTINGS, ...JSON.parse(local) };
@@ -47,34 +43,19 @@ const useTableSettings = create((set, get) => ({
   settings: getInitialSettings(),
 
   loadFromUser: (user) => {
-    if (!user) return;
+    if (!user?.id) return;
     try {
-      let parsed = null;
-      if (user.table_settings) {
-        parsed = typeof user.table_settings === "string" ? JSON.parse(user.table_settings) : user.table_settings;
-      } else if (user.id) {
-        const local = localStorage.getItem(`table_settings_${user.id}`);
-        if (local) parsed = JSON.parse(local);
-      }
-      if (parsed && typeof parsed === "object") {
-        set({ settings: { ...DEFAULT_PAGE_SETTINGS, ...parsed } });
+      const local = localStorage.getItem(`table_settings_${user.id}`);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed && typeof parsed === "object") {
+          set({ settings: { ...DEFAULT_PAGE_SETTINGS, ...parsed } });
+        }
       }
     } catch {}
   },
 
-  getPageSettings: (page) => {
-    const all = get().settings;
-    return { ...(DEFAULT_PAGE_SETTINGS[page] || {}), ...(all[page] || {}) };
-  },
-
-  setPageSettings: (page, patch) => {
-    const all = get().settings;
-    const current = all[page] || DEFAULT_PAGE_SETTINGS[page] || {};
-    const updated = { ...all, [page]: { ...current, ...patch } };
-    set({ settings: updated });
-  },
-
-  savePageSettings: async (page, patch) => {
+  savePageSettings: (page, patch) => {
     const all = get().settings;
     const current = all[page] || DEFAULT_PAGE_SETTINGS[page] || {};
     const updatedPage = { ...current, ...patch };
@@ -88,5 +69,15 @@ const useTableSettings = create((set, get) => ({
     } catch {}
   },
 }));
+
+export function usePageTableSettings(page) {
+  const pageSetting = useTableSettings((state) => state.settings[page]);
+  const savePageSettings = useTableSettings((state) => state.savePageSettings);
+  const settings = useMemo(
+    () => ({ ...(DEFAULT_PAGE_SETTINGS[page] || {}), ...(pageSetting || {}) }),
+    [page, pageSetting]
+  );
+  return { settings, savePageSettings };
+}
 
 export default useTableSettings;

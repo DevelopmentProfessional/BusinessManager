@@ -53,7 +53,7 @@ import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
-import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
@@ -70,13 +70,14 @@ export default function Services() {
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
   const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
-  const { getPageSettings, savePageSettings } = useTableSettings();
-  const pageSettings = getPageSettings("services");
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("services");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
 
   useEffect(() => {
-    setPendingSettings(pageSettings);
-  }, [pageSettings, showPageControls]);
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
 
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());

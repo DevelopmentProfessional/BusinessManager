@@ -63,7 +63,7 @@ import Form_Item from "./components/Form_Item";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
-import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
 const ASSET_UNITS_PAGE_SIZE_KEY = "inventory_asset_units_page_size";
 const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -103,13 +103,14 @@ export default function Inventory() {
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
   const { isTrainingMode } = useViewMode();
-  const { getPageSettings, savePageSettings } = useTableSettings();
-  const pageSettings = getPageSettings("inventory");
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("inventory");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
 
   useEffect(() => {
-    setPendingSettings(pageSettings);
-  }, [pageSettings, showPageControls]);
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
 
   const scrollRef = useRef(null);
 

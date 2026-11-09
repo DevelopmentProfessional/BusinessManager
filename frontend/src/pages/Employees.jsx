@@ -72,7 +72,7 @@ import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
 import PageTableRow from "./components/Page_TableRow";
 import useDarkMode from "../services/useDarkMode";
-import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 import Modal_Create_User from "./components/Modal_UserCreate";
 import Modal_Permissions_User from "./components/Modal_UserPermissions";
 import Modal_Manage_Roles from "./components/Modal_RolesManage";
@@ -144,13 +144,14 @@ export default function Employees() {
   const [multiSaving, setMultiSaving] = useState(false);
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
-  const { getPageSettings, savePageSettings } = useTableSettings();
-  const pageSettings = getPageSettings("employees");
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("employees");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
 
   useEffect(() => {
-    setPendingSettings(pageSettings);
-  }, [pageSettings, showPageControls]);
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
   // ─── [4] MODAL-CONTROL & PAYROLL STATE ──────────────────────────────────────
   // All modal open/close flags and their associated target object grouped here.
   const [showPayModal, setShowPayModal] = useState(false);

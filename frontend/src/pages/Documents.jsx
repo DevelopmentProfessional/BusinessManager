@@ -66,7 +66,7 @@ import Dropdown_Filter from "./components/Dropdown_Filter";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
-import useTableSettings, { getTextSizeStyle } from "../services/useTableSettings";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
 // ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
 function DocumentUploadForm({ onSubmit, onCancel }) {
@@ -274,13 +274,14 @@ export default function Documents() {
   const [categories, setCategories] = useState([]);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
-  const { getPageSettings, savePageSettings } = useTableSettings();
-  const pageSettings = getPageSettings("documents");
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("documents");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
 
   useEffect(() => {
-    setPendingSettings(pageSettings);
-  }, [pageSettings, showPageControls]);
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
 
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
