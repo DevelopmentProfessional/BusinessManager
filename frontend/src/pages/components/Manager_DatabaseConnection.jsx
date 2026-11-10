@@ -346,7 +346,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Description */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <textarea id="conn_description" className="form-control ui-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
+                        <textarea id="conn_description" className="ui-description-textarea form-control form-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
                         <label htmlFor="conn_description">Description</label>
                       </div>
                     </div>

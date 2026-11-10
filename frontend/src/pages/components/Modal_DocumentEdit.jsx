@@ -356,7 +356,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
               {/* ── Description ──────────────────────────────────────────────────── */}
               <div className="form-floating mb-3">
-                <textarea id="doc_description" className="form-control ui-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+                <textarea id="doc_description" className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
                 <label htmlFor="doc_description">Description</label>
               </div>
 

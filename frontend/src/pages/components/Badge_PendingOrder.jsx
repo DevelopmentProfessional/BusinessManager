@@ -16,11 +16,12 @@ const Badge_PendingOrder = ({ clientId }) => {
 
   const loadPendingCount = useCallback(async () => {
     try {
-      const response = await api.get(`/pending-orders/count${clientId ? `?client_id=${clientId}` : ""}`);
+      const response = await api.get(`/settings/pending-orders/count${clientId ? `?client_id=${clientId}` : ""}`);
       const data = response?.data ?? {};
       setCount(data.pending_count || 0);
-    } catch (error) {
-      console.error("Failed to load pending count:", error);
+    } catch {
+      // Endpoint may not be available on all environments; degrade silently
+      setCount(0);
     }
   }, [clientId]);
 

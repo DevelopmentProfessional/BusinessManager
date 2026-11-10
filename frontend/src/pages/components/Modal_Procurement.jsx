@@ -304,13 +304,13 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
           <label htmlFor={`po_notes_${supplierId}`}>Notes</label>
         </div>
       </div>
-      <div className="border-top d-flex flex-shrink-0 gap-2 justify-content-end pt-0">
-        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }} disabled={loading}>
-          Cancel
-        </button>
+      <div className="border-top d-flex flex-shrink-0 gap-2 justify-content-start pt-0">
         <button type="button" className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1" onClick={handleCreatePO} disabled={loading || formData.line_items.every((i) => !i.inventory_id)}>
           <CheckIcon style={{ width: 14, height: 14 }} />
           <span>{loading ? "Saving…" : "Save"}</span>
+        </button>
+        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }} disabled={loading}>
+          Cancel
         </button>
       </div>
     </div>

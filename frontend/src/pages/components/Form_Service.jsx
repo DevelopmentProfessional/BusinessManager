@@ -296,13 +296,23 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   const handleAddResource = () =>
     wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding resources.");
+        return;
+      }
       if (!newResource.inventory_id) {
         setTabError("Select an item first");
         return;
       }
+      const itemExists = inventory.some((i) => i.id === newResource.inventory_id);
+      if (!itemExists) {
+        setTabError("Selected item does not exist or was removed.");
+        return;
+      }
       const rate = newResource.consumption_rate_pct !== "" ? parseFloat(newResource.consumption_rate_pct) : null;
       const res = await serviceRelationsAPI.addResource(service.id, newResource.inventory_id, parseFloat(newResource.quantity) || 1, rate);
-      setResources((prev) => [...prev, res.data]);
+      const data = res?.data ?? res;
+      setResources((prev) => [...prev, data]);
       setNewResource({ inventory_id: "", quantity: "1", consumption_rate_pct: "" });
     });
   const handleRemoveResource = (id) =>
@@ -372,12 +382,17 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   const handleAddAsset = () =>
     wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding assets.");
+        return;
+      }
       if (!newAsset.inventory_id) {
         setTabError("Select an asset first");
         return;
       }
       const res = await serviceRelationsAPI.addAsset(service.id, newAsset.inventory_id);
-      setAssets((prev) => [...prev, res.data]);
+      const data = res?.data ?? res;
+      setAssets((prev) => [...prev, data]);
       setNewAsset({ inventory_id: "" });
     });
   const handleRemoveAsset = (id) =>
@@ -388,12 +403,17 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   const handleAddEmployee = () =>
     wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding employees.");
+        return;
+      }
       if (!newEmployee.user_id) {
         setTabError("Select an employee first");
         return;
       }
       const res = await serviceRelationsAPI.addEmployee(service.id, newEmployee.user_id);
-      setSvcEmployees((prev) => [...prev, res.data]);
+      const data = res?.data ?? res;
+      setSvcEmployees((prev) => [...prev, data]);
       setNewEmployee({ user_id: "" });
     });
   const handleRemoveEmployee = (id) =>
@@ -404,12 +424,17 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   const handleAddLocation = () =>
     wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding locations.");
+        return;
+      }
       if (!newLocation.inventory_id) {
         setTabError("Select a location first");
         return;
       }
       const res = await serviceRelationsAPI.addLocation(service.id, newLocation.inventory_id);
-      setLocations((prev) => [...prev, res.data]);
+      const data = res?.data ?? res;
+      setLocations((prev) => [...prev, data]);
       setNewLocation({ inventory_id: "" });
     });
   const handleRemoveLocation = (id) =>
@@ -546,7 +571,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
                 {/* Description at the bottom */}
                 <div className="form-floating ui-form-floating-mb2">
-                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Description" />
+                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
                   <label htmlFor="description">Description</label>
                 </div>
 

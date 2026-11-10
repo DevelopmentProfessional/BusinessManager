@@ -394,7 +394,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
         </div>
         {/* /component-body */}
 
-        <div className="component-footer" style={{ position: "relative" }}>
+        <div className="component-footer">
           <div className="component-footer-left">
             {!orderCreated && (
               <div className="ui-flex-center-gap-1">
@@ -408,7 +408,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
               </div>
             )}
           </div>
-          <div className="component-footer-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+          <div className="component-footer-center">
             <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>
