@@ -978,7 +978,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
         <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 flex-shrink-0 px-1 py-0">
           <div className="ui-flex-center-gap-2">
             <CalculatorIcon className="h-5 text-blue-600 w-5" />
-            <h5 className="ui-heading-strong">Forecaster</h5>
+            <h5 className="app-modal-title ui-heading-strong">Forecaster</h5>
           </div>
         </div>
 

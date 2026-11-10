@@ -471,7 +471,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
       <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-0 px-1">
         <div className="align-items-center d-flex gap-2 mb-2">
           <BanknotesIcon className="text-muted" style={{ width: 20, height: 20 }} />
-          <h6 className="dark:text-white flex-grow-1 fw-semibold mb-0 text-gray-900">Wages &amp; Payroll</h6>
+          <h6 className="app-modal-title flex-grow-1">Wages &amp; Payroll</h6>
           <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1">
             <XMarkIcon style={{ width: 16, height: 16 }} />
           </button>
