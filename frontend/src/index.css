@@ -69,7 +69,7 @@
   --app-icon-size-active: 1.25rem;
   --app-btn-icon-size: var(--app-icon-size);
   --app-btn-icon-size-active: var(--app-icon-size-active);
-  --app-btn-label-font-size: 0.78rem;
+  --app-btn-label-font-size: 0.75rem;
   --app-btn-border-radius: 9999px;
   --app-btn-circle-border-radius: 50%;
 
@@ -94,7 +94,7 @@
 
   /* Search Boxes */
   --app-input-height: 2rem;
-  --app-input-font-size: 0.78rem;
+  --app-input-font-size: 0.75rem;
   --app-search-input-padding-x: 0.75rem;
 
   /* Dropups & Dropdowns */
@@ -139,9 +139,15 @@
   --app-chart-container-border-radius: 0.5rem;
 
   /* Badges & Tags */
-  --app-badge-font-size: 0.65rem;
+  --app-badge-font-size: 0.75rem;
   --app-badge-padding-x: 0rem;
   --app-badge-padding-y: 0.15rem;
+
+  /* Standardized Font Size Scale (.125, .25, .5, .75, 1, 1.25 rem) */
+  --app-text-size-tiny: 0.5rem;
+  --app-text-size-small: 0.75rem;
+  --app-text-size-medium: 1rem;
+  --app-text-size-large: 1.25rem;
 }
 
 /* Global shadow reset (requested app-wide) */
@@ -644,7 +650,7 @@ table::-webkit-scrollbar,
    ========================================================================== */
 .app-page-title {
   margin: 0 !important;
-  font-size: 1.5rem !important; /* 24px - standard h4 */
+  font-size: 1.25rem !important;
   font-weight: 700 !important;
   line-height: 1.25 !important;
   color: var(--bs-body-color) !important;
@@ -805,9 +811,9 @@ table::-webkit-scrollbar,
 .app-modal-title,
 .modal-title {
   margin: 0 !important;
-  font-size: 1.125rem !important; /* 18px */
+  font-size: 1rem !important;
   font-weight: 600 !important;
-  line-height: 1.35 !important;
+  line-height: 1.25 !important;
   color: var(--bs-body-color) !important;
   display: flex;
   align-items: center;
@@ -904,7 +910,7 @@ table::-webkit-scrollbar,
   justify-content: space-between;
   border-bottom: 0.0625rem solid var(--bs-border-color);
   font-weight: 600;
-  font-size: 0.9375rem;
+  font-size: 1rem;
 }
 
 .app-card-body {
@@ -1118,7 +1124,7 @@ table::-webkit-scrollbar,
 }
 
 .ui-small-muted {
-  font-size: 0.875em;
+  font-size: 0.75rem;
   color: var(--bs-secondary-color);
 }
 
@@ -1158,9 +1164,9 @@ table::-webkit-scrollbar,
 
 .ui-heading-strong {
   margin-bottom: 0 !important;
-  font-size: 1.125rem !important;
+  font-size: 1rem !important;
   font-weight: 600 !important;
-  line-height: 1.35 !important;
+  line-height: 1.25 !important;
   color: var(--bs-body-color) !important;
 }
 
@@ -1169,7 +1175,7 @@ table::-webkit-scrollbar,
 }
 
 .ui-label-strong-sm {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: rgb(55 65 81);
 }
@@ -1217,7 +1223,7 @@ table::-webkit-scrollbar,
 
 .ui-form-label-sm {
   margin-bottom: 0.25rem;
-  font-size: 0.875em;
+  font-size: 0.75rem;
 }
 
 .ui-control-sm {
@@ -1265,7 +1271,7 @@ table::-webkit-scrollbar,
 }
 
 .ui-text-sm {
-  font-size: 0.875em;
+  font-size: 0.75rem;
 }
 
 .ui-text-muted {
@@ -1280,7 +1286,7 @@ table::-webkit-scrollbar,
   color: var(--bs-secondary);
   border: 0.0625rem solid var(--bs-secondary);
   padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   border-radius: var(--bs-border-radius-sm);
 }
@@ -1391,7 +1397,7 @@ table::-webkit-scrollbar,
 }
 
 .app-error-boundary__icon {
-  font-size: 2.5rem;
+  font-size: 1.25rem;
 }
 
 .app-error-boundary__message {
@@ -1930,7 +1936,7 @@ body.training-mode .btn.rounded-pill .text-nowrap {
 .searchable-select-input {
   min-height: 2.75rem;
   padding-right: 2.25rem !important;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .searchable-select-input-icon {
@@ -2210,7 +2216,7 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.2;
   cursor: pointer;
   -webkit-user-select: none;
@@ -2965,7 +2971,28 @@ textarea.form-control {
 }
 
 .text-xxs {
-  font-size: 0.68rem;
+  font-size: 0.5rem;
+}
+
+/* Standardized text size scale (.125, .25, .5, .75, 1, 1.25 rem) */
+.text-size-tiny,
+.app-text-tiny {
+  font-size: 0.5rem !important;
+}
+
+.text-size-small,
+.app-text-small {
+  font-size: 0.75rem !important;
+}
+
+.text-size-medium,
+.app-text-medium {
+  font-size: 1rem !important;
+}
+
+.text-size-large,
+.app-text-large {
+  font-size: 1.25rem !important;
 }
 
 .app-progress-bar {
@@ -3242,8 +3269,8 @@ select.form-select {
   flex: 1 1 auto;
   min-width: 0;
   font-weight: 600 !important;
-  font-size: 1.125rem !important;
-  line-height: 1.35 !important;
+  font-size: 1rem !important;
+  line-height: 1.25 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3405,7 +3432,7 @@ select.form-select {
   top: 0;
   bottom: 0;
   border-radius: 9999px;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
 .bulk-import-top-actions {
