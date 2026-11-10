@@ -80,6 +80,7 @@ class Company(BaseModel, table=True):
     company_email: Optional[str] = Field(default=None)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
+    timezone: Optional[str] = Field(default=None)
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
     tax_rate: float = Field(default=0.0)
     is_active: bool = Field(default=True)
@@ -132,6 +133,7 @@ class AppSettings(BaseModel, table=True):
     company_email: Optional[str] = Field(default=None)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
+    company_timezone: Optional[str] = Field(default=None)
 
     # Cancellation/refund policy (added by migration)
     cancellation_percentage: float = Field(default=10.0)

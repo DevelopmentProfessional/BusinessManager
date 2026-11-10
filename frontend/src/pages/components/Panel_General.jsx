@@ -175,6 +175,53 @@ const Panel_General = ({
             <input type="number" id="tax_rate" value={companyInfo.tax_rate} onChange={(e) => handleCompanyInfoChange("tax_rate", parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" placeholder="Tax Rate" min="0" max="100" step="0.01" />
             <label htmlFor="tax_rate">Tax Rate (%)</label>
           </div>
+          <div className="d-flex gap-1 align-items-center">
+            <div className="form-floating flex-grow-1">
+              <input
+                type="text"
+                id="company_timezone"
+                value={companyInfo.company_timezone || ""}
+                onChange={(e) => handleCompanyInfoChange("company_timezone", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="Time Zone (e.g. America/New_York)"
+                list="common-timezones-list"
+              />
+              <label htmlFor="company_timezone">Time Zone</label>
+              <datalist id="common-timezones-list">
+                <option value="America/New_York">Eastern Time (US & Canada)</option>
+                <option value="America/Chicago">Central Time (US & Canada)</option>
+                <option value="America/Denver">Mountain Time (US & Canada)</option>
+                <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                <option value="America/Anchorage">Alaska</option>
+                <option value="Pacific/Honolulu">Hawaii</option>
+                <option value="America/Halifax">Atlantic Time</option>
+                <option value="America/Toronto">Toronto</option>
+                <option value="America/Vancouver">Vancouver</option>
+                <option value="Europe/London">London / GMT</option>
+                <option value="Europe/Paris">Paris / Central European</option>
+                <option value="Europe/Berlin">Berlin</option>
+                <option value="Asia/Dubai">Dubai</option>
+                <option value="Asia/Kolkata">India (IST)</option>
+                <option value="Asia/Singapore">Singapore</option>
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="Australia/Sydney">Sydney (AEST)</option>
+                <option value="Pacific/Auckland">Auckland (NZST)</option>
+                <option value="UTC">UTC</option>
+              </datalist>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm text-nowrap"
+              style={{ height: "calc(3.5rem + 0.125rem)" }}
+              onClick={() => {
+                const detected = (typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
+                handleCompanyInfoChange("company_timezone", detected);
+              }}
+              title="Auto-detect current time zone from your browser"
+            >
+              Auto-detect
+            </button>
+          </div>
         </div>
         <p className="mb-2 text-muted text-xs">e.g. 8.5 for 8.5%</p>
       </SettingsSection>
