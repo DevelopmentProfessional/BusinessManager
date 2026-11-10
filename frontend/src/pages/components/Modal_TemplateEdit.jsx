@@ -349,12 +349,12 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                   style={{ minWidth: "160px", maxWidth: "260px" }}
                   placeholder="Template name"
                 />
-                <div className="ui-pos-rel">
+                <div className="ui-pos-rel" style={showDescriptionHelp ? { zIndex: 30 } : undefined}>
                   <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" onClick={() => setShowDescriptionHelp((prev) => !prev)} title="Template description">
                     <QuestionMarkCircleIcon className="ui-icon-4" />
                   </button>
                   {showDescriptionHelp && (
-                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ width: "280px", zIndex: 20 }}>
+                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ width: "280px", zIndex: 100 }}>
                       <label className="form-label ui-form-label-xs">Template description</label>
                       <textarea
                         value={description}
@@ -382,12 +382,12 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
               />
 
-              <div className="ui-pos-rel">
+              <div className="ui-pos-rel" style={showPagesDropup ? { zIndex: 30 } : undefined}>
                 <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
                   Pages
                 </button>
                 {showPagesDropup && (
-                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 100 }}>
                     {sortedPageOptions.map((pg) => (
                       <label key={pg.value} className="align-items-center app-menu-item d-flex gap-2 py-1">
                         <input
@@ -405,12 +405,12 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 )}
               </div>
 
-              <div className="ui-pos-rel">
-                <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
+              <div className="ui-pos-rel" style={showInsertDropup ? { zIndex: 30 } : undefined}>
+                <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
                   Insert
                 </button>
                 {showInsertDropup && (
-                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 20 }}>
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 100 }}>
                     <button
                       type="button"
                       className="app-menu-item btn btn-sm text-start w-100"
@@ -448,7 +448,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
 
           {/* Row 3: save/cancel */}
-          <div className="align-items-center border-top d-flex gap-1 p-0">
+          <div className=" border-top d-flex gap-1 p-0">
             <div className="component-footer-left">
               <button type="button" onClick={handleSave} className="align-items-center btn btn-primary btn-sm d-flex gap-1" disabled={saving} title="Save Template">
                 {saving ? (

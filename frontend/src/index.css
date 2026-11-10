@@ -3362,11 +3362,20 @@ select.form-select {
   padding-bottom: calc(var(--app-standard-footer-height) * 3);
 }
 
-.template-editor-toolbar-shell,
-.template-editor-meta-row {
+.template-editor-toolbar-shell {
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.template-editor-meta-row {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .template-editor-toolbar-shell .editor-toolbar {
