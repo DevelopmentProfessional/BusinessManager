@@ -12,15 +12,15 @@ export const DEFAULT_PAGE_SETTINGS = {
 };
 
 export const TABLE_TEXT_SIZES = [
-  { id: "tiny", label: "Tiny", fontSize: "0.4rem" },
-  { id: "small", label: "Small", fontSize: "0.6rem" },
-  { id: "medium", label: "Medium", fontSize: "0.8rem" },
-  { id: "large", label: "Large", fontSize: "1rem" },
+  { id: "tiny", label: "Tiny", fontSize: "0.5rem" },
+  { id: "small", label: "Small", fontSize: "0.75rem" },
+  { id: "medium", label: "Medium", fontSize: "1rem" },
+  { id: "large", label: "Large", fontSize: "1.25rem" },
 ];
 
 export function getTextSizeStyle(textSize) {
   const match = TABLE_TEXT_SIZES.find((s) => s.id === textSize);
-  return { fontSize: match ? match.fontSize : "0.875rem" };
+  return { fontSize: match ? match.fontSize : "1rem" };
 }
 
 function getInitialSettings() {
