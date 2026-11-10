@@ -155,6 +155,7 @@ class Company(BaseModel, table=True):
     company_email: Optional[str] = Field(default=None)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
+    timezone: Optional[str] = Field(default=None)
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
     tax_rate: float = Field(default=0.0)
     is_active: bool = Field(default=True)
@@ -675,6 +676,7 @@ class AppSettings(BaseModel, table=True):
     company_email: Optional[str] = Field(default=None)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
+    company_timezone: Optional[str] = Field(default=None)
     # Tax
     tax_rate: Optional[float] = Field(default=0.0)  # Percentage, e.g. 8.5 = 8.5%
     # Client portal branding (added by migration)
@@ -1503,6 +1505,7 @@ class CompanyRead(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    timezone: Optional[str] = None
     tax_rate: float = 0.0
     is_active: bool
     created_at: Optional[datetime] = None
@@ -1516,6 +1519,7 @@ class CompanyCreate(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    timezone: Optional[str] = None
     tax_rate: float = 0.0
     is_active: bool = True
 
@@ -1587,6 +1591,7 @@ class AppSettingsUpdate(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    company_timezone: Optional[str] = None
     tax_rate: Optional[float] = None
     # Client portal branding
     portal_hero_title: Optional[str] = None
@@ -1633,6 +1638,7 @@ class AppSettingsRead(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    company_timezone: Optional[str] = None
     tax_rate: Optional[float] = None
     # Client portal branding
     portal_hero_title: Optional[str] = None

@@ -1806,10 +1806,20 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       </div>
 
       {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
-      {/* Footer */}
-      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
-        {/* Tab Navigation */}
-        <div className="d-flex gap-1 overflow-x-auto no-scrollbar mb-2 py-1 px-1">
+      {/* Footer: Two-row setup (Row 1: Tabs scrollable, Row 2: Save & Cancel) */}
+      <div
+        className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell d-flex flex-column align-items-stretch"
+        style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+      >
+        {/* Row 1: Tab Navigation (Horizontally scrollable with no visible scrollbar) */}
+        <div
+          className="d-flex flex-row gap-1 overflow-x-auto no-scrollbar w-100 py-1"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -1817,7 +1827,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
               onClick={() => setActiveTab(tab.key)}
               type="button"
               disabled={tab.disabled}
-              style={{ fontSize: "0.8rem", padding: "0.25rem 0.75rem" }}
+              style={{ fontSize: "0.75rem", padding: "0.25rem 0.75rem" }}
             >
               {tab.label}
             </button>
@@ -1826,7 +1836,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
         {/* Signature tab footer controls */}
         {activeTab === "signature" && employee && !showSignaturePad && !signatureLoading && (
-          <div className="d-flex gap-2 justify-content-center mb-2">
+          <div className="d-flex gap-2 justify-content-center mb-1">
             <button type="button" onClick={() => signatureFileRef.current?.click()} className="btn btn-outline-secondary btn-sm px-1 rounded-pill">
               Upload
             </button>
@@ -1838,7 +1848,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
         {/* Permissions tab footer controls */}
         {activeTab === "permissions" && employee && (
-          <div className="mb-2">
+          <div className="mb-1 w-100">
             {permError && <div className="alert alert-danger mb-2 py-1 small">{permError}</div>}
             {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
             <div className="align-items-center g-2 row">
@@ -1883,33 +1893,37 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
         {/* Payments tab footer controls */}
         {activeTab === "payments" && employee && hasPermission("employees", "write") && (
-          <div className="d-flex justify-content-center mb-2">
+          <div className="d-flex justify-content-center mb-1">
             <button type="button" className="btn btn-outline-secondary btn-sm px-1 rounded-pill" onClick={() => setShowPayModal(true)}>
               Pay
             </button>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <Footer_Actions
-          start={
-            activeTab === "details" || activeTab === "benefits" || activeTab === "pay_settings" ? <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} /> : null
-          }
-          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
-          end={
-            employee && canDelete ? (
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Delete"
-                title="Delete employee"
-                onClick={async () => {
-                  if (await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" })) onDelete(employee.id);
-                }}
-                className="btn-outline-secondary"
-              />
-            ) : null
-          }
-        />
+        {/* Row 2: Action Buttons (Save, Cancel, and Delete) */}
+        <div className="w-100">
+          <Footer_Actions
+            start={
+              activeTab === "details" || activeTab === "benefits" || activeTab === "pay_settings" ? (
+                <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} />
+              ) : null
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+            end={
+              employee && canDelete ? (
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Delete"
+                  title="Delete employee"
+                  onClick={async () => {
+                    if (await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" })) onDelete(employee.id);
+                  }}
+                  className="btn-outline-secondary"
+                />
+              ) : null
+            }
+          />
+        </div>
       </div>
 
       {/* Process Pay Modal */}

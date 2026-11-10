@@ -2147,12 +2147,13 @@ def _ensure_leave_request_supervisor_id_if_needed():
 
 # ─── 13 MIGRATION: APP SETTINGS COMPANY COLUMNS ────────────────────────────────
 def _ensure_app_settings_company_columns_if_needed():
-    """Ensure app_settings table has company name, email, phone, and address columns."""
+    """Ensure app_settings table has company name, email, phone, address, and timezone columns."""
     new_cols = {
         "company_name": "VARCHAR",
         "company_email": "VARCHAR",
         "company_phone": "VARCHAR",
         "company_address": "TEXT",
+        "company_timezone": "VARCHAR",
     }
     with engine.begin() as conn:
         cols = conn.execute(text(
@@ -2164,6 +2165,16 @@ def _ensure_app_settings_company_columns_if_needed():
             if col not in col_names:
                 conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
                 print(f"  + Added column app_settings.{col} ({pg_type})")
+
+        # Ensure company table also has timezone column
+        company_cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='company'"
+        )).fetchall()
+        company_col_names = {row[0] for row in company_cols}
+        if "timezone" not in company_col_names:
+            conn.execute(text('ALTER TABLE company ADD COLUMN timezone VARCHAR'))
+            print("  + Added column company.timezone (VARCHAR)")
 
 # ─── MIGRATION: APP SETTINGS LOGO COLUMNS ─────────────────────────────────────
 def _ensure_app_settings_logo_columns_if_needed():

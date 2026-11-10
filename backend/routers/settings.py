@@ -180,6 +180,9 @@ def sync_settings_from_company(settings: AppSettings, company: Company | None) -
     if settings.company_address != company.company_address:
         settings.company_address = company.company_address
         changed = True
+    if settings.company_timezone != company.timezone:
+        settings.company_timezone = company.timezone
+        changed = True
     if (settings.tax_rate or 0.0) != (company.tax_rate or 0.0):
         settings.tax_rate = company.tax_rate or 0.0
         changed = True
@@ -196,6 +199,7 @@ def upsert_company_from_settings(session: Session, company_id: str, settings: Ap
     company_email = (settings.company_email or "").strip() or None
     company_phone = (settings.company_phone or "").strip() or None
     company_address = (settings.company_address or "").strip() or None
+    company_timezone = (settings.company_timezone or "").strip() or None
     tax_rate = settings.tax_rate if settings.tax_rate is not None else 0.0
 
     company = get_company(session, company_id)
@@ -212,6 +216,9 @@ def upsert_company_from_settings(session: Session, company_id: str, settings: Ap
         if company.company_address != company_address:
             company.company_address = company_address
             company.updated_at = datetime.utcnow()
+        if company.timezone != company_timezone:
+            company.timezone = company_timezone
+            company.updated_at = datetime.utcnow()
         if (company.tax_rate or 0.0) != (tax_rate or 0.0):
             company.tax_rate = tax_rate or 0.0
             company.updated_at = datetime.utcnow()
@@ -224,6 +231,7 @@ def upsert_company_from_settings(session: Session, company_id: str, settings: Ap
             company_email=company_email,
             company_phone=company_phone,
             company_address=company_address,
+            timezone=company_timezone,
             tax_rate=tax_rate or 0.0,
             is_active=True,
         )
@@ -248,6 +256,9 @@ def _backfill_company_from_settings_if_needed(company: Company | None, settings:
     if company.company_address is None and settings.company_address is not None:
         company.company_address = settings.company_address
         changed = True
+    if company.timezone is None and settings.company_timezone is not None:
+        company.timezone = settings.company_timezone
+        changed = True
     if (company.tax_rate is None or company.tax_rate == 0.0) and (settings.tax_rate not in (None, 0.0)):
         company.tax_rate = settings.tax_rate
         changed = True
@@ -265,6 +276,7 @@ def _to_settings_response(settings: AppSettings, company: Company | None) -> App
         response.company_email = company.company_email if company.company_email is not None else response.company_email
         response.company_phone = company.company_phone if company.company_phone is not None else response.company_phone
         response.company_address = company.company_address if company.company_address is not None else response.company_address
+        response.company_timezone = company.timezone if company.timezone is not None else response.company_timezone
         response.tax_rate = company.tax_rate if company.tax_rate is not None else (response.tax_rate or 0.0)
     return response
 
@@ -286,6 +298,7 @@ def get_or_create_settings(session: Session, company_id: str = "") -> AppSetting
             company_email=(company.company_email if company else None),
             company_phone=(company.company_phone if company else None),
             company_address=(company.company_address if company else None),
+            company_timezone=(company.timezone if company else None),
             tax_rate=(company.tax_rate if company and company.tax_rate is not None else 0.0),
             company_id=company_id or None,
         )

@@ -341,6 +341,7 @@ const Profile = () => {
     company_email: "",
     company_phone: "",
     company_address: "",
+    company_timezone: "",
     tax_rate: 0,
   });
   const [companyLoading, setCompanyLoading] = useState(false);
@@ -486,6 +487,7 @@ const Profile = () => {
             company_email: res.data.company_email || "",
             company_phone: res.data.company_phone || "",
             company_address: res.data.company_address || "",
+            company_timezone: res.data.company_timezone || "",
             tax_rate: res.data.tax_rate ?? 0,
           });
           setPortalBranding((prev) => ({

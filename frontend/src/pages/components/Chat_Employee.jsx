@@ -32,10 +32,8 @@
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from "@heroicons/react/24/outline";
-import { chatAPI, documentsAPI } from "../../services/api";
+import { chatAPI, documentsAPI, settingsAPI } from "../../services/api";
 import useDarkMode from "../../services/useDarkMode";
-import Footer_Actions from "./Footer_Actions";
-import Button_Toolbar from "./Button_Toolbar";
 
 export default function Chat_Employee({ employee, currentUser, onClose }) {
   // ─── 1 STATE & REFS ────────────────────────────────────────────────────────
@@ -46,6 +44,15 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Timezone state with automatic browser detection fallback
+  const [companyTimezone, setCompanyTimezone] = useState(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    } catch {
+      return "UTC";
+    }
+  });
+
   // Document picker state
   const [showDocPicker, setShowDocPicker] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -53,8 +60,20 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   const [docSearch, setDocSearch] = useState("");
 
   const bottomRef = useRef(null);
-  const pollRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Load company timezone from settings
+  useEffect(() => {
+    settingsAPI
+      .getScheduleSettings()
+      .then((res) => {
+        const tz = res?.data?.company_timezone;
+        if (tz && tz.trim()) {
+          setCompanyTimezone(tz.trim());
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ─── 2 MESSAGE LOADING & POLLING ───────────────────────────────────────────
 
@@ -149,7 +168,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
   const grouped = [];
   let currentDate = null;
   for (const msg of messages) {
-    const dateLabel = msg.created_at ? formatDate(msg.created_at) : "";
+    const dateLabel = msg.created_at ? formatDate(msg.created_at, companyTimezone) : "";
     if (dateLabel && dateLabel !== currentDate) {
       grouped.push({ type: "date", label: dateLabel, key: `date-${dateLabel}` });
       currentDate = dateLabel;
@@ -180,29 +199,41 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
     >
       <div className={`d-flex flex-column h-100 w-100 ${dm ? "bg-dark text-light" : "bg-white text-dark"}`} style={{ margin: 0, padding: 0, border: "none" }}>
         {/* ── Header ── */}
-        <div className={`flex-shrink-0 px-1 py-0 ${dm ? "border-secondary" : "border-bottom"}`} style={{ margin: 0, backgroundColor: dm ? "#2d3139" : "#f8f9fa" }}>
-          <div className="ui-flex-center-gap-2">
-            <div
-              className="align-items-center d-flex fw-bold justify-content-center rounded-circle text-white"
-              style={{
-                width: 34,
-                height: 34,
-                fontSize: "0.8rem",
-                flexShrink: 0,
-                backgroundColor: employee.color || "#6c757d",
-              }}
+        <div className={`flex-shrink-0 px-2 py-1.5 ${dm ? "border-secondary" : "border-bottom"}`} style={{ margin: 0, backgroundColor: dm ? "#2d3139" : "#f8f9fa" }}>
+          <div className="align-items-center d-flex justify-content-between">
+            <div className="ui-flex-center-gap-2">
+              <div
+                className="align-items-center d-flex fw-bold justify-content-center rounded-circle text-white"
+                style={{
+                  width: 34,
+                  height: 34,
+                  fontSize: "0.8rem",
+                  flexShrink: 0,
+                  backgroundColor: employee.color || "#6c757d",
+                }}
+              >
+                {employee.first_name?.[0]}
+                {employee.last_name?.[0]}
+              </div>
+              <div>
+                <div className="fw-semibold" style={{ fontSize: "0.95rem", lineHeight: 1.2 }}>
+                  {employee.first_name} {employee.last_name}
+                </div>
+                <div className="text-muted" style={{ fontSize: "0.72rem" }}>
+                  {employee.role} &bull; {companyTimezone}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center p-0 rounded-circle"
+              style={{ width: "2rem", height: "2rem" }}
+              title="Close chat"
+              aria-label="Close"
             >
-              {employee.first_name?.[0]}
-              {employee.last_name?.[0]}
-            </div>
-            <div>
-              <div className="fw-semibold" style={{ fontSize: "0.95rem", lineHeight: 1.2 }}>
-                {employee.first_name} {employee.last_name}
-              </div>
-              <div className="text-muted" style={{ fontSize: "0.72rem" }}>
-                {employee.role}
-              </div>
-            </div>
+              <XMarkIcon style={{ width: 18, height: 18 }} />
+            </button>
           </div>
         </div>
 
@@ -238,8 +269,8 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
                     ) : (
                       <span>{msg.content}</span>
                     )}
-                    <div className={`text-end mt-1 ${isMine ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.65rem", lineHeight: 1 }}>
-                      {msg.created_at ? formatTime(msg.created_at) : ""}
+                    <div className={`text-end mt-1 ${isMine ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.65rem", lineHeight: 1 }} title={`Time zone: ${companyTimezone}`}>
+                      {msg.created_at ? formatTime(msg.created_at, companyTimezone) : ""}
                     </div>
                   </div>
                 </div>
@@ -252,17 +283,18 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         {/* ── Document Picker ── */}
         {showDocPicker && (
           <div className={`border-top flex-shrink-0 ${dm ? "bg-dark border-secondary" : "bg-white"}`} style={{ maxHeight: 200, overflowY: "auto", margin: 0 }}>
-            <div className="align-items-center d-flex gap-2 pb-1 pt-0 px-1">
+            <div className="align-items-center d-flex gap-2 pb-1 pt-1 px-2">
+              <span className="fw-semibold text-xs text-muted">Attach from Documents library:</span>
               <input type="text" autoFocus className={`form-control form-control-sm ${dm ? "bg-secondary text-light border-secondary placeholder-light" : ""}`} placeholder="Search documents…" value={docSearch} onChange={(e) => setDocSearch(e.target.value)} />
-              <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={() => setShowDocPicker(false)}>
+              <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={() => setShowDocPicker(false)} title="Close document picker">
                 <XMarkIcon style={{ width: 16, height: 16 }} />
               </button>
             </div>
-            <div className="pb-0 px-1">
+            <div className="pb-0 px-2">
               {docsLoading ? (
-                <div className="py-0 small text-center text-muted">Loading…</div>
+                <div className="py-1 small text-center text-muted">Loading documents…</div>
               ) : filteredDocs.length === 0 ? (
-                <div className="py-0 small text-center text-muted">No documents found</div>
+                <div className="py-1 small text-center text-muted">No documents found</div>
               ) : (
                 filteredDocs.map((doc) => (
                   <button key={doc.id} type="button" className={`btn btn-sm w-100 text-start d-flex align-items-center gap-2 mb-1 ${dm ? "btn-outline-secondary" : "btn-outline-secondary"}`} onClick={() => handleSendDocument(doc)}>
@@ -282,50 +314,70 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
           </div>
         )}
 
-        {/* ── Input ── */}
-        <div className={`flex-shrink-0 border-top app-footer-padding app-form-footer app-standard-footer ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
-          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
-          <div className="align-items-center d-flex gap-1 mt-2">
-            <div className="flex-grow-1 w-100">
-              <form onSubmit={handleSend} className="align-items-center d-flex gap-1 justify-content-center">
-                <button
-                  type="button"
-                  title="Share a document"
-                  className={`btn btn-sm p-1 d-flex align-items-center justify-content-center ${showDocPicker ? "btn-primary" : dm ? "btn-outline-secondary" : "btn-outline-secondary"}`}
-                  onClick={openDocPicker}
-                  
-                >
-                  <PaperClipIcon style={{ width: 18, height: 18 }} />
-                </button>
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  className={`form-control rounded-pill ${dm ? "bg-secondary text-light border-secondary" : ""}`}
-                  placeholder="Type a message…"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  disabled={sending}
-                  style={{
-                    height: "3rem",
-                    resize: "none",
-                    maxWidth: "600px",
-                    flex: "1 1 auto",
-                    lineHeight: "3rem",
-                    padding: "0 1rem",
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend(e);
-                    }
-                  }}
-                />
-                <button type="submit" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center p-1" disabled={!text.trim() || sending} title="Send" >
-                  <PaperAirplaneIcon style={{ width: 18, height: 18 }} />
-                </button>
-              </form>
-            </div>
-          </div>
+        {/* ── Bottom Input & Action Bar ── */}
+        <div className={`flex-shrink-0 border-top p-2 ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
+          <form onSubmit={handleSend} className="align-items-center d-flex gap-2 w-100">
+            {/* Close button - X icon only, no text */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center p-0 rounded-circle"
+              style={{ width: "2.25rem", height: "2.25rem" }}
+              title="Close chat"
+              aria-label="Close"
+            >
+              <XMarkIcon style={{ width: 18, height: 18 }} />
+            </button>
+
+            {/* Attach button - referencing documents from the documents page */}
+            <button
+              type="button"
+              title="Attach document from Documents library"
+              className={`align-items-center btn btn-sm d-flex flex-shrink-0 justify-content-center p-0 rounded-circle ${showDocPicker ? "btn-primary" : "btn-outline-secondary"}`}
+              style={{ width: "2.25rem", height: "2.25rem" }}
+              onClick={openDocPicker}
+              aria-label="Attach document"
+            >
+              <PaperClipIcon style={{ width: 18, height: 18 }} />
+            </button>
+
+            {/* Message input */}
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className={`form-control flex-grow-1 rounded-pill ${dm ? "bg-secondary text-light border-secondary" : ""}`}
+              placeholder="Type a message…"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={sending}
+              style={{
+                height: "2.5rem",
+                minHeight: "2.5rem",
+                maxHeight: "2.5rem",
+                resize: "none",
+                lineHeight: "2.5rem",
+                padding: "0 1rem",
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend(e);
+                }
+              }}
+            />
+
+            {/* Send button */}
+            <button
+              type="submit"
+              className="align-items-center btn btn-primary d-flex flex-shrink-0 justify-content-center p-0 rounded-circle"
+              style={{ width: "2.25rem", height: "2.25rem" }}
+              disabled={!text.trim() || sending}
+              title="Send"
+              aria-label="Send"
+            >
+              <PaperAirplaneIcon style={{ width: 18, height: 18 }} />
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -334,17 +386,39 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
 
 // ─── 9 UTILITY FUNCTIONS ───────────────────────────────────────────────────────
 
-function formatTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function parseUtcTimestamp(ts) {
+  if (!ts) return new Date();
+  if (ts instanceof Date) return ts;
+  let str = String(ts).trim();
+  if (!str.endsWith("Z") && !str.includes("+") && !/-\d{2}:\d{2}$/.test(str)) {
+    str += "Z";
+  }
+  return new Date(str);
 }
 
-function formatDate(ts) {
-  const d = new Date(ts);
-  const today = new Date();
-  if (d.toDateString() === today.toDateString()) return "Today";
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function formatTime(ts, timezone) {
+  const d = parseUtcTimestamp(ts);
+  const tz = timezone || (typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
+  try {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: tz });
+  } catch {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+}
+
+function formatDate(ts, timezone) {
+  const d = parseUtcTimestamp(ts);
+  const tz = timezone || (typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
+  const now = new Date();
+  try {
+    const dStr = d.toLocaleDateString("en-US", { timeZone: tz, year: "numeric", month: "short", day: "numeric" });
+    const nowStr = now.toLocaleDateString("en-US", { timeZone: tz, year: "numeric", month: "short", day: "numeric" });
+    if (dStr === nowStr) return "Today";
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const yStr = yesterday.toLocaleDateString("en-US", { timeZone: tz, year: "numeric", month: "short", day: "numeric" });
+    if (dStr === yStr) return "Yesterday";
+    return dStr;
+  } catch {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
 }
