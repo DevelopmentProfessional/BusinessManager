@@ -97,6 +97,36 @@ export default function Dropdown_Custom({
   const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
   const { ref: triggerTextRef, displayLabel: wordSafeDisplayValue } = useWordSafeLabel(displayValue, { enabled: wordSafeTruncate && !isOpen });
 
+  const handleSelect = (option) => {
+    if (multiSelect) {
+      const next = new Set(selectedSet);
+      if (next.has(option.value)) {
+        next.delete(option.value);
+      } else {
+        next.add(option.value);
+      }
+      onChange({ target: { name, value: Array.from(next) } });
+      if (closeOnSelect) {
+        setIsOpen(false);
+      }
+      setSearchTerm("");
+      return;
+    }
+    onChange({ target: { name, value: option.value } });
+    if (closeOnSelect) {
+      setIsOpen(false);
+    }
+    setSearchTerm("");
+  };
+
+  const handleClearMultiSelect = () => {
+    onChange({ target: { name, value: multiSelect ? [] : "" } });
+    setSearchTerm("");
+  };
+
+  // Filter options based on search term
+  const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
+
   return (
     <div
       ref={dropdownRef}

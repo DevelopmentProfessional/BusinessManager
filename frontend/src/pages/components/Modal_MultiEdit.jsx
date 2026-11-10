@@ -168,14 +168,14 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
           </div>
         </div>
 
-        <div className="component-footer" style={{ position: "relative" }}>
+        <div className="component-footer">
           <div className="component-footer-left">
             <button type="button" onClick={handleSave} disabled={saving || localSaving || !hasChanges} className="align-items-center btn btn-success d-flex gap-1" title="Apply changes to all selected items">
               <CheckIcon style={{ width: 16, height: 16 }} />
               {saving || localSaving ? "Saving…" : "Save"}
             </button>
           </div>
-          <div className="component-footer-center" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+          <div className="component-footer-center">
             <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
               <XMarkIcon />
             </button>

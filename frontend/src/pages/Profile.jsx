@@ -238,6 +238,13 @@ const Profile = () => {
     void persistCurrentUserProfile({ ui_scale: nextScale }).catch(() => {});
   }, [uiScale, setUiScale, persistCurrentUserProfile]);
 
+  const setPersistedStartupPage = useCallback(
+    (page) => {
+      void persistCurrentUserProfile({ startup_page: page }).catch(() => {});
+    },
+    [persistCurrentUserProfile]
+  );
+
   // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
   // Admin-only: Check/Start Database button state
   const [dbCheckLoading, setDbCheckLoading] = useState(false);
@@ -1572,6 +1579,8 @@ const Profile = () => {
                         onClose={() => setMeSectionOpen("")}
                         onSave={() => setMeSectionOpen("")}
                         showCloseButton={false}
+                        startupPage={user?.startup_page || "schedule"}
+                        setStartupPage={setPersistedStartupPage}
                       />
                     </div>
                   )}

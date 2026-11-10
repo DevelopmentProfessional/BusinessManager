@@ -297,12 +297,12 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       )}
 
       {!hideFooter && (
-        <div className={`flex gap-3 pt-1 border-t ${isDarkMode ? "border-gray-600" : ""}`}>
+        <div className={`flex gap-2 pt-1 border-t justify-content-start ${isDarkMode ? "border-gray-600" : ""}`}>
+          <button type="button" onClick={handleSaveSettings} disabled={saving} className="bg-blue-600 disabled:opacity-50 font-medium hover:bg-blue-700 px-1 py-0 rounded-lg text-white">
+            {saving ? "Saving..." : "Save"}
+          </button>
           <button type="button" onClick={loadScheduleSettings} className={`px-1 py-0 border rounded-lg font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
             Reset
-          </button>
-          <button type="button" onClick={handleSaveSettings} disabled={saving} className="bg-blue-600 disabled:opacity-50 font-medium hover:bg-blue-700 ml-auto px-1 py-0 rounded-lg text-white">
-            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       )}

@@ -587,20 +587,15 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
                 title={selected?.template_type === "email" ? "Send message" : "Use template"}
               />
             )}
+
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
+              onClick={onClose}
+              className="btn-outline-secondary"
+              title="Close"
+            />
           </div>
-
-          {/* Center: Close button floating in the middle */}
-          <Button_Toolbar
-            icon={XMarkIcon}
-            label="Close"
-            onClick={onClose}
-            className="btn-outline-secondary position-absolute"
-            style={{ left: "50%", transform: "translateX(-50%)" }}
-            title="Close"
-          />
-
-          {/* Right spacer for balanced flex layout */}
-          <div style={{ width: "2rem" }} />
         </div>
       </div>
 

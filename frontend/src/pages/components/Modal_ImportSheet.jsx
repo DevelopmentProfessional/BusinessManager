@@ -500,7 +500,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
         <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
           {status.message && <div className={`px-1 pt-0 pb-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
-          <div className="align-items-center d-flex gap-2 justify-content-between p-0">
+          <div className="align-items-center d-flex gap-2 justify-content-start p-0">
             <div className="align-items-center component-footer-left d-flex gap-1">
               <button type="button" className="align-items-center btn btn-primary d-flex gap-1" onClick={handleImport} disabled={isSaving}>
                 <ArrowDownTrayIcon className="ui-icon-4" />
@@ -509,13 +509,12 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
               <button type="button" className="btn ui-btn-circle-outline-secondary" onClick={onClose} disabled={isSaving} title="Cancel">
                 <XMarkIcon />
               </button>
-            </div>
-            <div className="component-footer-right">
               <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" onClick={handleClearGrid} disabled={isSaving}>
                 <XMarkIcon className="ui-icon-4" />
                 <span>Clear</span>
               </button>
             </div>
+            <div className="component-footer-right" />
           </div>
         </div>
       </div>

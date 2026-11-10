@@ -354,9 +354,12 @@ export default function Schedule() {
   );
 
   const filteredAppointments = useMemo(() => {
-    const hasEmployeeFilter = filters.employeeIds.length > 0;
-    const hasClientFilter = filters.clientIds.length > 0;
-    const hasServiceFilter = filters.serviceIds.length > 0;
+    const hasEmployeeFilter = filters.employeeIds?.length > 0;
+    const hasClientFilter = filters.clientIds?.length > 0;
+    const hasServiceFilter = filters.serviceIds?.length > 0;
+    const employeeIdSet = hasEmployeeFilter ? new Set(filters.employeeIds.map(String)) : null;
+    const clientIdSet = hasClientFilter ? new Set(filters.clientIds.map(String)) : null;
+    const serviceIdSet = hasServiceFilter ? new Set(filters.serviceIds.map(String)) : null;
     const hasStartDate = Boolean(filters.startDate);
     const hasEndDate = Boolean(filters.endDate);
 
@@ -370,13 +373,13 @@ export default function Schedule() {
     }
 
     return appointments.filter((appointment) => {
-      if (hasEmployeeFilter && !filters.employeeIds.includes(appointment.employee_id)) {
+      if (employeeIdSet && !employeeIdSet.has(String(appointment.employee_id))) {
         return false;
       }
-      if (hasClientFilter && (!appointment.client_id || !filters.clientIds.includes(appointment.client_id))) {
+      if (clientIdSet && (!appointment.client_id || !clientIdSet.has(String(appointment.client_id)))) {
         return false;
       }
-      if (hasServiceFilter && (!appointment.service_id || !filters.serviceIds.includes(appointment.service_id))) {
+      if (serviceIdSet && (!appointment.service_id || !serviceIdSet.has(String(appointment.service_id)))) {
         return false;
       }
 
@@ -1719,7 +1722,7 @@ export default function Schedule() {
           </div>
 
           {/* Footer with Cancel button */}
-          <div className="bg-white d-flex dark:bg-gray-900 flex-shrink-0 justify-content-center p-1 ps-1 pt-0">
+          <div className="bg-white d-flex dark:bg-gray-900 flex-shrink-0 justify-content-start p-1 ps-1 pt-0">
             <button type="button" className="align-items-center btn btn-outline-secondary d-flex justify-content-center" onClick={() => setOverlapEvents(null)}>
               <XMarkIcon className="ui-icon-5" />
             </button>

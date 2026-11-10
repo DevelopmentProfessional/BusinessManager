@@ -668,7 +668,7 @@ export default function Clients() {
         <div className="d-flex flex-column gap-3">
           <div className="border d-flex flex-column gap-2 p-0 rounded">
             <input type="text" className="form-control ui-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
-            <textarea className="form-control ui-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
+            <textarea className="ui-description-textarea form-control form-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
             <div className="d-flex gap-2">
               <input type="number" min="0" step="0.01" className="form-control ui-control-sm" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
               <Dropdown_Custom

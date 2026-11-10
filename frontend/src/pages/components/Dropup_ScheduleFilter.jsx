@@ -38,18 +38,25 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
   const [searchTerm, setSearchTerm] = useState("");
   const [panelStyle, setPanelStyle] = useState({});
   const dropupRef = useRef(null);
+  const panelRef = useRef(null);
   const triggerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Close when clicking outside
+  // Close when clicking outside both trigger and portal panel
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropupRef.current && !dropupRef.current.contains(event.target)) {
+      const clickedTrigger = dropupRef.current && dropupRef.current.contains(event.target);
+      const clickedPanel = panelRef.current && panelRef.current.contains(event.target);
+      if (!clickedTrigger && !clickedPanel) {
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   // Compute fixed position so the panel escapes overflow-clipped ancestors
@@ -58,14 +65,31 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
       const rect = triggerRef.current.getBoundingClientRect();
       const panelWidth = Math.max(288, rect.width); // 18rem = 288px min
       const left = Math.min(rect.left, window.innerWidth - panelWidth - 8);
-      setPanelStyle({
-        position: "fixed",
-        bottom: window.innerHeight - rect.top + 4,
-        left: Math.max(8, left),
-        width: panelWidth,
-        maxWidth: "min(30rem, calc(100vw - 2rem))",
-        zIndex: 9999,
-      });
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpward = spaceAbove >= 240 || spaceAbove >= spaceBelow;
+
+      if (openUpward) {
+        setPanelStyle({
+          position: "fixed",
+          bottom: window.innerHeight - rect.top + 4,
+          left: Math.max(8, left),
+          width: panelWidth,
+          maxWidth: "min(30rem, calc(100vw - 2rem))",
+          maxHeight: `${Math.min(320, Math.max(160, spaceAbove - 24))}px`,
+          zIndex: 9999,
+        });
+      } else {
+        setPanelStyle({
+          position: "fixed",
+          top: rect.bottom + 4,
+          left: Math.max(8, left),
+          width: panelWidth,
+          maxWidth: "min(30rem, calc(100vw - 2rem))",
+          maxHeight: `${Math.min(320, Math.max(160, spaceBelow - 24))}px`,
+          zIndex: 9999,
+        });
+      }
     }
   }, [isOpen]);
 
@@ -98,22 +122,22 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
         className="align-items-center btn-unstyled d-flex gap-2 justify-content-between rounded-pill w-100"
         style={{
           height: "var(--app-input-height, 2rem)",
           minHeight: "var(--app-input-height, 2rem)",
           padding: "0 0.75rem",
           fontSize: "var(--app-btn-label-font-size, 0.875rem)",
-          border: `1px solid ${selectedCount > 0 ? "var(--bs-primary)" : "var(--bs-border-color)"}`,
-          backgroundColor: selectedCount > 0 ? "var(--bs-primary)" : "var(--bs-body-bg)",
+          border: `1px solid ${selectedCount > 0 ? "var(--app-active-color, var(--bs-primary))" : "var(--bs-border-color)"}`,
+          backgroundColor: selectedCount > 0 ? "var(--app-active-color, var(--bs-primary))" : "var(--bs-body-bg)",
           color: selectedCount > 0 ? "#fff" : "var(--bs-secondary-color)",
         }}
       >
         <span className="text-truncate">
           {label}
           {selectedCount > 0 && (
-            <span className="badge bg-white ms-1 rounded-pill text-primary" style={{ fontSize: "0.65rem" }}>
+            <span className="badge bg-white ms-1 rounded-pill text-primary fw-semibold" style={{ fontSize: "0.65rem" }}>
               {selectedCount}
             </span>
           )}
@@ -124,11 +148,9 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
       {isOpen &&
         createPortal(
           <div
-            className="app-menu-panel bg-white dark:bg-gray-800 shadow-lg"
-            style={{
-              ...panelStyle,
-              maxHeight: "300px",
-            }}
+            ref={panelRef}
+            className="app-menu-panel bg-white dark:bg-gray-800 shadow-lg d-flex flex-column"
+            style={panelStyle}
           >
             {/* Search Input */}
             <div className="border-bottom border-gray-200 dark:border-gray-700 p-0">
@@ -146,16 +168,16 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
             </div>
 
             {/* Options List */}
-            <div className="overflow-y-auto" style={{ maxHeight: "200px" }}>
+            <div className="overflow-y-auto flex-grow-1" style={{ minHeight: "100px", maxHeight: "220px" }}>
               {sortedFilteredOptions.length === 0 ? (
                 <div className="app-menu-empty px-1 py-0 text-gray-500">No matches</div>
               ) : (
                 sortedFilteredOptions.map((option) => {
-                  const isSelected = selectedIds.includes(option.id);
+                  const isSelected = selectedIds.some((id) => String(id) === String(option.id));
                   return (
-                    <label key={option.id} className={`app-menu-item d-flex align-items-center gap-2 px-1 py-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30" : ""}`} style={{ cursor: "pointer" }}>
-                      <input type="checkbox" checked={isSelected} onChange={() => onToggle(option.id)} className="form-check-input" />
-                      <span>{option.label}</span>
+                    <label key={option.id} className={`app-menu-item d-flex align-items-center gap-2 px-1 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-blue-50 dark:bg-blue-900/30 text-primary fw-semibold" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
+                      <input type="checkbox" checked={isSelected} onChange={() => onToggle(option.id)} className="form-check-input m-0 flex-shrink-0" />
+                      <span className="flex-grow-1 text-truncate">{option.label}</span>
                     </label>
                   );
                 })
@@ -163,7 +185,7 @@ function FilterDropup({ label, options, selectedIds, onToggle, onClear, placehol
             </div>
 
             {/* Close Button */}
-            <div className="bg-gray-50 border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 p-0">
+            <div className="bg-gray-50 border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 p-0 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -207,10 +229,11 @@ export default function Dropup_ScheduleFilter({ isOpen, onClose, employees, clie
   const toggleId = (key, id) => {
     setLocalFilters((prev) => {
       const current = prev[key] || [];
-      const exists = current.includes(id);
+      const idStr = String(id);
+      const exists = current.some((item) => String(item) === idStr);
       return {
         ...prev,
-        [key]: exists ? current.filter((item) => item !== id) : [...current, id],
+        [key]: exists ? current.filter((item) => String(item) !== idStr) : [...current, id],
       };
     });
   };

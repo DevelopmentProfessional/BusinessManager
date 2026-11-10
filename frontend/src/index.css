@@ -1227,6 +1227,21 @@ body,
   margin-bottom: 0.5rem;
 }
 
+/* Global description textarea styling */
+.ui-description-textarea {
+  border: 0;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge legacy */
+  overscroll-behavior: contain;
+  height: 6rem;
+  min-height: 6rem;
+  max-height: 6rem;
+}
+
+.ui-description-textarea::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Opera */
+}
+
 .ui-row-g2 {
   --bs-gutter-x: 0.5rem;
   --bs-gutter-y: 0.5rem;
@@ -3200,6 +3215,7 @@ select.form-select {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: flex-start !important;
   gap: 0.5rem;
   padding-left: var(--app-footer-padding-x) !important;
   padding-right: var(--app-footer-padding-x) !important;
@@ -3214,7 +3230,7 @@ select.form-select {
 }
 
 .component-footer-left {
-  flex: 1 1 auto;
+  flex: 0 0 auto !important;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -3222,14 +3238,43 @@ select.form-select {
 }
 
 .component-footer-center {
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start !important;
 }
 
 .component-footer-right {
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+}
+
+/* Modal and form footers float all buttons to the left:
+   Sequence: Add Save Edit Cancel Close [Other buttons] */
+.app-modal-footer,
+.modal-footer,
+.app-form-footer,
+.app-footer-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+}
+
+.app-footer-actions__start,
+.app-footer-actions__center,
+.app-footer-actions__end {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex: 0 0 auto !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+}
+
+.app-footer-actions__spacer {
+  display: none !important;
 }
 
 /* Modal/panel sticky footer contract: standard height + anchored bottom */

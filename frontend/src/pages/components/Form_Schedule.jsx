@@ -1082,14 +1082,6 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
             </div>
           )}
 
-          {appointment?.id && onDelete && (
-            <div className="mt-3 row">
-              <div className="col-12 d-flex justify-content-center">
-                <Button_Toolbar icon={XMarkIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" />
-              </div>
-            </div>
-          )}
-
           {submitError && (
             <div className="alert alert-danger mb-0 py-0" role="alert" style={{ fontSize: "0.8rem" }}>
               {submitError}
@@ -1104,7 +1096,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
-          end={null}
+          end={appointment?.id && onDelete ? <Button_Toolbar icon={XMarkIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" /> : null}
         />
       </div>
     </div>

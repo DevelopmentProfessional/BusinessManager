@@ -237,6 +237,14 @@ app.include_router(financial.router, prefix="/api/v1", tags=["financial"])
 app.include_router(discount_rules.router, prefix="/api/v1", tags=["discount-rules"])
 app.include_router(company_registration.router, prefix="/api/v1", tags=["company-registration"])
 
+# Compatibility alias for pending-orders count (mounted under /api/v1/settings)
+@app.get("/api/v1/pending-orders/count", include_in_schema=False)
+def redirect_pending_orders_count(request: Request):
+    from fastapi.responses import RedirectResponse
+    query = request.url.query
+    target = f"/api/v1/settings/pending-orders/count{f'?{query}' if query else ''}"
+    return RedirectResponse(url=target, status_code=307)
+
 # ─── 7 DOCUMENT FILE ENDPOINTS ─────────────────────────────────────────────────
 # Document file operations only: upload (create record + file) and download (serve file).
 # List/get/update/delete document metadata go through isud (/api/v1/isud/documents, /api/v1/isud/document_category).

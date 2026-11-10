@@ -83,6 +83,8 @@ function App() {
   const { isTrainingMode, buttonTextSize, setTrainingMode, setButtonTextSize, setFooterAlign, setUiScale } = useViewMode();
   useBranding();
 
+  const startupPage = user?.startup_page || "schedule";
+
   // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {
     const initializeUserData = async () => {
@@ -221,7 +223,7 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <PageErrorBoundary>
-                    <Navigate to="/schedule" replace />
+                    <Navigate to={`/${startupPage}`} replace />
                   </PageErrorBoundary>
                 </Layout>
               </ProtectedRoute>

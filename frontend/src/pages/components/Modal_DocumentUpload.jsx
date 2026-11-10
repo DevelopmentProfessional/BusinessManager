@@ -102,7 +102,7 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
             )}
           </div>
           <div className="form-floating mt-3">
-            <textarea id="po_doc_desc" className="form-control ui-control-sm" style={{ minHeight: 72 }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={uploading} />
+            <textarea id="po_doc_desc" className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={uploading} />
             <label htmlFor="po_doc_desc">Description (optional)</label>
           </div>
           {error && <div className="alert alert-danger mb-0 mt-2 py-0 small">{error}</div>}

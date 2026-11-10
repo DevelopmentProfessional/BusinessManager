@@ -961,7 +961,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="border-0 form-control form-control-sm min-h-[80px]" placeholder="Description" />
+            <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
             <label htmlFor="description">Description</label>
           </div>
 

@@ -1,12 +1,13 @@
 // FILE: Modal_Settings.jsx
-// Renders the personal settings accordion panel: dark mode, theme color, footer alignment, signature, training mode toggle, and logout.
+// Renders the personal settings accordion panel: dark mode, theme color, footer alignment, signature, training mode toggle, startup page, and logout.
 
 import React from "react";
-import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
+import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, AdjustmentsHorizontalIcon, HomeIcon } from "@heroicons/react/24/outline";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal_ColorPicker from "./Modal_ColorPicker";
 import Footer_Settings from "./Footer_Settings";
+import Dropdown_Custom from "./Dropdown_Custom";
 import api from "../../services/api";
 
 const Modal_Settings = ({
@@ -45,6 +46,8 @@ const Modal_Settings = ({
   onClose,
   onSave,
   showCloseButton = true,
+  startupPage,
+  setStartupPage,
 }) => {
   const containerStyle = embedded
     ? {
@@ -180,6 +183,26 @@ const Modal_Settings = ({
         />
 
         <Button_Toolbar icon={AdjustmentsHorizontalIcon} label="Size" onClick={cycleButtonTextSize} className="btn-outline-secondary settings-accordion-btn" title={`Text size: ${buttonTextSize}`} />
+
+        <div className="d-flex align-items-center gap-1">
+          <HomeIcon className="h-4 w-4 text-muted" />
+          <Dropdown_Custom
+            value={startupPage}
+            onChange={(e) => setStartupPage(e.target.value)}
+            className="form-select ui-control-sm"
+            style={{ width: "auto", minWidth: "8rem" }}
+            options={[
+              { value: "schedule", label: "Schedule" },
+              { value: "clients", label: "Clients" },
+              { value: "sales", label: "Sales" },
+              { value: "services", label: "Services" },
+              { value: "inventory", label: "Inventory" },
+              { value: "employees", label: "Employees" },
+              { value: "documents", label: "Documents" },
+              { value: "reports", label: "Reports" },
+            ]}
+          />
+        </div>
 
         <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="btn-outline-secondary settings-accordion-btn" title="Log out" />
       </div>
