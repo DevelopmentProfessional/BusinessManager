@@ -443,7 +443,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     <div className="ui-page-shell">
       {/* Header */}
       <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
-        <h6 className="ui-heading-strong">{item ? "Edit" : "Add Item"}</h6>
+        <h6 className="app-modal-title ui-heading-strong">{item ? "Edit" : "Add Item"}</h6>
         {!item && onBulkImport && (
           <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm dark:text-gray-400 p-1 text-gray-500" style={{ lineHeight: 1 }}>
             <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />

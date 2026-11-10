@@ -1505,7 +1505,7 @@ export default function Sales() {
       <div className="bg-gray-50 dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
         <div className="flex items-center justify-between pb-1">
           <div>
-            <h1 className="dark:text-white font-bold leading-tight text-2xl text-gray-900">Sales</h1>
+            <h1 className="app-page-title">Sales</h1>
             {selectedClient && (
               <div className="flex gap-1.5 items-center mt-0.5">
                 <span className="bg-green-400 h-2 rounded-full w-2" />

@@ -957,8 +957,8 @@ export default function Employees() {
   return (
     <div className="bg-body d-flex flex-column min-h-0 overflow-hidden vh-100">
       {/* Header - sticky on mobile */}
-      <div className="bg-body border-bottom d-flex flex-shrink-0 justify-content-between p-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
-        <h1 className="fw-bold h-4 mb-0 text-body-emphasis">Employees</h1>
+      <div className="app-page-header bg-body border-bottom d-flex flex-shrink-0 justify-content-between p-1" style={{ position: "sticky", top: 0, zIndex: 5 }}>
+        <h1 className="app-page-title">Employees</h1>
         <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       </div>
 

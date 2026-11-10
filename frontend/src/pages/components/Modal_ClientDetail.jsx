@@ -185,7 +185,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
       <div className="ui-page-shell">
         {/* Header */}
         <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
-          <h6 className="ui-heading-strong">Service History</h6>
+          <h6 className="app-modal-title ui-heading-strong">Service History</h6>
         </div>
 
         {/* Scrollable body */}
@@ -467,7 +467,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
       <div className="ui-page-shell">
         <div className="bg-white border-bottom border-gray-200 dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
-          <h6 className="ui-heading-strong">Purchase History</h6>
+          <h6 className="app-modal-title ui-heading-strong">Purchase History</h6>
         </div>
 
         <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
@@ -807,7 +807,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
         {/* Header */}
         <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 gap-2 justify-content-between p-0">
-          <h6 className="ui-heading-strong">Client Details</h6>
+          <h6 className="app-modal-title ui-heading-strong">Client Details</h6>
           {canDelete && (
             <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
               <XMarkIcon style={{ width: 18, height: 18 }} />

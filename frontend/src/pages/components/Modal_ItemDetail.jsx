@@ -1111,7 +1111,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         {/* Header for Inventory Mode - Fixed at top */}
         {!isSalesMode && (
           <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
-            <h6 className="ui-heading-strong">Edit Item</h6>
+            <h6 className="app-modal-title ui-heading-strong">Edit Item</h6>
           </div>
         )}
 

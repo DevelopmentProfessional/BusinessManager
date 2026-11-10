@@ -379,7 +379,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
       <Modal isOpen={!!detailPoId} onClose={() => { setDetailPoId(null); setDetailPo(null); }} fullScreen noPadding>
         <div className="ui-page-shell">
           <div className="border-bottom flex-shrink-0 p-0">
-            <h6 className="fw-semibold mb-0">{detailPo?.po_number || "Purchase order"}</h6>
+            <h6 className="app-modal-title">{detailPo?.po_number || "Purchase order"}</h6>
           </div>
           <div className="flex-grow-1 min-h-0 overflow-auto p-1">
             {detailLoading ? (

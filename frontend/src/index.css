@@ -638,6 +638,25 @@ table::-webkit-scrollbar,
   flex-shrink: 0;
 }
 
+/* ==========================================================================
+   GLOBAL PAGE HEADER TITLE STYLE
+   Consistent header text style across all main pages.
+   ========================================================================== */
+.app-page-title {
+  margin: 0 !important;
+  font-size: 1.5rem !important; /* 24px - standard h4 */
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: var(--bs-body-color) !important;
+  letter-spacing: -0.015em;
+  display: flex;
+  align-items: center;
+}
+
+.dark .app-page-title {
+  color: var(--bs-body-color) !important;
+}
+
 .app-page-body {
   display: flex;
   flex-direction: column;
@@ -779,11 +798,24 @@ table::-webkit-scrollbar,
   flex-shrink: 0;
 }
 
-.app-modal-title {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--bs-body-color);
+/* ==========================================================================
+   GLOBAL MODAL HEADER TITLE STYLE
+   Consistent header text style across all modals and modal components.
+   ========================================================================== */
+.app-modal-title,
+.modal-title {
+  margin: 0 !important;
+  font-size: 1.125rem !important; /* 18px */
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  color: var(--bs-body-color) !important;
+  display: flex;
+  align-items: center;
+}
+
+.dark .app-modal-title,
+.dark .modal-title {
+  color: var(--bs-body-color) !important;
 }
 
 .app-modal-close {
@@ -1125,13 +1157,15 @@ table::-webkit-scrollbar,
 }
 
 .ui-heading-strong {
-  margin-bottom: 0;
-  font-weight: 600;
-  color: rgb(17 24 39);
+  margin-bottom: 0 !important;
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  color: var(--bs-body-color) !important;
 }
 
 .dark .ui-heading-strong {
-  color: rgb(243 244 246);
+  color: var(--bs-body-color) !important;
 }
 
 .ui-label-strong-sm {
@@ -3207,12 +3241,19 @@ select.form-select {
 .component-header-left {
   flex: 1 1 auto;
   min-width: 0;
-  font-weight: 600;
-  font-size: 0.9375rem;
+  font-weight: 600 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.35 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--bs-body-color);
+  color: var(--bs-body-color) !important;
+  display: flex;
+  align-items: center;
+}
+
+.dark .component-header-left {
+  color: var(--bs-body-color) !important;
 }
 
 .component-header-center {

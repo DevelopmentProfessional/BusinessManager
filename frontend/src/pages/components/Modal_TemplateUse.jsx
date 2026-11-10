@@ -455,7 +455,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       {/* Header */}
       <div className="align-items-center bg-white border-b border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 justify-content-between px-3 py-2">
         <div className="align-items-center d-flex gap-2 min-w-0">
-          <h2 className="dark:text-white font-semibold mb-0 text-base text-gray-900 text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
+          <h2 className="app-modal-title text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
           {selected && (
             <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
               {selected.template_type}

@@ -1173,8 +1173,8 @@ export default function Reports() {
       <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
 
       {!fullScreenMode && (
-        <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 justify-content-between p-1">
-          <h1 className="dark:text-gray-100 font-bold mb-1 text-gray-900 text-xl">Reports</h1>
+        <div className="app-page-header align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 justify-content-between p-1">
+          <h1 className="app-page-title">Reports</h1>
           <div className="ui-flex-center-gap-2">
             <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
             <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />

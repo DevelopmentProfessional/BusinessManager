@@ -41,7 +41,7 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 export function ModalHeader({ title, onClose, showClose = true, className = "" }) {
   return (
     <div className={`app-modal-header d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`.trim()}>
-      <h3 className="app-modal-title align-items-center d-flex h5 mb-0 text-body">{title}</h3>
+      <h3 className="app-modal-title">{title}</h3>
       {showClose && onClose ? (
         <button type="button" onClick={onClose} title="Close" aria-label="Close" className="app-modal-close align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
           <XMarkIcon className="h-6 w-6" />
