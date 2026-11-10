@@ -181,13 +181,62 @@ body,
   zoom: var(--app-ui-scale, 1);
 }
 
-/* Hide scrollbar while preserving scroll behaviour */
-.no-scrollbar {
-  -ms-overflow-style: none; /* IE / Edge legacy */
+/* ==========================================================================
+   GLOBAL SCROLLBAR SUPPRESSION
+   Hides scrollbars globally across all elements (full pages, tables, description
+   textareas, modals, dropdowns, and nested containers) across all browsers
+   (Chrome, Safari, Edge, Firefox) while preserving smooth scrolling functionality.
+   ========================================================================== */
+html,
+body,
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE / Edge legacy */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome / Safari / Edge / Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Explicit element rules to ensure full coverage */
+textarea,
+table,
+.table-responsive,
+.no-scrollbar,
+.app-page-scroll-surface,
+.component-body,
+.component-body-inner,
+.template-editor-body,
+.template-editor-toolbar-shell,
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto,
+.app-scroll-y {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   overscroll-behavior: contain;
 }
-.no-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome / Safari / Opera */
+
+textarea::-webkit-scrollbar,
+table::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+.app-page-scroll-surface::-webkit-scrollbar,
+.component-body::-webkit-scrollbar,
+.component-body-inner::-webkit-scrollbar,
+.template-editor-body::-webkit-scrollbar,
+.template-editor-toolbar-shell::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+.app-scroll-y::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* ==========================================================================
@@ -1251,27 +1300,16 @@ body,
   text-align: end;
 }
 
-/* Bulk import grid: keep horizontal scrollbar visible, hide vertical scrollbar */
+/* Bulk import grid: hide scrollbars while preserving scroll */
+.bulk-import-grid-scroll {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
 .bulk-import-grid-scroll::-webkit-scrollbar {
-  width: 0.625rem;
-  height: 0.625rem;
-}
-
-.bulk-import-grid-scroll::-webkit-scrollbar:vertical {
-  width: 0;
-}
-
-.bulk-import-grid-scroll::-webkit-scrollbar-track:horizontal {
-  background: transparent;
-}
-
-.bulk-import-grid-scroll::-webkit-scrollbar-thumb:horizontal {
-  background: rgba(107, 114, 128, 0.5);
-  border-radius: 9999px;
-}
-
-.bulk-import-grid-scroll::-webkit-scrollbar-thumb:horizontal:hover {
-  background: rgba(107, 114, 128, 0.7);
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .app-shell-main {
