@@ -205,6 +205,9 @@ class User(BaseModel, table=True):
     # Role assignment - links to Role model for inherited permissions
     role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
 
+    # Managed status lookup (employee_status table)
+    status_id: Optional[UUID] = Field(default=None, foreign_key="employee_status.id")
+
     # Details
     iod_number: Optional[str] = Field(default=None)
     supervisor: Optional[str] = Field(default=None)
@@ -345,6 +348,8 @@ class Client(BaseModel, table=True):
     membership_since: Optional[datetime] = Field(default=None)
     membership_expires: Optional[datetime] = Field(default=None)
     membership_points: int = Field(default=0)
+    # Managed status lookup (client_status table)
+    status_id: Optional[UUID] = Field(default=None, foreign_key="client_status.id")
     # Account/Auth fields (optional, for future multi-role support)
     email_verified: bool = Field(default=False)
     password_hash: Optional[str] = Field(default=None)  # For future self-service account features
@@ -355,6 +360,14 @@ class Client(BaseModel, table=True):
 
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="client")
+
+
+class ClientStatus(BaseModel, table=True):
+    """Company-scoped managed status lookup for clients."""
+    __tablename__ = "client_status"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 6 INVENTORY MODELS ────────────────────────────────────────────────────────
@@ -527,6 +540,14 @@ class Service(BaseModel, table=True):
 
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="service")
+
+
+class ServiceCategory(BaseModel, table=True):
+    """Company-scoped managed category lookup for services (feeds the category dropdown)."""
+    __tablename__ = "service_category"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class ServiceResource(BaseModel, table=True):
@@ -736,6 +757,8 @@ class Document(BaseModel, table=True):
     owner_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     review_date: Optional[datetime] = Field(default=None)
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
+    # Managed status lookup (document_status table) — separate from the signed flag
+    status_id: Optional[UUID] = Field(default=None, foreign_key="document_status.id")
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -749,6 +772,22 @@ class DocumentBlob(SQLModel, table=True):
 
 class DocumentCategory(BaseModel, table=True):
     __tablename__ = "document_category"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentStatus(BaseModel, table=True):
+    """Company-scoped managed status lookup for documents."""
+    __tablename__ = "document_status"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class EmployeeStatus(BaseModel, table=True):
+    """Company-scoped managed status lookup for employees."""
+    __tablename__ = "employee_status"
     name: str = Field(index=True)
     description: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
@@ -773,6 +812,7 @@ class DocumentRead(SQLModel):
     owner_id: Optional[UUID] = None
     review_date: Optional[datetime] = None
     category_id: Optional[UUID] = None
+    status_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -896,6 +936,7 @@ class ClientCreate(SQLModel):
     membership_expires: Optional[datetime] = None
     membership_points: Optional[int] = 0
     membership_ids: Optional[List[UUID]] = None
+    status_id: Optional[UUID] = None
 
 
 class ClientUpdate(SQLModel):
@@ -909,6 +950,7 @@ class ClientUpdate(SQLModel):
     membership_expires: Optional[datetime] = None
     membership_points: Optional[int] = None
     membership_ids: Optional[List[UUID]] = None
+    status_id: Optional[UUID] = None
 
 
 class ClientRead(SQLModel):
@@ -924,6 +966,7 @@ class ClientRead(SQLModel):
     membership_points: int = 0
     membership_ids: List[UUID] = Field(default_factory=list)
     membership_names: List[str] = Field(default_factory=list)
+    status_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -949,6 +992,7 @@ class ClientRead(SQLModel):
             membership_points=obj.membership_points or 0,
             membership_ids=[],
             membership_names=[],
+            status_id=getattr(obj, "status_id", None),
             created_at=obj.created_at,
             updated_at=obj.updated_at
         )
@@ -1223,6 +1267,7 @@ class UserCreate(SQLModel):
     role: UserRole = UserRole.EMPLOYEE
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    status_id: Optional[UUID] = None  # Managed employee status lookup
     iod_number: Optional[str] = None
     supervisor: Optional[str] = None
     location: Optional[str] = None
@@ -1259,6 +1304,7 @@ class UserUpdate(SQLModel):
     force_password_reset: Optional[bool] = None
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    status_id: Optional[UUID] = None  # Managed employee status lookup
     dark_mode: Optional[bool] = None
     training_mode: Optional[bool] = None
     training_mode_explicit: Optional[bool] = None
@@ -1306,6 +1352,7 @@ class UserRead(SQLModel):
     last_login: Optional[datetime] = None
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    status_id: Optional[UUID] = None  # Managed employee status lookup
     dark_mode: bool = False
     training_mode: bool = True
     training_mode_explicit: bool = False

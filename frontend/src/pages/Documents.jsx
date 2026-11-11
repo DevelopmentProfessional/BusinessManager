@@ -50,7 +50,7 @@ import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import Footer_Actions from "./components/Footer_Actions";
-import api, { documentsAPI, documentCategoriesAPI, templatesAPI, documentTagsAPI } from "../services/api";
+import api, { documentsAPI, documentCategoriesAPI, documentStatusesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import TableSettingsControls from "./components/TableSettingsControls";
@@ -64,6 +64,7 @@ import Modal_Generic from "./components/Modal";
 import { WorkflowModal, WorkflowStatusTracker } from "./components/Panel_Workflow";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/Modal_ManageLookup";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
@@ -246,9 +247,9 @@ export default function Documents() {
   // ─── 5  STATE DECLARATIONS ────────────────────────────────────────────────
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState([]);
+  const [statusFilter, setStatusFilter] = useState([]);
+  const [typeFilter, setTypeFilter] = useState([]);
   const [viewMode, setViewMode] = useState("list"); // 'list' or 'grid'
 
   // Viewer modal state
@@ -273,6 +274,9 @@ export default function Documents() {
   // Categories management state
   const [categories, setCategories] = useState([]);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  // Statuses management state
+  const [docStatuses, setDocStatuses] = useState([]);
+  const [showStatusManager, setShowStatusManager] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
   const { settings: pageSettings, savePageSettings } = usePageTableSettings("documents");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
@@ -327,10 +331,12 @@ export default function Documents() {
   }, [documents]);
 
   const sortedCategories = useMemo(() => sortItemsAlphabetically(categories, ["name"]), [categories]);
+  const sortedDocStatuses = useMemo(() => sortItemsAlphabetically(docStatuses, ["name"]), [docStatuses]);
 
   const getStatusFilterButtonClass = () => {
-    if (statusFilter === "signed") return "bg-green-600 text-white";
-    if (statusFilter === "unsigned") return "bg-red-600 text-white";
+    if (statusFilter.length === 1 && statusFilter[0] === "signed") return "bg-green-600 text-white";
+    if (statusFilter.length === 1 && statusFilter[0] === "unsigned") return "bg-red-600 text-white";
+    if (statusFilter.length > 0) return "bg-primary-600 text-white";
     return "btn-app-secondary";
   };
 
@@ -342,10 +348,13 @@ export default function Documents() {
       const categoryName = categoryId != null ? categoryNameById.get(String(categoryId)) || "" : "";
       const docType = doc.entity_type || "document";
 
-      if (categoryFilter !== "all" && String(categoryId || "") !== categoryFilter) return false;
-      if (statusFilter === "signed" && !doc.is_signed) return false;
-      if (statusFilter === "unsigned" && doc.is_signed) return false;
-      if (typeFilter !== "all" && docType !== typeFilter) return false;
+      if (categoryFilter.length > 0 && !categoryFilter.includes(String(categoryId || ""))) return false;
+      if (statusFilter.length > 0) {
+        const signedKey = doc.is_signed ? "signed" : "unsigned";
+        const matchesStatus = statusFilter.includes(signedKey) || (doc.status_id && statusFilter.includes(String(doc.status_id)));
+        if (!matchesStatus) return false;
+      }
+      if (typeFilter.length > 0 && !typeFilter.includes(docType)) return false;
 
       if (!term) return true;
 
@@ -356,7 +365,13 @@ export default function Documents() {
     });
   }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById, docTagMap]);
 
-  const docMultiEditFields = useMemo(() => [{ key: "category_id", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, ...sortedCategories.map((c) => ({ value: c.id, label: c.name }))] }], [sortedCategories]);
+  const docMultiEditFields = useMemo(
+    () => [
+      { key: "category_id", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, ...sortedCategories.map((c) => ({ value: c.id, label: c.name }))] },
+      { key: "status_id", label: "Status", type: "select", options: sortedDocStatuses.map((s) => ({ value: s.id, label: s.name })) },
+    ],
+    [sortedCategories, sortedDocStatuses]
+  );
 
   const toggleSelectDoc = (id) =>
     setSelectedIds((prev) => {
@@ -425,6 +440,7 @@ export default function Documents() {
   useFetchOnce(() => {
     loadDocuments();
     loadCategories();
+    loadDocStatuses();
     loadTemplates();
     loadDocTagMap();
   });
@@ -524,6 +540,15 @@ export default function Documents() {
         }
         console.warn("Failed to load categories", err);
       }
+    }
+  };
+
+  const loadDocStatuses = async () => {
+    try {
+      const res = await documentStatusesAPI.list();
+      setDocStatuses(res.data || []);
+    } catch (err) {
+      console.warn("Failed to load document statuses", err);
     }
   };
 
@@ -1076,14 +1101,14 @@ export default function Documents() {
               />
 
               {/* Clear Filters Button */}
-              {(categoryFilter !== "all" || statusFilter !== "all" || typeFilter !== "all") && (
+              {(categoryFilter.length > 0 || statusFilter.length > 0 || typeFilter.length > 0) && (
                 <Button_Toolbar
                   icon={XMarkIcon}
                   label="Clear"
                   onClick={() => {
-                    setCategoryFilter("all");
-                    setStatusFilter("all");
-                    setTypeFilter("all");
+                    setCategoryFilter([]);
+                    setStatusFilter([]);
+                    setTypeFilter([]);
                   }}
                   className="btn-app-danger"
                 />
@@ -1093,6 +1118,7 @@ export default function Documents() {
               <Dropdown_Filter
                 icon={Squares2X2Icon}
                 label="Category"
+                multiSelect
                 value={categoryFilter}
                 onChange={setCategoryFilter}
                 isOpen={isFilterCategoriesOpen}
@@ -1105,6 +1131,7 @@ export default function Documents() {
               <Dropdown_Filter
                 icon={CheckCircleIcon}
                 label="Status"
+                multiSelect
                 value={statusFilter}
                 onChange={setStatusFilter}
                 isOpen={isFilterStatusOpen}
@@ -1112,9 +1139,10 @@ export default function Documents() {
                 activeClass={getStatusFilterButtonClass()}
                 showHelp={isTrainingMode}
                 options={[
-                  { value: "all", label: "All Statuses", description: "Shows both signed and unsigned documents." },
+                  { value: "all", label: "All Statuses", description: "Shows documents in every status." },
                   { value: "signed", label: "Signed", description: "Shows only documents that have signatures." },
                   { value: "unsigned", label: "Unsigned", description: "Shows only documents without signatures." },
+                  ...sortedDocStatuses.map((st) => ({ value: String(st.id), label: st.name, description: st.description || `Shows only documents with the "${st.name}" status.` })),
                 ]}
               />
 
@@ -1122,6 +1150,7 @@ export default function Documents() {
               <Dropdown_Filter
                 icon={TagIcon}
                 label="Type"
+                multiSelect
                 value={typeFilter}
                 onChange={setTypeFilter}
                 isOpen={isFilterTypeOpen}
@@ -1448,6 +1477,16 @@ export default function Documents() {
           }}
           className="btn-outline-secondary"
         />
+        <Button_Toolbar
+          icon={CheckCircleIcon}
+          label="Status"
+          title="Manage document statuses"
+          onClick={() => {
+            setShowPageControls(false);
+            setShowStatusManager(true);
+          }}
+          className="btn-outline-secondary"
+        />
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
@@ -1459,6 +1498,16 @@ export default function Documents() {
           ]}
         />
       </PageControlsModal>
+
+      <Modal_ManageLookup
+        isOpen={showStatusManager}
+        onClose={() => setShowStatusManager(false)}
+        title="Manage Statuses"
+        entityLabel="status"
+        items={docStatuses}
+        onItemsChanged={loadDocStatuses}
+        api={documentStatusesAPI}
+      />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}

@@ -38,7 +38,7 @@ import { showConfirm } from "../services/showConfirm";
 import Badge from "./components/Badge";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import Dropdown_Custom from "./components/Dropdown_Custom";
-import { clientsAPI, membershipsAPI, settingsAPI } from "../services/api";
+import { clientsAPI, membershipsAPI, clientStatusesAPI, settingsAPI } from "../services/api";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
@@ -53,6 +53,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import Modal_TemplateUse from "./components/Modal_TemplateUse";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/Modal_ManageLookup";
 import PageLayout from "./components/Page_Layout";
 import PageTableFooter from "./components/Page_TableFooter";
 import PageTableHeader from "./components/Page_TableHeader";
@@ -70,8 +71,12 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [tierFilter, setTierFilter] = useState("all");
+  const [tierFilter, setTierFilter] = useState([]);
   const [isTierFilterOpen, setIsTierFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState([]);
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
+  const [clientStatuses, setClientStatuses] = useState([]);
+  const [showStatusManager, setShowStatusManager] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
   const [showMembershipManager, setShowMembershipManager] = useState(false);
   const [memberships, setMemberships] = useState([]);
@@ -113,9 +118,15 @@ export default function Clients() {
         type: "select",
         options: [{ value: "none", label: "None" }, ...membershipOptions],
       },
+      {
+        key: "status_id",
+        label: "Status",
+        type: "select",
+        options: sortItemsAlphabetically(clientStatuses, ["name"]).map((st) => ({ value: st.id, label: st.name })),
+      },
       { key: "notes", label: "Notes", type: "text", placeholder: "Add a note to all selected clients..." },
     ];
-  }, [sortedMemberships]);
+  }, [sortedMemberships, clientStatuses]);
 
   const tierFilterOptions = useMemo(() => {
     const dynamic = sortedMemberships
@@ -128,6 +139,17 @@ export default function Clients() {
 
     return [{ value: "all", label: "All Subscriptions", description: "Shows all clients regardless of subscription." }, { value: "none", label: "No Subscription", description: "Shows clients with no active subscriptions." }, ...dynamic];
   }, [sortedMemberships]);
+
+  const sortedClientStatuses = useMemo(() => sortItemsAlphabetically(clientStatuses, ["name"]), [clientStatuses]);
+
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: "all", label: "All Statuses", description: "Shows all clients regardless of status." },
+      { value: "none", label: "No Status", description: "Shows clients with no status assigned." },
+      ...sortedClientStatuses.map((st) => ({ value: String(st.id), label: st.name, description: st.description || `Shows clients with the "${st.name}" status.` })),
+    ],
+    [sortedClientStatuses]
+  );
 
   // Template modal state
   const [templateClient, setTemplateClient] = useState(null);
@@ -142,6 +164,7 @@ export default function Clients() {
     // the store — avoids two concurrent GET /isud/clients requests on every page visit.
     if (clients.length === 0) loadClients();
     loadMemberships();
+    loadClientStatuses();
     settingsAPI
       .getSettings()
       .then((res) => setAppSettings(res.data))
@@ -190,6 +213,15 @@ export default function Clients() {
       setMemberships(sortItemsAlphabetically(Array.isArray(membershipData) ? membershipData : [], ["name", "billing_frequency"]));
     } catch {
       setMemberships([]);
+    }
+  };
+
+  const loadClientStatuses = async () => {
+    try {
+      const res = await clientStatusesAPI.list();
+      setClientStatuses(res.data || []);
+    } catch (err) {
+      console.warn("Failed to load client statuses", err);
     }
   };
 
@@ -374,8 +406,8 @@ export default function Clients() {
   };
 
   const getTierFilterButtonClass = () => {
-    if (tierFilter === "all") return "btn-app-secondary";
-    if (tierFilter === "none") return "bg-gray-500 text-white";
+    if (tierFilter.length === 0) return "btn-app-secondary";
+    if (tierFilter.length === 1 && tierFilter[0] === "none") return "bg-gray-500 text-white";
     return "bg-primary-600 text-white";
   };
 
@@ -392,19 +424,22 @@ export default function Clients() {
         if (!matchesName && !matchesEmail && !matchesPhone) return false;
       }
 
-      // Subscription filter
-      if (tierFilter !== "all") {
+      // Subscription filter — client passes when it matches any selected option
+      if (tierFilter.length > 0) {
         const clientMembershipIds = Array.isArray(client.membership_ids) ? client.membership_ids.map((id) => String(id)) : [];
-        if (tierFilter === "none") {
-          if (clientMembershipIds.length > 0) return false;
-        } else if (!clientMembershipIds.includes(String(tierFilter))) {
-          return false;
-        }
+        const matchesAny = tierFilter.some((val) => (val === "none" ? clientMembershipIds.length === 0 : clientMembershipIds.includes(String(val))));
+        if (!matchesAny) return false;
+      }
+
+      // Status filter — client passes when it matches any selected option
+      if (statusFilter.length > 0) {
+        const matchesStatus = statusFilter.some((val) => (val === "none" ? !client.status_id : String(client.status_id || "") === val));
+        if (!matchesStatus) return false;
       }
 
       return true;
     });
-  }, [clients, searchTerm, tierFilter]);
+  }, [clients, searchTerm, tierFilter, statusFilter]);
 
   const toggleSelectCl = (id) =>
     setSelectedIds((prev) => {
@@ -610,14 +645,28 @@ export default function Clients() {
         </Gate_Permission>
 
         {/* Clear Filters Button */}
-        {tierFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setTierFilter("all")} className="btn-app-danger" title="Clear subscription filter" />}
+        {(tierFilter.length > 0 || statusFilter.length > 0) && (
+          <Button_Toolbar
+            icon={XMarkIcon}
+            label="Clear"
+            onClick={() => {
+              setTierFilter([]);
+              setStatusFilter([]);
+            }}
+            className="btn-app-danger"
+            title="Clear filters"
+          />
+        )}
 
         {/* Tier Filter */}
-        <Dropdown_Filter icon={StarIcon} label="Subs" title="Filter by subscription" value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
+        <Dropdown_Filter icon={StarIcon} label="Subs" title="Filter by subscription" multiSelect value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
+
+        {/* Status Filter */}
+        <Dropdown_Filter icon={CheckCircleIcon} label="Status" title="Filter by status" multiSelect value={statusFilter} onChange={setStatusFilter} isOpen={isStatusFilterOpen} setIsOpen={setIsStatusFilterOpen} showHelp={isTrainingMode} options={statusFilterOptions} />
       </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}
-      <Modal_Detail_Client isOpen={isModalOpen && modalContent === "client-detail"} onClose={closeModal} client={editingClient} onUpdate={handleUpdateClient} memberships={memberships} />
+      <Modal_Detail_Client isOpen={isModalOpen && modalContent === "client-detail"} onClose={closeModal} client={editingClient} onUpdate={handleUpdateClient} memberships={memberships} statuses={sortedClientStatuses} />
 
       {/* Create Client Modal (bottom-sheet form) */}
       <Modal isOpen={isModalOpen && modalContent === "client-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
@@ -644,6 +693,16 @@ export default function Clients() {
           className="btn-primary"
           title="Manage subscriptions"
         />
+        <Button_Toolbar
+          icon={CheckCircleIcon}
+          label="Status"
+          onClick={() => {
+            setShowPageControls(false);
+            setShowStatusManager(true);
+          }}
+          className="btn-primary"
+          title="Manage client statuses"
+        />
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
@@ -666,13 +725,12 @@ export default function Clients() {
         contentGravity="top"
       >
         <div className="d-flex flex-column gap-3">
-          <div className="border d-flex flex-column gap-2 p-0 rounded">
+          <div className="border d-flex flex-column gap-2 p-0 ui-pill-container">
             <input type="text" className="form-control ui-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
-            <textarea className="ui-description-textarea form-control form-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
             <div className="d-flex gap-2">
-              <input type="number" min="0" step="0.01" className="form-control ui-control-sm" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
+              <input type="number" min="0" step="0.01" className="form-control ui-control-sm ui-number-narrow" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
               <Dropdown_Custom
-                className="ui-control-sm"
+                className="ui-control-sm flex-grow-1"
                 value={membershipForm.billing_frequency}
                 onChange={(e) => setMembershipForm((p) => ({ ...p, billing_frequency: e.target.value }))}
                 options={[
@@ -686,9 +744,9 @@ export default function Clients() {
               />
             </div>
             <div className="d-flex gap-2">
-              <input type="number" min="0" className="form-control ui-control-sm" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
+              <input type="number" min="0" className="form-control ui-control-sm ui-number-narrow" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
               <Dropdown_Custom
-                className="ui-control-sm"
+                className="ui-control-sm flex-grow-1"
                 value={membershipForm.lock_term_unit}
                 onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_unit: e.target.value }))}
                 options={[
@@ -701,6 +759,7 @@ export default function Clients() {
                 closeOnSelect
               />
             </div>
+            <textarea className="ui-description-textarea form-control form-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
             <label className="align-items-center d-flex gap-2 small">
               <input type="checkbox" checked={membershipForm.is_active} onChange={(e) => setMembershipForm((p) => ({ ...p, is_active: e.target.checked }))} />
               Active
@@ -721,7 +780,7 @@ export default function Clients() {
 
           <div className="d-flex flex-column gap-2" style={{ maxHeight: "220px", overflowY: "auto" }}>
             {sortedMemberships.map((membership) => (
-              <div key={membership.id} className="align-items-start border d-flex gap-2 justify-content-between p-0 rounded">
+              <div key={membership.id} className="align-items-start border d-flex gap-2 justify-content-between p-0 ui-pill-container">
                 <div className="small">
                   <div className="fw-semibold">{membership.name}</div>
                   <div className="text-muted">{`$${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</div>
@@ -783,6 +842,16 @@ export default function Clients() {
 
       {/* Template Use Modal */}
       {isTemplateOpen && templateClient && <Modal_TemplateUse page="clients" entity={templateClient} currentUser={user} settings={appSettings} onClose={handleCloseTemplate} />}
+
+      <Modal_ManageLookup
+        isOpen={showStatusManager}
+        onClose={() => setShowStatusManager(false)}
+        title="Manage Statuses"
+        entityLabel="status"
+        items={clientStatuses}
+        onItemsChanged={loadClientStatuses}
+        api={clientStatusesAPI}
+      />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}

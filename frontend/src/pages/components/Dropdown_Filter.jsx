@@ -16,6 +16,9 @@ export default function Dropdown_Filter({
   label,
   isOpen,
   setIsOpen,
+  // When true, `value` is an array of selected option values (empty array = no filter).
+  // Clicking the default "all" option clears the selection; other options toggle and keep the menu open.
+  multiSelect = false,
   // CSS class applied to trigger button when a non-default value is active
   activeClass = "bg-primary-600 hover:bg-primary-700 text-white",
   // CSS class applied when value equals options[0].value (the "all" option)
@@ -36,7 +39,24 @@ export default function Dropdown_Filter({
       )
     : sortedOptions;
   const defaultValue = sortedOptions[0]?.value;
-  const isActive = value !== defaultValue;
+  const selectedValues = multiSelect ? (Array.isArray(value) ? value : []) : null;
+  const isActive = multiSelect ? selectedValues.length > 0 : value !== defaultValue;
+
+  const handleSelect = (option) => {
+    if (multiSelect) {
+      if (option.value === defaultValue) {
+        onChange([]);
+        setIsOpen(false);
+        setHelpKey(null);
+        return;
+      }
+      onChange(selectedValues.includes(option.value) ? selectedValues.filter((v) => v !== option.value) : [...selectedValues, option.value]);
+      return;
+    }
+    onChange(option.value);
+    setIsOpen(false);
+    setHelpKey(null);
+  };
 
   const handleToggle = () => {
     const next = !isOpen;
@@ -60,20 +80,17 @@ export default function Dropdown_Filter({
           <div className="overflow-auto" style={{ maxHeight: "16rem" }}>
             {filteredOptions.map((option, index) => {
               const isLast = index === filteredOptions.length - 1;
-              const isSelected = value === option.value;
+              const isSelected = multiSelect ? (option.value === defaultValue ? selectedValues.length === 0 : selectedValues.includes(option.value)) : value === option.value;
               const isHelpOpen = helpKey === option.value;
 
               return (
                 <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
                   <button
-                    onClick={() => {
-                      onChange(option.value);
-                      setIsOpen(false);
-                      setHelpKey(null);
-                    }}
+                    onClick={() => handleSelect(option)}
                     className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                   >
                     {option.label}
+                    {multiSelect && isSelected && option.value !== defaultValue && <span className="ms-1">✓</span>}
                   </button>
 
                   {showHelp && option.description && (

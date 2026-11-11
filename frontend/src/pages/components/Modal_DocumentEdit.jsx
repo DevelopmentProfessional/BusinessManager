@@ -28,7 +28,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { documentsAPI, documentCategoriesAPI, employeesAPI, documentTagsAPI } from "../../services/api";
+import { documentsAPI, documentCategoriesAPI, documentStatusesAPI, employeesAPI, documentTagsAPI } from "../../services/api";
 import Dropdown_Custom from "./Dropdown_Custom";
 import Modal from "./Modal";
 import { XMarkIcon, TagIcon, MagnifyingGlassIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
@@ -95,10 +95,12 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
   const [description, setDescription] = useState("");
   const [ownerId, setOwnerId] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [statusId, setStatusId] = useState("");
   const [reviewDate, setReviewDate] = useState("");
 
   // Supporting lists
   const [categories, setCategories] = useState([]);
+  const [statuses, setStatuses] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [assignEmployeeId, setAssignEmployeeId] = useState("");
@@ -116,6 +118,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
   const [error, setError] = useState("");
 
   const sortedCategories = useMemo(() => sortItemsAlphabetically(categories, ["name"]), [categories]);
+  const sortedStatuses = useMemo(() => sortItemsAlphabetically(statuses, ["name"]), [statuses]);
   const sortedEmployees = useMemo(() => sortItemsAlphabetically(employees, ["first_name", "last_name", "name", "email"]), [employees]);
   const sortedDocTags = useMemo(() => sortItemsAlphabetically(docTags, ["name"]), [docTags]);
   const sortedTagSuggestions = useMemo(() => sortItemsAlphabetically(tagSuggestions, ["name"]), [tagSuggestions]);
@@ -129,6 +132,10 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
         setEmployees(sortItemsAlphabetically(empRes.data || [], ["first_name", "last_name", "name", "email"]));
       })
       .catch((err) => console.warn("Failed to load categories or employees", err));
+    documentStatusesAPI
+      .list()
+      .then((res) => setStatuses(res.data || []))
+      .catch((err) => console.warn("Failed to load document statuses", err));
   }, [isOpen]);
 
   useEffect(() => {
@@ -136,6 +143,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
     setDescription(document.description || "");
     setOwnerId(document.owner_id || "");
     setCategoryId(document.category_id || "");
+    setStatusId(document.status_id || "");
     setReviewDate(formatDateInput(document.review_date));
     setDocTags([]);
     setTagSearch("");
@@ -272,6 +280,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
           description,
           owner_id: ownerId || null,
           category_id: categoryId || null,
+          status_id: statusId || null,
           review_date: reviewDateTime,
         }),
         documentTagsAPI.setForDocument(
@@ -390,6 +399,16 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                 onChange={(e) => setCategoryId(e.target.value)}
                 options={[{ value: "", label: "None" }, ...sortedCategories.map((cat) => ({ value: cat.id, label: cat.name }))]}
                 placeholder="Select category"
+              />
+
+              {/* ── Status ───────────────────────────────────────────────────────── */}
+              <Dropdown_Custom
+                name="status_id"
+                floatingLabel="Status"
+                value={statusId || ""}
+                onChange={(e) => setStatusId(e.target.value)}
+                options={[{ value: "", label: "None" }, ...sortedStatuses.map((st) => ({ value: st.id, label: st.name }))]}
+                placeholder="Select status"
               />
 
               {/* ── Tags ─────────────────────────────────────────────────────────── */}

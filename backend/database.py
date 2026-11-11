@@ -75,7 +75,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.08.09.1"
+CURRENT_SCHEMA_VERSION = "2026.11.11.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -158,6 +158,18 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='receipt_emailed_at'"
             )).fetchone()
+            client_status_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='client' AND column_name='status_id'"
+            )).fetchone()
+            user_status_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user' AND column_name='status_id'"
+            )).fetchone()
+            document_status_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='document' AND column_name='status_id'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -178,6 +190,9 @@ def _required_schema_artifacts_present() -> bool:
                 and sale_transaction_discount_amount_column is not None
                 and sale_transaction_inventory_consumed_column is not None
                 and sale_transaction_receipt_emailed_column is not None
+                and client_status_id_column is not None
+                and user_status_id_column is not None
+                and document_status_id_column is not None
             )
     except Exception:
         return False
@@ -1111,6 +1126,22 @@ def _ensure_user_hierarchy_columns_if_needed():
                 print(f"  + Added column user.{col}")
 
 
+def _ensure_status_lookup_columns_if_needed():
+    """Add status_id lookup columns to client, user, and document tables.
+    The client_status / employee_status / document_status lookup tables
+    themselves are created by SQLModel.metadata.create_all."""
+    targets = ("client", "user", "document")
+    with engine.begin() as conn:
+        for tbl in targets:
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=:t"
+            ), {"t": tbl}).fetchall()}
+            if "status_id" not in existing:
+                conn.execute(text(f'ALTER TABLE "{tbl}" ADD COLUMN status_id UUID'))
+                print(f"  + Added column {tbl}.status_id")
+
+
 def _ensure_user_db_environment_if_needed():
     """Add db_environment column to user table if missing."""
     with engine.begin() as conn:
@@ -1476,6 +1507,7 @@ def create_db_and_tables():
     _ensure_asset_unit_location_column_if_needed()
     _ensure_descriptive_feature_description_column_if_needed()
     _ensure_user_db_environment_if_needed()
+    _ensure_status_lookup_columns_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

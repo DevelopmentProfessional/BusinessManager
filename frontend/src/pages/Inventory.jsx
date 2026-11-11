@@ -84,7 +84,7 @@ export default function Inventory() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all"); // 'all', 'PRODUCT', 'RESOURCE', 'ASSET'
+  const [typeFilter, setTypeFilter] = useState([]); // multi-select: [] = all, else subset of 'PRODUCT', 'RESOURCE', 'ASSET', ...
   const [stockFilter, setStockFilter] = useState("all"); // 'all', 'low', 'ok'
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
@@ -416,11 +416,12 @@ export default function Inventory() {
   );
 
   const getTypeFilterButtonClass = () => {
-    if (typeFilter === "all") return "btn-app-secondary";
-    if (typeFilter === "RESOURCE") return "bg-blue-600 text-white";
-    if (typeFilter === "ASSET") return "bg-purple-600 text-white";
-    if (typeFilter === "LOCATION") return "bg-teal-600 text-white";
-    if (typeFilter === "ITEM") return "bg-orange-500 text-white";
+    if (typeFilter.length === 0) return "btn-app-secondary";
+    if (typeFilter.length > 1) return "bg-primary-600 text-white";
+    if (typeFilter[0] === "RESOURCE") return "bg-blue-600 text-white";
+    if (typeFilter[0] === "ASSET") return "bg-purple-600 text-white";
+    if (typeFilter[0] === "LOCATION") return "bg-teal-600 text-white";
+    if (typeFilter[0] === "ITEM") return "bg-orange-500 text-white";
     return "bg-gray-600 text-white"; // PRODUCT
   };
 
@@ -486,10 +487,10 @@ export default function Inventory() {
         if (!matchesName && !matchesSku) return false;
       }
 
-      // Type filter
-      if (typeFilter !== "all") {
+      // Type filter — item passes when it matches any selected type
+      if (typeFilter.length > 0) {
         const itemType = (inv.type || "PRODUCT").toUpperCase();
-        if (itemType !== typeFilter) return false;
+        if (!typeFilter.includes(itemType)) return false;
       }
 
       // Stock filter
@@ -710,26 +711,31 @@ export default function Inventory() {
                 if (!nextOpen) setTypeFilterHelpKey(null);
               }}
               className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
-              data-active={typeFilter !== "all"}
+              data-active={typeFilter.length > 0}
             />
             {isTypeFilterOpen && (
               <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
                 {sortedTypeFilterOptions.map((option, index) => {
                   const isLast = index === sortedTypeFilterOptions.length - 1;
-                  const isSelected = typeFilter === option.value;
+                  const isSelected = option.value === "all" ? typeFilter.length === 0 : typeFilter.includes(option.value);
                   const isHelpOpen = typeFilterHelpKey === option.value;
 
                   return (
                     <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
                       <button
                         onClick={() => {
-                          setTypeFilter(option.value);
-                          setIsTypeFilterOpen(false);
-                          setTypeFilterHelpKey(null);
+                          if (option.value === "all") {
+                            setTypeFilter([]);
+                            setIsTypeFilterOpen(false);
+                            setTypeFilterHelpKey(null);
+                          } else {
+                            setTypeFilter((prev) => (prev.includes(option.value) ? prev.filter((v) => v !== option.value) : [...prev, option.value]));
+                          }
                         }}
                         className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                       >
                         {option.label}
+                        {isSelected && option.value !== "all" && <span className="ms-1">✓</span>}
                       </button>
 
                       {isTrainingMode && (
@@ -838,12 +844,12 @@ export default function Inventory() {
           </div>
 
           {/* Clear Filters Button */}
-          {(typeFilter !== "all" || stockFilter !== "all") && (
+          {(typeFilter.length > 0 || stockFilter !== "all") && (
             <Button_Toolbar
               icon={XMarkIcon}
               label="Clear"
               onClick={() => {
-                setTypeFilter("all");
+                setTypeFilter([]);
                 setStockFilter("all");
               }}
               className="btn-app-danger"

@@ -38,6 +38,7 @@ import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { showConfirm } from "../../services/showConfirm";
 import { clientsAPI, servicesAPI, clientCartAPI, clientOrdersAPI } from "../../services/api";
+import Dropdown_Custom from "./Dropdown_Custom";
 import Modal_ClientCart from "./Modal_ClientCart";
 import Modal_TemplateUse from "./Modal_TemplateUse";
 import { formatDate, formatDateTime } from "../../utils/dateFormatters";
@@ -689,7 +690,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
 
 // ─── 4 MAIN COMPONENT ──────────────────────────────────────────────────────
 
-export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate, onDelete, canDelete = false, currentUser = null, appSettings = null, memberships = [] }) {
+export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate, onDelete, canDelete = false, currentUser = null, appSettings = null, memberships = [], statuses = [] }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -702,6 +703,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
     membership_expires: "",
     membership_points: 0,
     membership_ids: [],
+    status_id: "",
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [showServiceHistory, setShowServiceHistory] = useState(false);
@@ -723,6 +725,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         membership_expires: client.membership_expires ? client.membership_expires.split("T")[0] : "",
         membership_points: client.membership_points || 0,
         membership_ids: Array.isArray(client.membership_ids) ? client.membership_ids : [],
+        status_id: client.status_id || "",
       });
       setFieldErrors({});
       // Load cart items for badge count
@@ -762,6 +765,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
     submitData.membership_tier = primaryMembership?.name ? String(primaryMembership.name).toLowerCase() : "none";
     if (!submitData.membership_since) submitData.membership_since = null;
     if (!submitData.membership_expires) submitData.membership_expires = null;
+    if (!submitData.status_id) submitData.status_id = null;
     onUpdate?.(client.id, submitData);
   };
 
@@ -921,8 +925,20 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             </>
           )}
 
-          {/* Address & Notes */}
+          {/* Status, Address & Notes */}
           <hr className="my-2" />
+          {statuses.length > 0 && (
+            <div className="ui-form-floating-mb2">
+              <Dropdown_Custom
+                name="status_id"
+                floatingLabel="Status"
+                value={formData.status_id || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, status_id: e.target.value }))}
+                options={[{ value: "", label: "None" }, ...statuses.map((st) => ({ value: st.id, label: st.name }))]}
+                placeholder="Select status"
+              />
+            </div>
+          )}
           <div className="form-floating ui-form-floating-mb2">
             <textarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Address" />
             <label htmlFor="dc_address">Address</label>
