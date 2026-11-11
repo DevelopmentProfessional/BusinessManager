@@ -51,7 +51,7 @@ import Dropdown_Custom from "./components/Dropdown_Custom";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
-import { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI } from "../services/api";
+import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/Modal_ItemDetail";
 import Gate_Permission from "./components/Gate_Permission";
 import Suppliers_Panel from "./components/Panel_Suppliers";
@@ -60,6 +60,7 @@ import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Item from "./components/Form_Item";
+import Modal_ManageLookup from "./components/Modal_ManageLookup";
 import Inventory_RowDetail from "./components/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
@@ -96,6 +97,8 @@ export default function Inventory() {
     const saved = parseInt(localStorage.getItem(ASSET_UNITS_PAGE_SIZE_KEY) || "", 10);
     return ASSET_UNITS_PAGE_SIZE_OPTIONS.includes(saved) ? saved : 25;
   });
+  const [inventoryCategories, setInventoryCategories] = useState([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
@@ -235,7 +238,19 @@ export default function Inventory() {
   }, [stockFilterOptions]);
 
   // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
-  useFetchOnce(() => loadInventoryData());
+  useFetchOnce(() => {
+    loadInventoryData();
+    loadInventoryCategories();
+  });
+
+  const loadInventoryCategories = async () => {
+    try {
+      const res = await inventoryCategoriesAPI.getAll();
+      setInventoryCategories(res?.data || []);
+    } catch (err) {
+      console.warn("Failed to load inventory categories:", err);
+    }
+  };
 
   // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   const loadInventoryData = async () => {
@@ -616,14 +631,7 @@ export default function Inventory() {
                     <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                     </td>
-                    <Inventory_RowDetail
-                      item={inv}
-                      priceDisplay={getPriceDisplay(inv)}
-                      featureNames={featureSummary[inv.id]?.feature_names || []}
-                      showPrice={pageSettings.showPrice !== false}
-                      showCost={pageSettings.showCost !== false}
-                      showCategory={pageSettings.showCategory !== false}
-                    />
+                    <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} showPrice={pageSettings.showPrice !== false} showCost={pageSettings.showCost !== false} showCategory={pageSettings.showCategory !== false} />
 
                     {/* Type */}
                     {pageSettings.showType !== false && (
@@ -891,11 +899,20 @@ export default function Inventory() {
         }}
       >
         <div className="ui-small-muted">Use these controls to manage inventory views and actions.</div>
-        <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available in the footer.</div>
+        <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available.</div>
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={TagIcon}
+            label="Cats"
+            onClick={() => {
+              setShowPageControls(false);
+              setShowCategoryManager(true);
+            }}
+            className="btn-primary"
+            title="Manage inventory categories"
+          />
+        </div>
         <div className="d-flex flex-column gap-1">
-          <label htmlFor="inventory-asset-units-per-page" className="fw-semibold mb-0 small">
-            Asset Units per page
-          </label>
           <Dropdown_Custom
             id="inventory-asset-units-per-page"
             className="ui-control-sm"
@@ -918,6 +935,23 @@ export default function Inventory() {
           ]}
         />
       </PageControlsModal>
+
+      <Modal_ManageLookup
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        title="Manage Categories"
+        entityLabel="category"
+        items={inventoryCategories}
+        onItemsChanged={loadInventoryCategories}
+        api={{
+          list: () => inventoryCategoriesAPI.getAll(),
+          create: (data) => inventoryCategoriesAPI.create("product", data.name),
+          update: async (id, data) => {
+            return api.put(`/isud/inventory_category/${id}`, { name: data.name });
+          },
+          delete: (id) => inventoryCategoriesAPI.delete(id),
+        }}
+      />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}

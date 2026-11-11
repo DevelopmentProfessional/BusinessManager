@@ -73,9 +73,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     date_of_sale: "",
   });
   const [itemCategories, setItemCategories] = useState([]);
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [showNewLocationInput, setShowNewLocationInput] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
   const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
@@ -85,9 +82,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
-  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-  const [typeHelpKey, setTypeHelpKey] = useState(null);
-  const [typeHelpPos, setTypeHelpPos] = useState({ top: 0, left: 0 });
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Bundle / Mix state (local — saved after item creation)
@@ -116,8 +110,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     { value: "LOCATION", label: "Location", description: "Physical place within your business (room, station, area). No stock tracking." },
     { value: "ITEM", label: "Item", description: "Generic item type. Use when other categories don't apply." },
   ];
-  const selectedTypeLabel = typeOptions.find((opt) => opt.value === formData.type)?.label || "Select Type";
-  const { ref: typeLabelRef, displayLabel: typeTriggerLabel } = useWordSafeLabel(selectedTypeLabel, { enabled: true });
 
   // ─── 2 EFFECTS ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -207,27 +199,21 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     };
   }, [pendingPhotoUrl]);
 
-  // Load categories whenever type changes.
-  // cancelled flag prevents stale API responses from overwriting fresh results
-  // when the type changes quickly (e.g. initial populate from item prop).
+  // Load categories
   useEffect(() => {
     let cancelled = false;
-    const type = (formData.type || "PRODUCT").toLowerCase();
     inventoryCategoriesAPI
-      .getByType(type)
+      .getAll()
       .then((res) => {
         if (!cancelled) setItemCategories(sortItemsAlphabetically(Array.isArray(res?.data) ? res.data : [], ["name"]));
       })
       .catch(() => {
         if (!cancelled) setItemCategories([]);
       });
-    setShowCategoryManager(false);
-    setShowNewLocationInput(false);
-    setNewCategoryName("");
     return () => {
       cancelled = true;
     };
-  }, [formData.type]);
+  }, []);
 
   // Load products when type changes to BUNDLE or MIX
   useEffect(() => {
@@ -292,43 +278,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     }
     setFormData((prev) => ({ ...prev, sku: scanned }));
     setIsScannerOpen(false);
-  };
-
-  const handleAddCategory = async () => {
-    const name = newCategoryName.trim();
-    if (!name) return;
-    const type = (formData.type || "PRODUCT").toLowerCase();
-    const normalizedName = name.toLocaleLowerCase();
-    const existingCategory = itemCategories.find((category) => category.name?.trim().toLocaleLowerCase() === normalizedName);
-    if (existingCategory) {
-      setFormData((prev) => ({ ...prev, category: existingCategory.name }));
-      setNewCategoryName("");
-      setShowCategoryManager(false);
-      return;
-    }
-    try {
-      const res = await inventoryCategoriesAPI.create(type, name);
-      const created = res?.data;
-      if (!created?.name) return;
-      setItemCategories((prev) => [...prev.filter((c) => c.id !== created?.id), created].sort((a, b) => a.name.localeCompare(b.name)));
-      setFormData((prev) => ({ ...prev, category: created.name }));
-      setNewCategoryName("");
-      setShowCategoryManager(false);
-    } catch {
-      /* silent */
-    }
-  };
-
-  const handleDeleteCategory = async (catId) => {
-    try {
-      await inventoryCategoriesAPI.delete(catId);
-      setItemCategories((prev) => prev.filter((c) => c.id !== catId));
-      if (formData.category === itemCategories.find((c) => c.id === catId)?.name) {
-        setFormData((prev) => ({ ...prev, category: "" }));
-      }
-    } catch {
-      /* silent */
-    }
   };
 
   const handleSubmit = (e) => {
@@ -477,7 +426,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
       {/* Container_Scrollable Content Area */}
       <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
-        <form id="item-form" onSubmit={handleSubmit}>
+        <form id="item-form" onSubmit={handleSubmit} className="inventory-edit-form">
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>
             {/* Image area - layout matches Edit Item */}
@@ -674,255 +623,81 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
           {scanError && <div className="alert alert-danger mb-2 py-1 small">{scanError}</div>}
 
           <div className="d-flex gap-2 mb-2">
-            <div className="flex-grow-1 mb-0 position-relative">
-              <label htmlFor="type" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                Type
-              </label>
-              <div className="ui-pos-rel">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextOpen = !isTypeDropdownOpen;
-                    setIsTypeDropdownOpen(nextOpen);
-                    if (!nextOpen) setTypeHelpKey(null);
-                  }}
-                  className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
-                  style={{ cursor: "pointer" }}
-                >
-                  <span ref={typeLabelRef} className="app-word-safe-label">
-                    {typeTriggerLabel}
-                  </span>
-                </button>
-                {isTypeDropdownOpen && (
-                  <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                    {typeOptions.map((option) => {
-                      return (
-                        <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData((prev) => ({ ...prev, type: option.value }));
-                              setIsTypeDropdownOpen(false);
-                              setTypeHelpKey(null);
-                            }}
-                            className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
-                          >
-                            {option.label}
-                          </button>
-                          <div className="flex-shrink-0">
-                            <button
-                              type="button"
-                              className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
-                              aria-label={`${option.label} help`}
-                              onMouseEnter={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setTypeHelpPos({ top: rect.top, left: rect.right + 8 });
-                                setTypeHelpKey(option.value);
-                              }}
-                              onMouseLeave={() => setTypeHelpKey((prev) => (prev === option.value ? null : prev))}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setTypeHelpPos({ top: rect.top, left: rect.right + 8 });
-                                setTypeHelpKey((prev) => (prev === option.value ? null : option.value));
-                              }}
-                              style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                            >
-                              ?
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+            <div className="flex-grow-1 mb-0">
+              <Dropdown_Custom
+                id="type"
+                name="type"
+                floatingLabel="Type"
+                className="ui-control-sm"
+                value={formData.type}
+                onChange={handleChange}
+                options={typeOptions}
+                closeOnSelect
+              />
             </div>
 
             {/* Category picker — hidden for LOCATION type */}
             {!isLocation && (
               <div className="flex-grow-1 mb-0">
-                <div className="align-items-center d-flex gap-2 mb-1">
-                  <div className="flex-grow-1">
-                    <label htmlFor="category" className="form-label ui-form-label-sm">
-                      Category
-                    </label>
-                    <Dropdown_Custom
-                      id="category"
-                      name="category"
-                      className="ui-control-sm"
-                      value={formData.category}
-                      onChange={handleChange}
-                      options={[{ value: "", label: "— None —" }, ...itemCategories.map((cat) => ({ value: cat.name, label: cat.name }))]}
-                      placeholder="Select category"
-                      closeOnSelect
-                    />
-                  </div>
-                  <button type="button" title={showCategoryManager ? "Close" : "Add category"} onClick={() => setShowCategoryManager((v) => !v)} className="btn btn-outline-secondary btn-sm flex-shrink-0" style={{ fontSize: "1rem" }}>
-                    {showCategoryManager ? "×" : "+"}
-                  </button>
-                </div>
+                <Dropdown_Custom
+                  id="category"
+                  name="category"
+                  floatingLabel="Category"
+                  className="ui-control-sm"
+                  value={formData.category}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "— None —" }, ...itemCategories.map((cat) => ({ value: cat.name, label: cat.name }))]}
+                  placeholder="Select category"
+                  closeOnSelect
+                />
               </div>
             )}
           </div>
 
-          {/* Fixed-position tooltip — renders outside overflow container so it's never clipped */}
-          {typeHelpKey &&
-            (() => {
-              const opt = typeOptions.find((o) => o.value === typeHelpKey);
-              if (!opt) return null;
-              return (
-                <div
-                  style={{
-                    position: "fixed",
-                    top: typeHelpPos.top,
-                    left: typeHelpPos.left,
-                    width: 240,
-                    maxWidth: "calc(100vw - 1rem)",
-                    zIndex: 9999,
-                    pointerEvents: "none",
-                  }}
-                  className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
-                >
-                  <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                    {opt.label}
-                  </div>
-                  <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
-                </div>
-              );
-            })()}
-          {showCategoryManager && !isLocation && (
-            <div className="mb-2">
-              <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 p-0 rounded">
-                {itemCategories.length === 0 && <div className="mb-2 ui-small-muted">No categories yet for this type.</div>}
-                <div className="d-flex flex-wrap gap-1 mb-2">
-                  {itemCategories.map((cat) => (
-                    <span key={cat.id} className="align-items-center badge bg-secondary-subtle d-flex gap-1 text-secondary-emphasis" style={{ fontSize: "0.78rem", fontWeight: 500 }}>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="align-items-center bg-transparent border-0 d-flex justify-content-center lh-1 p-0 text-secondary-emphasis"
-                        style={{ fontSize: "1rem", width: "0.9rem", height: "0.9rem", cursor: "pointer" }}
-                        aria-label="Remove"
-                      >
-                        −
-                      </button>
-                      {cat.name}
-                    </span>
-                  ))}
-                </div>
-                <div className="d-flex gap-1">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCategory())}
-                    placeholder="New category name..."
-                    className="form-control ui-control-sm"
-                    style={{ fontSize: "0.8rem" }}
-                  />
-                  <button type="button" onClick={handleAddCategory} className="btn btn-outline-primary btn-sm flex-shrink-0" style={{ fontSize: "0.78rem" }}>
-                    Add
-                  </button>
-                </div>
+          {!isLocation && (
+            <div className="align-items-start d-flex gap-2 mb-2">
+              <div className="flex-grow-1 mb-0">
+                <Dropdown_Custom
+                  id="location"
+                  name="location"
+                  floatingLabel="Location"
+                  className="ui-control-sm"
+                  value={formData.location}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
+                  placeholder="Select location"
+                  closeOnSelect
+                />
+              </div>
+
+              <div className="flex-grow-1 mb-0">
+                <Dropdown_Custom
+                  id="supplier_id"
+                  name="supplier_id"
+                  floatingLabel="Supplier"
+                  className="ui-control-sm"
+                  value={formData.supplier_id}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "No supplier" }, ...availableSuppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))]}
+                  placeholder="Select supplier"
+                  closeOnSelect
+                />
               </div>
             </div>
-          )}
-
-          {!isLocation && (
-            <>
-              <div className="align-items-start d-flex gap-2 mb-2">
-                <div className="flex-grow-1">
-                  <div className="ui-flex-center-gap-2">
-                    <div className="flex-grow-1 mb-0">
-                      <label htmlFor="location" className="form-label ui-form-label-sm">
-                        Location
-                      </label>
-                      <Dropdown_Custom
-                        id="location"
-                        name="location"
-                        className="ui-control-sm"
-                        value={showNewLocationInput ? "" : formData.location}
-                        onChange={(e) => {
-                          setShowNewLocationInput(false);
-                          handleChange(e);
-                        }}
-                        options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
-                        placeholder="Select location"
-                        closeOnSelect
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      title={showNewLocationInput ? "Close" : "Add location"}
-                      onClick={() => {
-                        setShowNewLocationInput((prev) => {
-                          const next = !prev;
-                          if (next) {
-                            setFormData((current) => ({ ...current, location: "" }));
-                          }
-                          return next;
-                        });
-                      }}
-                      className="btn btn-outline-secondary btn-sm flex-shrink-0"
-                      style={{ fontSize: "1rem" }}
-                    >
-                      {showNewLocationInput ? "×" : "+"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex-grow-1 mb-0">
-                  <label htmlFor="supplier_id" className="form-label ui-form-label-sm">
-                    Supplier (optional)
-                  </label>
-                  <Dropdown_Custom
-                    id="supplier_id"
-                    name="supplier_id"
-                    className="ui-control-sm"
-                    value={formData.supplier_id}
-                    onChange={handleChange}
-                    options={[{ value: "", label: "No supplier" }, ...availableSuppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))]}
-                    placeholder="Select supplier"
-                    closeOnSelect
-                  />
-                </div>
-              </div>
-
-              {showNewLocationInput && (
-                <div className="form-floating ui-form-floating-mb2">
-                  <input
-                    type="text"
-                    id="new_location"
-                    name="location"
-                    value={formData.location}
-                    onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, location: e.target.value }));
-                    }}
-                    className="form-control ui-control-sm"
-                    placeholder="Enter new location"
-                  />
-                  <label htmlFor="new_location">New Location</label>
-                </div>
-              )}
-            </>
           )}
 
           {/* Linked Service - only for RESOURCE or ASSET types */}
           {(formData.type === "RESOURCE" || formData.type === "ASSET") && (
             <div className="ui-form-floating-mb2">
-              <label htmlFor="service_id" className="form-label ui-form-label-sm">
-                Linked Service (optional)
-              </label>
               <Dropdown_Custom
                 id="service_id"
                 name="service_id"
+                floatingLabel="Linked Service"
                 className="ui-control-sm"
                 value={formData.service_id}
                 onChange={handleChange}
                 options={[{ value: "", label: "No linked service" }, ...availableServices.map((service) => ({ value: service.id, label: service.name }))]}
-                placeholder="Select linked service"
+                placeholder="Linked Services"
                 closeOnSelect
               />
             </div>
@@ -933,12 +708,10 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
           {/* Date of Purchase / Date of Sale */}
           <div className="d-flex gap-2 mb-2">
             <div className="flex-grow-1">
-              <label htmlFor="cost_type" className="form-label ui-form-label-sm">
-                Cost Type
-              </label>
               <Dropdown_Custom
                 id="cost_type"
                 name="cost_type"
+                floatingLabel="Cost Type"
                 className="ui-control-sm"
                 value={formData.cost_type}
                 onChange={handleChange}
@@ -967,14 +740,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* ─── BUNDLE COMPONENTS INLINE ─── */}
           {upperType === "BUNDLE" && (
-            <div className="border mt-3 p-1 rounded-3" style={{ borderColor: "#fb923c", background: "#fff7ed" }}>
-              <div className="fw-semibold mb-2" style={{ color: "#c2410c", fontSize: "0.85rem" }}>
+            <div className="border border-orange-300 dark:border-orange-800/60 bg-orange-50/50 dark:bg-orange-950/20 mt-3 p-2 rounded-3 text-gray-900 dark:text-gray-100">
+              <div className="fw-semibold mb-2 text-orange-700 dark:text-orange-400" style={{ fontSize: "0.85rem" }}>
                 Bundle Components
               </div>
 
               {/* Price type */}
               <div className="align-items-center d-flex gap-2 mb-2">
-                <label className="mb-0 ui-small-muted">Pricing:</label>
                 <Dropdown_Custom
                   className="ui-control-sm"
                   style={{ width: 260 }}
@@ -999,7 +771,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               {bundleComponents.length > 0 && (
                 <div className="mb-2">
                   {bundleComponents.map((comp) => (
-                    <div key={comp.id} className="align-items-center bg-white border d-flex gap-2 mb-1 p-1 rounded" style={{ borderColor: "#fed7aa" }}>
+                    <div key={comp.id} className="align-items-center bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-900/50 d-flex gap-2 mb-1 p-1 rounded text-gray-900 dark:text-gray-100">
                       <span className="flex-grow-1 small">{comp.name}</span>
                       <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
                       <span className="ui-small-muted">${(comp.price ?? 0).toFixed(2)} sell</span>
@@ -1010,7 +782,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       </button>
                     </div>
                   ))}
-                  <div className="align-items-center bg-white border d-flex justify-content-between mt-1 p-1 rounded" style={{ borderColor: "#fed7aa" }}>
+                  <div className="align-items-center bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-900/50 d-flex justify-content-between mt-1 p-1 rounded text-gray-900 dark:text-gray-100">
                     <span className="fw-semibold ui-text-sm">Totals</span>
                     <span className="small">Qty: {bundleSummary.quantityTotal.toFixed(2)}</span>
                     <span className="small">Cost: ${bundleSummary.costSubtotal.toFixed(2)}</span>
@@ -1028,12 +800,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   style={{ maxWidth: 220 }}
                   value={bundleNewProductId}
                   onChange={(e) => setBundleNewProductId(e.target.value)}
-                  options={[
-                    { value: "", label: "Select…" },
-                    ...allProducts
-                      .filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
-                      .map((p) => ({ value: p.id, label: p.name })),
-                  ]}
+                  options={[{ value: "", label: "Select…" }, ...allProducts.filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))).map((p) => ({ value: p.id, label: p.name }))]}
                   placeholder="Select product"
                   closeOnSelect
                 />
@@ -1057,8 +824,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           {/* ─── MIX CONFIG INLINE ─── */}
           {upperType === "MIX" && (
-            <div className="border mt-3 p-1 rounded-3" style={{ borderColor: "#f472b6", background: "#fdf2f8" }}>
-              <div className="fw-semibold mb-2" style={{ color: "#be185d", fontSize: "0.85rem" }}>
+            <div className="border border-pink-300 dark:border-pink-800/60 bg-pink-50/50 dark:bg-pink-950/20 mt-3 p-2 rounded-3 text-gray-900 dark:text-gray-100">
+              <div className="fw-semibold mb-2 text-pink-700 dark:text-pink-400" style={{ fontSize: "0.85rem" }}>
                 Mix Setup
               </div>
 
@@ -1081,7 +848,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               {mixComponents.length > 0 && (
                 <div className="mb-2">
                   {mixComponents.map((comp) => (
-                    <div key={comp.id} className="align-items-center bg-white border d-flex gap-2 mb-1 p-1 rounded" style={{ borderColor: "#fbcfe8" }}>
+                    <div key={comp.id} className="align-items-center bg-white dark:bg-gray-800 border border-pink-200 dark:border-pink-900/50 d-flex gap-2 mb-1 p-1 rounded text-gray-900 dark:text-gray-100">
                       <span className="flex-grow-1 small">{comp.name}</span>
                       <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
                       <span className="ui-small-muted">${comp.price?.toFixed(2)}</span>
@@ -1099,7 +866,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       </button>
                     </div>
                   ))}
-                  <div className="align-items-center bg-white border d-flex justify-content-between mt-1 p-1 rounded" style={{ borderColor: "#fbcfe8" }}>
+                  <div className="align-items-center bg-white dark:bg-gray-800 border border-pink-200 dark:border-pink-900/50 d-flex justify-content-between mt-1 p-1 rounded text-gray-900 dark:text-gray-100">
                     <span className="fw-semibold ui-text-sm">Totals</span>
                     <span className="small">Items: {mixSummary.itemCount}</span>
                     <span className="small">Cost: ${mixSummary.costSubtotal.toFixed(2)}</span>
@@ -1116,12 +883,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   style={{ maxWidth: 220 }}
                   value={mixNewProductId}
                   onChange={(e) => setMixNewProductId(e.target.value)}
-                  options={[
-                    { value: "", label: "Select…" },
-                    ...allProducts
-                      .filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase())))
-                      .map((p) => ({ value: p.id, label: p.name })),
-                  ]}
+                  options={[{ value: "", label: "Select…" }, ...allProducts.filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))).map((p) => ({ value: p.id, label: p.name }))]}
                   placeholder="Select product"
                   closeOnSelect
                 />

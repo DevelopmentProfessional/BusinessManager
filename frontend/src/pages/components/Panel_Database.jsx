@@ -11,7 +11,6 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import Manager_DatabaseConnection from "./Manager_DatabaseConnection";
-import Footer_Settings from "./Footer_Settings";
 import Dropdown_Custom from "./Dropdown_Custom";
 
 const Panel_Database = ({
@@ -172,7 +171,6 @@ const Panel_Database = ({
         )}
       </div>
     </div>
-    {onClose && <Footer_Settings onSave={onClose} onClose={onClose} />}
   </div>
 );
 

@@ -560,17 +560,19 @@ export default function Services() {
         }}
       >
         <div className="ui-small-muted">Use these controls to manage the Services page view.</div>
-        <div className="small">Search, category filter, and add actions are available in the footer.</div>
-        <Button_Toolbar
-          icon={FolderOpenIcon}
-          label="Cats"
-          onClick={() => {
-            setShowPageControls(false);
-            setShowCategoryManager(true);
-          }}
-          className="btn-primary"
-          title="Manage service categories"
-        />
+        <div className="small">Search, category filter, and add actions are available.</div>
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={FolderOpenIcon}
+            label="Cats"
+            onClick={() => {
+              setShowPageControls(false);
+              setShowCategoryManager(true);
+            }}
+            className="btn-primary"
+            title="Manage service categories"
+          />
+        </div>
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
@@ -582,15 +584,7 @@ export default function Services() {
         />
       </PageControlsModal>
 
-      <Modal_ManageLookup
-        isOpen={showCategoryManager}
-        onClose={() => setShowCategoryManager(false)}
-        title="Manage Categories"
-        entityLabel="category"
-        items={managedCategories}
-        onItemsChanged={loadManagedCategories}
-        api={serviceCategoriesAPI}
-      />
+      <Modal_ManageLookup isOpen={showCategoryManager} onClose={() => setShowCategoryManager(false)} title="Manage Categories" entityLabel="category" items={managedCategories} onItemsChanged={loadManagedCategories} api={serviceCategoriesAPI} />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}

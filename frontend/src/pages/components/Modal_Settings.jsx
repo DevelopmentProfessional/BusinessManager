@@ -91,7 +91,7 @@ const Modal_Settings = ({
 
   return (
     <div className={embedded ? "" : "accordion-popup"} style={containerStyle}>
-      <div className="align-items-center d-flex flex-wrap gap-1 mb-2">
+      <div className="align-items-center d-flex flex-wrap gap-1 mb-2 mt-2">
         <span className="me-1 small text-muted">Environment Production (Last Updated: {environmentLastUpdated || "N/A"})</span>
         {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
           const isCurrent = key === currentDbEnvironment;

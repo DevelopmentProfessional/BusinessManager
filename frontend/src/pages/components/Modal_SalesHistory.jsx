@@ -239,10 +239,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
               value={local.status || ""}
               onChange={(e) => setLocal((prev) => ({ ...prev, status: e.target.value }))}
               className="form-select form-select-sm rounded-pill"
-              options={[
-                { value: "", label: "All statuses" },
-                ...Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => ({ value: statusValue, label: statusLabel })),
-              ]}
+              options={[{ value: "", label: "All statuses" }, ...Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => ({ value: statusValue, label: statusLabel }))]}
             />
             <input type="number" min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="form-control form-control-sm rounded-pill" aria-label="Minimum total" />
             <input type="number" min="0" step="0.01" value={local.maxPrice} onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))} placeholder="Max $" className="form-control form-control-sm rounded-pill" aria-label="Maximum total" />
@@ -347,7 +344,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
               <div className="align-items-center d-flex flex-column h-100 justify-content-center px-1 py-1 text-center">
                 <ClockIcon className="mb-3 text-muted" style={{ width: "3rem", height: "3rem" }} aria-hidden="true" />
                 <h3 className="h5 mb-1 text-body">No transactions</h3>
-                <p className="mb-0 ui-small-muted">Adjust filters in the footer, then tap Apply.</p>
+                <p className="mb-0 ui-small-muted">Adjust filters, then press Apply.</p>
               </div>
             ) : (
               <div className="list-group list-group-flush">

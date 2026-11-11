@@ -5,7 +5,6 @@ import React from "react";
 import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal from "./Modal";
-import Footer_Settings from "./Footer_Settings";
 import { documentsAPI } from "../../services/api";
 import Dropdown_Custom from "./Dropdown_Custom";
 
@@ -18,7 +17,7 @@ function SettingsSection({ open, onToggle, icon: Icon, iconClassName = "", title
   return (
     <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
       {open && (
-        <div className="px-1 py-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}>
+        <div className="px-2 pt-2 pb-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}>
           {children}
         </div>
       )}
@@ -617,7 +616,6 @@ const Panel_General = ({
         <Button_Toolbar icon={ArrowPathIcon} label="Reset" onClick={resetPortalBrandingDefaults} className="btn-outline-secondary" title="Reset to defaults" />
       </SettingsSection>
     </div>
-    <Footer_Settings onSave={onSave} onClose={onClose} saving={saving || companyLoading || portalBrandingLoading} />
   </div>
 );
 

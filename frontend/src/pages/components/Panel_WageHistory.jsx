@@ -41,7 +41,7 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
 
   return (
     <div className="d-flex flex-column min-h-0 profile-wage-history profile-accordion-body" style={{ maxHeight, minHeight: "10rem" }}>
-      <div className="flex-grow-1 min-h-0 overflow-auto profile-wage-history__list pt-0 px-0">
+      <div className="flex-grow-1 min-h-0 overflow-auto profile-wage-history__list pt-2 px-0">
         {paySlipsLoading ? (
           <div className="py-1 text-center">
             <div className="spinner-border spinner-border-sm text-primary" role="status" />

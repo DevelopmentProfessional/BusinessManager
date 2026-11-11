@@ -103,6 +103,7 @@
   --app-dropdown-item-height: 2rem;
   --app-dropdown-item-padding-x: 0.75rem;
   --app-dropup-z-index: 900;
+  --app-dropdown-font-size: var(--app-text-size-tiny, 0.5rem);
 
   /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
@@ -310,11 +311,20 @@ table::-webkit-scrollbar,
 
 /* ─── 2. DROPUPS & DROPDOWNS ─── */
 .app-dropdown,
-.app-dropup,
-.app-dropdown-root.is-open {
+.app-dropup {
   position: relative;
   display: inline-flex;
+}
+
+.app-dropdown.is-open,
+.app-dropup.is-open,
+.app-dropdown-root.is-open {
   z-index: var(--app-dropup-z-index, 900) !important;
+}
+
+.app-dropdown-root {
+  position: relative;
+  width: 100%;
 }
 
 .app-menu-panel {
@@ -364,7 +374,7 @@ table::-webkit-scrollbar,
   width: 100% !important;
   min-height: var(--app-dropdown-item-height) !important;
   padding: 0.25rem var(--app-dropdown-item-padding-x) !important;
-  font-size: var(--app-btn-label-font-size) !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
   border-radius: 0.375rem !important;
   color: var(--bs-body-color) !important;
   background: transparent !important;
@@ -918,6 +928,17 @@ table::-webkit-scrollbar,
   flex-grow: 1;
 }
 
+/* Ensure cards without headers have adequate top padding so content is not clipped by corner radius */
+.card:not(:has(.card-header)),
+.app-card:not(:has(.app-card-header)) {
+  padding-top: var(--app-card-padding, 0.75rem);
+}
+
+.card-body,
+.app-card-body {
+  padding-top: var(--app-card-padding, 0.75rem);
+}
+
 .app-card-footer {
   padding: var(--app-card-header-padding);
   display: flex;
@@ -977,6 +998,9 @@ table::-webkit-scrollbar,
   border-top: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) 0 0 !important;
   margin-bottom: calc(var(--app-accordion-header-height) * -0.5) !important;
+  padding-top: 0.75rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
   padding-bottom: calc(var(--app-accordion-header-height) * 0.5 + 0.5rem) !important;
   position: relative !important;
   z-index: 1 !important;
@@ -1249,7 +1273,7 @@ table::-webkit-scrollbar,
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   padding: 0.25rem 0.5rem !important;
-  font-size: var(--app-input-font-size) !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
   line-height: 1.2;
 }
 
@@ -1879,6 +1903,9 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
   border-top: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: 1rem 1rem 0 0 !important;
   margin-bottom: calc(var(--app-btn-height) * -0.5) !important;
+  padding-top: 0.75rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
   padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.5rem) !important;
   position: relative !important;
   z-index: 1 !important;
@@ -3094,7 +3121,7 @@ textarea.form-control {
 }
 
 .app-menu-panel {
-  font-size: var(--app-input-font-size) !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
   border: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: 0.5rem;
   background-clip: padding-box;
@@ -3102,7 +3129,7 @@ textarea.form-control {
 }
 
 .app-menu-trigger {
-  font-size: var(--app-btn-label-font-size) !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
 }
 
 .app-menu-item,
@@ -3114,7 +3141,7 @@ textarea.form-control {
 .app-menu-search,
 .app-menu-action,
 .app-menu-summary {
-  font-size: var(--app-input-font-size) !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
 }
 
 .app-menu-item,
@@ -3542,4 +3569,18 @@ select.form-select {
   .template-editor-meta-controls .app-dropdown-root {
     flex: 1 1 7.5rem;
   }
+}
+
+/* ─── Page Controls Modal Action Group ─── */
+.page-controls-actions-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.page-controls-actions-group .btn {
+  flex-shrink: 0;
+  width: auto !important;
 }
