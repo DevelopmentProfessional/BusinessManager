@@ -40,7 +40,7 @@ import React, { useState, useEffect } from "react";
 import { XMarkIcon, CheckIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
-import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI } from "../../services/api";
+import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serviceCategoriesAPI } from "../../services/api";
 import Widget_Camera from "./Widget_Camera";
 import Modal_BulkImport from "./Modal_ImportBulk";
 import Dropdown_Custom from "./Dropdown_Custom";
@@ -69,6 +69,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   // ── Lookup data ──────────────────────────────────────────────────
   const [inventory, setInventory] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
 
   // ── Relationship state ───────────────────────────────────────────
   const [resources, setResources] = useState([]);
@@ -146,6 +147,12 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         if (!cancelled) {
           setInventory(invRes?.data ?? invRes ?? []);
           setEmployees(empRes?.data ?? empRes ?? []);
+        }
+        try {
+          const catRes = await serviceCategoriesAPI.list();
+          if (!cancelled) setCategoryOptions(catRes?.data ?? []);
+        } catch {
+          // Category suggestions are optional
         }
       } catch (err) {
         console.error("Form_Service: failed to load lookups", err);
@@ -555,7 +562,12 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       <label htmlFor="name">Name *</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control ui-control-sm" placeholder="Category" />
+                      <input type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control ui-control-sm" placeholder="Category" list="service-category-options" />
+                      <datalist id="service-category-options">
+                        {categoryOptions.map((cat) => (
+                          <option key={cat.id} value={cat.name} />
+                        ))}
+                      </datalist>
                       <label htmlFor="category">Category</label>
                     </div>
                     <div className="form-floating">

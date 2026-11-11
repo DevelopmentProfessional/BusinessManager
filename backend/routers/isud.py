@@ -1863,6 +1863,16 @@ def _cascade_delete(session: Session, table_name: str, record_id: UUID, record) 
     elif tn in ("document_category",):
         _null(Document, "category_id", record_id, "category_id")
 
+    # ── MANAGED STATUS LOOKUPS ───────────────────────────────────────────────
+    elif tn in ("document_status",):
+        _null(Document, "status_id", record_id, "status_id")
+
+    elif tn in ("client_status",):
+        _null(Client, "status_id", record_id, "status_id")
+
+    elif tn in ("employee_status",):
+        _null(User, "status_id", record_id, "status_id")
+
 
 @router.delete("/{table_name}/{record_id}")
 async def delete_by_id(

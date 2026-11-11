@@ -62,7 +62,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import Dropdown_Filter from "./components/Dropdown_Filter";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
-import api, { employeesAPI, rolesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
+import api, { employeesAPI, rolesAPI, employeeStatusesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import TableSettingsControls from "./components/TableSettingsControls";
@@ -83,6 +83,7 @@ import Modal_Wages from "./components/Modal_Wages";
 import Modal_Pay_Employee from "./components/Modal_EmployeePay";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/Modal_ManageLookup";
 import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 
@@ -109,6 +110,8 @@ export default function Employees() {
   const [systemInfo] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [showRolesModal, setShowRolesModal] = useState(false);
+  const [employeeStatuses, setEmployeeStatuses] = useState([]);
+  const [showStatusManager, setShowStatusManager] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [allRequests, setAllRequests] = useState([]);
   const [showInsuranceModal, setShowInsuranceModal] = useState(false);
@@ -133,9 +136,9 @@ export default function Employees() {
   });
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState([]);
   const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -172,6 +175,7 @@ export default function Employees() {
   // On mount: trigger employee load and fetch app settings once.
   useFetchOnce(() => {
     loadEmployees();
+    loadEmployeeStatuses();
     // Roles are loaded on-demand when the Manage Roles modal is opened
     settingsAPI
       .getSettings()
@@ -242,6 +246,15 @@ export default function Employees() {
       }
     } catch (err) {
       console.error("Failed to load roles:", err);
+    }
+  };
+
+  const loadEmployeeStatuses = async () => {
+    try {
+      const res = await employeeStatusesAPI.list();
+      setEmployeeStatuses(res.data || []);
+    } catch (err) {
+      console.warn("Failed to load employee statuses", err);
     }
   };
 
@@ -353,9 +366,12 @@ export default function Employees() {
     const term = searchTerm.trim().toLowerCase();
 
     return employees.filter((employee) => {
-      if (roleFilter !== "all" && employee.role !== roleFilter) return false;
-      if (statusFilter === "active" && !employee.is_active) return false;
-      if (statusFilter === "inactive" && employee.is_active) return false;
+      if (roleFilter.length > 0 && !roleFilter.includes(employee.role)) return false;
+      if (statusFilter.length > 0) {
+        const activeKey = employee.is_active ? "active" : "inactive";
+        const matchesStatus = statusFilter.includes(activeKey) || (employee.status_id && statusFilter.includes(String(employee.status_id)));
+        if (!matchesStatus) return false;
+      }
 
       if (!term) return true;
 
@@ -402,6 +418,12 @@ export default function Employees() {
         { value: "true", label: "Active" },
         { value: "false", label: "Inactive" },
       ],
+    },
+    {
+      key: "status_id",
+      label: "Custom Status",
+      type: "select",
+      options: sortItemsAlphabetically(employeeStatuses, ["name"]).map((st) => ({ value: st.id, label: st.name })),
     },
   ];
 
@@ -1136,13 +1158,13 @@ export default function Employees() {
           </Gate_Permission>
 
           {/* Clear Filters Button */}
-          {(roleFilter !== "all" || statusFilter !== "all") && (
+          {(roleFilter.length > 0 || statusFilter.length > 0) && (
             <Button_Toolbar
               icon={XMarkIcon}
               label="Clear"
               onClick={() => {
-                setRoleFilter("all");
-                setStatusFilter("all");
+                setRoleFilter([]);
+                setStatusFilter([]);
               }}
               className="btn-app-danger"
             />
@@ -1153,6 +1175,7 @@ export default function Employees() {
             icon={UserGroupIcon}
             label="Role"
             title="Filter by role"
+            multiSelect
             value={roleFilter}
             onChange={setRoleFilter}
             isOpen={isRoleFilterOpen}
@@ -1166,15 +1189,17 @@ export default function Employees() {
             icon={CheckCircleIcon}
             label="Status"
             title="Filter by status"
+            multiSelect
             value={statusFilter}
             onChange={setStatusFilter}
             isOpen={isStatusFilterOpen}
             setIsOpen={setIsStatusFilterOpen}
-            activeClass={statusFilter === "active" ? "bg-green-600 text-white" : "bg-red-600 text-white"}
+            activeClass={statusFilter.length === 1 && statusFilter[0] === "active" ? "bg-green-600 text-white" : statusFilter.length === 1 && statusFilter[0] === "inactive" ? "bg-red-600 text-white" : "bg-primary-600 text-white"}
             options={[
-              { value: "all", label: "All Statuses", description: "Shows both active and inactive employees." },
+              { value: "all", label: "All Statuses", description: "Shows employees in every status." },
               { value: "active", label: "Active", description: "Shows only active employees." },
               { value: "inactive", label: "Inactive", description: "Shows only inactive employees." },
+              ...sortItemsAlphabetically(employeeStatuses, ["name"]).map((st) => ({ value: String(st.id), label: st.name, description: st.description || `Shows only employees with the "${st.name}" status.` })),
             ]}
           />
         </PageTableFooter>
@@ -1250,6 +1275,17 @@ export default function Employees() {
         pages={pages}
         permissions={permissions}
         isDarkMode={isDarkMode}
+      />
+
+      {/* Employee Status Management Modal */}
+      <Modal_ManageLookup
+        isOpen={showStatusManager}
+        onClose={() => setShowStatusManager(false)}
+        title="Manage Statuses"
+        entityLabel="status"
+        items={employeeStatuses}
+        onItemsChanged={loadEmployeeStatuses}
+        api={employeeStatusesAPI}
       />
 
       {/* Roles Management Modal */}
@@ -1377,6 +1413,29 @@ export default function Employees() {
       >
         <div className="ui-small-muted">Use these controls to manage employee views and actions.</div>
         <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
+        <div className="d-flex gap-2">
+          <Button_Toolbar
+            icon={UserGroupIcon}
+            label="Roles"
+            onClick={() => {
+              setShowPageControls(false);
+              loadRoles();
+              setShowRolesModal(true);
+            }}
+            className="btn-primary"
+            title="Manage roles"
+          />
+          <Button_Toolbar
+            icon={CheckCircleIcon}
+            label="Status"
+            onClick={() => {
+              setShowPageControls(false);
+              setShowStatusManager(true);
+            }}
+            className="btn-primary"
+            title="Manage employee statuses"
+          />
+        </div>
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}

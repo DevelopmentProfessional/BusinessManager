@@ -45,7 +45,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
-import { rolesAPI, isudAPI, employeesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
+import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
 import Button_InsuranceDocument from "./Button_InsuranceDocument";
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
@@ -181,6 +181,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const [activeTab, setActiveTab] = useState("details");
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [employeeStatuses, setEmployeeStatuses] = useState([]);
   const [employeesList, setEmployeesList] = useState(employeesProp);
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
@@ -263,6 +264,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     reports_to: "",
     supervisor: "",
     role_id: "",
+    status_id: "",
     iod_number: "",
     location: "",
     department_id: "",
@@ -302,6 +304,17 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       }
     };
     loadRoles();
+  }, []);
+
+  // Load employee statuses
+  useEffect(() => {
+    employeeStatusesAPI
+      .list()
+      .then((res) => {
+        const data = res?.data ?? res;
+        if (Array.isArray(data)) setEmployeeStatuses(sortItemsAlphabetically(data, ["name"]));
+      })
+      .catch((err) => console.warn("Failed to load employee statuses:", err));
   }, []);
 
   // Load departments
@@ -373,6 +386,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         reports_to: employee.reports_to || "",
         supervisor: employee.supervisor || "",
         role_id: employee.role_id || "",
+        status_id: employee.status_id || "",
         iod_number: employee.iod_number || "",
         location: employee.location || "",
         department_id: employee.department_id || "",
@@ -605,6 +619,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     if (!submitData.email.trim()) submitData.email = null;
     if (!submitData.reports_to) submitData.reports_to = null;
     if (!submitData.role_id) submitData.role_id = null;
+    if (!submitData.status_id) submitData.status_id = null;
     if (!submitData.iod_number.trim()) submitData.iod_number = null;
     if (!submitData.location.trim()) submitData.location = null;
     if (!submitData.department_id) submitData.department_id = null;
@@ -900,6 +915,21 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                           </div>
                         </div>
                       )}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="status_id" className="form-label ui-form-label-sm">
+                        Status
+                      </label>
+                      <Dropdown_Custom
+                        id="status_id"
+                        name="status_id"
+                        className="ui-control-sm"
+                        value={formData.status_id}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Status" }, ...employeeStatuses.map((st) => ({ value: st.id, label: st.name }))]}
+                        placeholder="Select status"
+                        closeOnSelect
+                      />
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">

@@ -1331,6 +1331,18 @@ table::-webkit-scrollbar,
   display: none; /* Chrome / Safari / Opera */
 }
 
+/* Container whose corners hug pill-shaped controls sitting flush against its border */
+.ui-pill-container {
+  border-radius: calc(var(--app-input-height) / 2 + 0.0625rem) !important;
+}
+
+/* Narrow numeric input paired with a flexible dropdown in the same row */
+.ui-number-narrow {
+  flex: 0 0 6rem;
+  width: 6rem;
+  min-width: 0;
+}
+
 .ui-row-g2 {
   --bs-gutter-x: 0.5rem;
   --bs-gutter-y: 0.5rem;

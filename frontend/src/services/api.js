@@ -644,6 +644,28 @@ export const documentCategoriesAPI = {
   },
 };
 
+// Generic company-scoped lookup lists (name + description) with full CRUD via isud.
+const createLookupAPI = (table, cacheKey) => ({
+  list: () => getCachedOrFetch(cacheKey, () => api.get(`/isud/${table}`)),
+  create: (data) => {
+    clearCache(cacheKey);
+    return api.post(`/isud/${table}`, data);
+  },
+  update: (id, data) => {
+    clearCache(cacheKey);
+    return api.put(`/isud/${table}/${id}`, data);
+  },
+  delete: (id) => {
+    clearCache(cacheKey);
+    return api.delete(`/isud/${table}/${id}`);
+  },
+});
+
+export const clientStatusesAPI = createLookupAPI("client_status", "client-statuses");
+export const employeeStatusesAPI = createLookupAPI("employee_status", "employee-statuses");
+export const documentStatusesAPI = createLookupAPI("document_status", "document-statuses");
+export const serviceCategoriesAPI = createLookupAPI("service_category", "service-categories");
+
 export const leaveRequestsAPI = {
   ...createRequestApi("leave_request", "leave-requests"),
   // Override getByUser to support optional leaveType filter

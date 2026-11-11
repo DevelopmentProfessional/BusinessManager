@@ -43,11 +43,12 @@ import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, T
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
-import { servicesAPI, getDetailedApiErrorMessage } from "../services/api";
+import { servicesAPI, serviceCategoriesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal from "./components/Modal";
 import PageControlsModal from "./components/Page_ControlsModal";
 import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Service from "./components/Form_Service";
+import Modal_ManageLookup from "./components/Modal_ManageLookup";
 import Gate_Permission from "./components/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
@@ -65,9 +66,11 @@ export default function Services() {
   const [editingService, setEditingService] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState([]);
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
   const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
+  const [managedCategories, setManagedCategories] = useState([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
   const { isTrainingMode } = useViewMode();
   const { settings: pageSettings, savePageSettings } = usePageTableSettings("services");
@@ -94,7 +97,19 @@ export default function Services() {
   ];
 
   // ─── 4  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
-  useFetchOnce(() => loadServices());
+  useFetchOnce(() => {
+    loadServices();
+    loadManagedCategories();
+  });
+
+  const loadManagedCategories = async () => {
+    try {
+      const res = await serviceCategoriesAPI.list();
+      setManagedCategories(res.data || []);
+    } catch (err) {
+      console.warn("Failed to load service categories", err);
+    }
+  };
 
   // ─── 5  DATA LOADING ──────────────────────────────────────────────────────
   const loadServices = async () => {
@@ -194,11 +209,11 @@ export default function Services() {
   };
 
   // ─── 7  DERIVED / COMPUTED VALUES ────────────────────────────────────────
-  // Get unique categories for filter
+  // Get unique categories for filter — managed list plus any values already on services
   const categories = useMemo(() => {
-    const cats = new Set(services.map((s) => s.category).filter(Boolean));
+    const cats = new Set([...managedCategories.map((c) => c.name), ...services.map((s) => s.category)].filter(Boolean));
     return ["all", ...sortItemsAlphabetically(Array.from(cats))];
-  }, [services]);
+  }, [services, managedCategories]);
 
   // Filtered services
   const filteredServices = useMemo(() => {
@@ -207,7 +222,7 @@ export default function Services() {
         const term = searchTerm.toLowerCase();
         if (!(svc.name || "").toLowerCase().includes(term) && !(svc.description || "").toLowerCase().includes(term) && !(svc.category || "").toLowerCase().includes(term)) return false;
       }
-      if (categoryFilter !== "all" && (svc.category || "") !== categoryFilter) return false;
+      if (categoryFilter.length > 0 && !categoryFilter.includes(svc.category || "")) return false;
       return true;
     });
   }, [services, searchTerm, categoryFilter]);
@@ -402,7 +417,7 @@ export default function Services() {
         </Gate_Permission>
 
         {/* Clear Filters Button */}
-        {categoryFilter !== "all" && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setCategoryFilter("all")} className="btn-app-danger" />}
+        {categoryFilter.length > 0 && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setCategoryFilter([])} className="btn-app-danger" />}
 
         {/* Category Filter */}
         <div className="ui-pos-rel">
@@ -415,8 +430,8 @@ export default function Services() {
               setIsCategoryFilterOpen(nextOpen);
               if (!nextOpen) setCategoryFilterHelpKey(null);
             }}
-            className={`border-0 shadow-lg transition-all ${categoryFilter !== "all" ? "bg-primary-600 hover:bg-primary-700 text-white" : "btn-app-secondary"}`}
-            data-active={categoryFilter !== "all"}
+            className={`border-0 shadow-lg transition-all ${categoryFilter.length > 0 ? "bg-primary-600 hover:bg-primary-700 text-white" : "btn-app-secondary"}`}
+            data-active={categoryFilter.length > 0}
           />
           {isCategoryFilterOpen && (
             <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={{ maxHeight: "300px", overflowY: "auto" }}>
@@ -425,20 +440,25 @@ export default function Services() {
                 const label = cat === "all" ? "All Categories" : cat || "No Category";
                 const description = cat === "all" ? "Shows services from every category." : (cat || "").trim() === "" ? "Shows services that do not have a category assigned." : `Shows only services in the "${cat}" category.`;
                 const isLast = index === categories.length - 1;
-                const isSelected = categoryFilter === cat;
+                const isSelected = cat === "all" ? categoryFilter.length === 0 : categoryFilter.includes(cat);
                 const isHelpOpen = categoryFilterHelpKey === String(key);
 
                 return (
                   <div key={String(key)} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
                     <button
                       onClick={() => {
-                        setCategoryFilter(cat);
-                        setIsCategoryFilterOpen(false);
-                        setCategoryFilterHelpKey(null);
+                        if (cat === "all") {
+                          setCategoryFilter([]);
+                          setIsCategoryFilterOpen(false);
+                          setCategoryFilterHelpKey(null);
+                        } else {
+                          setCategoryFilter((prev) => (prev.includes(cat) ? prev.filter((v) => v !== cat) : [...prev, cat]));
+                        }
                       }}
                       className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
                     >
                       {label}
+                      {isSelected && cat !== "all" && <span className="ms-1">✓</span>}
                     </button>
 
                     {isTrainingMode && (
@@ -541,6 +561,16 @@ export default function Services() {
       >
         <div className="ui-small-muted">Use these controls to manage the Services page view.</div>
         <div className="small">Search, category filter, and add actions are available in the footer.</div>
+        <Button_Toolbar
+          icon={FolderOpenIcon}
+          label="Cats"
+          onClick={() => {
+            setShowPageControls(false);
+            setShowCategoryManager(true);
+          }}
+          className="btn-primary"
+          title="Manage service categories"
+        />
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
@@ -551,6 +581,16 @@ export default function Services() {
           ]}
         />
       </PageControlsModal>
+
+      <Modal_ManageLookup
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        title="Manage Categories"
+        entityLabel="category"
+        items={managedCategories}
+        onItemsChanged={loadManagedCategories}
+        api={serviceCategoriesAPI}
+      />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}
