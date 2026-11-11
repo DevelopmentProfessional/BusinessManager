@@ -48,6 +48,7 @@ import PageTableRow from "./components/Page_TableRow";
 import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/Modal_DiscountRules";
 import Dropdown_Custom from "./components/Dropdown_Custom";
+import Dropdown_Filter from "./components/Dropdown_Filter";
 import Modal_MultiEdit from "./components/Modal_MultiEdit";
 import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -89,8 +90,6 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("all"); // 'all', 'low', 'ok'
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
-  const [typeFilterHelpKey, setTypeFilterHelpKey] = useState(null);
-  const [stockFilterHelpKey, setStockFilterHelpKey] = useState(null);
   const [assetUnitCounts, setAssetUnitCounts] = useState({});
   const [showPageControls, setShowPageControls] = useState(false);
   const [assetUnitsPerPage, setAssetUnitsPerPage] = useState(() => {
@@ -709,147 +708,33 @@ export default function Inventory() {
           </Gate_Permission>
 
           {/* Type Filter */}
-          <div className="ui-pos-rel">
-            <Button_Toolbar
-              icon={TagIcon}
-              label="Type"
-              onClick={() => {
-                const nextOpen = !isTypeFilterOpen;
-                setIsTypeFilterOpen(nextOpen);
-                if (!nextOpen) setTypeFilterHelpKey(null);
-              }}
-              className={`border-0 shadow-lg transition-all ${getTypeFilterButtonClass()}`}
-              data-active={typeFilter.length > 0}
-            />
-            {isTypeFilterOpen && (
-              <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
-                {sortedTypeFilterOptions.map((option, index) => {
-                  const isLast = index === sortedTypeFilterOptions.length - 1;
-                  const isSelected = option.value === "all" ? typeFilter.length === 0 : typeFilter.includes(option.value);
-                  const isHelpOpen = typeFilterHelpKey === option.value;
-
-                  return (
-                    <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                      <button
-                        onClick={() => {
-                          if (option.value === "all") {
-                            setTypeFilter([]);
-                            setIsTypeFilterOpen(false);
-                            setTypeFilterHelpKey(null);
-                          } else {
-                            setTypeFilter((prev) => (prev.includes(option.value) ? prev.filter((v) => v !== option.value) : [...prev, option.value]));
-                          }
-                        }}
-                        className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                      >
-                        {option.label}
-                        {isSelected && option.value !== "all" && <span className="ms-1">✓</span>}
-                      </button>
-
-                      {isTrainingMode && (
-                        <div className="flex-shrink-0 position-relative">
-                          <button
-                            type="button"
-                            aria-label={`${option.label} help`}
-                            className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
-                            onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                            onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setTypeFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                            }}
-                          >
-                            ?
-                          </button>
-
-                          {isHelpOpen && (
-                            <div
-                              className="app-menu-panel app-help-popover bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 text-start"
-                              onMouseEnter={() => setTypeFilterHelpKey(option.value)}
-                              onMouseLeave={() => setTypeFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            >
-                              <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
-                              <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <Dropdown_Filter
+            icon={TagIcon}
+            label="Type"
+            title="Filter by type"
+            multiSelect
+            value={typeFilter}
+            onChange={setTypeFilter}
+            isOpen={isTypeFilterOpen}
+            setIsOpen={setIsTypeFilterOpen}
+            activeClass={getTypeFilterButtonClass()}
+            showHelp={isTrainingMode}
+            options={sortedTypeFilterOptions}
+          />
 
           {/* Stock Filter */}
-          <div className="ui-pos-rel">
-            <Button_Toolbar
-              icon={CircleStackIcon}
-              label="Stock"
-              onClick={() => {
-                const nextOpen = !isStockFilterOpen;
-                setIsStockFilterOpen(nextOpen);
-                if (!nextOpen) setStockFilterHelpKey(null);
-              }}
-              className={`border-0 shadow-lg transition-all ${getStockFilterButtonClass()}`}
-              data-active={stockFilter !== "all"}
-            />
-            {isStockFilterOpen && (
-              <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50">
-                {sortedStockFilterOptions.map((option, index) => {
-                  const isLast = index === sortedStockFilterOptions.length - 1;
-                  const isSelected = stockFilter === option.value;
-                  const isHelpOpen = stockFilterHelpKey === option.value;
-
-                  return (
-                    <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                      <button
-                        onClick={() => {
-                          setStockFilter(option.value);
-                          setIsStockFilterOpen(false);
-                          setStockFilterHelpKey(null);
-                        }}
-                        className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                      >
-                        {option.label}
-                      </button>
-
-                      {isTrainingMode && (
-                        <div className="flex-shrink-0 position-relative">
-                          <button
-                            type="button"
-                            aria-label={`${option.label} help`}
-                            className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
-                            onMouseEnter={() => setStockFilterHelpKey(option.value)}
-                            onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setStockFilterHelpKey((prev) => (prev === option.value ? null : option.value));
-                            }}
-                          >
-                            ?
-                          </button>
-
-                          {isHelpOpen && (
-                            <div
-                              className="app-help-popover bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 rounded-lg text-start"
-                              onMouseEnter={() => setStockFilterHelpKey(option.value)}
-                              onMouseLeave={() => setStockFilterHelpKey((prev) => (prev === option.value ? null : prev))}
-                            >
-                              <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
-                              <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <Dropdown_Filter
+            icon={CircleStackIcon}
+            label="Stock"
+            title="Filter by stock"
+            value={stockFilter}
+            onChange={setStockFilter}
+            isOpen={isStockFilterOpen}
+            setIsOpen={setIsStockFilterOpen}
+            activeClass={getStockFilterButtonClass()}
+            showHelp={isTrainingMode}
+            options={sortedStockFilterOptions}
+          />
 
           {/* Clear Filters Button */}
           {(typeFilter.length > 0 || stockFilter !== "all") && (
@@ -912,13 +797,14 @@ export default function Inventory() {
             title="Manage inventory categories"
           />
         </div>
-        <div className="d-flex flex-column gap-1">
+        <div className="d-flex align-items-center gap-2 mt-1" style={{ maxWidth: "13rem" }}>
           <Dropdown_Custom
             id="inventory-asset-units-per-page"
             className="ui-control-sm"
+            style={{ width: "100%", maxWidth: "13rem" }}
             value={String(assetUnitsPerPage)}
             onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}
-            options={ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) }))}
+            options={ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: `${size} per page` }))}
             placeholder="Select page size"
             closeOnSelect
           />

@@ -35,13 +35,13 @@ export function showConfirm(message, { confirmLabel = "Delete", cancelLabel = "C
     // Backdrop
     const backdrop = document.createElement("div");
     backdrop.id = "__bm_confirm_bd";
-    backdrop.style.cssText = "position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,0.5);";
+    backdrop.style.cssText = "position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,0.5);";
     document.body.appendChild(backdrop);
 
     // Dialog wrapper (centers the modal-content)
     const wrap = document.createElement("div");
     wrap.id = "__bm_confirm_wrap";
-    wrap.style.cssText = "position:fixed;inset:0;z-index:1056;display:flex;align-items:center;justify-content:center;padding:1rem;";
+    wrap.style.cssText = "position:fixed;inset:0;z-index:20001;display:flex;align-items:center;justify-content:center;padding:1rem;";
     wrap.innerHTML = `
       <div style="width:100%;max-width:400px;">
         <div class="modal-content shadow border-0 rounded-3">

@@ -75,7 +75,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.11.1"
+CURRENT_SCHEMA_VERSION = "2026.11.11.2"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -170,6 +170,10 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='document' AND column_name='status_id'"
             )).fetchone()
+            user_startup_page_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user' AND column_name='startup_page'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -193,6 +197,7 @@ def _required_schema_artifacts_present() -> bool:
                 and client_status_id_column is not None
                 and user_status_id_column is not None
                 and document_status_id_column is not None
+                and user_startup_page_column is not None
             )
     except Exception:
         return False
@@ -1156,6 +1161,20 @@ def _ensure_user_db_environment_if_needed():
             print("  + Added column user.db_environment")
 
 
+def _ensure_user_startup_page_if_needed():
+    """Add startup_page column to user table if missing."""
+    with engine.begin() as conn:
+        col_exists = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name='user' AND column_name='startup_page'"
+        )).fetchone()
+        if not col_exists:
+            conn.execute(text(
+                'ALTER TABLE "user" ADD COLUMN startup_page VARCHAR DEFAULT \'schedule\''
+            ))
+            print("  + Added column user.startup_page")
+
+
 def _ensure_procurement_order_tax_shipping_if_needed():
     """Add import_tax and shipping_cost to procurement_order."""
     with engine.begin() as conn:
@@ -1508,6 +1527,7 @@ def create_db_and_tables():
     _ensure_descriptive_feature_description_column_if_needed()
     _ensure_user_db_environment_if_needed()
     _ensure_status_lookup_columns_if_needed()
+    _ensure_user_startup_page_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

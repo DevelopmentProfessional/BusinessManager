@@ -2364,6 +2364,13 @@ input[type="number"],
   min-height: var(--app-input-height) !important;
   border-radius: 9999px !important;
 }
+
+.form-floating > .app-dropdown-floating-trigger,
+.app-dropdown-root.form-floating > .ui-dropdown-trigger {
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  text-align: left !important;
+}
+
 .form-floating > label,
 .form-floating > .app-floating-label {
   position: absolute;
@@ -2377,6 +2384,11 @@ input[type="number"],
   transform-origin: 0 0;
   pointer-events: none;
   transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.form-floating > .app-floating-label,
+.app-dropdown-root.form-floating > .app-floating-label {
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
 }
 .form-floating > .form-control:focus ~ label,
 .form-floating > .form-control:not(:placeholder-shown) ~ label,
@@ -3128,8 +3140,22 @@ textarea.form-control {
   z-index:900;
 }
 
-.app-menu-trigger {
+.app-menu-trigger,
+.ui-dropdown-trigger,
+.ui-dropdown-trigger *,
+.app-dropdown-floating-trigger,
+.app-dropdown-floating-trigger *,
+.app-dropdown-root .ui-dropdown-trigger,
+.app-dropdown-root .ui-dropdown-trigger *,
+.app-dropdown-root .app-dropdown-floating-trigger,
+.app-dropdown-root .app-dropdown-floating-trigger *,
+.app-dropdown-root .app-word-safe-label,
+.app-dropdown-root input,
+.app-dropdown-root button,
+.form-floating > .app-dropdown-floating-trigger,
+.form-floating > .app-dropdown-floating-trigger * {
   font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  text-align: left !important;
 }
 
 .app-menu-item,

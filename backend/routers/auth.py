@@ -1591,6 +1591,7 @@ def update_my_profile(
         "profile_picture", "signature_data", "password",
         "color", "dark_mode", "training_mode", "training_mode_explicit",
         "button_text_size", "footer_align", "ui_scale", "db_environment",
+        "startup_page",
     }
     for field, value in user_data.items():
         if field not in allowed_fields:
