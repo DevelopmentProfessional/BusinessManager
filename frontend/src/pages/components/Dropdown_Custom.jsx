@@ -95,7 +95,7 @@ export default function Dropdown_Custom({
       ? selectedOption.label
       : (isFloating ? "" : placeholder);
   const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
-  const { ref: triggerTextRef, displayLabel: wordSafeDisplayValue } = useWordSafeLabel(displayValue, { enabled: wordSafeTruncate && !isOpen });
+  const { ref: triggerTextRef, displayLabel: wordSafeDisplayValue } = useWordSafeLabel(displayValue, { enabled: wordSafeTruncate });
 
   const handleSelect = (option) => {
     if (multiSelect) {
@@ -130,7 +130,7 @@ export default function Dropdown_Custom({
   return (
     <div
       ref={dropdownRef}
-      className={`app-dropdown-root relative ${isFloating ? "form-floating app-dropdown-floating" : ""} ${hasValue ? "has-value" : ""} ${isOpen ? "is-open" : ""} ${className}`.trim()}
+      className={`app-dropdown-root relative w-full ${isFloating ? "form-floating app-dropdown-floating" : ""} ${hasValue ? "has-value" : ""} ${isOpen ? "is-open" : ""} ${className}`.trim()}
       style={style}
     >
       {searchable && !footerSearch ? (
@@ -195,7 +195,7 @@ export default function Dropdown_Custom({
       {multiSelect && showSelectionSummary && <div className="dark:text-gray-300 mt-1 text-gray-600 text-xs">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
 
       {isOpen && (
-        <div className={`app-menu-panel absolute z-50 w-full shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
+        <div className={`app-menu-panel absolute z-50 w-full shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`} style={{ minWidth: "100%", left: 0, right: 0 }}>
           {searchable && !footerSearch && (
             <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 px-0 py-0">
               <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} autoFocus />

@@ -9,11 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  BanknotesIcon, XMarkIcon, CheckIcon,
-  ChevronLeftIcon, ChevronRightIcon,
-  CalendarDaysIcon, UserGroupIcon,
-} from "@heroicons/react/24/outline";
+import { BanknotesIcon, XMarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { payrollAPI } from "../../services/api";
 import Dropdown_Custom from "./Dropdown_Custom";
@@ -51,7 +47,8 @@ function fmtShort(dateStr, withYear = false) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-US", {
-    month: "short", day: "numeric",
+    month: "short",
+    day: "numeric",
     ...(withYear ? { year: "numeric" } : {}),
   });
 }
@@ -131,7 +128,8 @@ function computePayPeriods(year, month, schedule) {
     const sStr = iso(s);
     const eStr = iso(e);
     periods.push({
-      start: sStr, end: eStr,
+      start: sStr,
+      end: eStr,
       payday: computePayday(sStr, eStr, schedule),
       label: fmtMonthYear(year, month),
     });
@@ -139,9 +137,7 @@ function computePayPeriods(year, month, schedule) {
   }
 
   const stepDays = freq === "biweekly" ? 14 : 7;
-  const anchor = schedule?.cycle_anchor_date
-    ? new Date(schedule.cycle_anchor_date + "T00:00:00")
-    : BI_EPOCH;
+  const anchor = schedule?.cycle_anchor_date ? new Date(schedule.cycle_anchor_date + "T00:00:00") : BI_EPOCH;
   const mStart = new Date(year, month, 1);
   const mEnd = new Date(year, month + 1, 0);
 
@@ -165,7 +161,8 @@ function computePayPeriods(year, month, schedule) {
       const sStr = iso(pStart);
       const eStr = iso(pEnd);
       periods.push({
-        start: sStr, end: eStr,
+        start: sStr,
+        end: eStr,
         payday: computePayday(sStr, eStr, schedule),
         label: `${fmtShort(sStr)} – ${fmtShort(eStr, true)}`,
       });
@@ -180,12 +177,7 @@ function computePayPeriods(year, month, schedule) {
 // Return true if any pay slip for this employee covers the given period
 function isPaid(slips, start, end) {
   if (!slips?.length) return false;
-  return slips.some(
-    (s) =>
-      s.status === "paid" &&
-      new Date(s.pay_period_start) <= new Date(end + "T23:59:59") &&
-      new Date(s.pay_period_end) >= new Date(start + "T00:00:00")
-  );
+  return slips.some((s) => s.status === "paid" && new Date(s.pay_period_start) <= new Date(end + "T23:59:59") && new Date(s.pay_period_end) >= new Date(start + "T00:00:00"));
 }
 
 // Calculate the default pay amount for a single employee over a period
@@ -268,51 +260,63 @@ export default function Modal_Wages({ employees = [], onClose }) {
     let cancelled = false;
 
     setScheduleLoading(true);
-    payrollAPI.getSchedule()
-      .then((r) => { if (!cancelled) setSchedule(r?.data ?? r ?? null); })
-      .catch(() => { if (!cancelled) setSchedule(null); })
-      .finally(() => { if (!cancelled) setScheduleLoading(false); });
+    payrollAPI
+      .getSchedule()
+      .then((r) => {
+        if (!cancelled) setSchedule(r?.data ?? r ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setSchedule(null);
+      })
+      .finally(() => {
+        if (!cancelled) setScheduleLoading(false);
+      });
 
     setSlipsLoading(true);
-    payrollAPI.getAll()
+    payrollAPI
+      .getAll()
       .then((r) => {
         if (!cancelled) {
           const d = r?.data ?? r ?? [];
           setAllSlips(Array.isArray(d) ? d : []);
         }
       })
-      .catch(() => { if (!cancelled) setAllSlips([]); })
-      .finally(() => { if (!cancelled) setSlipsLoading(false); });
+      .catch(() => {
+        if (!cancelled) setAllSlips([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSlipsLoading(false);
+      });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Derived maps ──────────────────────────────────────────────────────────────
   const slipMap = useMemo(() => {
     const m = {};
-    allSlips.forEach((s) => { (m[s.employee_id] ??= []).push(s); });
+    allSlips.forEach((s) => {
+      (m[s.employee_id] ??= []).push(s);
+    });
     return m;
   }, [allSlips]);
 
   const empMap = useMemo(() => {
     const m = {};
-    employees.forEach((e) => { m[e.id] = `${e.first_name} ${e.last_name}`.trim(); });
+    employees.forEach((e) => {
+      m[e.id] = `${e.first_name} ${e.last_name}`.trim();
+    });
     return m;
   }, [employees]);
 
   const activeEmps = useMemo(() => employees.filter((e) => e.is_active), [employees]);
 
   // ── Calendar periods ──────────────────────────────────────────────────────────
-  const calPeriods = useMemo(
-    () => (scheduleLoading ? [] : computePayPeriods(calYear, calMonth, schedule)),
-    [calYear, calMonth, schedule, scheduleLoading]
-  );
+  const calPeriods = useMemo(() => (scheduleLoading ? [] : computePayPeriods(calYear, calMonth, schedule)), [calYear, calMonth, schedule, scheduleLoading]);
 
   // ── Process periods ───────────────────────────────────────────────────────────
-  const procPeriods = useMemo(
-    () => (scheduleLoading ? [] : computePayPeriods(procYear, procMonth, schedule)),
-    [procYear, procMonth, schedule, scheduleLoading]
-  );
+  const procPeriods = useMemo(() => (scheduleLoading ? [] : computePayPeriods(procYear, procMonth, schedule)), [procYear, procMonth, schedule, scheduleLoading]);
 
   const currentProcPeriod = procPeriods[procPeriodIdx] ?? null;
 
@@ -324,68 +328,82 @@ export default function Modal_Wages({ employees = [], onClose }) {
   }, [procPeriods, procPeriodIdx]);
 
   // ── Process helpers ───────────────────────────────────────────────────────────
-  const updateForm = (empId, field, value) =>
-    setExpandForms((p) => ({ ...p, [empId]: { ...(p[empId] || {}), [field]: value } }));
+  const updateForm = (empId, field, value) => setExpandForms((p) => ({ ...p, [empId]: { ...(p[empId] || {}), [field]: value } }));
 
-  const handleExpandEmp = useCallback((emp) => {
-    if (!currentProcPeriod) return;
-    if (expandedId === emp.id) { setExpandedId(null); return; }
-    setExpandedId(emp.id);
-    const amt = calcAmount(emp, currentProcPeriod.start, currentProcPeriod.end);
-    const isH = (emp.employment_type || "").toLowerCase() === "hourly";
-    setExpandForms((p) => ({
-      ...p,
-      [emp.id]: {
-        gross_amount: !isH && amt ? amt.toFixed(2) : "",
-        hours_worked: isH ? "40" : "",
-        other_deductions: "0",
-        notes: "",
-      },
-    }));
-    setRowErrors((p) => ({ ...p, [emp.id]: "" }));
-  }, [expandedId, currentProcPeriod]);
+  const handleExpandEmp = useCallback(
+    (emp) => {
+      if (!currentProcPeriod) return;
+      if (expandedId === emp.id) {
+        setExpandedId(null);
+        return;
+      }
+      setExpandedId(emp.id);
+      const amt = calcAmount(emp, currentProcPeriod.start, currentProcPeriod.end);
+      const isH = (emp.employment_type || "").toLowerCase() === "hourly";
+      setExpandForms((p) => ({
+        ...p,
+        [emp.id]: {
+          gross_amount: !isH && amt ? amt.toFixed(2) : "",
+          hours_worked: isH ? "40" : "",
+          other_deductions: "0",
+          notes: "",
+        },
+      }));
+      setRowErrors((p) => ({ ...p, [emp.id]: "" }));
+    },
+    [expandedId, currentProcPeriod]
+  );
 
   // Pay a single employee
-  const handlePaySingle = useCallback(async (emp) => {
-    if (!currentProcPeriod) return;
-    const form = expandForms[emp.id] || {};
-    const isH = (emp.employment_type || "").toLowerCase() === "hourly";
-    setProcessingIds((p) => new Set([...p, emp.id]));
-    setRowErrors((p) => ({ ...p, [emp.id]: "" }));
-    try {
-      const payload = {
-        pay_period_start: `${currentProcPeriod.start}T00:00:00`,
-        pay_period_end: `${currentProcPeriod.end}T23:59:59`,
-        employment_type: emp.employment_type || "salary",
-        other_deductions: parseFloat(form.other_deductions || 0),
-        notes: form.notes || null,
-      };
-      if (isH) {
-        payload.hours_worked = parseFloat(form.hours_worked || 0);
-        payload.hourly_rate_snapshot = emp.hourly_rate;
-      } else {
-        payload.gross_amount = parseFloat(form.gross_amount || 0);
+  const handlePaySingle = useCallback(
+    async (emp) => {
+      if (!currentProcPeriod) return;
+      const form = expandForms[emp.id] || {};
+      const isH = (emp.employment_type || "").toLowerCase() === "hourly";
+      setProcessingIds((p) => new Set([...p, emp.id]));
+      setRowErrors((p) => ({ ...p, [emp.id]: "" }));
+      try {
+        const payload = {
+          pay_period_start: `${currentProcPeriod.start}T00:00:00`,
+          pay_period_end: `${currentProcPeriod.end}T23:59:59`,
+          employment_type: emp.employment_type || "salary",
+          other_deductions: parseFloat(form.other_deductions || 0),
+          notes: form.notes || null,
+        };
+        if (isH) {
+          payload.hours_worked = parseFloat(form.hours_worked || 0);
+          payload.hourly_rate_snapshot = emp.hourly_rate;
+        } else {
+          payload.gross_amount = parseFloat(form.gross_amount || 0);
+        }
+        const res = await payrollAPI.processPayment(emp.id, payload);
+        const slip = res?.data ?? res;
+        if (slip?.id) {
+          setAllSlips((p) => [...p, slip]);
+          setExpandedId(null);
+          setSelectedEmpIds((p) => {
+            const n = new Set(p);
+            n.delete(emp.id);
+            return n;
+          });
+        }
+      } catch (err) {
+        setRowErrors((p) => ({ ...p, [emp.id]: err?.response?.data?.detail || "Payment failed" }));
+      } finally {
+        setProcessingIds((p) => {
+          const n = new Set(p);
+          n.delete(emp.id);
+          return n;
+        });
       }
-      const res = await payrollAPI.processPayment(emp.id, payload);
-      const slip = res?.data ?? res;
-      if (slip?.id) {
-        setAllSlips((p) => [...p, slip]);
-        setExpandedId(null);
-        setSelectedEmpIds((p) => { const n = new Set(p); n.delete(emp.id); return n; });
-      }
-    } catch (err) {
-      setRowErrors((p) => ({ ...p, [emp.id]: err?.response?.data?.detail || "Payment failed" }));
-    } finally {
-      setProcessingIds((p) => { const n = new Set(p); n.delete(emp.id); return n; });
-    }
-  }, [currentProcPeriod, expandForms]);
+    },
+    [currentProcPeriod, expandForms]
+  );
 
   // Pay all selected unpaid employees
   const handlePaySelected = useCallback(async () => {
     if (!currentProcPeriod) return;
-    const toPay = activeEmps.filter(
-      (e) => selectedEmpIds.has(e.id) && !isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end)
-    );
+    const toPay = activeEmps.filter((e) => selectedEmpIds.has(e.id) && !isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end));
     if (!toPay.length) return;
     setBatchProgress({ done: 0, total: toPay.length, paid: 0, errors: 0 });
     const newSlips = [];
@@ -454,11 +472,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
     const sorted = [...allSlips].sort((a, b) => new Date(b.pay_period_start) - new Date(a.pay_period_start));
     if (!histSearch) return sorted;
     const q = histSearch.toLowerCase();
-    return sorted.filter(
-      (s) =>
-        (empMap[s.employee_id] || "").toLowerCase().includes(q) ||
-        (s.notes || "").toLowerCase().includes(q)
-    );
+    return sorted.filter((s) => (empMap[s.employee_id] || "").toLowerCase().includes(q) || (s.notes || "").toLowerCase().includes(q));
   }, [allSlips, histSearch, empMap]);
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -466,7 +480,6 @@ export default function Modal_Wages({ employees = [], onClose }) {
   // ──────────────────────────────────────────────────────────────────────────────
   return (
     <div className="bg-white d-flex dark:bg-gray-900 fixed flex-column inset-0 z-50">
-
       {/* ── Header + tabs ── */}
       <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-0 px-1">
         <div className="align-items-center d-flex gap-2 mb-2">
@@ -483,13 +496,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
             { key: "onetime", label: "One-Time", Icon: CheckIcon },
             { key: "history", label: "History", Icon: UserGroupIcon },
           ].map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setActiveTab(key)}
-              className={`btn btn-sm px-1 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`}
-              style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}
-            >
+            <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm px-1 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`} style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}>
               {label}
             </button>
           ))}
@@ -498,14 +505,16 @@ export default function Modal_Wages({ employees = [], onClose }) {
 
       {/* ── Body ── */}
       <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto">
-
         {/* ═══ CALENDAR TAB ═══ */}
         {activeTab === "calendar" && (
           <CalendarTab
-            calYear={calYear} setCalYear={setCalYear}
-            calMonth={calMonth} setCalMonth={setCalMonth}
+            calYear={calYear}
+            setCalYear={setCalYear}
+            calMonth={calMonth}
+            setCalMonth={setCalMonth}
             calPeriods={calPeriods}
-            selectedPeriod={selectedPeriod} setSelectedPeriod={setSelectedPeriod}
+            selectedPeriod={selectedPeriod}
+            setSelectedPeriod={setSelectedPeriod}
             activeEmps={activeEmps}
             slipMap={slipMap}
             slipsLoading={slipsLoading}
@@ -528,19 +537,23 @@ export default function Modal_Wages({ employees = [], onClose }) {
             schedule={schedule}
             scheduleLoading={scheduleLoading}
             setProcYear={setProcYear}
-            procMonth={procMonth} setProcMonth={setProcMonth}
+            procMonth={procMonth}
+            setProcMonth={setProcMonth}
             procPeriods={procPeriods}
-            procPeriodIdx={procPeriodIdx} setProcPeriodIdx={setProcPeriodIdx}
+            procPeriodIdx={procPeriodIdx}
+            setProcPeriodIdx={setProcPeriodIdx}
             currentProcPeriod={currentProcPeriod}
             activeEmps={activeEmps}
             slipMap={slipMap}
             slipsLoading={slipsLoading}
-            selectedEmpIds={selectedEmpIds} setSelectedEmpIds={setSelectedEmpIds}
+            selectedEmpIds={selectedEmpIds}
+            setSelectedEmpIds={setSelectedEmpIds}
             expandedId={expandedId}
             expandForms={expandForms}
             processingIds={processingIds}
             rowErrors={rowErrors}
-            batchProgress={batchProgress} setBatchProgress={setBatchProgress}
+            batchProgress={batchProgress}
+            setBatchProgress={setBatchProgress}
             handleExpandEmp={handleExpandEmp}
             handlePaySingle={handlePaySingle}
             handlePaySelected={handlePaySelected}
@@ -549,25 +562,10 @@ export default function Modal_Wages({ employees = [], onClose }) {
         )}
 
         {/* ═══ ONE-TIME TAB ═══ */}
-        {activeTab === "onetime" && (
-          <OneTimeTab
-            employees={employees}
-            ot={ot} setOt={setOt}
-            otLoading={otLoading}
-            otResult={otResult}
-            handleOtSubmit={handleOtSubmit}
-          />
-        )}
+        {activeTab === "onetime" && <OneTimeTab employees={employees} ot={ot} setOt={setOt} otLoading={otLoading} otResult={otResult} handleOtSubmit={handleOtSubmit} />}
 
         {/* ═══ HISTORY TAB ═══ */}
-        {activeTab === "history" && (
-          <HistoryTab
-            slipsLoading={slipsLoading}
-            filteredHistory={filteredHistory}
-            histSearch={histSearch} setHistSearch={setHistSearch}
-            empMap={empMap}
-          />
-        )}
+        {activeTab === "history" && <HistoryTab slipsLoading={slipsLoading} filteredHistory={filteredHistory} histSearch={histSearch} setHistSearch={setHistSearch} empMap={empMap} />}
       </div>
     </div>
   );
@@ -577,19 +575,19 @@ export default function Modal_Wages({ employees = [], onClose }) {
 // CALENDAR TAB
 // ─────────────────────────────────────────────────────────────────────────────
 
-function CalendarTab({
-  calYear, setCalYear, calMonth, setCalMonth,
-  calPeriods, selectedPeriod, setSelectedPeriod,
-  activeEmps, slipMap, slipsLoading, scheduleLoading, schedule, onGoToProcess,
-}) {
+function CalendarTab({ calYear, setCalYear, calMonth, setCalMonth, calPeriods, selectedPeriod, setSelectedPeriod, activeEmps, slipMap, slipsLoading, scheduleLoading, schedule, onGoToProcess }) {
   const prevMonth = () => {
-    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
-    else setCalMonth(m => m - 1);
+    if (calMonth === 0) {
+      setCalYear((y) => y - 1);
+      setCalMonth(11);
+    } else setCalMonth((m) => m - 1);
     setSelectedPeriod(null);
   };
   const nextMonth = () => {
-    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
-    else setCalMonth(m => m + 1);
+    if (calMonth === 11) {
+      setCalYear((y) => y + 1);
+      setCalMonth(0);
+    } else setCalMonth((m) => m + 1);
     setSelectedPeriod(null);
   };
 
@@ -605,7 +603,7 @@ function CalendarTab({
   function getPeriodIdx(day) {
     if (!day) return -1;
     const dateStr = iso(new Date(calYear, calMonth, day));
-    return calPeriods.findIndex(p => p.start <= dateStr && p.end >= dateStr);
+    return calPeriods.findIndex((p) => p.start <= dateStr && p.end >= dateStr);
   }
 
   const todayStr = iso(new Date());
@@ -614,13 +612,13 @@ function CalendarTab({
     <div>
       {/* Month navigator */}
       <div className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-2 px-1 py-0">
-        <button type="button" onClick={prevMonth} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
+        <button type="button" onClick={prevMonth} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center">
           <ChevronLeftIcon style={{ width: 14, height: 14 }} />
         </button>
         <div className="flex-grow-1 fw-semibold text-center" style={{ fontSize: "0.9rem" }}>
           {fmtMonthYear(calYear, calMonth)}
         </div>
-        <button type="button" onClick={nextMonth} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
+        <button type="button" onClick={nextMonth} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center">
           <ChevronRightIcon style={{ width: 14, height: 14 }} />
         </button>
       </div>
@@ -636,7 +634,9 @@ function CalendarTab({
             {/* Day-of-week headers */}
             <div className="d-grid mb-1" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
               {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                <div key={i} className="fw-medium text-center text-muted" style={{ fontSize: "0.7rem", padding: "2px 0" }}>{d}</div>
+                <div key={i} className="fw-medium text-center text-muted" style={{ fontSize: "0.7rem", padding: "2px 0" }}>
+                  {d}
+                </div>
               ))}
             </div>
 
@@ -656,7 +656,7 @@ function CalendarTab({
                   const prevPidx = getPeriodIdx(day ? day - 1 : null);
                   const nextPidx = getPeriodIdx(day ? day + 1 : null);
                   const isFirst = pidx >= 0 && (colIdx === 0 || prevPidx !== pidx);
-                  const isLast  = pidx >= 0 && (colIdx === 6 || nextPidx !== pidx);
+                  const isLast = pidx >= 0 && (colIdx === 6 || nextPidx !== pidx);
 
                   return (
                     <div
@@ -667,16 +667,9 @@ function CalendarTab({
                         textAlign: "center",
                         fontSize: "0.8rem",
                         fontWeight: isToday ? "700" : "400",
-                        background: !day ? "transparent"
-                          : isSelected ? (pColor?.border || "#93c5fd")
-                          : pColor ? pColor.bg
-                          : "transparent",
+                        background: !day ? "transparent" : isSelected ? pColor?.border || "#93c5fd" : pColor ? pColor.bg : "transparent",
                         color: isSelected ? "#fff" : isToday ? "#2563eb" : "inherit",
-                        borderRadius: !day ? 0
-                          : isFirst && isLast ? "50%"
-                          : isFirst ? "50% 0 0 50%"
-                          : isLast ? "0 50% 50% 0"
-                          : 0,
+                        borderRadius: !day ? 0 : isFirst && isLast ? "50%" : isFirst ? "50% 0 0 50%" : isLast ? "0 50% 50% 0" : 0,
                         cursor: period ? "pointer" : "default",
                         transition: "background 0.15s",
                       }}
@@ -716,7 +709,9 @@ function CalendarTab({
                   >
                     <div />
                     <div className="flex-grow-1 min-w-0">
-                      <div className="fw-medium text-truncate" style={{ fontSize: "0.82rem" }}>{period.label}</div>
+                      <div className="fw-medium text-truncate" style={{ fontSize: "0.82rem" }}>
+                        {period.label}
+                      </div>
                       {period.payday && (
                         <div style={{ fontSize: "0.7rem" }}>
                           <PaydayBadge payday={period.payday} schedule={schedule} />
@@ -725,10 +720,14 @@ function CalendarTab({
                     </div>
                     <div className="d-flex flex-shrink-0 gap-1">
                       {paidEmps.length > 0 && (
-                        <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>{paidEmps.length} paid</span>
+                        <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>
+                          {paidEmps.length} paid
+                        </span>
                       )}
                       {unpaidEmps.length > 0 && (
-                        <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>{unpaidEmps.length} unpaid</span>
+                        <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>
+                          {unpaidEmps.length} unpaid
+                        </span>
                       )}
                     </div>
                   </div>
@@ -744,12 +743,7 @@ function CalendarTab({
                 <div className="fw-semibold" style={{ fontSize: "0.85rem" }}>
                   {selectedPeriod.label}
                 </div>
-                <button
-                  type="button"
-                  className="btn ui-btn-outline-secondary-sm"
-                  style={{ fontSize: "0.72rem" }}
-                  onClick={() => onGoToProcess(selectedPeriod)}
-                >
+                <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ fontSize: "0.72rem" }} onClick={() => onGoToProcess(selectedPeriod)}>
                   Pay →
                 </button>
               </div>
@@ -758,19 +752,18 @@ function CalendarTab({
               ) : (
                 activeEmps.map((emp) => {
                   const paid = isPaid(slipMap[emp.id], selectedPeriod.start, selectedPeriod.end);
-                  const emp_slips = (slipMap[emp.id] || []).filter(
-                    (s) => s.status === "paid" &&
-                      new Date(s.pay_period_start) <= new Date(selectedPeriod.end + "T23:59:59") &&
-                      new Date(s.pay_period_end) >= new Date(selectedPeriod.start + "T00:00:00")
-                  );
+                  const emp_slips = (slipMap[emp.id] || []).filter((s) => s.status === "paid" && new Date(s.pay_period_start) <= new Date(selectedPeriod.end + "T23:59:59") && new Date(s.pay_period_end) >= new Date(selectedPeriod.start + "T00:00:00"));
                   const slip = emp_slips[0];
                   return (
                     <div key={emp.id} className="align-items-center border-bottom border-gray-50 d-flex dark:border-gray-800 gap-2 py-1">
                       <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white" style={{ width: 28, height: 28, fontSize: "0.62rem", background: paid ? "#16a34a" : "#9ca3af" }}>
-                        {emp.first_name?.[0]}{emp.last_name?.[0]}
+                        {emp.first_name?.[0]}
+                        {emp.last_name?.[0]}
                       </div>
                       <div className="flex-grow-1 min-w-0">
-                        <div className="fw-medium text-truncate" style={{ fontSize: "0.8rem" }}>{emp.first_name} {emp.last_name}</div>
+                        <div className="fw-medium text-truncate" style={{ fontSize: "0.8rem" }}>
+                          {emp.first_name} {emp.last_name}
+                        </div>
                       </div>
                       <div className="flex-shrink-0 text-end">
                         {paid ? (
@@ -785,7 +778,9 @@ function CalendarTab({
                             )}
                           </div>
                         ) : (
-                          <span className="text-muted" style={{ fontSize: "0.7rem" }}>Unpaid</span>
+                          <span className="text-muted" style={{ fontSize: "0.7rem" }}>
+                            Unpaid
+                          </span>
                         )}
                       </div>
                     </div>
@@ -805,15 +800,29 @@ function CalendarTab({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ProcessTab({
-  schedule, scheduleLoading,
-  setProcYear, procMonth, setProcMonth,
-  procPeriods, procPeriodIdx, setProcPeriodIdx,
+  schedule,
+  scheduleLoading,
+  setProcYear,
+  procMonth,
+  setProcMonth,
+  procPeriods,
+  procPeriodIdx,
+  setProcPeriodIdx,
   currentProcPeriod,
-  activeEmps, slipMap, slipsLoading,
-  selectedEmpIds, setSelectedEmpIds,
-  expandedId, expandForms, processingIds, rowErrors,
-  batchProgress, setBatchProgress,
-  handleExpandEmp, handlePaySingle, handlePaySelected,
+  activeEmps,
+  slipMap,
+  slipsLoading,
+  selectedEmpIds,
+  setSelectedEmpIds,
+  expandedId,
+  expandForms,
+  processingIds,
+  rowErrors,
+  batchProgress,
+  setBatchProgress,
+  handleExpandEmp,
+  handlePaySingle,
+  handlePaySelected,
   updateForm,
 }) {
   const prevPeriod = () => {
@@ -821,8 +830,10 @@ function ProcessTab({
       setProcPeriodIdx((i) => i - 1);
     } else {
       // Go to previous month, last period
-      if (procMonth === 0) { setProcYear(y => y - 1); setProcMonth(11); }
-      else setProcMonth(m => m - 1);
+      if (procMonth === 0) {
+        setProcYear((y) => y - 1);
+        setProcMonth(11);
+      } else setProcMonth((m) => m - 1);
       // procPeriodIdx will clamp to last via useEffect in parent — set to large number
       setProcPeriodIdx(999);
     }
@@ -833,8 +844,10 @@ function ProcessTab({
     if (procPeriodIdx < procPeriods.length - 1) {
       setProcPeriodIdx((i) => i + 1);
     } else {
-      if (procMonth === 11) { setProcYear(y => y + 1); setProcMonth(0); }
-      else setProcMonth(m => m + 1);
+      if (procMonth === 11) {
+        setProcYear((y) => y + 1);
+        setProcMonth(0);
+      } else setProcMonth((m) => m + 1);
       setProcPeriodIdx(0);
     }
     setBatchProgress(null);
@@ -857,17 +870,14 @@ function ProcessTab({
   }
 
   const unpaidEmps = activeEmps.filter((e) => !isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end));
-  const paidEmps   = activeEmps.filter((e) =>  isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end));
-  const selectedUnpaid = activeEmps.filter(
-    (e) => selectedEmpIds.has(e.id) && !isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end)
-  );
+  const paidEmps = activeEmps.filter((e) => isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end));
+  const selectedUnpaid = activeEmps.filter((e) => selectedEmpIds.has(e.id) && !isPaid(slipMap[e.id], currentProcPeriod.start, currentProcPeriod.end));
   const totalSelectedAmt = selectedUnpaid.reduce((acc, e) => {
     const a = calcAmount(e, currentProcPeriod.start, currentProcPeriod.end);
     return acc + (a || 0);
   }, 0);
 
-  const allUnpaidSelected =
-    unpaidEmps.length > 0 && unpaidEmps.every((e) => selectedEmpIds.has(e.id));
+  const allUnpaidSelected = unpaidEmps.length > 0 && unpaidEmps.every((e) => selectedEmpIds.has(e.id));
 
   const toggleAllUnpaid = () => {
     if (allUnpaidSelected) {
@@ -891,10 +901,9 @@ function ProcessTab({
     <>
       {/* Period header */}
       <div className="bg-white border-bottom border-gray-100 dark:bg-gray-800 dark:border-gray-700 px-1 py-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
-
         {/* Period navigator */}
         <div className="align-items-center d-flex gap-2 mb-2">
-          <button type="button" onClick={prevPeriod} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
+          <button type="button" onClick={prevPeriod} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center">
             <ChevronLeftIcon style={{ width: 14, height: 14 }} />
           </button>
           <div className="flex-grow-1 text-center">
@@ -905,7 +914,7 @@ function ProcessTab({
               Work period: {fmtShort(currentProcPeriod.start)} – {fmtShort(currentProcPeriod.end, true)}
             </div>
           </div>
-          <button type="button" onClick={nextPeriod} disabled={!canGoForward} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center" >
+          <button type="button" onClick={nextPeriod} disabled={!canGoForward} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center">
             <ChevronRightIcon style={{ width: 14, height: 14 }} />
           </button>
         </div>
@@ -930,13 +939,7 @@ function ProcessTab({
         {/* Select-all row */}
         {unpaidEmps.length > 0 && (
           <div className="align-items-center d-flex gap-2 mt-1">
-            <input
-              type="checkbox"
-              className="form-check-input mt-0"
-              checked={allUnpaidSelected}
-              onChange={toggleAllUnpaid}
-              id="chk-all-unpaid"
-            />
+            <input type="checkbox" className="form-check-input mt-0" checked={allUnpaidSelected} onChange={toggleAllUnpaid} id="chk-all-unpaid" />
             <label htmlFor="chk-all-unpaid" className="form-check-label small" style={{ fontSize: "0.78rem" }}>
               Select all unpaid ({unpaidEmps.length})
             </label>
@@ -987,11 +990,9 @@ function ProcessTab({
                 {paidNow && <div style={{ width: 16, flexShrink: 0 }} />}
 
                 {/* Avatar */}
-                <div
-                  className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white"
-                  style={{ width: 34, height: 34, fontSize: "0.68rem", background: paidNow ? "#16a34a" : "#9ca3af" }}
-                >
-                  {emp.first_name?.[0]}{emp.last_name?.[0]}
+                <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white" style={{ width: 34, height: 34, fontSize: "0.68rem", background: paidNow ? "#16a34a" : "#9ca3af" }}>
+                  {emp.first_name?.[0]}
+                  {emp.last_name?.[0]}
                 </div>
 
                 {/* Info */}
@@ -1000,10 +1001,10 @@ function ProcessTab({
                     {emp.first_name} {emp.last_name}
                   </div>
                   <div className="align-items-center d-flex flex-wrap gap-1" style={{ fontSize: "0.68rem" }}>
-                    <span className={`badge ${roleBadge(emp.role)}`} style={{ fontSize: "0.58rem" }}>{emp.role}</span>
-                    <span className="text-muted">
-                      {isH ? `$${emp.hourly_rate}/hr` : emp.salary ? `$${Number(emp.salary).toLocaleString()}/yr` : "No rate"}
+                    <span className={`badge ${roleBadge(emp.role)}`} style={{ fontSize: "0.58rem" }}>
+                      {emp.role}
                     </span>
+                    <span className="text-muted">{isH ? `$${emp.hourly_rate}/hr` : emp.salary ? `$${Number(emp.salary).toLocaleString()}/yr` : "No rate"}</span>
                   </div>
                 </div>
 
@@ -1017,12 +1018,7 @@ function ProcessTab({
                       <CheckCircleSolidIcon style={{ width: 11, height: 11 }} /> Paid
                     </span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleExpandEmp(emp)}
-                      className={`btn btn-sm ${isExpanded ? "btn-secondary" : "btn-outline-secondary"}`}
-                      style={{ fontSize: "0.68rem", padding: "1px 9px" }}
-                    >
+                    <button type="button" onClick={() => handleExpandEmp(emp)} className={`btn btn-sm ${isExpanded ? "btn-secondary" : "btn-outline-secondary"}`} style={{ fontSize: "0.68rem", padding: "1px 9px" }}>
                       {isExpanded ? "Cancel" : "Pay"}
                     </button>
                   )}
@@ -1038,43 +1034,41 @@ function ProcessTab({
                       <label className="form-label fw-semibold mb-1 small">{isH ? "Hours Worked" : "Gross Amount"}</label>
                       <div className="input-group input-group-sm">
                         {!isH && <span className="input-group-text">$</span>}
-                        <input
-                          type="number" min="0" step={isH ? "0.25" : "0.01"}
-                          className="form-control"
-                          value={isH ? (form.hours_worked ?? "") : (form.gross_amount ?? "")}
-                          onChange={(e) => updateForm(emp.id, isH ? "hours_worked" : "gross_amount", e.target.value)}
-                        />
+                        <input type="number" min="0" step={isH ? "0.25" : "0.01"} className="form-control" value={isH ? (form.hours_worked ?? "") : (form.gross_amount ?? "")} onChange={(e) => updateForm(emp.id, isH ? "hours_worked" : "gross_amount", e.target.value)} />
                         {isH && <span className="input-group-text">hrs</span>}
                       </div>
                       {isH && emp.hourly_rate && (
-                        <div className="mt-1 text-muted" style={{ fontSize: "0.66rem" }}>@ ${emp.hourly_rate}/hr</div>
+                        <div className="mt-1 text-muted" style={{ fontSize: "0.66rem" }}>
+                          @ ${emp.hourly_rate}/hr
+                        </div>
                       )}
                     </div>
                     <div className="col-6">
                       <label className="form-label fw-semibold mb-1 small">Deductions</label>
                       <div className="input-group input-group-sm">
                         <span className="input-group-text">$</span>
-                        <input
-                          type="number" min="0" step="0.01"
-                          className="form-control"
-                          value={form.other_deductions ?? "0"}
-                          onChange={(e) => updateForm(emp.id, "other_deductions", e.target.value)}
-                        />
+                        <input type="number" min="0" step="0.01" className="form-control" value={form.other_deductions ?? "0"} onChange={(e) => updateForm(emp.id, "other_deductions", e.target.value)} />
                       </div>
                     </div>
                     <div className="col-12">
                       <label className="form-label fw-semibold mb-1 small">Notes</label>
-                      <input
-                        type="text" className="form-control ui-control-sm" placeholder="Optional"
-                        value={form.notes ?? ""}
-                        onChange={(e) => updateForm(emp.id, "notes", e.target.value)}
-                      />
+                      <input type="text" className="form-control ui-control-sm" placeholder="Optional" value={form.notes ?? ""} onChange={(e) => updateForm(emp.id, "notes", e.target.value)} />
                     </div>
                   </div>
                   <div className="d-flex gap-2 justify-content-end mt-2">
-                    <button type="button" onClick={() => handleExpandEmp(emp)} className="btn ui-btn-outline-secondary-sm">Cancel</button>
+                    <button type="button" onClick={() => handleExpandEmp(emp)} className="btn ui-btn-outline-secondary-sm">
+                      Cancel
+                    </button>
                     <button type="button" onClick={() => handlePaySingle(emp)} disabled={isProc} className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-1">
-                      {isProc ? <><span className="spinner-border" style={{ width: 11, height: 11 }} /> …</> : <><CheckIcon style={{ width: 11, height: 11 }} /> Pay</>}
+                      {isProc ? (
+                        <>
+                          <span className="spinner-border" style={{ width: 11, height: 11 }} /> …
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon style={{ width: 11, height: 11 }} /> Pay
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1096,17 +1090,15 @@ function ProcessTab({
                 Total: ${totalSelectedAmt.toFixed(2)}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handlePaySelected}
-              disabled={batchBusy}
-              className="align-items-center btn btn-outline-secondary d-flex gap-2"
-              style={{ fontSize: "0.82rem" }}
-            >
+            <button type="button" onClick={handlePaySelected} disabled={batchBusy} className="align-items-center btn btn-outline-secondary d-flex gap-2" style={{ fontSize: "0.82rem" }}>
               {batchBusy ? (
-                <><span className="spinner-border spinner-border-sm" style={{ width: 13, height: 13 }} /> Processing…</>
+                <>
+                  <span className="spinner-border spinner-border-sm" style={{ width: 13, height: 13 }} /> Processing…
+                </>
               ) : (
-                <><BanknotesIcon style={{ width: 15, height: 15 }} /> Pay {selectedUnpaid.length}</>
+                <>
+                  <BanknotesIcon style={{ width: 15, height: 15 }} /> Pay {selectedUnpaid.length}
+                </>
               )}
             </button>
           </div>
@@ -1123,14 +1115,11 @@ function ProcessTab({
 function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit }) {
   return (
     <div className="p-1">
-      <p className="mb-3 small text-muted">
-        Issue a bonus, commission, reimbursement, or any one-off payment. These appear in the employee's pay history and do not affect regular payroll cycles.
-      </p>
+      <p className="mb-3 small text-muted">Issue a bonus, commission, reimbursement, or any one-off payment. These appear in the employee's pay history and do not affect regular payroll cycles.</p>
 
       {otResult?.ok && (
         <div className="alert alert-success align-items-center d-flex gap-2 mb-3 px-1 py-0 small">
-          <CheckCircleSolidIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
-          ${otResult.amount} {otResult.type} paid to {otResult.name}
+          <CheckCircleSolidIcon style={{ width: 16, height: 16, flexShrink: 0 }} />${otResult.amount} {otResult.type} paid to {otResult.name}
         </div>
       )}
       {otResult?.ok === false && <div className="alert alert-danger mb-3 px-1 py-0 small">{otResult.error}</div>}
@@ -1141,10 +1130,7 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
           className="form-select ui-control-sm"
           value={ot.employee_id}
           onChange={(e) => setOt((p) => ({ ...p, employee_id: e.target.value }))}
-          options={[
-            { value: "", label: "— Select employee —" },
-            ...employees.filter((e) => e.is_active).map((e) => ({ value: e.id, label: `${e.first_name} ${e.last_name} · ${e.role}` })),
-          ]}
+          options={[{ value: "", label: "— Select employee —" }, ...employees.filter((e) => e.is_active).map((e) => ({ value: e.id, label: `${e.first_name} ${e.last_name} · ${e.role}` }))]}
         />
       </div>
 
@@ -1152,10 +1138,7 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
         <label className="form-label fw-semibold mb-1 small">Payment Type</label>
         <div className="d-flex flex-wrap gap-1">
           {ONE_TIME_TYPES.map((t) => (
-            <button key={t.value} type="button"
-              onClick={() => setOt((p) => ({ ...p, payment_type: t.value }))}
-              className={`btn btn-sm rounded-pill ${ot.payment_type === t.value ? "btn-secondary" : "btn-outline-secondary"}`}
-              style={{ fontSize: "0.78rem", padding: "3px 14px" }}>
+            <button key={t.value} type="button" onClick={() => setOt((p) => ({ ...p, payment_type: t.value }))} className={`btn btn-sm rounded-pill ${ot.payment_type === t.value ? "btn-secondary" : "btn-outline-secondary"}`} style={{ fontSize: "0.78rem", padding: "3px 14px" }}>
               {t.label}
             </button>
           ))}
@@ -1167,29 +1150,30 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
           <label className="form-label fw-semibold mb-1 small">Amount</label>
           <div className="input-group input-group-sm">
             <span className="input-group-text">$</span>
-            <input type="number" min="0" step="0.01" className="form-control" placeholder="0.00"
-              value={ot.amount} onChange={(e) => setOt((p) => ({ ...p, amount: e.target.value }))} />
+            <input type="number" min="0" step="0.01" className="form-control" placeholder="0.00" value={ot.amount} onChange={(e) => setOt((p) => ({ ...p, amount: e.target.value }))} />
           </div>
         </div>
         <div className="col-6">
           <label className="form-label fw-semibold mb-1 small">Date</label>
-          <input type="date" className="form-control ui-control-sm"
-            value={ot.date} onChange={(e) => setOt((p) => ({ ...p, date: e.target.value }))} />
+          <input type="date" className="form-control ui-control-sm" value={ot.date} onChange={(e) => setOt((p) => ({ ...p, date: e.target.value }))} />
         </div>
       </div>
 
       <div className="mb-3">
         <label className="form-label fw-semibold mb-1 small">Notes (optional)</label>
-        <input type="text" className="form-control ui-control-sm" placeholder="e.g. Year-end bonus, Q1 commission…"
-          value={ot.notes} onChange={(e) => setOt((p) => ({ ...p, notes: e.target.value }))} />
+        <input type="text" className="form-control ui-control-sm" placeholder="e.g. Year-end bonus, Q1 commission…" value={ot.notes} onChange={(e) => setOt((p) => ({ ...p, notes: e.target.value }))} />
       </div>
 
-      <button type="button" onClick={handleOtSubmit}
-        disabled={otLoading || !ot.employee_id || !ot.amount || !ot.date}
-        className="align-items-center btn btn-outline-secondary d-flex gap-2 justify-content-center w-100">
-        {otLoading
-          ? <><span className="spinner-border spinner-border-sm" style={{ width: 14, height: 14 }} /> Processing…</>
-          : <><BanknotesIcon style={{ width: 16, height: 16 }} /> Pay</>}
+      <button type="button" onClick={handleOtSubmit} disabled={otLoading || !ot.employee_id || !ot.amount || !ot.date} className="align-items-center btn btn-outline-secondary d-flex gap-2 justify-content-center w-100">
+        {otLoading ? (
+          <>
+            <span className="spinner-border spinner-border-sm" style={{ width: 14, height: 14 }} /> Processing…
+          </>
+        ) : (
+          <>
+            <BanknotesIcon style={{ width: 16, height: 16 }} /> Pay
+          </>
+        )}
       </button>
     </div>
   );
@@ -1203,8 +1187,7 @@ function HistoryTab({ slipsLoading, filteredHistory, histSearch, setHistSearch, 
   return (
     <>
       <div className="bg-white border-bottom border-gray-100 dark:bg-gray-800 dark:border-gray-700 px-1 py-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
-        <input type="text" placeholder="Search by employee or notes…" className="form-control ui-control-sm"
-          value={histSearch} onChange={(e) => setHistSearch(e.target.value)} />
+        <input type="text" placeholder="Search by employee or notes…" className="form-control ui-control-sm" value={histSearch} onChange={(e) => setHistSearch(e.target.value)} />
       </div>
 
       {slipsLoading ? (
@@ -1217,24 +1200,31 @@ function HistoryTab({ slipsLoading, filteredHistory, histSearch, setHistSearch, 
         filteredHistory.map((slip) => {
           const name = empMap[slip.employee_id] || "Unknown";
           const sameDay = slip.pay_period_start?.slice(0, 10) === slip.pay_period_end?.slice(0, 10);
-          const periodLabel = sameDay
-            ? `One-time · ${fmtShort(slip.pay_period_start.slice(0, 10), true)}`
-            : `${fmtShort(slip.pay_period_start.slice(0, 10))} – ${fmtShort(slip.pay_period_end.slice(0, 10), true)}`;
+          const periodLabel = sameDay ? `One-time · ${fmtShort(slip.pay_period_start.slice(0, 10), true)}` : `${fmtShort(slip.pay_period_start.slice(0, 10))} – ${fmtShort(slip.pay_period_end.slice(0, 10), true)}`;
           const paidOn = slip.created_at ? fmtShort(slip.created_at.slice(0, 10), true) : null;
 
           return (
             <div key={slip.id} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-2 px-1 py-0">
-              <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle" style={{ width: 32, height: 32, fontSize: "0.65rem", background: "#d1fae5", color: "#065f46" }}>$</div>
+              <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle" style={{ width: 32, height: 32, fontSize: "0.65rem", background: "#d1fae5", color: "#065f46" }}>
+                $
+              </div>
               <div className="flex-grow-1 min-w-0">
-                <div className="fw-medium text-truncate" style={{ fontSize: "0.83rem" }}>{name}</div>
+                <div className="fw-medium text-truncate" style={{ fontSize: "0.83rem" }}>
+                  {name}
+                </div>
                 <div className="text-muted text-truncate" style={{ fontSize: "0.7rem" }}>
-                  {periodLabel}{slip.notes ? ` · ${slip.notes}` : ""}
+                  {periodLabel}
+                  {slip.notes ? ` · ${slip.notes}` : ""}
                   {paidOn && <span className="ms-1">· paid {paidOn}</span>}
                 </div>
               </div>
               <div className="flex-shrink-0 text-end">
-                <div className="fw-semibold text-success" style={{ fontSize: "0.85rem" }}>${slip.gross_amount?.toFixed(2)}</div>
-                <div className="text-muted" style={{ fontSize: "0.68rem" }}>net ${slip.net_amount?.toFixed(2)}</div>
+                <div className="fw-semibold text-success" style={{ fontSize: "0.85rem" }}>
+                  ${slip.gross_amount?.toFixed(2)}
+                </div>
+                <div className="text-muted" style={{ fontSize: "0.68rem" }}>
+                  net ${slip.net_amount?.toFixed(2)}
+                </div>
               </div>
             </div>
           );

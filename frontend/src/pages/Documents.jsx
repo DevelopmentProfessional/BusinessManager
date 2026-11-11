@@ -1467,26 +1467,28 @@ export default function Documents() {
       >
         <div className="ui-small-muted">Use these controls to manage document and template views.</div>
         <div className="small">Search, filters, upload, and templates are in the page footer. Open Categories to add or edit category labels.</div>
-        <Button_Toolbar
-          icon={TagIcon}
-          label="Cats"
-          title="Manage document categories"
-          onClick={() => {
-            setShowPageControls(false);
-            setIsCategoriesOpen(true);
-          }}
-          className="btn-outline-secondary"
-        />
-        <Button_Toolbar
-          icon={CheckCircleIcon}
-          label="Status"
-          title="Manage document statuses"
-          onClick={() => {
-            setShowPageControls(false);
-            setShowStatusManager(true);
-          }}
-          className="btn-outline-secondary"
-        />
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={TagIcon}
+            label="Cats"
+            title="Manage document categories"
+            onClick={() => {
+              setShowPageControls(false);
+              setIsCategoriesOpen(true);
+            }}
+            className="btn-primary"
+          />
+          <Button_Toolbar
+            icon={CheckCircleIcon}
+            label="Status"
+            title="Manage document statuses"
+            onClick={() => {
+              setShowPageControls(false);
+              setShowStatusManager(true);
+            }}
+            className="btn-primary"
+          />
+        </div>
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}

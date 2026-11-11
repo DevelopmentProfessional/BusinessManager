@@ -67,7 +67,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                       const emp = employees.find((e) => e.id === req.user_id);
                       return (
                         <div key={req.id} className="card mb-2">
-                          <div className="card-body px-1 py-0">
+                          <div className="card-body px-2 pt-2 pb-1">
                             <div className="align-items-start d-flex justify-content-between">
                               <div>
                                 <div className="fw-semibold">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown Employee"}</div>

@@ -722,8 +722,14 @@ export const productRelationsAPI = {
 };
 
 export const inventoryCategoriesAPI = {
+  getAll: () => api.get("/inventory-categories"),
   getByType: (itemType) => api.get(`/inventory-categories?item_type=${encodeURIComponent(itemType)}`),
-  create: (itemType, name) => api.post("/inventory-categories", { item_type: itemType, name }),
+  create: (itemTypeOrData, name) => {
+    if (typeof itemTypeOrData === "object") {
+      return api.post("/inventory-categories", { item_type: itemTypeOrData.item_type || "product", name: itemTypeOrData.name });
+    }
+    return api.post("/inventory-categories", { item_type: itemTypeOrData, name });
+  },
   delete: (id) => api.delete(`/inventory-categories/${id}`),
 };
 

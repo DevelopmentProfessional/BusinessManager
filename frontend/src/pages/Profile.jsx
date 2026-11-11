@@ -51,7 +51,7 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
 import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
@@ -305,7 +305,7 @@ const Profile = () => {
   const [companyLogoDataUrl, setCompanyLogoDataUrl] = useState("");
 
   const row1Ref = useRef(null);
-  const [row1Height, setRow1Height] = useState(80);
+  const [row1Height, setRow1Height] = useState(44);
 
   const [settingsError, setSettingsError] = useState("");
   const [settingsSuccess, setSettingsSuccess] = useState("");
@@ -1148,7 +1148,7 @@ const Profile = () => {
     }
   }, [user]);
 
-  const totalFooterHeight = Math.max(row1Height, 80);
+  const totalFooterHeight = openAccordion ? Math.max(row1Height, 84) : (row1Height || 44);
   const row1PanelBottom = totalFooterHeight;
   const [meSectionHeaderHeight, setMeSectionHeaderHeight] = useState(44);
   const meSectionHeaderRefs = useRef({});
@@ -1324,7 +1324,7 @@ const Profile = () => {
               <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
                 <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "profile" && (
-                    <div className="p-1 profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <div className="row">
                         <div className="col-sm-6">
                           <div className="flex mb-1 wrap">
@@ -1442,7 +1442,7 @@ const Profile = () => {
 
                 <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "benefits" && (
-                    <div className="p-1 profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <div className="g-2 mb-3 row">
                         <div className="col-sm-6">
                           <div className="ui-small-muted">Salary</div>
@@ -1464,7 +1464,7 @@ const Profile = () => {
                       </div>
 
                       <div className="border-top pt-1">
-                        <h6 className="fw-semibold mb-3">Leave Management</h6>
+                        <h6 className="fw-semibold mb-3">Requests</h6>
 
                         {leaveRequestsLoading ? (
                           <div className="py-1 text-center">
@@ -1544,7 +1544,7 @@ const Profile = () => {
 
                 <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "settings" && (
-                    <div className="p-0 profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <Modal_Settings
                         embedded={true}
                         isMobile={isMobile}
@@ -1773,8 +1773,49 @@ const Profile = () => {
                 : null),
             }}
           >
-            <div className="bg-white dark:bg-gray-800 ps-2">
+            <div className="bg-white dark:bg-gray-800 ps-2 pe-2">
               <div className="app-footer-stack">
+                {/* Row 1: Settings actions when an accordion panel (general or database) is open */}
+                {openAccordion === "general" && (
+                  <div className={`align-items-center app-footer-toolbar border-bottom border-gray-200 dark:border-gray-700 d-flex pb-1 pt-1 w-100 ${footerJustify}`}>
+                    <div className="d-flex align-items-center gap-1">
+                      <Button_Toolbar
+                        icon={CheckIcon}
+                        label={
+                          companyLoading || portalBrandingLoading || brandingLogoUploading || stripeSettingsLoading
+                            ? "Saving..."
+                            : "Save"
+                        }
+                        onClick={handleSaveGeneralPanel}
+                        className="btn-outline-secondary"
+                        disabled={companyLoading || portalBrandingLoading || brandingLogoUploading || stripeSettingsLoading}
+                        title="Save"
+                      />
+                      <Button_Toolbar
+                        icon={XMarkIcon}
+                        label="Close"
+                        onClick={() => setOpenAccordion("")}
+                        className="btn-outline-secondary"
+                        title="Close"
+                      />
+                    </div>
+                  </div>
+                )}
+                {openAccordion === "database" && (
+                  <div className={`align-items-center app-footer-toolbar border-bottom border-gray-200 dark:border-gray-700 d-flex pb-1 pt-1 w-100 ${footerJustify}`}>
+                    <div className="d-flex align-items-center gap-1">
+                      <Button_Toolbar
+                        icon={XMarkIcon}
+                        label="Close"
+                        onClick={() => setOpenAccordion("")}
+                        className="btn-outline-secondary"
+                        title="Close"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Row 2: Standard Profile Navigation (Data, General Settings) */}
                 <div className="align-items-center app-footer-toolbar d-flex search-hide-on-focus w-100">
                   <div className={`d-flex align-items-center gap-1 flex-grow-1 min-w-0 mt-1 ${footerJustify}`}>
                     {canAccessSettings && (
@@ -1788,17 +1829,14 @@ const Profile = () => {
                       />
                     )}
                     {canAccessGeneralSettings && (
-                      <>
-                        {/* don't add text to this button */}
-                        <Button_Toolbar
-                          icon={CogIcon}
-                          label=""
-                          onClick={() => setOpenAccordion(openAccordion === "general" ? "" : "general")}
-                          className={`btn btn-sm p-0 flex-shrink-0 d-flex align-items-center profile-footer-btn profile-footer-general-btn ${openAccordion === "general" ? "btn-primary" : "btn-outline-secondary"}`}
-                          data-active={openAccordion === "general"}
-                          title="General"
-                        />
-                      </>
+                      <Button_Toolbar
+                        icon={CogIcon}
+                        label=""
+                        onClick={() => setOpenAccordion(openAccordion === "general" ? "" : "general")}
+                        className={`btn btn-sm p-0 flex-shrink-0 d-flex align-items-center profile-footer-btn profile-footer-general-btn ${openAccordion === "general" ? "btn-primary" : "btn-outline-secondary"}`}
+                        data-active={openAccordion === "general"}
+                        title="General"
+                      />
                     )}
                   </div>
                   <div className="flex-grow-1 min-w-0" aria-hidden="true" />
@@ -1828,7 +1866,7 @@ const Profile = () => {
           <div className="modal-dialog modal-dialog-centered modal-sm">
             <div className="modal-content">
               <div className="modal-header py-0">
-                <h6 className="mb-0 modal-title">New Leave Request</h6>
+                <h6 className="mb-0 modal-title">New Request</h6>
                 <button
                   type="button"
                   className="btn-close"

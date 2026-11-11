@@ -408,18 +408,18 @@ function MixSetupPanel({ mixId }) {
   const mixBtnPrimary = "btn btn-primary btn-sm";
   const mixBtnOutline = "btn btn-outline-primary btn-sm";
   const s = {
-    row: { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #fce7f3", fontSize: "0.8rem" },
-    input: { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" },
-    label: { fontSize: "0.75rem", color: "#374151", fontWeight: 600 },
+    row: { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid var(--bs-border-color)", fontSize: "0.8rem" },
+    input: { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid var(--bs-border-color)", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" },
+    label: { fontSize: "0.75rem", fontWeight: 600 },
   };
 
   return (
-    <div className="mt-3" style={{ border: "1px solid #fbcfe8", borderRadius: 8 }}>
+    <div className="border border-pink-300 dark:border-pink-800/60 mt-3 rounded-lg overflow-hidden bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
       {/* Header */}
-      <div style={{ padding: "6px 10px 8px", background: "#fdf2f8", borderRadius: "8px 8px 0 0", borderBottom: "1px solid #fbcfe8", display: "flex", alignItems: "center", gap: 6 }}>
-        <SparklesIcon style={{ width: 14, height: 14, color: "#ec4899" }} />
-        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#374151" }}>Mix Setup</span>
-        <span style={{ fontSize: "0.72rem", color: "#9ca3af", marginLeft: 4 }}>Client picks from a list</span>
+      <div className="bg-pink-50 dark:bg-pink-950/40 border-b border-pink-200 dark:border-pink-900/60 d-flex align-items-center gap-2 px-2 py-1">
+        <SparklesIcon className="text-pink-500 flex-shrink-0" style={{ width: 14, height: 14 }} />
+        <span className="fw-bold text-gray-800 dark:text-gray-200" style={{ fontSize: "0.8rem" }}>Mix Setup</span>
+        <span className="text-muted small ms-1" style={{ fontSize: "0.72rem" }}>Client picks from a list</span>
       </div>
 
       <div style={{ padding: "8px 10px" }}>
@@ -427,7 +427,7 @@ function MixSetupPanel({ mixId }) {
         {error && <div style={{ fontSize: "0.75rem", color: "#ef4444", marginBottom: 4 }}>{error}</div>}
 
         {/* ── Config section ── */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #fbcfe8" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--bs-border-color)" }}>
           <div>
             <div style={s.label}>Total to pick</div>
             <input type="number" min="1" value={totalQty} onChange={(e) => setTotalQty(e.target.value)} style={{ ...s.input, width: 60 }} title="How many products the client must pick total" />
@@ -454,7 +454,7 @@ function MixSetupPanel({ mixId }) {
         {components.length === 0 && !adding && !loading && <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: 6 }}>No products yet. Add products the client can choose from.</div>}
         {components.map((c) => (
           <div key={c.id} style={s.row}>
-            <CubeIcon style={{ width: 13, height: 13, color: "#ec4899", flexShrink: 0 }} />
+            <CubeIcon className="text-pink-500 flex-shrink-0" style={{ width: 13, height: 13 }} />
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
             <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>${(invMap[c.component_id]?.cost ?? invMap[c.component_id]?.price ?? 0).toFixed(2)} cost</span>
             <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
@@ -466,7 +466,7 @@ function MixSetupPanel({ mixId }) {
           </div>
         ))}
         {components.length > 0 && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "4px", marginTop: 6, border: "1px solid #fbcfe8", borderRadius: 6, background: "#fff" }}>
+          <div className="align-items-center bg-gray-50 dark:bg-gray-700/60 border border-pink-200 dark:border-pink-900/40 d-flex gap-2 justify-content-between mt-2 p-1 rounded">
             <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>Totals</span>
             <span style={{ fontSize: "0.72rem" }}>Items: {mixSummary.count}</span>
             <span style={{ fontSize: "0.72rem" }}>Cost: ${mixSummary.cost.toFixed(2)}</span>
@@ -582,18 +582,18 @@ function BundleComponentsPanel({ bundleId }) {
     }
   };
 
-  const rowStyle = { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid #e5e7eb", fontSize: "0.8rem" };
-  const inputSm = { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid #d1d5db", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" };
+  const rowStyle = { display: "flex", alignItems: "center", gap: 6, padding: "4px 0", borderBottom: "1px solid var(--bs-border-color)", fontSize: "0.8rem" };
+  const inputSm = { fontSize: "0.75rem", padding: "3px 6px", border: "1px solid var(--bs-border-color)", borderRadius: 4, background: "var(--bs-body-bg)", color: "var(--bs-body-color)" };
   const btnDangerClass = "btn btn-unstyled text-danger p-0";
   const btnPrimaryClass = "btn btn-primary btn-sm";
   const btnOutlineClass = "btn btn-outline-primary btn-sm";
 
   return (
-    <div className="mt-3" style={{ border: "1px solid #fed7aa", borderRadius: 8 }}>
-      <div style={{ padding: "6px 10px 8px", background: "#fff7ed", borderRadius: "8px 8px 0 0", borderBottom: "1px solid #fed7aa", display: "flex", alignItems: "center", gap: 6 }}>
-        <CubeIcon style={{ width: 14, height: 14, color: "#f97316" }} />
-        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#374151" }}>Bundle Components</span>
-        <span style={{ fontSize: "0.72rem", color: "#9ca3af", marginLeft: 4 }}>Products included per unit sold</span>
+    <div className="border border-orange-300 dark:border-orange-800/60 mt-3 rounded-lg overflow-hidden bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+      <div className="bg-orange-50 dark:bg-orange-950/40 border-b border-orange-200 dark:border-orange-900/60 d-flex align-items-center gap-2 px-2 py-1">
+        <CubeIcon className="text-orange-500 flex-shrink-0" style={{ width: 14, height: 14 }} />
+        <span className="fw-bold text-gray-800 dark:text-gray-200" style={{ fontSize: "0.8rem" }}>Bundle Components</span>
+        <span className="text-muted small ms-1" style={{ fontSize: "0.72rem" }}>Products included per unit sold</span>
       </div>
       <div style={{ padding: "8px 10px", minHeight: 60 }}>
         {loading && <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>Loading…</div>}
@@ -601,7 +601,7 @@ function BundleComponentsPanel({ bundleId }) {
         {components.length === 0 && !adding && !loading && <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: 6 }}>No components yet. Add products that make up this bundle.</div>}
         {components.map((c) => (
           <div key={c.id} style={rowStyle}>
-            <CubeIcon style={{ width: 13, height: 13, color: "#f97316", flexShrink: 0 }} />
+            <CubeIcon className="text-orange-500 flex-shrink-0" style={{ width: 13, height: 13 }} />
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
             <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>${(invMap[c.component_id]?.cost ?? invMap[c.component_id]?.price ?? 0).toFixed(2)} cost</span>
             <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
@@ -613,7 +613,7 @@ function BundleComponentsPanel({ bundleId }) {
           </div>
         ))}
         {components.length > 0 && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "4px", marginTop: 6, border: "1px solid #fed7aa", borderRadius: 6, background: "#fff" }}>
+          <div className="align-items-center bg-gray-50 dark:bg-gray-700/60 border border-orange-200 dark:border-orange-900/40 d-flex gap-2 justify-content-between mt-2 p-1 rounded">
             <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>Totals</span>
             <span style={{ fontSize: "0.72rem" }}>Qty: {bundleSummary.count.toFixed(2)}</span>
             <span style={{ fontSize: "0.72rem" }}>Cost: ${bundleSummary.cost.toFixed(2)}</span>

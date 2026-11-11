@@ -1368,8 +1368,11 @@ export default function Reports() {
                       title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrows-fullscreen" viewBox="0 0 16 16">
-  <path fillRule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707m4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707m0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707m-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707"/>
-</svg>
+                        <path
+                          fillRule="evenodd"
+                          d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707m4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707m0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707m-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707"
+                        />
+                      </svg>
                     </button>
                   </div>
                   <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
@@ -1391,7 +1394,12 @@ export default function Reports() {
               >
                 <Button_Toolbar icon={ChevronLeftIcon} label="" compact onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary rounded-circle" title="Previous period" />
 
-                <div className="align-items-center d-flex flex-column px-1 text-center" style={{ minWidth: 0, cursor: currentPeriodOffset !== 0 ? "pointer" : "default" }} onClick={currentPeriodOffset !== 0 ? handleResetPeriod : undefined} title={currentPeriodOffset !== 0 ? "Click to reset to current period" : undefined}>
+                <div
+                  className="align-items-center d-flex flex-column px-1 text-center"
+                  style={{ minWidth: 0, cursor: currentPeriodOffset !== 0 ? "pointer" : "default" }}
+                  onClick={currentPeriodOffset !== 0 ? handleResetPeriod : undefined}
+                  title={currentPeriodOffset !== 0 ? "Click to reset to current period" : undefined}
+                >
                   <span className="fw-semibold text-nowrap text-xs">{currentPeriodOffset === 0 ? "Current Period" : `${Math.abs(currentPeriodOffset)} period${Math.abs(currentPeriodOffset) > 1 ? "s" : ""} prior`}</span>
                   {activeStartDate && activeEndDate && (
                     <span className="text-muted text-nowrap text-xxs">
@@ -1448,182 +1456,182 @@ export default function Reports() {
             beforeSearch={
               showReportControls ? (
                 <div className="align-items-end d-flex flex-wrap gap-2 w-100">
-                  <FilterField label="Time Range">
+                  <FilterField>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={CIRCULAR_SELECT_STYLE}
+                      value={reportFilters.dateRange}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
+                      options={DATE_RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                      placeholder="Date range"
+                      closeOnSelect
+                    />
+                  </FilterField>
+
+                  {canUseGroupBy && (
+                    <FilterField>
                       <Dropdown_Custom
                         className="ui-control-sm"
                         style={CIRCULAR_SELECT_STYLE}
-                        value={reportFilters.dateRange}
-                        onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
-                        options={DATE_RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                        placeholder="Date range"
+                        value={reportFilters.groupBy}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
+                        options={GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                        placeholder="Group by"
                         closeOnSelect
                       />
                     </FilterField>
+                  )}
 
-                    {canUseGroupBy && (
-                      <FilterField label="Group By">
-                        <Dropdown_Custom
-                          className="ui-control-sm"
-                          style={CIRCULAR_SELECT_STYLE}
-                          value={reportFilters.groupBy}
-                          onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
-                          options={GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                          placeholder="Group by"
-                          closeOnSelect
-                        />
-                      </FilterField>
-                    )}
+                  <FilterField>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={CIRCULAR_SELECT_STYLE}
+                      value={reportFilters.chartType}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
+                      options={selectedReport.chartTypes.map((chartType) => ({ value: chartType, label: formatChartTypeLabel(chartType) }))}
+                      placeholder="Chart type"
+                      closeOnSelect
+                    />
+                  </FilterField>
 
-                    <FilterField label="Chart Type">
+                  {canUseStatus && (
+                    <FilterField>
                       <Dropdown_Custom
                         className="ui-control-sm"
-                        style={CIRCULAR_SELECT_STYLE}
-                        value={reportFilters.chartType}
-                        onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
-                        options={selectedReport.chartTypes.map((chartType) => ({ value: chartType, label: formatChartTypeLabel(chartType) }))}
-                        placeholder="Chart type"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.status}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
+                        options={FILTER_CONFIG.status.options.map((o) => ({ value: o.value, label: o.label }))}
+                        placeholder="Status"
                         closeOnSelect
                       />
                     </FilterField>
+                  )}
 
-                    {canUseStatus && (
-                      <FilterField label="Status">
-                        <Dropdown_Custom
-                          className="ui-control-sm"
-                          style={INLINE_SELECT_STYLE}
-                          value={reportFilters.status}
-                          onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
-                          options={FILTER_CONFIG.status.options.map((o) => ({ value: o.value, label: o.label }))}
-                          placeholder="Status"
-                          closeOnSelect
-                        />
-                      </FilterField>
-                    )}
+                  {canUseService && (
+                    <FilterField>
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.serviceId}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
+                        options={[{ value: "all", label: FILTER_CONFIG.service.allLabel }, ...services.map((s) => ({ value: s.id, label: s[FILTER_CONFIG.service.labelKey] }))]}
+                        placeholder="Service"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
 
-                    {canUseService && (
-                      <FilterField label="Service">
-                        <Dropdown_Custom
-                          className="ui-control-sm"
-                          style={INLINE_SELECT_STYLE}
-                          value={reportFilters.serviceId}
-                          onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
-                          options={[{ value: "all", label: FILTER_CONFIG.service.allLabel }, ...services.map((s) => ({ value: s.id, label: s[FILTER_CONFIG.service.labelKey] }))]}
-                          placeholder="Service"
-                          closeOnSelect
-                        />
-                      </FilterField>
-                    )}
+                  {canUseEmployee && (
+                    <FilterField>
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.employeeId}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
+                        options={[{ value: "all", label: FILTER_CONFIG.employee.allLabel }, ...employees.map((employeeOption) => ({ value: employeeOption.id, label: FILTER_CONFIG.employee.labelKey(employeeOption) }))]}
+                        placeholder="Employee"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
 
-                    {canUseEmployee && (
-                      <FilterField label="Employee">
-                        <Dropdown_Custom
-                          className="ui-control-sm"
-                          style={INLINE_SELECT_STYLE}
-                          value={reportFilters.employeeId}
-                          onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
-                          options={[{ value: "all", label: FILTER_CONFIG.employee.allLabel }, ...employees.map((employeeOption) => ({ value: employeeOption.id, label: FILTER_CONFIG.employee.labelKey(employeeOption) }))]}
-                          placeholder="Employee"
-                          closeOnSelect
-                        />
-                      </FilterField>
-                    )}
-
-                    {canUseEventType && (
-                      <FilterField label="Event Type">
-                        <div className="ui-pos-rel" ref={eventTypeRef}>
-                          <button
-                            type="button"
-                            onClick={() => setEventTypeMenuOpen((v) => !v)}
-                            onKeyDown={handleEventTypeKeyDown}
-                            aria-haspopup="listbox"
-                            aria-expanded={eventTypeMenuOpen}
-                            className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-2"
-                            style={{ whiteSpace: "nowrap", minWidth: "11rem" }}
+                  {canUseEventType && (
+                    <FilterField>
+                      <div className="ui-pos-rel" ref={eventTypeRef}>
+                        <button
+                          type="button"
+                          onClick={() => setEventTypeMenuOpen((v) => !v)}
+                          onKeyDown={handleEventTypeKeyDown}
+                          aria-haspopup="listbox"
+                          aria-expanded={eventTypeMenuOpen}
+                          className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-2"
+                          style={{ whiteSpace: "nowrap", minWidth: "11rem" }}
+                        >
+                          <CalendarIcon className="flex-shrink-0 h-4 w-4" />
+                          <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
+                        </button>
+                        {eventTypeMenuOpen && (
+                          <div
+                            className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 overflow-auto position-absolute rounded-3 shadow-sm start-0"
+                            style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }}
+                            role="listbox"
                           >
-                            <CalendarIcon className="flex-shrink-0 h-4 w-4" />
-                            <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
-                          </button>
-                          {eventTypeMenuOpen && (
-                            <div
-                              className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 overflow-auto position-absolute rounded-3 shadow-sm start-0"
-                              style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }}
-                              role="listbox"
-                            >
-                              {FILTER_CONFIG.eventType.options.map((o) => {
-                                const OptionIcon = o.icon;
-                                return (
-                                  <div
-                                    key={o.value}
-                                    onClick={() => {
+                            {FILTER_CONFIG.eventType.options.map((o) => {
+                              const OptionIcon = o.icon;
+                              return (
+                                <div
+                                  key={o.value}
+                                  onClick={() => {
+                                    setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                                    setEventTypeMenuOpen(false);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
                                       setReportFilters((prev) => ({ ...prev, eventType: o.value }));
                                       setEventTypeMenuOpen(false);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        setReportFilters((prev) => ({ ...prev, eventType: o.value }));
-                                        setEventTypeMenuOpen(false);
-                                      } else if (e.key === "ArrowDown") {
-                                        e.preventDefault();
-                                        e.currentTarget.nextElementSibling?.focus();
-                                      } else if (e.key === "ArrowUp") {
-                                        e.preventDefault();
-                                        e.currentTarget.previousElementSibling?.focus();
-                                      } else if (e.key === "Escape") {
-                                        e.preventDefault();
-                                        setEventTypeMenuOpen(false);
-                                        eventTypeRef.current?.querySelector("button")?.focus();
-                                      }
-                                    }}
-                                    tabIndex={0}
-                                    className={`app-menu-item px-1 py-0 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
-                                    style={{ cursor: "pointer", width: "100%", margin: 0, userSelect: "none" }}
-                                    role="option"
-                                    aria-selected={reportFilters.eventType === o.value}
-                                  >
-                                    {OptionIcon && <OptionIcon className="flex-shrink-0 h-4 w-4" />}
-                                    <span className="text-nowrap">{o.label}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </FilterField>
-                    )}
+                                    } else if (e.key === "ArrowDown") {
+                                      e.preventDefault();
+                                      e.currentTarget.nextElementSibling?.focus();
+                                    } else if (e.key === "ArrowUp") {
+                                      e.preventDefault();
+                                      e.currentTarget.previousElementSibling?.focus();
+                                    } else if (e.key === "Escape") {
+                                      e.preventDefault();
+                                      setEventTypeMenuOpen(false);
+                                      eventTypeRef.current?.querySelector("button")?.focus();
+                                    }
+                                  }}
+                                  tabIndex={0}
+                                  className={`app-menu-item px-1 py-0 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                                  style={{ cursor: "pointer", width: "100%", margin: 0, userSelect: "none" }}
+                                  role="option"
+                                  aria-selected={reportFilters.eventType === o.value}
+                                >
+                                  {OptionIcon && <OptionIcon className="flex-shrink-0 h-4 w-4" />}
+                                  <span className="text-nowrap">{o.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </FilterField>
+                  )}
 
-                    {/* Time Navigation */}
-                    {currentPeriodOffset !== 0 && (
-                      <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
-                        Today
-                      </button>
-                    )}
-                  </div>
-                ) : null
-              }
-            >
-              <div className="align-items-center d-flex justify-content-between position-relative w-100">
-                {/* Left: Save + Filter */}
-                <div className="ui-flex-center-gap-1">
-                  <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
-                  <Button_Toolbar
-                    icon={showReportControls ? EyeSlashIcon : EyeIcon}
-                    label={isTrainingMode ? (showReportControls ? "" : "") : ""}
-                    onClick={() => {
-                      setShowReportControls((prev) => {
-                        const next = !prev;
-                        if (!next) setEventTypeMenuOpen(false);
-                        return next;
-                      });
-                    }}
-                    className="btn-outline-secondary"
-                    title={showReportControls ? "Hide report controls" : "Show report controls"}
-                  />
-                  {currentPeriodOffset !== 0 && !showReportControls && (
+                  {/* Time Navigation */}
+                  {currentPeriodOffset !== 0 && (
                     <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
                       Today
                     </button>
                   )}
+                </div>
+              ) : null
+            }
+          >
+            <div className="align-items-center d-flex justify-content-between position-relative w-100">
+              {/* Left: Save + Filter */}
+              <div className="ui-flex-center-gap-1">
+                <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
+                <Button_Toolbar
+                  icon={showReportControls ? EyeSlashIcon : EyeIcon}
+                  label={isTrainingMode ? (showReportControls ? "" : "") : ""}
+                  onClick={() => {
+                    setShowReportControls((prev) => {
+                      const next = !prev;
+                      if (!next) setEventTypeMenuOpen(false);
+                      return next;
+                    });
+                  }}
+                  className="btn-outline-secondary"
+                  title={showReportControls ? "Hide report controls" : "Show report controls"}
+                />
+                {currentPeriodOffset !== 0 && !showReportControls && (
+                  <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
+                    Today
+                  </button>
+                )}
                 {/* Saved Filters Dropup */}
                 <div className="ui-pos-rel">
                   <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
@@ -1716,10 +1724,7 @@ export default function Reports() {
             </label>
           </div>
         ))}
-        <TableSettingsControls
-          settings={pendingReportsSettings}
-          onChange={(patch) => setPendingReportsSettings((prev) => ({ ...prev, ...patch }))}
-        />
+        <TableSettingsControls settings={pendingReportsSettings} onChange={(patch) => setPendingReportsSettings((prev) => ({ ...prev, ...patch }))} />
       </PageControlsModal>
 
       {/* Save Filter Modal */}

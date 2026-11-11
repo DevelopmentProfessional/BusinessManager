@@ -682,27 +682,29 @@ export default function Clients() {
         }}
       >
         <div className="ui-small-muted">Use these controls to manage the Clients page view.</div>
-        <div className="small">Subscription filter and search are available in the footer controls.</div>
-        <Button_Toolbar
-          icon={TicketIcon}
-          label="Subs"
-          onClick={() => {
-            setShowPageControls(false);
-            setShowMembershipManager(true);
-          }}
-          className="btn-primary"
-          title="Manage subscriptions"
-        />
-        <Button_Toolbar
-          icon={CheckCircleIcon}
-          label="Status"
-          onClick={() => {
-            setShowPageControls(false);
-            setShowStatusManager(true);
-          }}
-          className="btn-primary"
-          title="Manage client statuses"
-        />
+        <div className="small">Subscription filter and search are available.</div>
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={TicketIcon}
+            label="Subs"
+            onClick={() => {
+              setShowPageControls(false);
+              setShowMembershipManager(true);
+            }}
+            className="btn-primary"
+            title="Manage subscriptions"
+          />
+          <Button_Toolbar
+            icon={CheckCircleIcon}
+            label="Status"
+            onClick={() => {
+              setShowPageControls(false);
+              setShowStatusManager(true);
+            }}
+            className="btn-primary"
+            title="Manage client statuses"
+          />
+        </div>
         <TableSettingsControls
           settings={pendingSettings}
           onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
@@ -843,15 +845,7 @@ export default function Clients() {
       {/* Template Use Modal */}
       {isTemplateOpen && templateClient && <Modal_TemplateUse page="clients" entity={templateClient} currentUser={user} settings={appSettings} onClose={handleCloseTemplate} />}
 
-      <Modal_ManageLookup
-        isOpen={showStatusManager}
-        onClose={() => setShowStatusManager(false)}
-        title="Manage Statuses"
-        entityLabel="status"
-        items={clientStatuses}
-        onItemsChanged={loadClientStatuses}
-        api={clientStatusesAPI}
-      />
+      <Modal_ManageLookup isOpen={showStatusManager} onClose={() => setShowStatusManager(false)} title="Manage Statuses" entityLabel="status" items={clientStatuses} onItemsChanged={loadClientStatuses} api={clientStatusesAPI} />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}

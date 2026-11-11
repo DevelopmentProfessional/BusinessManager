@@ -1278,15 +1278,7 @@ export default function Employees() {
       />
 
       {/* Employee Status Management Modal */}
-      <Modal_ManageLookup
-        isOpen={showStatusManager}
-        onClose={() => setShowStatusManager(false)}
-        title="Manage Statuses"
-        entityLabel="status"
-        items={employeeStatuses}
-        onItemsChanged={loadEmployeeStatuses}
-        api={employeeStatusesAPI}
-      />
+      <Modal_ManageLookup isOpen={showStatusManager} onClose={() => setShowStatusManager(false)} title="Manage Statuses" entityLabel="status" items={employeeStatuses} onItemsChanged={loadEmployeeStatuses} api={employeeStatusesAPI} />
 
       {/* Roles Management Modal */}
       <Modal_Manage_Roles
@@ -1412,8 +1404,8 @@ export default function Employees() {
         }}
       >
         <div className="ui-small-muted">Use these controls to manage employee views and actions.</div>
-        <div className="small">Search, role/status filters, and add actions are available in the footer.</div>
-        <div className="d-flex gap-2">
+        <div className="small">Search, role/status filters, and add actions are available.</div>
+        <div className="page-controls-actions-group">
           <Button_Toolbar
             icon={UserGroupIcon}
             label="Roles"
