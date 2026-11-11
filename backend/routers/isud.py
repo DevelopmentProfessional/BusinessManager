@@ -1501,6 +1501,12 @@ async def update_by_id(
     if table_name.lower() in ('inventory', 'item', 'items') and 'cost_type' in record_data:
         _normalize_inventory_cost_fields(record_data)
 
+    # Special handling for user table: hash plain password into password_hash
+    if table_name.lower() in ('user', 'users') and 'password' in record_data:
+        plain_password = record_data.pop('password')
+        if plain_password:
+            record_data['password_hash'] = User.hash_password(plain_password)
+
     for key, value in record_data.items():
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
             setattr(record, key, value)
@@ -1711,6 +1717,12 @@ async def update(
 
     if table_name.lower() in ('inventory', 'item', 'items') and 'cost_type' in record_data:
         _normalize_inventory_cost_fields(record_data)
+
+    # Special handling for user table: hash plain password into password_hash
+    if table_name.lower() in ('user', 'users') and 'password' in record_data:
+        plain_password = record_data.pop('password')
+        if plain_password:
+            record_data['password_hash'] = User.hash_password(plain_password)
 
     if update_many:
         records = session.exec(stmt).all()
