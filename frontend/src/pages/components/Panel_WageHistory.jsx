@@ -82,7 +82,7 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
         )}
       </div>
 
-      <div className="bg-body border-top flex-shrink-0 profile-wage-history__filters px-0 py-0">
+      <div className="bg-body flex-shrink-0 profile-wage-history__filters px-0 py-0">
         <div className="align-items-center d-flex flex-wrap gap-2">
           <input type="text" className="app-search-input flex-grow-1 form-control form-control-sm" placeholder="Search period, notes, amount…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pay history" />
           <Dropdown_Custom className="flex-shrink-0 form-select form-select-sm" style={{ width: "5.75rem" }} value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} options={[{ value: "all", label: "All years" }, ...years.map((y) => ({ value: String(y), label: String(y) }))]} />

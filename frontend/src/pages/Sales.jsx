@@ -60,10 +60,11 @@ import { sortItemsAlphabetically } from "../utils/displaySort";
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
 // Unified Product/Service Card Component
-const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart }) => {
+const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart, cardViewMode = "full" }) => {
   const isService = itemType === "service";
   const imageUrl = getDisplayImageUrl(item);
   const hasImage = !!imageUrl;
+  const isCompact = cardViewMode === "compact" || (cardViewMode === "mixed" && !hasImage);
 
   const handleIncrement = (e) => {
     e.stopPropagation();
@@ -79,6 +80,67 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
     e.stopPropagation();
     onAddToCart(item, itemType, 1);
   };
+
+  if (isCompact) {
+    return (
+      <div
+        onClick={() => onSelect(item, itemType)}
+        className={`group relative flex flex-col justify-between bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 overflow-hidden hover:shadow-md cursor-pointer p-2 h-24 ${
+          inCart ? "border-secondary-500 ring-2 ring-secondary-200 dark:ring-secondary-800" : "border-gray-200 dark:border-gray-700 hover:border-primary-400"
+        }`}
+      >
+        {/* Background gradient or subtle tint */}
+        <div className={`absolute inset-0 pointer-events-none ${hasImage ? "" : "bg-gradient-to-br"} ${isService ? "from-primary-50 to-primary-100 dark:from-primary-950/40 dark:to-primary-900/30" : "from-secondary-50 to-secondary-100 dark:from-secondary-950/40 dark:to-secondary-900/30"}`}>
+          {hasImage && (
+            <img
+              src={imageUrl}
+              alt={item.name}
+              className="h-full object-center object-cover opacity-20 dark:opacity-15 w-full"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
+          )}
+        </div>
+
+        {/* Item Header: Name & Type Icon */}
+        <div className="relative z-10 flex items-start justify-between gap-1 w-full min-w-0">
+          <h3 className="font-semibold line-clamp-2 m-0 text-xs text-gray-900 dark:text-gray-100 leading-tight">
+            {item.name}
+          </h3>
+          <div className="flex-shrink-0 opacity-70">
+            {isService ? <SparklesIcon className="h-3.5 w-3.5 text-primary-500" /> : <CubeIcon className="h-3.5 w-3.5 text-secondary-500" />}
+          </div>
+        </div>
+
+        {/* Item Footer: Price & Cart controls */}
+        <div className="relative z-10 flex items-center justify-between gap-1 w-full mt-auto">
+          <span className="font-bold text-xs text-primary-700 dark:text-primary-300">
+            {!isService && item.price_min != null && item.price_max != null ? (item.price_min === item.price_max ? `$${item.price_min.toFixed(2)}` : `$${item.price_min.toFixed(2)}–$${item.price_max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}
+          </span>
+
+          <div>
+            {inCart ? (
+              <div className="bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700">
+                <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-5 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Remove">
+                  <MinusIcon className="h-3 w-3" />
+                </button>
+                <span className="dark:text-white font-bold text-center text-gray-900 text-xs w-5">{cartQuantity}</span>
+                <button onClick={handleIncrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-5 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Add more">
+                  <PlusIcon className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleAddToCart} className="bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-1.5 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700 text-gray-700 text-xs transition-colors">
+                <ShoppingCartIcon className="h-3 w-3" />
+                Add
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -370,6 +432,14 @@ export default function Sales() {
       return JSON.parse(localStorage.getItem("sales_receipt_settings") || "null") || { templateId: null, templateName: "", action: "select" };
     } catch {
       return { templateId: null, templateName: "", action: "select" };
+    }
+  });
+  // Card view mode: 'full' | 'compact' | 'mixed' — persisted in localStorage
+  const [cardViewMode, setCardViewMode] = useState(() => {
+    try {
+      return localStorage.getItem("sales_card_view") || "full";
+    } catch {
+      return "full";
     }
   });
   const [rcptTemplates, setRcptTemplates] = useState([]);
@@ -1557,6 +1627,7 @@ export default function Sales() {
                   key={`service-${service.id}`}
                   item={service}
                   itemType="service"
+                  cardViewMode={cardViewMode}
                   onSelect={handleSelectItem}
                   inCart={isInCart(service.id, "service")}
                   cartQuantity={getCartQuantity(service.id, "service")}
@@ -1589,6 +1660,7 @@ export default function Sales() {
                     key={`${pType}-${product.id}`}
                     item={product}
                     itemType={pType}
+                    cardViewMode={cardViewMode}
                     onSelect={handleSelectItem}
                     inCart={isInCart(product.id, pType)}
                     cartQuantity={getCartQuantity(product.id, pType)}
@@ -1620,6 +1692,7 @@ export default function Sales() {
                   key={`subscription-${subscription.id}`}
                   item={subscription}
                   itemType="subscription"
+                  cardViewMode={cardViewMode}
                   onSelect={() => addSubscriptionToCart(subscription)}
                   inCart={isInCart(subscription.id, "subscription")}
                   cartQuantity={getCartQuantity(subscription.id, "subscription")}
@@ -1991,6 +2064,41 @@ export default function Sales() {
         }}
       >
         <div className="mb-2 ui-small-muted">Use these controls to manage the sales experience on this page.</div>
+
+        {/* Card Display Settings */}
+        <hr className="my-2" />
+        <div className="fw-semibold mb-2 ui-text-sm">Card Display Settings</div>
+
+        <div className="mb-2">
+          <label className="d-block mb-1 small text-muted">Item Card Style</label>
+          <div style={{ maxWidth: "16rem" }}>
+            <Dropdown_Custom
+              className="ui-control-sm"
+              value={cardViewMode}
+              onChange={(e) => {
+                const nextMode = e.target.value;
+                setCardViewMode(nextMode);
+                try {
+                  localStorage.setItem("sales_card_view", nextMode);
+                } catch {}
+              }}
+              options={[
+                { value: "full", label: "Full Card View" },
+                { value: "compact", label: "Compact Card View" },
+                { value: "mixed", label: "Mix (Compact without image)" },
+              ]}
+              placeholder="Card style"
+              closeOnSelect
+            />
+          </div>
+          <div className="mt-1 ui-small-muted">
+            {cardViewMode === "compact"
+              ? "All items display as compact cards."
+              : cardViewMode === "mixed"
+              ? "Items with images display full-size; items without images display compact."
+              : "All items display as full-size cards."}
+          </div>
+        </div>
 
         {/* Receipt Settings */}
         <hr className="my-2" />

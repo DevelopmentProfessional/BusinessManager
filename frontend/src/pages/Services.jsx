@@ -45,6 +45,7 @@ import Button_Toolbar from "./components/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI, serviceCategoriesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal from "./components/Modal";
+import Dropdown_Filter from "./components/Dropdown_Filter";
 import PageControlsModal from "./components/Page_ControlsModal";
 import TableSettingsControls from "./components/TableSettingsControls";
 import Form_Service from "./components/Form_Service";
@@ -68,7 +69,6 @@ export default function Services() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState([]);
   const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
-  const [categoryFilterHelpKey, setCategoryFilterHelpKey] = useState(null);
   const [managedCategories, setManagedCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
@@ -420,82 +420,22 @@ export default function Services() {
         {categoryFilter.length > 0 && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setCategoryFilter([])} className="btn-app-danger" />}
 
         {/* Category Filter */}
-        <div className="ui-pos-rel">
-          <Button_Toolbar
-            icon={FolderOpenIcon}
-            label="Category"
-            title="Filter by category"
-            onClick={() => {
-              const nextOpen = !isCategoryFilterOpen;
-              setIsCategoryFilterOpen(nextOpen);
-              if (!nextOpen) setCategoryFilterHelpKey(null);
-            }}
-            className={`border-0 shadow-lg transition-all ${categoryFilter.length > 0 ? "bg-primary-600 hover:bg-primary-700 text-white" : "btn-app-secondary"}`}
-            data-active={categoryFilter.length > 0}
-          />
-          {isCategoryFilterOpen && (
-            <div className="app-dropdown--min app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={{ maxHeight: "300px", overflowY: "auto" }}>
-              {categories.map((cat, index) => {
-                const key = cat ?? "__none__";
-                const label = cat === "all" ? "All Categories" : cat || "No Category";
-                const description = cat === "all" ? "Shows services from every category." : (cat || "").trim() === "" ? "Shows services that do not have a category assigned." : `Shows only services in the "${cat}" category.`;
-                const isLast = index === categories.length - 1;
-                const isSelected = cat === "all" ? categoryFilter.length === 0 : categoryFilter.includes(cat);
-                const isHelpOpen = categoryFilterHelpKey === String(key);
-
-                return (
-                  <div key={String(key)} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
-                    <button
-                      onClick={() => {
-                        if (cat === "all") {
-                          setCategoryFilter([]);
-                          setIsCategoryFilterOpen(false);
-                          setCategoryFilterHelpKey(null);
-                        } else {
-                          setCategoryFilter((prev) => (prev.includes(cat) ? prev.filter((v) => v !== cat) : [...prev, cat]));
-                        }
-                      }}
-                      className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-                    >
-                      {label}
-                      {isSelected && cat !== "all" && <span className="ms-1">✓</span>}
-                    </button>
-
-                    {isTrainingMode && (
-                      <div className="flex-shrink-0 position-relative">
-                        <button
-                          type="button"
-                          aria-label={`${label} help`}
-                          className="align-items-center app-label--bold btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
-                          onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
-                          onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : String(key)));
-                          }}
-                        >
-                          ?
-                        </button>
-
-                        {isHelpOpen && (
-                          <div
-                            className="app-help-popover bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 rounded-lg text-start"
-                            onMouseEnter={() => setCategoryFilterHelpKey(String(key))}
-                            onMouseLeave={() => setCategoryFilterHelpKey((prev) => (prev === String(key) ? null : prev))}
-                          >
-                            <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{label}</div>
-                            <div className="dark:text-gray-300 small text-gray-700">{description}</div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <Dropdown_Filter
+          icon={FolderOpenIcon}
+          label="Category"
+          title="Filter by category"
+          multiSelect
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          isOpen={isCategoryFilterOpen}
+          setIsOpen={setIsCategoryFilterOpen}
+          showHelp={isTrainingMode}
+          options={categories.map((cat) => {
+            const label = cat === "all" ? "All Categories" : cat || "No Category";
+            const description = cat === "all" ? "Shows services from every category." : (cat || "").trim() === "" ? "Shows services that do not have a category assigned." : `Shows only services in the "${cat}" category.`;
+            return { value: cat, label, description };
+          })}
+        />
       </PageTableFooter>
 
       {/* Bulk Import Sheet Modal */}

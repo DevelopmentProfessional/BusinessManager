@@ -20,8 +20,11 @@
  *   2026-05-26 | GitHub Copilot | Applied shared sticky footer classes for modal footer consistency
  * ============================================================
  */
-import React from "react";
+import React, { createContext, useContext } from "react";
+import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+
+export const ModalStackContext = createContext(0);
 
 // ─── NAMED SUB-COMPONENTS ───────────────────────────────────────────────────
 
@@ -68,33 +71,39 @@ export function ModalFooter({ children, className = "" }) {
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
 export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, contentGravity = "top" }) {
+  const currentDepth = useContext(ModalStackContext);
+  const nextDepth = currentDepth + 1;
+
   if (!isOpen) return null;
+
+  // Stacking z-index: each nested modal renders on top of its parent modal and any page elements
+  const layerZIndex = 1200 + currentDepth * 20;
 
   const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
-  const Overlay = <div className="bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" onClick={onClose} />;
+  const Overlay = <div className="bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
+
+  let modalElement = null;
 
   // ─── 2 FULLSCREEN VARIANT ──────────────────────────────────────────────────────
   if (fullScreen) {
-    return (
-      <div className="app-modal-layer fixed inset-0">
+    modalElement = (
+      <div className="app-modal-layer fixed inset-0" style={{ zIndex: layerZIndex }}>
         {Overlay}
-        <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0">
+        <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0" style={{ zIndex: layerZIndex + 1 }}>
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
           <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}</div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>
       </div>
     );
-  }
-
-  // ─── 3 CENTERED VARIANT ────────────────────────────────────────────────────────
-  if (centered) {
-    return (
-      <div className="app-modal-layer fixed inset-0">
+  } else if (centered) {
+    // ─── 3 CENTERED VARIANT ────────────────────────────────────────────────────────
+    modalElement = (
+      <div className="app-modal-layer fixed inset-0" style={{ zIndex: layerZIndex }}>
         {Overlay}
-        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full">
+        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full" style={{ zIndex: layerZIndex + 1 }}>
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
             {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
@@ -103,21 +112,29 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         </div>
       </div>
     );
-  }
-
-  // ─── 4 DEFAULT VARIANT (BOTTOM SHEET) ──────────────────────────────────────────
-  return (
-    <div className="app-modal-layer fixed inset-0 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen">
-        {Overlay}
-        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-screen overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full">
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
+  } else {
+    // ─── 4 DEFAULT VARIANT (BOTTOM SHEET) ──────────────────────────────────────────
+    modalElement = (
+      <div className="app-modal-layer fixed inset-0 overflow-y-auto" style={{ zIndex: layerZIndex }}>
+        <div className="flex items-end justify-center min-h-screen">
+          {Overlay}
+          <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-screen overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full" style={{ zIndex: layerZIndex + 1 }}>
+            {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
+            <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
+              {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
+            </div>
+            {footer && <ModalFooter>{footer}</ModalFooter>}
           </div>
-          {footer && <ModalFooter>{footer}</ModalFooter>}
         </div>
       </div>
-    </div>
+    );
+  }
+
+  const stackContent = (
+    <ModalStackContext.Provider value={nextDepth}>
+      {modalElement}
+    </ModalStackContext.Provider>
   );
+
+  return typeof document !== "undefined" ? createPortal(stackContent, document.body) : stackContent;
 }

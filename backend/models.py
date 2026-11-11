@@ -198,6 +198,7 @@ class User(BaseModel, table=True):
     footer_align: str = Field(default="left")
     ui_scale: int = Field(default=100)
     db_environment: str = Field(default="production")  # User's preferred database environment
+    startup_page: str = Field(default="schedule")  # User's preferred home/landing page on login
 
     # Hierarchy - who this user reports to
     reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
@@ -1268,6 +1269,7 @@ class UserCreate(SQLModel):
     reports_to: Optional[UUID] = None
     role_id: Optional[UUID] = None  # Assigned role for inherited permissions
     status_id: Optional[UUID] = None  # Managed employee status lookup
+    startup_page: Optional[str] = "schedule"
     iod_number: Optional[str] = None
     supervisor: Optional[str] = None
     location: Optional[str] = None
@@ -1312,6 +1314,7 @@ class UserUpdate(SQLModel):
     footer_align: Optional[str] = None
     ui_scale: Optional[int] = Field(default=None, ge=90, le=150)
     db_environment: Optional[str] = None  # User's preferred database environment
+    startup_page: Optional[str] = None  # User's preferred home/landing page on login
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None
@@ -1360,6 +1363,7 @@ class UserRead(SQLModel):
     footer_align: str = "left"
     ui_scale: int = 100
     db_environment: str = "production"  # User's preferred database environment
+    startup_page: str = "schedule"  # User's preferred home/landing page on login
     signature_data: Optional[str] = None
     profile_picture: Optional[str] = None
     iod_number: Optional[str] = None

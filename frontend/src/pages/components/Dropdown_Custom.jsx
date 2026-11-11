@@ -157,6 +157,7 @@ export default function Dropdown_Custom({
               ${disabled ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500"}
               ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
             `}
+            style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}
             disabled={disabled}
           />
         </div>
@@ -178,16 +179,17 @@ export default function Dropdown_Custom({
             ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
             ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
           `}
+          style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}
           disabled={disabled}
         >
-          <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`}>
+          <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`} style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}>
             {isFloating && !hasValue && !isOpen ? "" : wordSafeDisplayValue}
           </span>
         </button>
       )}
 
       {isFloating && (
-        <label htmlFor={id || undefined} className="app-floating-label">
+        <label htmlFor={id || undefined} className="app-floating-label" style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)" }}>
           {effectiveFloatingLabel}
         </label>
       )}

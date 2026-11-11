@@ -2,6 +2,27 @@ import React from "react";
 import Modal from "./Modal";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
+const PRESET_COLORS = [
+  "#3B82F6", // Blue (default)
+  "#0EA5E9", // Sky
+  "#06B6D4", // Cyan
+  "#14B8A6", // Teal
+  "#10B981", // Green
+  "#84CC16", // Lime
+  "#EAB308", // Yellow
+  "#F59E0B", // Amber
+  "#F97316", // Orange
+  "#EF4444", // Red
+  "#F43F5E", // Rose
+  "#EC4899", // Pink
+  "#A855F7", // Purple
+  "#8B5CF6", // Violet
+  "#7C3AED", // Deep Violet
+  "#6366F1", // Indigo
+  "#64748B", // Slate
+  "#1E293B", // Dark
+];
+
 /**
  * Per-user theme / active color picker.
  */
@@ -15,6 +36,8 @@ export default function Modal_ColorPicker({ isOpen, onClose, pendingColor, onPen
     await onSave();
   };
 
+  const normalizedColor = (pendingColor || "#3B82F6").toUpperCase();
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} centered noPadding>
       <div className="ui-component-shell">
@@ -26,27 +49,58 @@ export default function Modal_ColorPicker({ isOpen, onClose, pendingColor, onPen
 
         <div className="component-body">
           <div className="component-body-inner">
-            <div className="d-flex flex-column gap-3">
+            <div className="d-flex flex-column align-items-center gap-3 text-center">
               <p className="mb-0 ui-small-muted">Choose your personal theme color. It applies to buttons, highlights, and your calendar events.</p>
-              <div className="align-items-center d-flex gap-3">
+
+              {/* Cross-platform preset color palette (accessible on both mobile and PC) */}
+              <div className="d-flex flex-wrap gap-2 justify-content-center" style={{ maxWidth: "22rem" }}>
+                {PRESET_COLORS.map((color) => {
+                  const isSelected = normalizedColor === color.toUpperCase();
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => onPendingColorChange(color)}
+                      className="rounded-circle border-0 flex-shrink-0 transition-all"
+                      style={{
+                        width: "2.125rem",
+                        height: "2.125rem",
+                        backgroundColor: color,
+                        cursor: saving ? "not-allowed" : "pointer",
+                        outline: isSelected ? "3px solid var(--bs-body-color, #fff)" : "1px solid var(--bs-border-color, rgba(0,0,0,0.15))",
+                        outlineOffset: "2px",
+                        transform: isSelected ? "scale(1.15)" : "scale(1)",
+                        boxShadow: isSelected ? "0 0.125rem 0.5rem rgba(0,0,0,0.25)" : "none",
+                      }}
+                      disabled={saving}
+                      title={color}
+                      aria-label={`Select ${color}`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Single color button with value above it (no duplicate display element) */}
+              <div className="d-flex flex-column align-items-center gap-1 mt-1">
+                <span className="font-monospace fw-semibold small text-body-emphasis">{normalizedColor}</span>
                 <input
                   type="color"
                   value={pendingColor}
                   onChange={(e) => onPendingColorChange(e.target.value)}
-                  className="flex-shrink-0 form-control form-control-color"
-                  style={{ width: "3rem", height: "3rem", padding: 0, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}
+                  className="form-control form-control-color border rounded-circle shadow-sm"
+                  style={{
+                    width: "3rem",
+                    height: "3rem",
+                    padding: "0.2rem",
+                    cursor: saving ? "not-allowed" : "pointer",
+                    backgroundColor: pendingColor,
+                  }}
                   disabled={saving}
-                  aria-label="Pick color"
+                  aria-label="Pick custom color"
+                  title="Pick custom color"
                 />
-                <div className="d-flex flex-column gap-1 min-w-0">
-                  <span className="fw-semibold text-body-emphasis">{pendingColor.toUpperCase()}</span>
-                  <span
-                    className="d-inline-block rounded-pill"
-                    style={{ width: "100%", maxWidth: "8rem", height: "1.25rem", backgroundColor: pendingColor, border: "1px solid var(--bs-border-color)" }}
-                    aria-hidden="true"
-                  />
-                </div>
               </div>
+
               {message && (
                 <div className={`small mb-0 ${message.includes("Failed") || message.includes("Error") ? "text-danger" : "text-success"}`}>{message}</div>
               )}

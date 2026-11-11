@@ -239,8 +239,8 @@ const Profile = () => {
   }, [uiScale, setUiScale, persistCurrentUserProfile]);
 
   const setPersistedStartupPage = useCallback(
-    (page) => {
-      void persistCurrentUserProfile({ startup_page: page }).catch(() => {});
+    async (page) => {
+      return await persistCurrentUserProfile({ startup_page: page });
     },
     [persistCurrentUserProfile]
   );
