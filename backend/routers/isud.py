@@ -1971,6 +1971,9 @@ def _cascade_delete(session: Session, table_name: str, record_id: UUID, record) 
 
     def _del(model, **filters):
         """Delete all rows of `model` matching given column=value filters."""
+        for k in filters:
+            if not hasattr(model, k):
+                return
         rows = session.exec(
             sql_select(model).where(
                 and_(*[getattr(model, k) == v for k, v in filters.items()])
@@ -1981,6 +1984,8 @@ def _cascade_delete(session: Session, table_name: str, record_id: UUID, record) 
 
     def _null(model, filter_col: str, filter_val, null_col: str):
         """Set null_col = None on all rows of `model` where filter_col = filter_val."""
+        if not hasattr(model, filter_col) or not hasattr(model, null_col):
+            return
         rows = session.exec(
             sql_select(model).where(getattr(model, filter_col) == filter_val)
         ).all()
@@ -2007,9 +2012,10 @@ def _cascade_delete(session: Session, table_name: str, record_id: UUID, record) 
         _del(ProductLocation,             location_id=iid)
         _del(MixConfig,                   inventory_id=iid)
         _del(MixComponent,                mix_id=iid)
-        _del(MixComponent,                inventory_id=iid)
+        _del(MixComponent,                component_id=iid)
         _del(BundleComponent,             bundle_id=iid)
         _del(BundleComponent,             component_id=iid)
+        _del(ClientCartItem,              item_id=iid)
         # Cross-entity links: delete the *link* row, the service/product survives
         _del(ServiceResource,  inventory_id=iid)
         _del(ServiceAsset,     inventory_id=iid)
