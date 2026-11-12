@@ -262,9 +262,13 @@ export default function Layout({ children }) {
         aria-label={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
         className={classNames(
           expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
-          "btn-app-nav app-nav-bottom-toggle shadow-lg d-flex align-items-center justify-content-center p-0"
+          "btn-app-nav app-nav-bottom-toggle position-fixed shadow-lg d-flex align-items-center justify-content-center p-0"
         )}
         style={{
+          position: "fixed",
+          bottom: "calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem))",
+          right: "calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem))",
+          left: "auto",
           zIndex: APP_NAV_Z_INDEX,
           width: "var(--app-btn-nav-width, 2.25rem)",
           height: "var(--app-btn-height, 2rem)",
