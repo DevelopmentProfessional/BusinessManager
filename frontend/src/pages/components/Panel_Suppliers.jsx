@@ -120,8 +120,8 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity={showForm ? "top" : "bottom"}>
       <div className="ui-page-shell">
-        <div className="align-items-center bg-white border-bottom d-flex dark:bg-gray-900 flex-shrink-0 gap-2 justify-content-between p-0">
-          <h6 className="ui-heading-strong">
+        <div className="app-modal-header align-items-center bg-white border-bottom d-flex dark:bg-gray-900 flex-shrink-0 gap-2 justify-content-between p-0">
+          <h6 className="app-modal-title ui-heading-strong">
             {showForm ? (editingSupplier ? "Edit Supplier" : "Add Supplier") : "Suppliers"}
             {!showForm && <span className="fw-normal ms-1 small text-muted">({suppliers.length})</span>}
           </h6>

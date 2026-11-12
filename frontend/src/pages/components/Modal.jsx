@@ -20,7 +20,7 @@
  *   2026-05-26 | GitHub Copilot | Applied shared sticky footer classes for modal footer consistency
  * ============================================================
  */
-import React, { createContext, useContext, useRef } from "react";
+import React, { createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
@@ -77,14 +77,6 @@ export function ModalFooter({ children, className = "" }) {
 export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, headerActions = null, contentGravity = "top" }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
-  const bodyRef = useRef(null);
-  const dragRef = useRef({
-    isDown: false,
-    startY: 0,
-    scrollTop: 0,
-    moved: false,
-    scrollTarget: null,
-  });
 
   if (!isOpen) return null;
 
@@ -92,75 +84,6 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   const layerZIndex = 1200 + currentDepth * 20;
 
   const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
-
-  const findScrollableElement = (startEl) => {
-    let el = startEl;
-    while (el && el !== document.body) {
-      if (
-        el.classList &&
-        (el.classList.contains("app-modal-header") ||
-          el.classList.contains("component-header") ||
-          el.classList.contains("app-modal-footer") ||
-          el.classList.contains("component-footer") ||
-          el.classList.contains("modal-footer"))
-      ) {
-        return null;
-      }
-
-      if (el.scrollHeight > el.clientHeight + 2) {
-        const overflow = window.getComputedStyle(el).overflowY;
-        if (overflow === "auto" || overflow === "scroll") {
-          return el;
-        }
-      }
-      if (el === bodyRef.current) break;
-      el = el.parentElement;
-    }
-    return bodyRef.current;
-  };
-
-  const handlePointerDown = (e) => {
-    if (e.button !== 0 && e.pointerType === "mouse") return;
-    if (e.target.closest("input, textarea, select, .app-modal-header, .component-header, .app-modal-footer, .component-footer, .modal-footer")) return;
-    const scrollTarget = findScrollableElement(e.target);
-    if (!scrollTarget) return;
-    dragRef.current = {
-      isDown: true,
-      startY: e.clientY,
-      scrollTop: scrollTarget.scrollTop,
-      moved: false,
-      scrollTarget,
-    };
-  };
-
-  const handlePointerMove = (e) => {
-    if (!dragRef.current.isDown || !dragRef.current.scrollTarget) return;
-    const dy = e.clientY - dragRef.current.startY;
-    if (Math.abs(dy) > 5) {
-      dragRef.current.moved = true;
-    }
-    if (dragRef.current.moved) {
-      dragRef.current.scrollTarget.scrollTop = dragRef.current.scrollTop - dy;
-    }
-  };
-
-  const handlePointerUp = () => {
-    if (dragRef.current.moved) {
-      const captureClick = (clickEvent) => {
-        clickEvent.stopPropagation();
-        clickEvent.preventDefault();
-        window.removeEventListener("click", captureClick, true);
-      };
-      window.addEventListener("click", captureClick, true);
-    }
-    dragRef.current.isDown = false;
-    dragRef.current.scrollTarget = null;
-  };
-
-  const handlePointerCancel = () => {
-    dragRef.current.isDown = false;
-    dragRef.current.scrollTarget = null;
-  };
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
   const Overlay = <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
@@ -175,21 +98,22 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       >
         {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
         <div
-          ref={bodyRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "overflow-hidden d-flex flex-column h-100 p-0" : "overflow-auto p-1"}`}
+          className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar ${
+            title || !noPadding ? "overflow-y-auto p-1" : "flex flex-col min-h-0 flex-1 overflow-hidden p-0"
+          }`}
         >
           {noPadding ? (
             children
           ) : contentGravity === "bottom" ? (
-            <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div>
+            <div className={`${gravityClass} text-gray-900 dark:text-gray-100 flex-1 flex flex-col min-h-0`}>{children}</div>
           ) : (
-            <div className="dark:text-gray-100 text-gray-900">{children}</div>
+            <div className="dark:text-gray-100 text-gray-900 flex-1 flex flex-col min-h-0">{children}</div>
           )}
         </div>
+        {footer && <ModalFooter>{footer}</ModalFooter>}
+      </div>
+    </div>
+  );
         {footer && <ModalFooter>{footer}</ModalFooter>}
       </div>
     </div>

@@ -654,8 +654,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   return (
     <div className="ui-page-shell">
       {/* Header */}
-      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
-        <h6 className="ui-heading-strong">{formTitle}</h6>
+      <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
+        <h6 className="app-modal-title ui-heading-strong">{formTitle}</h6>
       </div>
 
       {/* ─── 6 RENDER: FORM BODY ────────────────────────────────────────────────── */}
