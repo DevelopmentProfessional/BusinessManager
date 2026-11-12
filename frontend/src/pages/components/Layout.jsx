@@ -39,6 +39,22 @@ export default function Layout({ children }) {
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
   const { isTrainingMode, buttonTextSize, uiScale } = useViewMode();
 
+  // Restore any pending undo notification after page refresh
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem("app_undo_popup");
+      if (pending) {
+        sessionStorage.removeItem("app_undo_popup");
+        const parsed = JSON.parse(pending);
+        if (parsed && parsed.message) {
+          setUndoResult(parsed);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
   const handleUndo = async () => {
     if (undoLoading) return;
     setUndoLoading(true);
@@ -46,13 +62,26 @@ export default function Layout({ children }) {
     try {
       const res = await isudAPI.undo();
       const data = res?.data || {};
+      if (data.success) {
+        try {
+          sessionStorage.setItem(
+            "app_undo_popup",
+            JSON.stringify({
+              success: true,
+              message: data.message || "Action undone successfully",
+            })
+          );
+        } catch {
+          // ignore
+        }
+        window.location.reload();
+        return;
+      }
+
       setUndoResult({
-        success: Boolean(data.success),
+        success: false,
         message: data.message || "Can no longer undo",
       });
-      if (data.success) {
-        window.dispatchEvent(new CustomEvent("app:data-updated"));
-      }
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || "Failed to undo action";
       setUndoResult({

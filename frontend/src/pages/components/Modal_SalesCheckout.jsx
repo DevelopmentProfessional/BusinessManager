@@ -278,7 +278,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
             )}
           </div>
         ) : (
-          <div className="gap-1 grid grid-cols-1 md:grid-cols-5 min-h-0 p-1">
+          <div className="gap-1 grid grid-cols-1 md:grid-cols-5 min-h-0 p-1 flex-grow-1 overflow-y-auto no-scrollbar">
             <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800/40 dark:border-gray-700 flex flex-col md:col-span-2 min-h-0 rounded-2xl">
               <div className="p-1 space-y-1">
                 <div className="bg-white border border-gray-200 dark:bg-gray-800/70 dark:border-gray-700 p-1 rounded-xl">

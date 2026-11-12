@@ -512,8 +512,8 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
   };
 
   return (
-    <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="absolute bg-white dark:bg-gray-800 flex flex-col inset-0 lg:m-6 m-2 overflow-hidden rounded-lg shadow-xl sm:m-4">
+    <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} contentGravity="top">
+      <div className="bg-white dark:bg-gray-800 flex flex-col h-full w-full overflow-hidden">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between px-1 py-0">
           <div className="flex gap-3 items-center min-w-0">
