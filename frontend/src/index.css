@@ -764,7 +764,7 @@ table::-webkit-scrollbar,
   inset: 0;
   z-index: var(--app-modal-z-index);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
 }
 
@@ -775,29 +775,45 @@ table::-webkit-scrollbar,
   backdrop-filter: blur(0.125rem);
 }
 
-.app-modal-dialog {
-  position: relative;
+.app-modal-dialog,
+.app-modal-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 1;
   width: 100%;
-  max-width: 32rem;
   background: var(--bs-body-bg);
-  border-radius: var(--app-modal-border-radius);
-  border: 0.0625rem solid var(--bs-border-color);
+  border-top-left-radius: var(--app-modal-border-radius, 0.75rem);
+  border-top-right-radius: var(--app-modal-border-radius, 0.75rem);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top: 0.0625rem solid var(--bs-border-color);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
   display: flex;
   flex-direction: column;
   max-height: 90vh;
   overflow: hidden;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .app-modal-dialog--fullscreen {
   max-width: 100% !important;
-  max-height: 100% !important;
-  height: 100% !important;
-  border-radius: 0 !important;
-  border: none !important;
+  max-height: 90vh !important;
+  border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
 }
 
-.app-modal-content {
+.app-modal-content,
+.app-modal-body {
   flex-grow: 1;
   min-height: 0;
   overflow-y: auto;
@@ -805,10 +821,11 @@ table::-webkit-scrollbar,
 }
 
 /* ─── 13. MODAL HEADER ─── */
-.app-modal-header {
-  height: var(--app-modal-header-height);
-  min-height: var(--app-modal-header-height);
-  padding: 0 var(--app-modal-padding);
+.app-modal-header,
+.component-header {
+  height: var(--app-modal-header-height, 3rem);
+  min-height: var(--app-modal-header-height, 3rem);
+  padding: 0 var(--app-modal-padding, 1rem);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -822,9 +839,10 @@ table::-webkit-scrollbar,
    Consistent header text style across all modals and modal components.
    ========================================================================== */
 .app-modal-title,
-.modal-title {
+.modal-title,
+.component-header-left {
   margin: 0 !important;
-  font-size: 1rem !important;
+  font-size: var(--app-text-size-medium, 1rem) !important;
   font-weight: 600 !important;
   line-height: 1.25 !important;
   color: var(--bs-body-color) !important;
@@ -833,7 +851,8 @@ table::-webkit-scrollbar,
 }
 
 .dark .app-modal-title,
-.dark .modal-title {
+.dark .modal-title,
+.dark .component-header-left {
   color: var(--bs-body-color) !important;
 }
 
@@ -849,16 +868,22 @@ table::-webkit-scrollbar,
 }
 
 /* ─── 14. MODAL FOOTER ─── */
-.app-modal-footer {
+.app-modal-footer,
+.modal-footer,
+.component-footer {
   min-height: var(--app-standard-footer-height);
   padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--app-footer-btn-gap);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
   border-top: 0.0625rem solid var(--bs-border-color);
   background: var(--bs-body-bg);
   flex-shrink: 0;
+  margin-top: auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 40 !important;
 }
 
 .app-modal-actions {
@@ -1156,8 +1181,11 @@ table::-webkit-scrollbar,
 }
 
 .ui-component-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   height: 100%;
+  max-height: 90vh;
 }
 
 .ui-page-shell {
@@ -1383,10 +1411,28 @@ table::-webkit-scrollbar,
   text-align: end;
 }
 
-/* Bulk import grid: hide scrollbars while preserving scroll */
+/* Bulk import grid: hide scrollbars while preserving mobile and desktop scroll */
 .bulk-import-grid-scroll {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
+  overscroll-behavior: contain;
+}
+
+.bulk-import-grid-scroll table,
+.bulk-import-grid-scroll th,
+.bulk-import-grid-scroll td,
+.bulk-import-grid-scroll input {
+  touch-action: pan-x pan-y !important;
+}
+
+.component-body-inner--flush {
+  padding: 0;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
 }
 
 .bulk-import-grid-scroll::-webkit-scrollbar {
@@ -2149,13 +2195,15 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
   bottom: calc(var(--app-footer-padding-y) + var(--app-btn-nav-width) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0rem));
 }
 
-.app-nav-bottom-menu {
+.app-nav-bottom-menu,
+.app-nav-bottom-global-menu {
   align-items: stretch;
   padding: var(--app-footer-padding-y) 0;
 }
 
 .app-nav-bottom-menu .btn,
-.app-nav-bottom-menu a.btn {
+.app-nav-bottom-menu a.btn,
+.app-nav-bottom-global-menu .btn {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
 }
@@ -2194,34 +2242,75 @@ body.training-mode .btn.settings-accordion-btn {
   margin: 0 !important;
 }
 
-.app-footer-search .btn.rounded-circle,
-.schedule-footer .btn.rounded-circle,
-.profile-footer-nav .btn.rounded-circle,
-.modal-footer .btn.rounded-circle,
-footer[aria-label="Actions"] .btn.rounded-circle,
-.flex-shrink-0.border-top .btn.rounded-circle,
-.flex-shrink-0.border-t .btn.rounded-circle,
-[class*="footer"] .btn.rounded-circle {
+.app-footer-search .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+.schedule-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+.profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+.modal-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+.flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+.flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+[class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]) {
   padding: 0 !important;
   width: var(--app-btn-width) !important;
   height: var(--app-btn-height) !important;
   min-width: var(--app-btn-width) !important;
 }
 
-body.training-mode .app-footer-search .btn.rounded-circle,
-body.training-mode .schedule-footer .btn.rounded-circle,
-body.training-mode .profile-footer-nav .btn.rounded-circle,
-body.training-mode .modal-footer .btn.rounded-circle,
-body.training-mode footer[aria-label="Actions"] .btn.rounded-circle,
-body.training-mode .flex-shrink-0.border-top .btn.rounded-circle,
-body.training-mode .flex-shrink-0.border-t .btn.rounded-circle,
-body.training-mode [class*="footer"] .btn.rounded-circle {
+body.training-mode .app-footer-search .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode .schedule-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode .profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode .modal-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode .flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode .flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
+body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]) {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   max-width: var(--app-btn-width) !important;
   height: var(--app-btn-height) !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Circle buttons (settings + cancel): always icon-only circle; size DOES NOT follow compact / training-mode toggle */
+.btn-circle,
+.ui-btn-circle-outline-secondary,
+.btn[title="Cancel"],
+.btn[aria-label="Cancel"],
+.btn[title="Close"],
+.btn[aria-label="Close"] {
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.btn-circle svg,
+.ui-btn-circle-outline-secondary svg,
+.btn[title="Cancel"] svg,
+.btn[aria-label="Cancel"] svg,
+.btn[title="Close"] svg,
+.btn[aria-label="Close"] svg {
+  width: var(--app-icon-size, 1rem) !important;
+  height: var(--app-icon-size, 1rem) !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-circle span,
+.ui-btn-circle-outline-secondary span,
+.btn[title="Cancel"] span,
+.btn[aria-label="Cancel"] span,
+.btn[title="Close"] span,
+.btn[aria-label="Close"] span {
+  display: none !important;
 }
 
 .profile-footer-nav .btn.profile-footer-btn {
@@ -3040,7 +3129,14 @@ textarea.form-control {
 
 .text-size-small,
 .app-text-small {
-  font-size: 0.75rem !important;
+  font-size: var(--app-text-size-small, 0.75rem) !important;
+}
+
+.text-size-small th,
+.text-size-small td,
+.app-text-small th,
+.app-text-small td {
+  font-size: var(--app-text-size-small, 0.75rem) !important;
 }
 
 .text-size-medium,
@@ -3511,7 +3607,7 @@ select.form-select {
   align-items: center;
   border-bottom: 0.0625rem solid var(--bs-border-color);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0.5rem;
 }
 

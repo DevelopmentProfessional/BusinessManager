@@ -49,6 +49,7 @@ import jwt as pyjwt
 import logging
 import smtplib
 import ssl
+import json
 from datetime import datetime
 from urllib.parse import urlparse
 from typing import Type, Dict, Any, Optional
@@ -1023,6 +1024,173 @@ def _apply_schedule_visibility_scope(stmt, current_user: User, session: Session)
         )
     )
 
+# ─── UNDO RECORDING & EXECUTION ────────────────────────────────────────────────
+UNDO_EXCLUDED_TABLES = {"user_undo_action", "document_blob", "schema_migration", "audit_log"}
+
+
+def _extract_entity_title(record: Any, table_name: str) -> str:
+    """Derive human-friendly entity name from a record."""
+    for field in ("name", "title", "po_number", "original_filename", "filename", "username", "first_name", "description"):
+        val = getattr(record, field, None)
+        if val:
+            if field == "first_name" and getattr(record, "last_name", None):
+                return f"{val} {getattr(record, 'last_name')}"
+            return str(val)
+    return table_name.rstrip("s").replace("_", " ").capitalize()
+
+
+def _serialize_row_to_json(record: Any) -> str:
+    """Serialize all column attributes of a SQLModel instance to a JSON string."""
+    data = {}
+    for col in record.__table__.columns:
+        val = getattr(record, col.name, None)
+        if isinstance(val, UUID):
+            data[col.name] = str(val)
+        elif isinstance(val, datetime):
+            data[col.name] = val.isoformat()
+        elif hasattr(val, "value"):
+            data[col.name] = val.value
+        elif isinstance(val, (bytes, bytearray)):
+            data[col.name] = None
+        else:
+            data[col.name] = val
+    return json.dumps(data)
+
+
+def _record_undo_action(
+    session: Session,
+    user_id: UUID,
+    action_type: str,
+    table_name: str,
+    record_id: str,
+    entity_title: Optional[str] = None,
+    before_state: Optional[str] = None,
+) -> None:
+    """Record an undo action and prune so at most 10 actions are kept for the user."""
+    if table_name.lower() in UNDO_EXCLUDED_TABLES:
+        return
+
+    try:
+        undo = UserUndoAction(
+            user_id=user_id,
+            action_type=action_type,
+            table_name=table_name,
+            record_id=str(record_id),
+            entity_title=entity_title,
+            before_state=before_state,
+            created_at=datetime.utcnow(),
+        )
+        session.add(undo)
+        session.flush()
+
+        recent_actions = session.exec(
+            sql_select(UserUndoAction)
+            .where(UserUndoAction.user_id == user_id)
+            .order_by(UserUndoAction.created_at.desc())
+        ).all()
+
+        if len(recent_actions) > 10:
+            for extra_act in recent_actions[10:]:
+                session.delete(extra_act)
+    except Exception as exc:
+        logger.warning("Failed to record undo action for %s: %s", table_name, exc)
+
+
+@router.post("/undo")
+def undo_last_action(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Undo the user's most recent database action (insert, update, delete).
+    Maintains a maximum of 10 actions per user.
+    """
+    last_action = session.exec(
+        sql_select(UserUndoAction)
+        .where(UserUndoAction.user_id == current_user.id)
+        .order_by(UserUndoAction.created_at.desc())
+    ).first()
+
+    if not last_action:
+        return {"success": False, "message": "Can no longer undo"}
+
+    action_type = last_action.action_type
+    table_name = last_action.table_name
+    record_id = last_action.record_id
+    entity_title = last_action.entity_title or table_name
+    before_state = json.loads(last_action.before_state) if last_action.before_state else None
+
+    try:
+        model_class = get_model_class(table_name)
+    except Exception:
+        session.delete(last_action)
+        session.commit()
+        return {"success": False, "message": f"Could not undo action for table {table_name}"}
+
+    try:
+        if action_type == "INSERT":
+            rec = session.get(model_class, UUID(record_id))
+            if rec:
+                session.delete(rec)
+                action_text = f"Undid creation of {entity_title}"
+            else:
+                action_text = f"Undid creation of {entity_title} (record already removed)"
+
+        elif action_type == "DELETE":
+            if before_state:
+                restored_data = {}
+                for col in model_class.__table__.columns:
+                    if col.name in before_state:
+                        val = before_state[col.name]
+                        if val is not None and "UUID" in str(col.type).upper():
+                            try:
+                                val = UUID(str(val))
+                            except Exception:
+                                pass
+                        elif val is not None and ("DATE" in str(col.type).upper() or "TIME" in str(col.type).upper()):
+                            try:
+                                val = datetime.fromisoformat(str(val))
+                            except Exception:
+                                pass
+                        restored_data[col.name] = val
+                restored_record = model_class(**restored_data)
+                session.add(restored_record)
+                action_text = f"Undid deletion of {entity_title}"
+            else:
+                action_text = f"Could not restore {entity_title} (no snapshot)"
+
+        elif action_type == "UPDATE":
+            rec = session.get(model_class, UUID(record_id))
+            if rec and before_state:
+                for col in model_class.__table__.columns:
+                    if col.name in before_state and col.name not in ("id", "created_at"):
+                        val = before_state[col.name]
+                        if val is not None and "UUID" in str(col.type).upper():
+                            try:
+                                val = UUID(str(val))
+                            except Exception:
+                                pass
+                        elif val is not None and ("DATE" in str(col.type).upper() or "TIME" in str(col.type).upper()):
+                            try:
+                                val = datetime.fromisoformat(str(val))
+                            except Exception:
+                                pass
+                        setattr(rec, col.name, val)
+                if hasattr(rec, "updated_at"):
+                    rec.updated_at = datetime.utcnow()
+                session.add(rec)
+                action_text = f"Undid update of {entity_title}"
+            else:
+                action_text = f"Could not restore {entity_title} (record not found or no snapshot)"
+
+        session.delete(last_action)
+        session.commit()
+        return {"success": True, "message": action_text}
+
+    except Exception as exc:
+        session.rollback()
+        return {"success": False, "message": f"Failed to undo: {str(exc)}"}
+
 # ─── [8] INSERT ENDPOINTS ──────────────────────────────────────────────────────
 @router.post("/{table_name}/insert")
 async def insert_with_file(
@@ -1127,6 +1295,16 @@ async def insert_with_file(
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     session.refresh(record)
+
+    _record_undo_action(
+        session=session,
+        user_id=current_user.id,
+        action_type="INSERT",
+        table_name=table_name,
+        record_id=str(record.id),
+        entity_title=_extract_entity_title(record, table_name),
+    )
+    session.commit()
 
     # Serialize response BEFORE blob save (blob save may corrupt session state)
     result = _serialize_record(record, table_name, session)
@@ -1443,6 +1621,16 @@ async def insert(
                 session.rollback()
                 print(f"Warning: stock decrement failed for sale transaction {sale_transaction_id}: {e}")
 
+    _record_undo_action(
+        session=session,
+        user_id=current_user.id,
+        action_type="INSERT",
+        table_name=table_name,
+        record_id=str(record.id),
+        entity_title=_extract_entity_title(record, table_name),
+    )
+    session.commit()
+
     result = _serialize_record(record, table_name, session)
     if checkout_url:
         result["checkout_url"] = checkout_url
@@ -1470,6 +1658,9 @@ async def update_by_id(
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
+
+    before_json = _serialize_row_to_json(record)
+    entity_title = _extract_entity_title(record, table_name)
 
     if table_name.lower() in ("schedule", "schedules") and "is_paid" in record_data:
         permissions = set(get_user_permissions_list(current_user, session))
@@ -1531,6 +1722,17 @@ async def update_by_id(
             session.rollback()
             raise HTTPException(status_code=500, detail=f"Failed to save client memberships: {str(e)}")
         session.refresh(record)
+
+    _record_undo_action(
+        session=session,
+        user_id=current_user.id,
+        action_type="UPDATE",
+        table_name=table_name,
+        record_id=str(record_id),
+        entity_title=entity_title,
+        before_state=before_json,
+    )
+    session.commit()
 
     return _serialize_record(record, table_name, session)
 
@@ -1905,6 +2107,9 @@ async def delete_by_id(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
+    before_json = _serialize_row_to_json(record)
+    entity_title = _extract_entity_title(record, table_name)
+
     # Remove file from disk before the DB transaction for document deletes
     if table_name.lower() in ("document", "documents"):
         if hasattr(record, "file_path") and record.file_path:
@@ -1924,6 +2129,18 @@ async def delete_by_id(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+    _record_undo_action(
+        session=session,
+        user_id=current_user.id,
+        action_type="DELETE",
+        table_name=table_name,
+        record_id=str(record_id),
+        entity_title=entity_title,
+        before_state=before_json,
+    )
+    session.commit()
+
     return {"count": 1}
 
 

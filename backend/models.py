@@ -845,6 +845,31 @@ class DocumentAssignmentRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+# ─── UNDO ACTION MODEL ────────────────────────────────────────────────────────
+class UserUndoAction(BaseModel, table=True):
+    """Stores up to 10 undoable database actions per user."""
+    __tablename__ = "user_undo_action"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    action_type: str = Field(index=True)  # "INSERT", "UPDATE", "DELETE"
+    table_name: str = Field(index=True)
+    record_id: str = Field(index=True)
+    entity_title: Optional[str] = Field(default=None)
+    before_state: Optional[str] = Field(default=None)  # JSON serialized snapshot of row
+
+
+class UserUndoActionRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    action_type: str
+    table_name: str
+    record_id: str
+    entity_title: Optional[str] = None
+    before_state: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class DocumentTag(BaseModel, table=True):
     """Company-scoped tag lookup for documents."""
     __tablename__ = "document_tag"

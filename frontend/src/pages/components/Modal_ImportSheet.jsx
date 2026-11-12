@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
 
 const DEFAULT_ROW_COUNT = 100;
@@ -156,6 +156,36 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
     el.scrollTop = dragPanRef.current.scrollTop - dy;
   };
 
+  const handlePanTouchStart = (event) => {
+    if (event.touches.length !== 1) return;
+    const target = event.target;
+    if (target.tagName === "SELECT" || target.tagName === "BUTTON") return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const touch = event.touches[0];
+    dragPanRef.current = {
+      isDragging: true,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    };
+  };
+
+  const handlePanTouchMove = (event) => {
+    const el = scrollContainerRef.current;
+    if (!el || !dragPanRef.current.isDragging || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const dx = touch.clientX - dragPanRef.current.startX;
+    const dy = touch.clientY - dragPanRef.current.startY;
+    el.scrollLeft = dragPanRef.current.scrollLeft - dx;
+    el.scrollTop = dragPanRef.current.scrollTop - dy;
+  };
+
+  const handlePanTouchEnd = () => {
+    dragPanRef.current.isDragging = false;
+  };
+
   const ensureGridSize = (requiredRows, requiredCols) => {
     setColumns((prevCols) => {
       const colCount = Math.max(prevCols.length, requiredCols);
@@ -224,13 +254,45 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
     });
   };
 
+  const getNextAvailableRowIndex = () => {
+    let lastRowWithData = -1;
+    for (let r = 0; r < rows.length; r += 1) {
+      const hasData = rows[r].some((cell) => String(cell || "").trim() !== "");
+      if (hasData) {
+        lastRowWithData = r;
+      }
+    }
+    return lastRowWithData + 1;
+  };
+
   const handleGlobalPaste = (event) => {
     const text = event.clipboardData?.getData("text/plain");
     if (!text) return;
     event.preventDefault();
     const matrix = parseClipboardTable(text);
     if (!matrix.length) return;
-    applyPastedMatrix(matrix, 0, 0);
+    const startRow = getNextAvailableRowIndex();
+    applyPastedMatrix(matrix, startRow, 0);
+  };
+
+  const handlePasteButtonClick = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) {
+        setStatus({ type: "error", message: "Clipboard is empty." });
+        return;
+      }
+      const matrix = parseClipboardTable(text);
+      if (!matrix.length) {
+        setStatus({ type: "error", message: "No data found in clipboard." });
+        return;
+      }
+      const startRow = getNextAvailableRowIndex();
+      applyPastedMatrix(matrix, startRow, 0);
+    } catch (err) {
+      console.error("Clipboard read failed:", err);
+      setStatus({ type: "error", message: "Unable to read clipboard. You can also press Ctrl+V to paste." });
+    }
   };
 
   const handleCellChange = (rowIdx, colIdx, value) => {
@@ -377,6 +439,18 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
     <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding>
       <div className="ui-component-shell" onPaste={handleGlobalPaste}>
         <div className="bulk-import-top-actions">
+          <div className="d-flex align-items-center gap-1">
+            <button
+              type="button"
+              className="align-items-center btn btn-primary d-flex gap-1"
+              onClick={handlePasteButtonClick}
+              disabled={isSaving}
+              title="Paste clipboard data"
+            >
+              <ClipboardDocumentCheckIcon className="ui-icon-4" />
+              <span>Paste</span>
+            </button>
+          </div>
           <div className="bulk-import-top-actions-group">
             <button type="button" className="btn ui-btn-outline-secondary-sm" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
               <ArrowUpIcon style={{ width: 16, height: 16 }} />
@@ -393,7 +467,16 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
         <div className="component-body">
           <div className="component-body-inner component-body-inner--flush">
-            <div ref={scrollContainerRef} className="bulk-import-grid-scroll h-100 overflow-auto" style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab" }} onMouseDown={handlePanMouseDown} onMouseMove={handlePanMouseMove}>
+            <div
+              ref={scrollContainerRef}
+              className="bulk-import-grid-scroll h-100 overflow-auto"
+              style={{ WebkitOverflowScrolling: "touch", position: "relative", cursor: "grab", touchAction: "pan-x pan-y" }}
+              onMouseDown={handlePanMouseDown}
+              onMouseMove={handlePanMouseMove}
+              onTouchStart={handlePanTouchStart}
+              onTouchMove={handlePanTouchMove}
+              onTouchEnd={handlePanTouchEnd}
+            >
               <table className="align-middle mb-0 table table-bordered table-sm" style={{ minWidth: Math.max(900, columns.length * 150) }}>
                 <colgroup>
                   <col style={{ width: 56 }} />
@@ -498,23 +581,20 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
           <div className="component-header-right"></div>
         </div>
 
-        <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
-          {status.message && <div className={`px-1 pt-0 pb-0 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
-          <div className="align-items-center d-flex gap-2 justify-content-start p-0">
-            <div className="align-items-center component-footer-left d-flex gap-1">
-              <button type="button" className="align-items-center btn btn-primary d-flex gap-1" onClick={handleImport} disabled={isSaving}>
-                <ArrowDownTrayIcon className="ui-icon-4" />
-                <span>{isSaving ? "…" : "Save"}</span>
-              </button>
-              <button type="button" className="btn ui-btn-circle-outline-secondary" onClick={onClose} disabled={isSaving} title="Cancel">
-                <XMarkIcon />
-              </button>
-              <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" onClick={handleClearGrid} disabled={isSaving}>
-                <XMarkIcon className="ui-icon-4" />
-                <span>Clear</span>
-              </button>
-            </div>
-            <div className="component-footer-right" />
+        <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column" style={{ padding: "var(--app-footer-padding-y, 0.125rem) var(--app-footer-padding-x, 0.125rem)", gap: 0 }}>
+          {status.message && <div className={`px-1 pt-0 pb-1 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
+          <div className="align-items-center component-footer-left d-flex" style={{ gap: "var(--app-footer-btn-gap, 0.25rem)" }}>
+            <button type="button" className="align-items-center btn btn-primary d-flex gap-1" onClick={handleImport} disabled={isSaving}>
+              <ArrowDownTrayIcon className="ui-icon-4" />
+              <span>{isSaving ? "…" : "Save"}</span>
+            </button>
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} disabled={isSaving} title="Cancel">
+              <XMarkIcon />
+            </button>
+            <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" onClick={handleClearGrid} disabled={isSaving}>
+              <XMarkIcon className="ui-icon-4" />
+              <span>Clear</span>
+            </button>
           </div>
         </div>
       </div>

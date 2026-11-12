@@ -1453,6 +1453,7 @@ def create_db_and_tables():
 
     # These columns are read by core service queries, so repair them before any
     # version fast path or unrelated migration can prevent the API from starting.
+    _ensure_user_undo_action_table_if_needed()
     _ensure_service_and_schedule_addons_if_needed()
     _ensure_permissiontype_enum_values_if_needed()
     _ensure_payroll_compensation_columns_if_needed()
@@ -2352,3 +2353,26 @@ def _ensure_service_recipe_if_needed():
         if "asset_duration_minutes" not in col_names:
             conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes DOUBLE PRECISION"))
             print("  + Added column service_asset.asset_duration_minutes (DOUBLE PRECISION)")
+
+
+def _ensure_user_undo_action_table_if_needed():
+    """Create user_undo_action table if it does not exist."""
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS user_undo_action (
+                    id UUID PRIMARY KEY,
+                    user_id UUID NOT NULL,
+                    action_type VARCHAR(16) NOT NULL,
+                    table_name VARCHAR(64) NOT NULL,
+                    record_id VARCHAR(64) NOT NULL,
+                    entity_title VARCHAR(255),
+                    before_state TEXT,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITHOUT TIME ZONE
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_undo_action_user_id ON user_undo_action (user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_undo_action_created_at ON user_undo_action (created_at)"))
+    except Exception as e:
+        print(f"Warning: could not ensure user_undo_action table: {e}")

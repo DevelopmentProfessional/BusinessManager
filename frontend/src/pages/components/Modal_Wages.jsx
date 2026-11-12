@@ -479,8 +479,10 @@ export default function Modal_Wages({ employees = [], onClose }) {
   // RENDER
   // ──────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-white d-flex dark:bg-gray-900 fixed flex-column inset-0 z-50">
-      {/* ── Header + tabs ── */}
+    <div className="app-modal-layer fixed inset-0 overflow-hidden z-50">
+      <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" onClick={onClose} />
+      <div className="app-modal-sheet bg-white border-gray-200 border-t bottom-0 d-flex dark:bg-gray-800 dark:border-gray-700 fixed flex-column left-0 max-h-[90vh] right-0 rounded-t-lg shadow-xl text-left w-full z-10">
+        {/* ── Header + tabs ── */}
       <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-0 px-1">
         <div className="align-items-center d-flex gap-2 mb-2">
           <BanknotesIcon className="text-muted" style={{ width: 20, height: 20 }} />
@@ -568,6 +570,7 @@ export default function Modal_Wages({ employees = [], onClose }) {
         {activeTab === "history" && <HistoryTab slipsLoading={slipsLoading} filteredHistory={filteredHistory} histSearch={histSearch} setHistSearch={setHistSearch} empMap={empMap} />}
       </div>
     </div>
+  </div>
   );
 }
 

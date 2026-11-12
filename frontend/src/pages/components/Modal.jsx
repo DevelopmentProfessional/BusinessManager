@@ -82,53 +82,24 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
-  const Overlay = <div className="bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
+  const Overlay = <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
 
-  let modalElement = null;
-
-  // ─── 2 FULLSCREEN VARIANT ──────────────────────────────────────────────────────
-  if (fullScreen) {
-    modalElement = (
-      <div className="app-modal-layer fixed inset-0" style={{ zIndex: layerZIndex }}>
-        {Overlay}
-        <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0" style={{ zIndex: layerZIndex + 1 }}>
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
-          <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}</div>
-          {footer && <ModalFooter>{footer}</ModalFooter>}
+  // ─── 2 BOTTOM-ANCHORED MODAL SHEET (Global standard: all modals float to bottom and grow upwards) ─────
+  const modalElement = (
+    <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex }}>
+      {Overlay}
+      <div
+        className="app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full"
+        style={{ zIndex: layerZIndex + 1 }}
+      >
+        {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
+        <div className={`app-modal-body app-modal-content flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
+          {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
         </div>
+        {footer && <ModalFooter>{footer}</ModalFooter>}
       </div>
-    );
-  } else if (centered) {
-    // ─── 3 CENTERED VARIANT ────────────────────────────────────────────────────────
-    modalElement = (
-      <div className="app-modal-layer fixed inset-0" style={{ zIndex: layerZIndex }}>
-        {Overlay}
-        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full" style={{ zIndex: layerZIndex + 1 }}>
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
-          </div>
-          {footer && <ModalFooter className="border-gray-200 border-t dark:border-gray-700 flex-shrink-0">{footer}</ModalFooter>}
-        </div>
-      </div>
-    );
-  } else {
-    // ─── 4 DEFAULT VARIANT (BOTTOM SHEET) ──────────────────────────────────────────
-    modalElement = (
-      <div className="app-modal-layer fixed inset-0 overflow-y-auto" style={{ zIndex: layerZIndex }}>
-        <div className="flex items-end justify-center min-h-screen">
-          {Overlay}
-          <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-screen overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full" style={{ zIndex: layerZIndex + 1 }}>
-            {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
-            <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-              {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
-            </div>
-            {footer && <ModalFooter>{footer}</ModalFooter>}
-          </div>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 
   const stackContent = (
     <ModalStackContext.Provider value={nextDepth}>
