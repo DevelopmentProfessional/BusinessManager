@@ -731,7 +731,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   return (
     <div className="ui-page-shell">
       {/* Header */}
-      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+      <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
         <h6 className="app-modal-title ui-heading-strong">{employee ? "Edit Employee" : "Add Employee"}</h6>
       </div>
 
