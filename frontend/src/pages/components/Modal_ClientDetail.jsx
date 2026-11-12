@@ -669,14 +669,13 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
             </div>
           )}
         </div>
-      </div>
 
-      {invoiceTx && (
-        <div className="fixed inset-0 z-[60]">
-          <Modal_TemplateUse page="sales" entity={invoiceTx} client={client} items={items[invoiceTx.id] || []} currentUser={currentUser} settings={appSettings} filterType="invoice" onClose={() => setInvoiceTx(null)} />
-        </div>
-      )}
-    </Modal>
+        {invoiceTx && (
+          <div className="fixed inset-0 z-[60]">
+            <Modal_TemplateUse page="sales" entity={invoiceTx} client={client} items={items[invoiceTx.id] || []} currentUser={currentUser} settings={appSettings} filterType="invoice" onClose={() => setInvoiceTx(null)} />
+          </div>
+        )}
+      </Modal>
   );
 }
 

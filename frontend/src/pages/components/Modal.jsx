@@ -114,10 +114,6 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       </div>
     </div>
   );
-        {footer && <ModalFooter>{footer}</ModalFooter>}
-      </div>
-    </div>
-  );
 
   const stackContent = (
     <ModalStackContext.Provider value={nextDepth}>

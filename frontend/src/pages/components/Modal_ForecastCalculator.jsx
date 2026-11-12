@@ -1641,8 +1641,6 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
             </div>
           </div>
         </div>
-      </div>
-    </Modal>
-  );
-  );
-}
+      </Modal>
+    );
+  }
