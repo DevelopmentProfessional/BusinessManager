@@ -38,12 +38,13 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
   const training = isTrainingMode && !compact && !isCancel;
   const displayLabel = typeof label === "string" ? buttonDisplayLabel(normalizedLabel) : normalizedLabel;
   const showText = training && displayLabel.length > 0 && !isCancel;
+  const isIconOnly = !showText;
   const tooltipLabel = titleProp ?? (normalizedLabel || label);
   const iconClass = "app-icon flex-shrink-0";
   const variantClass = variant ? VARIANT_CLASS[variant] || variant : "";
   const effectiveClass = training ? adjustTrainingMargins(className) : className;
 
-  const cancelInlineStyle = isCancel
+  const iconOnlyStyle = isIconOnly
     ? {
         width: "var(--app-btn-height, 2rem)",
         height: "var(--app-btn-height, 2rem)",
@@ -58,7 +59,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       }
     : undefined;
 
-  const mergedStyle = cancelInlineStyle ? { ...cancelInlineStyle, ...(rest.style || {}) } : rest.style;
+  const mergedStyle = iconOnlyStyle ? { ...iconOnlyStyle, ...(rest.style || {}) } : rest.style;
 
   return (
     <button
@@ -70,8 +71,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       style={mergedStyle}
       className={`btn flex-shrink-0 d-flex align-items-center
         app-btn app-action-btn
-        ${showText ? "" : "app-action-btn--icon-only"}
-        ${isCancel ? "btn-circle btn-cancel-circle p-0 justify-content-center" : training ? (showText ? "rounded-pill ps-0 pe-0 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
+        ${isIconOnly ? "btn-circle app-action-btn--icon-only rounded-circle p-0 justify-content-center" : "rounded-pill ps-2 pe-2 gap-1 justify-content-start"}
         ${variantClass} ${effectiveClass}
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}

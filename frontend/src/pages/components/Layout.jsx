@@ -254,15 +254,24 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Navigation toggle — icon-only in every view mode */}
+      {/* Navigation toggle — unique bottom-right button */}
       <button
         type="button"
         onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
-        title={expandedMenuOpen ? "Close menu" : "Open menu"}
-        aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
-        className={classNames(expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary", "btn-app-nav app-nav-bottom-toggle app-action-btn--icon-only position-absolute shadow-lg d-flex align-items-center rounded-circle position-relative", "p-0 justify-content-center")}
+        title={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        className={classNames(
+          expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
+          "btn-app-nav app-nav-bottom-toggle shadow-lg d-flex align-items-center justify-content-center p-0"
+        )}
         style={{
           zIndex: APP_NAV_Z_INDEX,
+          width: "var(--app-btn-nav-width, 2.25rem)",
+          height: "var(--app-btn-height, 2rem)",
+          minWidth: "var(--app-btn-nav-width, 2.25rem)",
+          maxWidth: "var(--app-btn-nav-width, 2.25rem)",
+          borderRadius: "50%",
+          aspectRatio: "1 / 1",
           backgroundColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
           color: expandedMenuOpen ? "var(--bs-white)" : "var(--bs-body-color)",
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
