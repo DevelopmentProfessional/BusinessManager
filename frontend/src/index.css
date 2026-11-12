@@ -1689,10 +1689,10 @@ footer[aria-label="Actions"] {
 }
 
 /* Page footers — every toolbar button same width (TextSize sets --app-btn-width) */
-.app-footer-search .btn.app-action-btn.rounded-circle,
-.schedule-footer .btn.app-action-btn.rounded-circle,
-.profile-footer-nav .btn.app-action-btn.rounded-circle,
-footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle {
+.app-footer-search .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.schedule-footer .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.profile-footer-nav .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   max-width: var(--app-btn-width) !important;
@@ -1746,7 +1746,7 @@ footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
   gap: 0.125rem !important;
 }
 
-.btn.app-action-btn.rounded-circle {
+.btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   max-width: var(--app-btn-width) !important;
@@ -2227,7 +2227,7 @@ body.training-mode .btn.rounded-pill .text-nowrap {
 }
 
 /* Icon-only / circular toolbar buttons */
-.btn.rounded-circle {
+.btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   height: var(--app-btn-height) !important;
@@ -2366,28 +2366,28 @@ body.training-mode .btn.settings-accordion-btn {
   margin: 0 !important;
 }
 
-.app-footer-search .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-.schedule-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-.profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-.modal-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-.flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-.flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-[class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]) {
+.app-footer-search .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.schedule-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.modal-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+[class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   padding: 0 !important;
   width: var(--app-btn-width) !important;
   height: var(--app-btn-height) !important;
   min-width: var(--app-btn-width) !important;
 }
 
-body.training-mode .app-footer-search .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode .schedule-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode .profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode .modal-footer .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode .flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode .flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]),
-body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.ui-btn-circle-outline-secondary):not([title="Cancel"]):not([aria-label="Cancel"]) {
+body.training-mode .app-footer-search .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .schedule-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .modal-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   max-width: var(--app-btn-width) !important;
@@ -2398,15 +2398,29 @@ body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.u
 
 /* Circle buttons (settings + cancel): always icon-only circle; size DOES NOT follow compact / training-mode toggle */
 .btn-circle,
+.btn-cancel-circle,
 .ui-btn-circle-outline-secondary,
-.btn[title="Cancel"],
-.btn[aria-label="Cancel"],
-.btn[title="Close"],
-.btn[aria-label="Close"] {
+.btn[title*="Cancel" i],
+.btn[aria-label*="Cancel" i],
+.btn[title*="Close" i],
+.btn[aria-label*="Close" i],
+.btn.app-action-btn.btn-circle,
+.btn.app-action-btn.btn-cancel-circle,
+body.training-mode .btn-circle,
+body.training-mode .btn-cancel-circle,
+body.training-mode [class*="footer"] .btn.btn-circle,
+body.training-mode [class*="footer"] .btn.btn-cancel-circle,
+body.training-mode [class*="footer"] .btn[title*="Cancel" i],
+body.training-mode [class*="footer"] .btn[aria-label*="Cancel" i],
+body.training-mode [class*="footer"] .btn[title*="Close" i],
+body.training-mode [class*="footer"] .btn[aria-label*="Close" i] {
   width: var(--app-btn-height, 2rem) !important;
   height: var(--app-btn-height, 2rem) !important;
   min-width: var(--app-btn-height, 2rem) !important;
   max-width: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
   border-radius: 50% !important;
   aspect-ratio: 1 / 1 !important;
   display: inline-flex !important;
@@ -2418,22 +2432,24 @@ body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.u
 }
 
 .btn-circle svg,
+.btn-cancel-circle svg,
 .ui-btn-circle-outline-secondary svg,
-.btn[title="Cancel"] svg,
-.btn[aria-label="Cancel"] svg,
-.btn[title="Close"] svg,
-.btn[aria-label="Close"] svg {
+.btn[title*="Cancel" i] svg,
+.btn[aria-label*="Cancel" i] svg,
+.btn[title*="Close" i] svg,
+.btn[aria-label*="Close" i] svg {
   width: var(--app-icon-size, 1rem) !important;
   height: var(--app-icon-size, 1rem) !important;
   flex-shrink: 0 !important;
 }
 
 .btn-circle span,
+.btn-cancel-circle span,
 .ui-btn-circle-outline-secondary span,
-.btn[title="Cancel"] span,
-.btn[aria-label="Cancel"] span,
-.btn[title="Close"] span,
-.btn[aria-label="Close"] span {
+.btn[title*="Cancel" i] span,
+.btn[aria-label*="Cancel" i] span,
+.btn[title*="Close" i] span,
+.btn[aria-label*="Close" i] span {
   display: none !important;
 }
 
@@ -3687,19 +3703,36 @@ select.form-select {
 
 /* ── Circle buttons (settings + cancel) ──
    Always icon-only circle; size DOES NOT follow compact / training-mode toggle. */
-.btn-circle {
+.btn-circle,
+.btn-cancel-circle,
+.ui-btn-circle-outline-secondary,
+.btn[title*="Cancel" i],
+.btn[aria-label*="Cancel" i],
+.btn[title*="Close" i],
+.btn[aria-label*="Close" i] {
   width: 2rem !important;
   height: 2rem !important;
   min-width: 2rem !important;
+  max-width: 2rem !important;
+  min-height: 2rem !important;
+  max-height: 2rem !important;
+  flex: 0 0 2rem !important;
   border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
 }
 
-.btn-circle svg {
+.btn-circle svg,
+.btn-cancel-circle svg,
+.ui-btn-circle-outline-secondary svg,
+.btn[title*="Cancel" i] svg,
+.btn[aria-label*="Cancel" i] svg,
+.btn[title*="Close" i] svg,
+.btn[aria-label*="Close" i] svg {
   width: 1rem !important;
   height: 1rem !important;
   flex-shrink: 0;
@@ -3812,6 +3845,25 @@ select.form-select {
 .template-editor-toolbar-shell .editor-toolbar {
   min-width: 0;
   max-width: 100%;
+}
+
+/* Floating through-layer image for templates (independent overlay layer, zero text displacement) */
+.image-through-container,
+.image-resizable-root.image-through-layer {
+  display: inline-block !important;
+  position: relative !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+}
+
+.image-through-inner {
+  user-select: none;
+  touch-action: none;
 }
 
 .template-editor-toolbar-shell .editor-toolbar-row {
