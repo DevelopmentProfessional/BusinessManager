@@ -291,7 +291,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   const showEditor = editPanelOpen;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding fullScreen>
+    <Modal isOpen={isOpen} onClose={onClose} noPadding>
       <div className="ui-component-shell">
         <div className="component-header">
           <div className="component-header-left">
@@ -310,11 +310,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
           <div className="component-body-inner">
           {error && !showEditor && <div className="mb-2 small text-danger">{error}</div>}
 
-          {loading ? (
-            <div className="p-1 small text-muted">Loading…</div>
-          ) : (
+          {loading ? (<div className="p-1 small text-muted">Loading…</div>) : (
             <div className="border rounded table-responsive">
-              <table className="align-middle mb-0 table table-hover table-sm">
+              <table className="align-middle mb-0 table table-hover table-sm text-size-small" style={{ fontSize: "var(--app-text-size-small, 0.75rem)" }}>
                 <thead className="table-light">
                   <tr>
                     <th>Name</th>
@@ -390,7 +388,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
         </div>
 
         {showEditor && (
-          <div className="bg-white border-start bottom-0 d-flex dark:bg-gray-900 end-0 flex-column position-absolute shadow-lg top-0" style={{ width: "min(100%, 22rem)", zIndex: 10 }}>
+          <div className="bg-white border-start bottom-0 d-flex dark:bg-gray-900 end-0 flex-column position-absolute shadow-lg top-0 text-size-small" style={{ width: "min(100%, 22rem)", zIndex: 10, fontSize: "var(--app-text-size-small, 0.75rem)" }}>
             <div className="align-items-center border-bottom d-flex flex-shrink-0 gap-2 justify-content-between p-0">
               <span className="fw-semibold ui-text-sm">{editingId ? "Edit rule" : "New rule"}</span>
 

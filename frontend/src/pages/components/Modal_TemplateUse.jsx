@@ -451,8 +451,10 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0 z-50">
-      {/* Header */}
+    <div className="app-modal-layer fixed inset-0 overflow-hidden z-50">
+      <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" onClick={onClose} />
+      <div className="app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-900 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] right-0 rounded-t-lg shadow-xl text-left w-full z-10">
+        {/* Header */}
       <div className="align-items-center bg-white border-b border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 justify-content-between px-3 py-2">
         <div className="align-items-center d-flex gap-2 min-w-0">
           <h2 className="app-modal-title text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
@@ -598,6 +600,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
           </div>
         </div>
       </div>
+    </div>
 
       {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
 
