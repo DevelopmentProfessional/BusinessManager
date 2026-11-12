@@ -1669,7 +1669,7 @@ export default function Schedule() {
       </Gate_Permission>
 
       {/* Overlap bottom modal */}
-      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} noPadding={true} fullScreen={true} contentGravity="bottom">
+      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} title="Overlapping Appointments" contentGravity="bottom">
         <div className="d-flex flex-column justify-content-end">
           <div className="flex-shrink-0 overlap-event-list">
             {[...(overlapEvents || [])]

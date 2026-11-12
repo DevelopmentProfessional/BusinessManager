@@ -1672,8 +1672,8 @@ export default function Reports() {
       {/* Forecast Calculator Modal */}
       <Modal_ForecastCalculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
 
-      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} fullScreen noPadding>
-        <div className="component">
+      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} noPadding>
+        <div className="ui-component-shell">
           <div className="component-header">
             <div className="component-header-left">Financial Controls</div>
             <div className="component-header-center" />

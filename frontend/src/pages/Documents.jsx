@@ -1233,10 +1233,9 @@ export default function Documents() {
       <Modal_Edit_Document isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} document={editDoc} onSave={handleSaveEdit} />
 
       {/* History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} noPadding={true} fullScreen={true} contentGravity="bottom">
+      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title={historyDoc ? `History: ${historyDoc.original_filename}` : "History"} contentGravity="bottom">
         {isHistoryOpen && historyDoc && (
           <div className="space-y-4">
-            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg">History: {historyDoc.original_filename}</h3>
             <div className="border dark:border-gray-700 max-h-[40vh] overflow-auto rounded">
               <table className="dark:divide-gray-700 divide-gray-200 divide-y min-w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
@@ -1294,10 +1293,9 @@ export default function Documents() {
       </Modal>
 
       {/* Sign Document Modal */}
-      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} noPadding={true} fullScreen={true} contentGravity="top">
+      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} title="Sign Document" contentGravity="top">
         {isSignOpen && signDoc && (
           <div className="space-y-4">
-            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg">Sign Document</h3>
             <p className="dark:text-gray-400 text-gray-600 text-sm">{signDoc.original_filename}</p>
 
             {signaturePreview ? (
@@ -1348,15 +1346,9 @@ export default function Documents() {
           setIsCategoriesOpen(false);
           cancelEditCategory();
         }}
-        noPadding={true}
-        fullScreen={true}
+        title="Manage Categories"
       >
         <div className="bg-white d-flex dark:bg-gray-900 flex-column">
-          {/* Header */}
-          <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 flex-shrink-0 p-0">
-            <h6 className="ui-heading-strong">Manage Categories</h6>
-          </div>
-
           {/* Scrollable list */}
           <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
             {categories.length === 0 ? (
