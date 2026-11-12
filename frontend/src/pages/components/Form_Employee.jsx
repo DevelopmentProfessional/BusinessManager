@@ -51,6 +51,7 @@ import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Widget_Signature from "./Widget_Signature";
 import Modal_Pay_Employee from "./Modal_EmployeePay";
+import Modal from "./Modal";
 import Dropdown_Custom from "./Dropdown_Custom";
 import useStore from "../../services/useStore";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
@@ -1981,111 +1982,101 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       />
 
       {/* Pay Slip Detail Modal */}
-      {selectedSlip && (
-        <div
-          className="d-block modal"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)", zIndex: 2000 }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setSelectedSlip(null);
-          }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-sm">
-            <div className="modal-content" id="pay-slip-print-area-emp">
-              <div className="modal-header py-0">
-                <h6 className="mb-0 modal-title">Pay Slip</h6>
-                <button type="button" className="btn-close" onClick={() => setSelectedSlip(null)} />
+      <Modal
+        isOpen={Boolean(selectedSlip)}
+        onClose={() => setSelectedSlip(null)}
+        title="Pay Slip"
+        footer={
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            <button
+              type="button"
+              className="align-items-center btn btn-primary btn-sm d-flex gap-2"
+              onClick={() => {
+                const el = document.getElementById("pay-slip-print-area-emp");
+                if (el) {
+                  const w = window.open("", "_blank");
+                  w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-1">' + el.innerHTML + "</body></html>");
+                  w.document.close();
+                  w.focus();
+                  setTimeout(() => {
+                    w.print();
+                  }, 500);
+                }
+              }}
+            >
+              <PrinterIcon className="ui-icon-4" />
+              <span>Print</span>
+            </button>
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={() => setSelectedSlip(null)} title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+        }
+      >
+        {selectedSlip && (
+          <div id="pay-slip-print-area-emp" className="p-1" style={{ fontSize: "0.85rem" }}>
+            <div className="mb-3 text-center">
+              <div className="fs-6 fw-bold">
+                {employee?.first_name} {employee?.last_name}
               </div>
-              <div className="modal-body" style={{ fontSize: "0.85rem" }}>
-                <div className="mb-3 text-center">
-                  <div className="fs-6 fw-bold">
-                    {employee?.first_name} {employee?.last_name}
-                  </div>
-                  <div className="ui-small-muted">{employee?.role}</div>
-                </div>
-                <hr className="my-2" />
-                <div className="g-1 mb-2 row">
-                  <div className="col-6 ui-text-muted">Pay Period</div>
-                  <div className="col-6 ui-text-end">
-                    {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
-                  </div>
-                  <div className="col-6 ui-text-muted">Type</div>
-                  <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
-                    {selectedSlip.employment_type || "—"}
-                  </div>
-                  {selectedSlip.employment_type === "hourly" && (
-                    <>
-                      <div className="col-6 ui-text-muted">Hours</div>
-                      <div className="col-6 ui-text-end">{selectedSlip.hours_worked ?? "—"}</div>
-                      <div className="col-6 ui-text-muted">Rate</div>
-                      <div className="col-6 ui-text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
-                    </>
-                  )}
-                  <div className="col-6 ui-text-muted">Pay Frequency</div>
-                  <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
-                    {selectedSlip.pay_frequency || "—"}
-                  </div>
-                </div>
-                <hr className="my-2" />
-                <div className="g-1 row">
-                  <div className="col-6 ui-text-muted">Gross Pay</div>
-                  <div className="col-6 ui-text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                  {selectedSlip.base_pay_snapshot != null && (
-                    <>
-                      <div className="col-6 small text-muted">Service Revenue</div>
-                      <div className="col-6 small text-end">${Number(selectedSlip.service_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                      <div className="col-6 small text-muted">Base Pay</div>
-                      <div className="col-6 small text-end">${Number(selectedSlip.base_pay_snapshot ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                      <div className="col-6 small text-muted">Compensation</div>
-                      <div className="col-6 small text-end">{Number(selectedSlip.compensation_percentage_snapshot ?? 0).toFixed(2)}%</div>
-                    </>
-                  )}
-                  {selectedSlip.insurance_plan_name && (
-                    <>
-                      <div className="col-6 small text-muted">Insurance ({selectedSlip.insurance_plan_name})</div>
-                      <div className="col-6 small text-danger text-end">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                    </>
-                  )}
-                  {(selectedSlip.other_deductions ?? 0) > 0 && (
-                    <>
-                      <div className="col-6 small text-muted">Other Deductions</div>
-                      <div className="col-6 small text-danger text-end">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                    </>
-                  )}
-                  <div className="border-top col-6 fw-bold mt-1 pt-1">Net Pay</div>
-                  <div className="border-top col-6 fw-bold mt-1 pt-1 text-end text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                </div>
-                {selectedSlip.notes && <div className="mt-2 small text-muted">Notes: {selectedSlip.notes}</div>}
+              <div className="ui-small-muted">{employee?.role}</div>
+            </div>
+            <hr className="my-2" />
+            <div className="g-1 mb-2 row">
+              <div className="col-6 ui-text-muted">Pay Period</div>
+              <div className="col-6 ui-text-end">
+                {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
               </div>
-              <div className="modal-footer py-0">
-                <button
-                  type="button"
-                  className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2"
-                  onClick={() => {
-                    const el = document.getElementById("pay-slip-print-area-emp");
-                    if (el) {
-                      const w = window.open("", "_blank");
-                      w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-1">' + el.innerHTML + "</body></html>");
-                      w.document.close();
-                      w.focus();
-                      setTimeout(() => {
-                        w.print();
-                      }, 500);
-                    }
-                  }}
-                >
-                  <PrinterIcon className="ui-icon-4" />
-                  <span>Print</span>
-                </button>
-                <button type="button" className="align-items-center btn btn-secondary btn-sm d-flex gap-2" onClick={() => setSelectedSlip(null)}>
-                  <CheckCircleIcon className="ui-icon-4" />
-                  <span>Close</span>
-                </button>
+              <div className="col-6 ui-text-muted">Type</div>
+              <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
+                {selectedSlip.employment_type || "—"}
+              </div>
+              {selectedSlip.employment_type === "hourly" && (
+                <>
+                  <div className="col-6 ui-text-muted">Hours</div>
+                  <div className="col-6 ui-text-end">{selectedSlip.hours_worked ?? "—"}</div>
+                  <div className="col-6 ui-text-muted">Rate</div>
+                  <div className="col-6 ui-text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                </>
+              )}
+              <div className="col-6 ui-text-muted">Pay Frequency</div>
+              <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
+                {selectedSlip.pay_frequency || "—"}
               </div>
             </div>
+            <hr className="my-2" />
+            <div className="g-1 row">
+              <div className="col-6 ui-text-muted">Gross Pay</div>
+              <div className="col-6 ui-text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              {selectedSlip.base_pay_snapshot != null && (
+                <>
+                  <div className="col-6 small text-muted">Service Revenue</div>
+                  <div className="col-6 small text-end">${Number(selectedSlip.service_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="col-6 small text-muted">Base Pay</div>
+                  <div className="col-6 small text-end">${Number(selectedSlip.base_pay_snapshot ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="col-6 small text-muted">Compensation</div>
+                  <div className="col-6 small text-end">{Number(selectedSlip.compensation_percentage_snapshot ?? 0).toFixed(2)}%</div>
+                </>
+              )}
+              {selectedSlip.insurance_plan_name && (
+                <>
+                  <div className="col-6 small text-muted">Insurance ({selectedSlip.insurance_plan_name})</div>
+                  <div className="col-6 small text-danger text-end">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </>
+              )}
+              {(selectedSlip.other_deductions ?? 0) > 0 && (
+                <>
+                  <div className="col-6 small text-muted">Other Deductions</div>
+                  <div className="col-6 small text-danger text-end">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </>
+              )}
+              <div className="border-top col-6 fw-bold mt-1 pt-1">Net Pay</div>
+              <div className="border-top col-6 fw-bold mt-1 pt-1 text-end text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            </div>
+            {selectedSlip.notes && <div className="mt-2 small text-muted">Notes: {selectedSlip.notes}</div>}
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

@@ -219,9 +219,7 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
               <ShoppingCartIcon className="ui-icon-5" />
               Add
             </button>
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
               <XMarkIcon />
             </button>
           </div>

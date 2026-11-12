@@ -93,22 +93,18 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex }}>
       {Overlay}
       <div
-        className="app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full"
+        className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full ${
+          fullScreen ? "h-full max-h-screen rounded-none app-modal-sheet--fullscreen" : "max-h-[90vh] rounded-t-lg"
+        }`}
         style={{ zIndex: layerZIndex + 1 }}
       >
         {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
         <div
-          className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar ${
-            title || !noPadding ? "overflow-y-auto p-1" : "flex flex-col min-h-0 flex-1 overflow-hidden p-0"
+          className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${
+            noPadding ? "p-0" : "p-1"
           }`}
         >
-          {noPadding ? (
-            children
-          ) : contentGravity === "bottom" ? (
-            <div className={`${gravityClass} text-gray-900 dark:text-gray-100 flex-1 flex flex-col min-h-0`}>{children}</div>
-          ) : (
-            <div className="dark:text-gray-100 text-gray-900 flex-1 flex flex-col min-h-0">{children}</div>
-          )}
+          {children}
         </div>
         {footer && <ModalFooter>{footer}</ModalFooter>}
       </div>

@@ -291,29 +291,37 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   const showEditor = editPanelOpen;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding>
-      <div className="ui-component-shell">
-        <div className="component-header">
-          <div className="component-header-left">
-            <TagIcon className="app-icon me-1 text-primary" />
-            Discount Rules
-          </div>
-          <div className="component-header-center"></div>
-          <div className="component-header-right">
-            <button type="button" className="btn btn-primary btn-sm" onClick={startNew}>
-              New
-            </button>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <span className="align-items-center d-flex">
+          <TagIcon className="app-icon me-1 text-primary" />
+          Discount Rules
+        </span>
+      }
+      headerActions={
+        <button type="button" className="btn btn-primary btn-sm" onClick={startNew}>
+          New
+        </button>
+      }
+      footer={
+        <div className="component-footer-left d-flex align-items-center gap-1">
+          <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
+            <XMarkIcon />
+          </button>
         </div>
+      }
+    >
+      <div className="p-1">
+        {error && !showEditor && <div className="mb-2 small text-danger">{error}</div>}
 
-        <div className="component-body">
-          <div className="component-body-inner">
-          {error && !showEditor && <div className="mb-2 small text-danger">{error}</div>}
-
-          {loading ? (<div className="p-1 small text-muted">Loading…</div>) : (
-            <div className="border rounded table-responsive">
-              <table className="align-middle mb-0 table table-hover table-sm text-size-small" style={{ fontSize: "var(--app-text-size-small, 0.75rem)" }}>
-                <thead className="table-light">
+        {loading ? (
+          <div className="p-1 small text-muted">Loading…</div>
+        ) : (
+          <div className="border rounded table-responsive">
+            <table className="align-middle mb-0 table table-hover table-sm text-size-small" style={{ fontSize: "var(--app-text-size-small, 0.75rem)" }}>
+              <thead className="table-light">
                   <tr>
                     <th>Name</th>
 
@@ -374,17 +382,6 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               </table>
             </div>
           )}
-          </div>{/* /component-body-inner */}
-        </div>{/* /component-body */}
-
-        <div className="component-footer">
-          <div className="component-footer-left"></div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
         </div>
 
         {showEditor && (
@@ -514,7 +511,6 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
             </div>
           </div>
         )}
-      </div>
-    </Modal>
+      </Modal>
   );
 }

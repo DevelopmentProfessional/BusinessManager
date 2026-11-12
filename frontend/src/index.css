@@ -870,15 +870,14 @@ table::-webkit-scrollbar,
 .app-modal-body,
 .app-modal-content,
 .component-body,
-.component-body-inner,
-.ui-page-shell > div:not(:first-child):not(:last-child) {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+.component-body-inner {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   touch-action: pan-y !important;
   -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: contain !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
@@ -886,8 +885,7 @@ table::-webkit-scrollbar,
 .app-modal-body::-webkit-scrollbar,
 .app-modal-content::-webkit-scrollbar,
 .component-body::-webkit-scrollbar,
-.component-body-inner::-webkit-scrollbar,
-.ui-page-shell > div:not(:first-child):not(:last-child)::-webkit-scrollbar {
+.component-body-inner::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -1265,6 +1263,8 @@ table::-webkit-scrollbar,
 /* Ensure modal headers stay fixed at top when scrolling */
 .app-modal-header,
 .component-header,
+.ui-modal-header,
+.ui-page-shell > .app-modal-header,
 .ui-page-shell > .border-bottom,
 .ui-page-shell > div:first-child:has(.app-modal-title),
 .ui-page-shell > div:first-child:has(.ui-heading-strong) {
@@ -1275,10 +1275,40 @@ table::-webkit-scrollbar,
   background: var(--bs-body-bg) !important;
 }
 
+/* Ensure inner scrollable content inside shells scrolls smoothly */
+.ui-component-shell > .component-body,
+.ui-component-shell > .component-body-inner,
+.ui-page-shell > .component-body,
+.ui-page-shell > form,
+.ui-page-shell > div.overflow-auto,
+.ui-page-shell > div[class*="overflow-auto"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.ui-component-shell > .component-body::-webkit-scrollbar,
+.ui-component-shell > .component-body-inner::-webkit-scrollbar,
+.ui-page-shell > .component-body::-webkit-scrollbar,
+.ui-page-shell > form::-webkit-scrollbar,
+.ui-page-shell > div.overflow-auto::-webkit-scrollbar,
+.ui-page-shell > div[class*="overflow-auto"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Ensure modal footers stay fixed at bottom when scrolling */
 .app-modal-footer,
 .modal-footer,
 .component-footer,
+.ui-modal-footer,
+.ui-page-shell > .app-modal-footer,
 .ui-page-shell > .app-form-footer,
 .ui-page-shell > .ui-form-footer-shell,
 .ui-page-shell > div:last-child:has(.btn) {

@@ -558,14 +558,12 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
         </div>
         {/* /component-body */}
         <div className="component-footer">
-          <div className="component-footer-left">
+          <div className="component-footer-left d-flex align-items-center gap-1">
             <button type="submit" className="align-items-center btn btn-primary d-inline-flex gap-1" disabled={saving}>
               <CheckIcon className="app-icon" aria-hidden="true" />
               {saving ? "Saving…" : "Save"}
             </button>
-          </div>
-          <div className="component-footer-center">
-            <button type="button" className="btn ui-btn-circle-outline-secondary" onClick={onClose} title="Cancel">
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} title="Cancel">
               <XMarkIcon />
             </button>
           </div>

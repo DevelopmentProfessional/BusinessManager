@@ -76,6 +76,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const [showPagesDropup, setShowPagesDropup] = useState(false);
   const [showInsertDropup, setShowInsertDropup] = useState(false);
   const [editorInstance, setEditorInstance] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const editorRef = useRef(null);
   const originalPages = useMemo(() => {
@@ -237,6 +238,33 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           <div className="component-header-right"></div>
         </div>
 
+        {/* ── Zoom Range Bar ─────────────────────────────────────────────────── */}
+        <div className="align-items-center bg-gray-50 border-bottom border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 gap-2 px-3 py-1 w-100">
+          <span className="text-muted small text-nowrap" style={{ fontSize: "0.75rem", minWidth: "3.5rem" }}>
+            Zoom: {Math.round(zoomLevel * 100)}%
+          </span>
+          <input
+            type="range"
+            min="0.5"
+            max="2"
+            step="0.05"
+            value={zoomLevel}
+            onChange={(e) => setZoomLevel(parseFloat(e.target.value) || 1)}
+            className="flex-grow-1 form-range"
+            title={`Zoom: ${Math.round(zoomLevel * 100)}%`}
+            style={{ cursor: "pointer" }}
+          />
+          <button
+            type="button"
+            onClick={() => setZoomLevel(1)}
+            className="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+            title="Reset zoom to 100%"
+            style={{ fontSize: "0.75rem" }}
+          >
+            Reset
+          </button>
+        </div>
+
         {/* ── Body ───────────────────────────────────────────────────────────── */}
         <div className="component-body">
           <div className="component-body-inner template-editor-body">
@@ -314,7 +342,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               )}
 
               {/* Rich text editor */}
-              <div className="flex-1 overflow-hidden p-0 template-editor-richtext-wrap">
+              <div className="flex-1 overflow-hidden p-0 template-editor-richtext-wrap" style={{ zoom: zoomLevel }}>
                 <div className="border border-gray-300 dark:border-gray-600 h-full overflow-hidden rounded">
                   <Suspense fallback={<div className="flex h-full items-center justify-center text-gray-500 text-sm">Loading editor…</div>}>
                     <Editor_RichText ref={editorCallbackRef} content={content} onChange={setContent} />
@@ -448,8 +476,8 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
 
           {/* Row 3: save/cancel */}
-          <div className=" border-top d-flex gap-1 p-0">
-            <div className="component-footer-left">
+          <div className="border-top d-flex gap-1 p-0">
+            <div className="component-footer-left d-flex align-items-center gap-1">
               <button type="button" onClick={handleSave} className="align-items-center btn btn-primary btn-sm d-flex gap-1" disabled={saving} title="Save Template">
                 {saving ? (
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -461,9 +489,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 )}
                 <span className="d-none d-sm-inline">{saving ? "Saving…" : isNew ? "Add" : "Save"}</span>
               </button>
-            </div>
-            <div className="component-footer-center">
-              <button type="button" className="btn ui-btn-circle-outline-secondary" onClick={onClose} disabled={saving} title="Cancel">
+              <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} disabled={saving} title="Cancel">
                 <XMarkIcon />
               </button>
             </div>

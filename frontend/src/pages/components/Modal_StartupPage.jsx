@@ -130,9 +130,7 @@ export default function Modal_StartupPage({
               <CheckIcon style={{ width: 16, height: 16 }} />
               {saving ? "Saving…" : "Save"}
             </button>
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={handleClose} disabled={saving} className="btn ui-btn-circle-outline-secondary" title="Close">
+            <button type="button" onClick={handleClose} disabled={saving} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
               <XMarkIcon />
             </button>
           </div>
