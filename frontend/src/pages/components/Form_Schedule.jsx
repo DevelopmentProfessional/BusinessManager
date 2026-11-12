@@ -957,7 +957,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
               {/* [Task Description — full width textarea] */}
               <div className="form-floating">
-                <textarea id="task_notes" name="notes" value={formData.notes} onChange={handleChange} className="form-control ui-control-sm" placeholder="Task details" style={{ minHeight: "4rem", resize: "vertical" }} />
+                <textarea id="task_notes" name="notes" rows={6} value={formData.notes} onChange={handleChange} className="ui-description-textarea form-control ui-control-sm" placeholder="Task details" style={{ minHeight: "10.5rem", resize: "vertical" }} />
                 <label htmlFor="task_notes">Task Description</label>
               </div>
             </>

@@ -761,7 +761,7 @@ export default function Clients() {
                 closeOnSelect
               />
             </div>
-            <textarea className="ui-description-textarea form-control form-control-sm" placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
+            <textarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
             <label className="align-items-center d-flex gap-2 small">
               <input type="checkbox" checked={membershipForm.is_active} onChange={(e) => setMembershipForm((p) => ({ ...p, is_active: e.target.checked }))} />
               Active

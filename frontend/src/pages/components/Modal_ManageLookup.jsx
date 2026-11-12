@@ -82,7 +82,7 @@ export default function Modal_ManageLookup({
       <div className="d-flex flex-column gap-3">
         <div className="border d-flex flex-column gap-2 p-0 ui-pill-container">
           <input type="text" className="form-control ui-control-sm" placeholder={`${entityLabel.charAt(0).toUpperCase()}${entityLabel.slice(1)} name`} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
-          <textarea className="ui-description-textarea form-control form-control-sm" placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
+          <textarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
           <div className="d-flex gap-2">
             <button type="button" className="align-items-center btn btn-primary btn-sm d-flex gap-2" onClick={handleSave} disabled={saving}>
               <CheckCircleIcon className="ui-icon-4" />
