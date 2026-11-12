@@ -872,9 +872,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <label htmlFor="reports_to" className="form-label ui-form-label-sm">
-                        Supervisor
-                      </label>
                       <Dropdown_Custom
                         id="reports_to"
                         name="reports_to"
@@ -887,9 +884,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       />
                     </div>
                     <div className="col-md-6">
-                      <label htmlFor="role_id" className="form-label ui-form-label-sm">
-                        Assigned Role
-                      </label>
                       <Dropdown_Custom
                         id="role_id"
                         name="role_id"
@@ -1534,13 +1528,33 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
                       <div className="col-md-6">
                         <div className="form-floating">
-                          <input type="number" id="base_pay" value={employeePaySchedule.base_pay ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
+                          <input
+                            type="number"
+                            id="base_pay"
+                            value={employeePaySchedule.base_pay ?? 0}
+                            onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))}
+                            className="form-control ui-control-sm"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                          />
                           <label htmlFor="base_pay">Base Pay ($)</label>
                         </div>
                       </div>
                       <div className="col-md-6">
                         <div className="form-floating position-relative">
-                          <input type="number" id="compensation_percentage" value={employeePaySchedule.compensation_percentage ?? 0} onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))} className="form-control ui-control-sm" placeholder="0" step="0.01" min="0" max="100" style={{ paddingRight: "2.5rem" }} />
+                          <input
+                            type="number"
+                            id="compensation_percentage"
+                            value={employeePaySchedule.compensation_percentage ?? 0}
+                            onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))}
+                            className="form-control ui-control-sm"
+                            placeholder="0"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            style={{ paddingRight: "2.5rem" }}
+                          />
                           <label htmlFor="compensation_percentage">Compensation (%)</label>
                           <button
                             type="button"
@@ -1558,11 +1572,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             ?
                           </button>
                           {showCompensationHelp && (
-                            <div
-                              className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start"
-                              onMouseEnter={() => setShowCompensationHelp(true)}
-                              onMouseLeave={() => setShowCompensationHelp(false)}
-                            >
+                            <div className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start" onMouseEnter={() => setShowCompensationHelp(true)} onMouseLeave={() => setShowCompensationHelp(false)}>
                               <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">Service Compensation</div>
                               <div className="dark:text-gray-300 small text-gray-700">Base pay is guaranteed. Compensation applies only to paid service revenue above twice the base pay.</div>
                             </div>
@@ -1837,10 +1847,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
       {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
       {/* Footer: Two-row setup (Row 1: Tabs scrollable, Row 2: Save & Cancel) */}
-      <div
-        className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell d-flex flex-column align-items-stretch"
-        style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-      >
+      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell d-flex flex-column align-items-stretch" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
         {/* Row 1: Tab Navigation (Horizontally scrollable with no visible scrollbar) */}
         <div
           className="d-flex flex-row gap-1 overflow-x-auto no-scrollbar w-100 py-1"
@@ -1887,10 +1894,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   className="ui-control-sm"
                   value={newPermission.page}
                   onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))}
-                  options={[
-                    { value: "", label: "Select Page" },
-                    ...PAGE_OPTION_GROUPS.flatMap((group) => group.options.map((option) => ({ value: option.value, label: `${group.label} - ${option.label}` }))),
-                  ]}
+                  options={[{ value: "", label: "Select Page" }, ...PAGE_OPTION_GROUPS.flatMap((group) => group.options.map((option) => ({ value: option.value, label: `${group.label} - ${option.label}` })))]}
                   placeholder="Select Page"
                   closeOnSelect
                 />
@@ -1934,9 +1938,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
         <div className="w-100">
           <Footer_Actions
             start={
-              activeTab === "details" || activeTab === "benefits" || activeTab === "pay_settings" ? (
-                <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} />
-              ) : null
+              activeTab === "details" || activeTab === "benefits" || activeTab === "pay_settings" ? <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} /> : null
             }
             center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
             end={
