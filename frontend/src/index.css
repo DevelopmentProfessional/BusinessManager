@@ -1688,16 +1688,19 @@ footer[aria-label="Actions"] {
   }
 }
 
-/* Page footers — every toolbar button same width (TextSize sets --app-btn-width) */
-.app-footer-search .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
-.schedule-footer .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
-.profile-footer-nav .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
-footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
-  max-width: var(--app-btn-width) !important;
-  flex: 0 0 var(--app-btn-width) !important;
+/* Page footers — toolbar buttons with icons only are exact circles */
+.app-footer-search .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.schedule-footer .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.profile-footer-nav .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
   margin: 0 !important;
+  padding: 0 !important;
   overflow: hidden;
 }
 
@@ -1746,10 +1749,19 @@ footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
   gap: 0.125rem !important;
 }
 
-.btn.app-action-btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
-  max-width: var(--app-btn-width) !important;
+.btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.btn.app-action-btn.btn-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.btn.app-action-btn--icon-only:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
 }
 
 .btn.app-action-btn.rounded-pill {
@@ -2226,11 +2238,18 @@ body.training-mode .btn.rounded-pill .text-nowrap {
   color: #cbd5e1;
 }
 
-/* Icon-only / circular toolbar buttons */
-.btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
-  height: var(--app-btn-height) !important;
+/* Icon-only / circular buttons: ALWAYS an exact 1:1 circle */
+.btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.rounded-pill),
+.btn.app-action-btn--icon-only:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
   padding: 0 !important;
 }
 
