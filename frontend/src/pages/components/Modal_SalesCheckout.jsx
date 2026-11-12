@@ -216,7 +216,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
     <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true} contentGravity="top">
       <div className="bg-white dark:bg-gray-900 flex flex-col h-full w-full">
         {/* Header */}
-        <div className="bg-gradient-to-r border-b border-gray-200 dark:border-gray-700 flex from-emerald-500 items-center justify-between p-1 to-emerald-600">
+        <div className="bg-gradient-to-r border-b border-gray-200 dark:border-gray-700 flex flex-shrink-0 from-emerald-500 items-center justify-between p-1 to-emerald-600">
           <div className="ui-flex-items-gap-1">
             <div className="bg-white/20 p-1 rounded-lg">
               <ShoppingCartIcon className="h-5 text-white w-5" />

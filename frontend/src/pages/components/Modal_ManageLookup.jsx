@@ -78,6 +78,21 @@ export default function Modal_ManageLookup({
       title={title}
       centered={true}
       contentGravity="top"
+      footer={
+        <div className="component-footer-left d-flex align-items-center gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
+            className="btn ui-btn-circle-outline-secondary btn-circle"
+            title="Close"
+          >
+            <XMarkIcon />
+          </button>
+        </div>
+      }
     >
       <div className="d-flex flex-column gap-3">
         <div className="border d-flex flex-column gap-2 p-0 ui-pill-container">

@@ -3745,35 +3745,68 @@ select.form-select {
 }
 
 .template-editor-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  overflow-y: auto;
-  padding-bottom: calc(var(--app-standard-footer-height) * 2.5);
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .template-editor-content-shell {
-  min-height: 0;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap .tiptap-editor {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .template-editor-richtext-wrap .tiptap-editor .tiptap {
-  padding-bottom: calc(var(--app-standard-footer-height) * 3);
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 1rem !important;
 }
 
 .template-editor-toolbar-shell {
   min-width: 0;
   max-width: 100%;
+  width: 100% !important;
   overflow: hidden;
   position: relative;
   z-index: 1;
+  display: flex !important;
+  justify-content: flex-start !important;
 }
 
 .template-editor-meta-row {
   min-width: 0;
   max-width: 100%;
+  width: 100% !important;
   overflow: visible;
   position: relative;
   z-index: 20;
+  display: flex !important;
+  justify-content: flex-start !important;
 }
 
 .template-editor-toolbar-shell .editor-toolbar {
