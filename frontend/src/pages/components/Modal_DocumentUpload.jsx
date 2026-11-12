@@ -119,9 +119,7 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
               disabled={uploading || !file}
               title="Upload file"
             />
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={handleClose} disabled={uploading} className="btn ui-btn-circle-outline-secondary" title="Cancel">
+            <button type="button" onClick={handleClose} disabled={uploading} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

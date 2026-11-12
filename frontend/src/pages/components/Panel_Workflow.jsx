@@ -18,6 +18,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import api from "../../services/api";
 import { formatDateTime } from "../../utils/dateFormatters";
+import Modal from "./Modal";
 
 // ─ Main Component ────────────────────────────────────────────────────
 
@@ -56,45 +57,41 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
   };
 
   return (
-    <div className="bg-black/50 fixed flex inset-0 items-center justify-center p-1 z-50">
-      <div className="bg-white max-w-lg rounded-lg shadow-xl w-full">
-        <div className="border-b flex items-center justify-between p-1">
-          <h2 className="font-semibold text-gray-900 text-xl">Assign Workflow</h2>
-          <button onClick={onClose} className="hover:text-gray-700 text-gray-500">
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
-
-        <div className="p-1">
-          {loading ? (
-            <p className="text-gray-600">Loading workflows...</p>
-          ) : workflows.length === 0 ? (
-            <p className="text-gray-600">No workflows available. Create one first.</p>
-          ) : (
-            <div className="space-y-3">
-              {workflows.map((wf) => (
-                <label key={wf.id} className="border cursor-pointer flex gap-3 hover:bg-gray-50 items-start p-1 rounded-lg">
-                  <input type="radio" name="workflow" value={wf.id} checked={selectedWorkflow?.id === wf.id} onChange={() => setSelectedWorkflow(wf)} className="mt-1" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{wf.name}</h3>
-                    <p className="text-gray-600 text-sm">{wf.description}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-gray-50 border-t flex gap-3 justify-end p-1">
-          <button onClick={onClose} className="border border-gray-300 hover:bg-gray-100 px-1 py-0 rounded-lg text-gray-700">
-            Cancel
-          </button>
-          <button onClick={handleAssignWorkflow} disabled={!selectedWorkflow} className="bg-blue-600 disabled:opacity-50 hover:bg-blue-700 px-1 py-0 rounded-lg text-white">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Assign Workflow"
+      footer={
+        <div className="component-footer-left d-flex align-items-center gap-1">
+          <button onClick={handleAssignWorkflow} disabled={!selectedWorkflow} className="btn btn-primary">
             Assign Workflow
           </button>
+          <button onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
+            <XMarkIcon />
+          </button>
         </div>
+      }
+    >
+      <div className="p-1">
+        {loading ? (
+          <p className="text-gray-600">Loading workflows...</p>
+        ) : workflows.length === 0 ? (
+          <p className="text-gray-600">No workflows available. Create one first.</p>
+        ) : (
+          <div className="space-y-3">
+            {workflows.map((wf) => (
+              <label key={wf.id} className="border cursor-pointer flex gap-3 hover:bg-gray-50 items-start p-1 rounded-lg">
+                <input type="radio" name="workflow" value={wf.id} checked={selectedWorkflow?.id === wf.id} onChange={() => setSelectedWorkflow(wf)} className="mt-1" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">{wf.name}</h3>
+                  <p className="text-gray-600 text-sm">{wf.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };
 
@@ -233,20 +230,25 @@ export const ApprovalActions = ({ stepId, onApprovalComplete }) => {
       </button>
 
       {showRejectModal && (
-        <div className="bg-black/50 fixed flex inset-0 items-center justify-center z-50">
-          <div className="bg-white max-w-sm p-1 rounded-lg shadow-xl">
-            <h3 className="font-semibold mb-4 text-gray-900 text-lg">Reject Document</h3>
-            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason for rejection..." className="border border-gray-300 h-24 mb-4 px-1 py-0 rounded-lg w-full" />
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setShowRejectModal(false)} className="border border-gray-300 hover:bg-gray-100 px-1 py-0 rounded-lg text-gray-700">
-                Cancel
-              </button>
-              <button onClick={handleReject} className="bg-red-600 hover:bg-red-700 px-1 py-0 rounded-lg text-white">
+        <Modal
+          isOpen={showRejectModal}
+          onClose={() => setShowRejectModal(false)}
+          title="Reject Document"
+          footer={
+            <div className="component-footer-left d-flex align-items-center gap-1">
+              <button onClick={handleReject} className="btn btn-danger">
                 Reject
               </button>
+              <button onClick={() => setShowRejectModal(false)} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
+                <XMarkIcon />
+              </button>
             </div>
+          }
+        >
+          <div className="p-1">
+            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason for rejection..." className="border border-gray-300 form-control mb-2 rounded-lg w-full" rows={6} />
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
