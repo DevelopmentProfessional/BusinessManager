@@ -520,7 +520,7 @@ class InventoryFeatureOptionData(BaseModel, table=True):
 class InventoryFeatureCombination(BaseModel, table=True):
     """Stock tracked for a full option combination on a specific inventory item."""
     __tablename__ = "inventory_feature_combination"
-    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), index=True, nullable=False))
     combination_key: str = Field(index=True)
     option_ids_json: str
     quantity: int = Field(default=0, ge=0)
@@ -2923,7 +2923,7 @@ class ProcurementOrderLine(BaseModel, table=True):
     __tablename__ = "procurement_order_line"
     
     po_id: UUID = Field(foreign_key="procurement_order.id", index=True)
-    inventory_id: UUID = Field(foreign_key="inventory.id")
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False))
     
     quantity_ordered: int
     quantity_received: int = Field(default=0)
@@ -2937,7 +2937,7 @@ class InventoryCost(BaseModel, table=True):
     """Track inventory valuation and cost"""
     __tablename__ = "inventory_cost"
     
-    inventory_id: UUID = Field(foreign_key="inventory.id", unique=True)
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), unique=True, nullable=False))
     
     standard_cost: Optional[float] = None  # Standard/expected cost
     actual_cost: Optional[float] = None  # Weighted average cost

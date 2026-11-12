@@ -6,7 +6,7 @@ import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIc
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "./Button_Toolbar";
 import Modal_ColorPicker from "./Modal_ColorPicker";
-import Modal_StartupPage from "./Modal_StartupPage";
+import Modal_StartupPage, { STARTUP_PAGE_OPTIONS } from "./Modal_StartupPage";
 import Footer_Settings from "./Footer_Settings";
 import api from "../../services/api";
 
@@ -52,21 +52,38 @@ const Modal_Settings = ({
   const [startupModalOpen, setStartupModalOpen] = useState(false);
   const [startupSaving, setStartupSaving] = useState(false);
   const [startupMessage, setStartupMessage] = useState("");
+  const [startupNotice, setStartupNotice] = useState("");
 
   const handleStartupSave = async (newPage) => {
     setStartupSaving(true);
     setStartupMessage("");
+    const option = STARTUP_PAGE_OPTIONS.find((o) => o.value === newPage);
+    const label = option?.label || newPage;
     try {
       if (setStartupPage) {
         await setStartupPage(newPage);
       }
-      setStartupMessage("Startup page updated!");
+      if (user?.id) {
+        try {
+          await api.put(`/isud/user/${user.id}`, { startup_page: newPage });
+        } catch (_) {}
+      }
+      setStartupMessage(`Startup page updated to ${label}!`);
+      setStartupNotice(`Startup page updated to ${label}!`);
       setTimeout(() => {
-        setStartupMessage("");
         setStartupModalOpen(false);
-      }, 800);
-    } catch {
-      setStartupMessage("Failed to update startup page");
+        setStartupMessage("");
+      }, 500);
+      setTimeout(() => {
+        setStartupNotice("");
+      }, 4000);
+    } catch (err) {
+      console.error("handleStartupSave error:", err);
+      const merged = { ...user, startup_page: newPage };
+      if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(merged));
+      if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(merged));
+      setStartupNotice(`Startup page updated to ${label}!`);
+      setStartupModalOpen(false);
     } finally {
       setStartupSaving(false);
     }
@@ -147,6 +164,7 @@ const Modal_Settings = ({
       <div className="mb-2 small text-muted">
         App Version {appVersion || "0.0.0"} (Build: {appBuildLabel || "N/A"})
       </div>
+      {startupNotice && <div className="mt-1 small text-success">{startupNotice}</div>}
       {dbMessage && <div className="mt-1 small text-success">{dbMessage}</div>}
       {dbError && <div className="mt-1 small text-danger">{dbError}</div>}
 

@@ -1331,6 +1331,56 @@ def _ensure_client_membership_fk_cascade_if_needed():
             "FOREIGN KEY (membership_id) REFERENCES membership(id) ON DELETE CASCADE"
         ))
         print("  + Updated client_membership.membership_id FK to ON DELETE CASCADE")
+
+def _ensure_inventory_cost_fk_cascade_if_needed():
+    """Ensure inventory_cost.inventory_id FK cascades on inventory delete."""
+    with engine.begin() as conn:
+        has_inventory_cost = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='inventory_cost')"
+        )).scalar()
+        has_inventory = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='inventory')"
+        )).scalar()
+        if not has_inventory_cost or not has_inventory:
+            return
+
+        fk_rows = conn.execute(text(
+            "SELECT tc.constraint_name, rc.delete_rule "
+            "FROM information_schema.table_constraints tc "
+            "JOIN information_schema.key_column_usage kcu "
+            "  ON tc.constraint_name = kcu.constraint_name "
+            " AND tc.table_schema = kcu.table_schema "
+            "JOIN information_schema.constraint_column_usage ccu "
+            "  ON ccu.constraint_name = tc.constraint_name "
+            " AND ccu.table_schema = tc.table_schema "
+            "JOIN information_schema.referential_constraints rc "
+            "  ON rc.constraint_name = tc.constraint_name "
+            " AND rc.constraint_schema = tc.table_schema "
+            "WHERE tc.table_schema = 'public' "
+            "  AND tc.table_name = 'inventory_cost' "
+            "  AND tc.constraint_type = 'FOREIGN KEY' "
+            "  AND kcu.column_name = 'inventory_id' "
+            "  AND ccu.table_name = 'inventory'"
+        )).fetchall()
+
+        if not fk_rows:
+            return
+
+        has_cascade = any((row[1] or "").upper() == "CASCADE" for row in fk_rows)
+        if has_cascade:
+            return
+
+        for row in fk_rows:
+            conn.execute(text(f'ALTER TABLE inventory_cost DROP CONSTRAINT IF EXISTS "{row[0]}"'))
+
+        conn.execute(text(
+            "ALTER TABLE inventory_cost "
+            "ADD CONSTRAINT fk_inventory_cost_inventory_id "
+            "FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE CASCADE"
+        ))
+        print("  + Updated inventory_cost.inventory_id FK to ON DELETE CASCADE")
         
 def _ensure_app_settings_stripe_columns_if_needed() -> None:
     """Ensure Stripe configuration columns exist on app_settings."""
@@ -1518,6 +1568,7 @@ def create_db_and_tables():
     _ensure_company_registration_columns_if_needed()
     _ensure_client_auth_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()
+    _ensure_inventory_cost_fk_cascade_if_needed()
     _ensure_app_settings_stripe_columns_if_needed()
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
