@@ -2289,9 +2289,13 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
 }
 
 /* Bottom-right nav toggle — same bottom/right inset as page footers */
+.btn.btn-app-nav,
 .app-nav-bottom-toggle {
-  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0rem)) !important;
-  right: calc(var(--app-nav-bottom-right-inset) + env(safe-area-inset-right, 0rem)) !important;
+  position: fixed !important;
+  bottom: calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem)) !important;
+  right: calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem)) !important;
+  left: auto !important;
+  z-index: 1050 !important;
 }
 
 body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
