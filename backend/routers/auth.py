@@ -1614,7 +1614,10 @@ def update_my_profile(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    return UserRead.from_orm(current_user)
+    try:
+        return UserRead.model_validate(current_user)
+    except Exception:
+        return current_user
 
 
 @router.put("/me/profile-picture")

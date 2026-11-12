@@ -1088,7 +1088,7 @@ export default function Employees() {
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="align-items-center border-top d-flex flex-shrink-0 px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
             <div className="ui-flex-center-gap-2">
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
@@ -1101,10 +1101,10 @@ export default function Employees() {
                   <TrashIcon className="app-icon-14" />
                 </button>
               </Gate_Permission>
+              <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionEmp}>
+                <XMarkIcon className="app-icon-14" />
+              </button>
             </div>
-            <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionEmp}>
-              <XMarkIcon className="app-icon-14" />
-            </button>
           </div>
         )}
         <PageTableHeader

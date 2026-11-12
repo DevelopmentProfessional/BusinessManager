@@ -197,10 +197,20 @@ const Profile = () => {
   const persistCurrentUserProfile = useCallback(
     async (patch) => {
       if (!user?.id) return null;
-      const response = await profileAPI.updateMyProfile(patch);
-      const updatedUser = response?.data ?? response;
-      if (!updatedUser || typeof updatedUser !== "object") return null;
-      const mergedUser = { ...user, ...updatedUser };
+      let updatedUser = null;
+      try {
+        const response = await profileAPI.updateMyProfile(patch);
+        updatedUser = response?.data ?? response;
+      } catch (err) {
+        console.warn("updateMyProfile failed, attempting isud update fallback:", err);
+        try {
+          const response = await api.put(`/isud/user/${user.id}`, patch);
+          updatedUser = response?.data ?? response;
+        } catch (fallbackErr) {
+          console.error("isud fallback update also failed:", fallbackErr);
+        }
+      }
+      const mergedUser = { ...user, ...(updatedUser && typeof updatedUser === "object" ? updatedUser : patch) };
       setUser(mergedUser);
       if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
       if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
