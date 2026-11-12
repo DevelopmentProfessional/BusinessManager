@@ -189,7 +189,7 @@ export default function Dropdown_Custom({
       )}
 
       {isFloating && (
-        <label htmlFor={id || undefined} className="app-floating-label" style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)" }}>
+        <label htmlFor={id || undefined} className="app-floating-label" style={{ fontSize: "var(--app-floating-label-font-size, 0.75rem)" }}>
           {effectiveFloatingLabel}
         </label>
       )}

@@ -177,7 +177,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
         <p className="mb-0 mt-2 small text-muted">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
 
         <div className="form-floating mt-3">
-          <textarea id="documents-upload-description" name="description" value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
+          <textarea id="documents-upload-description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
           <label htmlFor="documents-upload-description">Description (optional)</label>
         </div>
 

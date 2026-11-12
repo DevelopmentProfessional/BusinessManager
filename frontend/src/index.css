@@ -97,6 +97,9 @@
   --app-input-font-size: 0.75rem;
   --app-search-input-padding-x: 0.75rem;
 
+  /* Floating Labels */
+  --app-floating-label-font-size: var(--app-input-font-size, 0.75rem);
+
   /* Dropups & Dropdowns */
   --app-dropdown-min-width: 11rem;
   --app-dropdown-border-radius: 0.75rem;
@@ -1346,9 +1349,13 @@ table::-webkit-scrollbar,
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE / Edge legacy */
   overscroll-behavior: contain;
-  height: 6rem;
-  min-height: 6rem;
-  max-height: 6rem;
+  height: 9rem;
+  min-height: 9rem;
+}
+
+.form-floating > .ui-description-textarea {
+  height: 10.5rem;
+  min-height: 10.5rem;
 }
 
 .ui-description-textarea::-webkit-scrollbar {
@@ -2380,7 +2387,7 @@ input[type="number"],
   height: 100%;
   padding-left: 1.25rem !important;
   padding-top: 0.35rem;
-  font-size: var(--app-input-font-size) !important;
+  font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
   transform-origin: 0 0;
   pointer-events: none;
   transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
@@ -2388,7 +2395,7 @@ input[type="number"],
 
 .form-floating > .app-floating-label,
 .app-dropdown-root.form-floating > .app-floating-label {
-  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
 }
 .form-floating > .form-control:focus ~ label,
 .form-floating > .form-control:not(:placeholder-shown) ~ label,

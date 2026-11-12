@@ -363,7 +363,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                           setSaveStatus("idle");
                         }}
                         className="form-control ui-control-sm"
-                        rows={3}
+                        rows={6}
                         placeholder="Describe this template"
                       />
                     </div>
