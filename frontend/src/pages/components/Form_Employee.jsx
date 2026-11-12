@@ -185,15 +185,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const [employeeStatuses, setEmployeeStatuses] = useState([]);
   const [employeesList, setEmployeesList] = useState(employeesProp);
   const [insurancePlans, setInsurancePlans] = useState([]);
-  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
-  const [roleHelpKey, setRoleHelpKey] = useState(null);
-  const [roleHelpPos, setRoleHelpPos] = useState({ top: 0, left: 0 });
-  const [isEmploymentTypeDropdownOpen, setIsEmploymentTypeDropdownOpen] = useState(false);
-  const [employmentTypeHelpKey, setEmploymentTypeHelpKey] = useState(null);
-  const [employmentTypeHelpPos, setEmploymentTypeHelpPos] = useState({ top: 0, left: 0 });
-  const [isPayFrequencyDropdownOpen, setIsPayFrequencyDropdownOpen] = useState(false);
-  const [payFrequencyHelpKey, setPayFrequencyHelpKey] = useState(null);
-  const [payFrequencyHelpPos, setPayFrequencyHelpPos] = useState({ top: 0, left: 0 });
   const [showCompensationHelp, setShowCompensationHelp] = useState(false);
 
   const roleOptions = [
@@ -281,13 +272,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     sick_days_used: "",
   });
 
-  const selectedRoleLabel = roleOptions.find((opt) => opt.value === formData.role)?.label || "Select Role";
-  const selectedEmploymentTypeLabel = employmentTypeOptions.find((opt) => opt.value === formData.employment_type)?.label || "Select type";
-  const selectedPayFrequencyLabel = payFrequencyOptions.find((opt) => opt.value === formData.pay_frequency)?.label || "Select frequency";
   const salaryFieldMeta = getSalaryFieldMeta(formData.pay_frequency);
-  const { ref: roleLabelRef, displayLabel: roleTriggerLabel } = useWordSafeLabel(selectedRoleLabel, { enabled: true });
-  const { ref: employmentTypeLabelRef, displayLabel: employmentTypeTriggerLabel } = useWordSafeLabel(selectedEmploymentTypeLabel, { enabled: true });
-  const { ref: payFrequencyLabelRef, displayLabel: payFrequencyTriggerLabel } = useWordSafeLabel(selectedPayFrequencyLabel, { enabled: true });
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load available roles
@@ -783,88 +768,17 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 {!selfEdit && (
                   <>
                     <div className="col-md-6">
-                      <div className="ui-pos-rel">
-                        <label htmlFor="role" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                          Role
-                        </label>
-                        <div className="ui-pos-rel">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const nextOpen = !isRoleDropdownOpen;
-                              setIsRoleDropdownOpen(nextOpen);
-                              if (!nextOpen) setRoleHelpKey(null);
-                            }}
-                            className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
-                            style={{ cursor: "pointer" }}
-                          >
-                            <span ref={roleLabelRef} className="app-word-safe-label">
-                              {roleTriggerLabel}
-                            </span>
-                          </button>
-                          {isRoleDropdownOpen && (
-                            <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                              {roleOptions.map((option) => {
-                                return (
-                                  <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleInputChange({ target: { name: "role", value: option.value } });
-                                        setIsRoleDropdownOpen(false);
-                                        setRoleHelpKey(null);
-                                      }}
-                                      className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
-                                    >
-                                      {option.label}
-                                    </button>
-                                    <div className="flex-shrink-0">
-                                      <button
-                                        type="button"
-                                        className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
-                                        aria-label={`${option.label} help`}
-                                        onMouseEnter={(e) => {
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          setRoleHelpPos({ top: rect.top, left: rect.right + 8 });
-                                          setRoleHelpKey(option.value);
-                                        }}
-                                        onMouseLeave={() => setRoleHelpKey((prev) => (prev === option.value ? null : prev))}
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          setRoleHelpPos({ top: rect.top, left: rect.right + 8 });
-                                          setRoleHelpKey((prev) => (prev === option.value ? null : option.value));
-                                        }}
-                                        style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                                      >
-                                        ?
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {/* Fixed-position tooltip — escapes overflow:auto container */}
-                          {roleHelpKey &&
-                            (() => {
-                              const opt = roleOptions.find((o) => o.value === roleHelpKey);
-                              if (!opt) return null;
-                              return (
-                                <div
-                                  style={{ position: "fixed", top: roleHelpPos.top, left: roleHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                  className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
-                                >
-                                  <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                                    {opt.label}
-                                  </div>
-                                  <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
-                                </div>
-                              );
-                            })()}
-                        </div>
-                      </div>
+                      <Dropdown_Custom
+                        id="role"
+                        name="role"
+                        className="ui-control-sm"
+                        value={formData.role}
+                        onChange={handleInputChange}
+                        options={roleOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                        placeholder="Select role"
+                        floatingLabel="Role"
+                        closeOnSelect
+                      />
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
@@ -911,10 +825,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                         </div>
                       )}
                     </div>
-                    <div className="col-md-6">
-                      <label htmlFor="status_id" className="form-label ui-form-label-sm">
-                        Status
-                      </label>
+                    <div className="col-md-6"> 
                       <Dropdown_Custom
                         id="status_id"
                         name="status_id"
@@ -942,10 +853,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     {/* Department */}
                     <div className="col-12">
                       <div className="ui-flex-center-gap-2">
-                        <div className="flex-grow-1">
-                          <label htmlFor="department_id" className="form-label ui-form-label-sm">
-                            Department
-                          </label>
+                        <div className="flex-grow-1"> 
                           <Dropdown_Custom
                             id="department_id"
                             name="department_id"
@@ -1107,10 +1015,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 </div>
                 <div className="col-md-6">
                   <div className="align-items-stretch d-flex gap-2">
-                    <div className="flex-grow-1">
-                      <label htmlFor="insurance_plan" className="form-label ui-form-label-sm">
-                        Insurance Plan
-                      </label>
+                    <div className="flex-grow-1"> 
                       <Dropdown_Custom
                         id="insurance_plan"
                         name="insurance_plan"
@@ -1321,170 +1226,36 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   </div>
 
                   <div className="col-md-6">
-                    <div className="ui-pos-rel">
-                      <label htmlFor="employment_type" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                        Employment Type
-                      </label>
-                      <div className="ui-pos-rel">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextOpen = !isEmploymentTypeDropdownOpen;
-                            setIsEmploymentTypeDropdownOpen(nextOpen);
-                            if (!nextOpen) setEmploymentTypeHelpKey(null);
-                          }}
-                          className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
-                          style={{ cursor: "pointer" }}
-                        >
-                          <span ref={employmentTypeLabelRef} className="app-word-safe-label">
-                            {employmentTypeTriggerLabel}
-                          </span>
-                        </button>
-                        {isEmploymentTypeDropdownOpen && (
-                          <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                            {employmentTypeOptions.map((option) => (
-                              <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleInputChange({ target: { name: "employment_type", value: option.value } });
-                                    setIsEmploymentTypeDropdownOpen(false);
-                                    setEmploymentTypeHelpKey(null);
-                                  }}
-                                  className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
-                                >
-                                  {option.label}
-                                </button>
-                                <div className="flex-shrink-0">
-                                  <button
-                                    type="button"
-                                    className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
-                                    aria-label={`${option.label} help`}
-                                    onMouseEnter={(e) => {
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setEmploymentTypeHelpKey(option.value);
-                                    }}
-                                    onMouseLeave={() => setEmploymentTypeHelpKey((prev) => (prev === option.value ? null : prev))}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setEmploymentTypeHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setEmploymentTypeHelpKey((prev) => (prev === option.value ? null : option.value));
-                                    }}
-                                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                                  >
-                                    ?
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {employmentTypeHelpKey &&
-                          (() => {
-                            const opt = employmentTypeOptions.find((o) => o.value === employmentTypeHelpKey);
-                            if (!opt) return null;
-                            return (
-                              <div
-                                style={{ position: "fixed", top: employmentTypeHelpPos.top, left: employmentTypeHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
-                              >
-                                <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                                  {opt.label}
-                                </div>
-                                <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
-                              </div>
-                            );
-                          })()}
-                      </div>
-                    </div>
+                    <Dropdown_Custom
+                      id="employment_type"
+                      name="employment_type"
+                      className="ui-control-sm"
+                      value={formData.employment_type}
+                      onChange={handleInputChange}
+                      options={employmentTypeOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                      placeholder="Select employment type"
+                      floatingLabel="Employment Type"
+                      closeOnSelect
+                    />
                   </div>
 
                   <div className="col-md-6">
-                    <div className="ui-pos-rel">
-                      <label htmlFor="pay_frequency" className="form-label" style={{ fontSize: "0.875rem", marginBottom: "0.25rem" }}>
-                        Pay Frequency
-                      </label>
-                      <div className="ui-pos-rel">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextOpen = !isPayFrequencyDropdownOpen;
-                            setIsPayFrequencyDropdownOpen(nextOpen);
-                            if (!nextOpen) setPayFrequencyHelpKey(null);
-                          }}
-                          className="align-items-center d-flex form-select form-select-sm justify-content-between text-start"
-                          style={{ cursor: "pointer" }}
-                        >
-                          <span ref={payFrequencyLabelRef} className="app-word-safe-label">
-                            {payFrequencyTriggerLabel}
-                          </span>
-                        </button>
-                        {isPayFrequencyDropdownOpen && (
-                          <div className="app-menu-panel bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 position-absolute rounded shadow-lg w-100" style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: "300px", overflowY: "auto" }}>
-                            {payFrequencyOptions.map((option) => (
-                              <div key={option.value} className="align-items-center border-bottom border-gray-100 d-flex dark:border-gray-700 gap-1 px-0 py-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleInputChange({ target: { name: "pay_frequency", value: option.value } });
-                                    setIsPayFrequencyDropdownOpen(false);
-                                    setPayFrequencyHelpKey(null);
-                                    if (["weekly", "biweekly", "monthly"].includes(option.value) && employeePaySchedule) {
-                                      setEmployeePaySchedule((p) => ({ ...p, frequency: option.value }));
-                                    }
-                                  }}
-                                  className="app-menu-item btn btn-link dark:text-gray-100 flex-grow-1 p-1 text-decoration-none text-gray-900 text-start"
-                                >
-                                  {option.label}
-                                </button>
-                                <div className="flex-shrink-0">
-                                  <button
-                                    type="button"
-                                    className="app-menu-action border-0 btn btn-link btn-sm p-0 text-primary"
-                                    aria-label={`${option.label} help`}
-                                    onMouseEnter={(e) => {
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setPayFrequencyHelpKey(option.value);
-                                    }}
-                                    onMouseLeave={() => setPayFrequencyHelpKey((prev) => (prev === option.value ? null : prev))}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setPayFrequencyHelpPos({ top: rect.top, left: rect.right + 8 });
-                                      setPayFrequencyHelpKey((prev) => (prev === option.value ? null : option.value));
-                                    }}
-                                    style={{ width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.75rem", border: "none", outline: "none" }}
-                                  >
-                                    ?
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {payFrequencyHelpKey &&
-                          (() => {
-                            const opt = payFrequencyOptions.find((o) => o.value === payFrequencyHelpKey);
-                            if (!opt) return null;
-                            return (
-                              <div
-                                style={{ position: "fixed", top: payFrequencyHelpPos.top, left: payFrequencyHelpPos.left, width: 240, maxWidth: "calc(100vw - 1rem)", zIndex: 9999, pointerEvents: "none" }}
-                                className="app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 rounded-lg shadow-lg text-gray-900"
-                              >
-                                <div className="fw-semibold" style={{ fontSize: "0.8rem" }}>
-                                  {opt.label}
-                                </div>
-                                <div className="dark:text-gray-300 small text-gray-600">{opt.description}</div>
-                              </div>
-                            );
-                          })()}
-                      </div>
-                    </div>
+                    <Dropdown_Custom
+                      id="pay_frequency"
+                      name="pay_frequency"
+                      className="ui-control-sm"
+                      value={formData.pay_frequency}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        if (["weekly", "biweekly", "monthly"].includes(e.target.value) && employeePaySchedule) {
+                          setEmployeePaySchedule((p) => ({ ...p, frequency: e.target.value }));
+                        }
+                      }}
+                      options={payFrequencyOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                      placeholder="Select pay frequency"
+                      floatingLabel="Pay Frequency"
+                      closeOnSelect
+                    />
                   </div>
 
                   {formData.employment_type !== "hourly" && (

@@ -1,5 +1,5 @@
 import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
-import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon, MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "./Utils_TemplateVariables";
 import { documentsAPI } from "../../services/api";
 import Editor_Toolbar from "./editors/Editor_Toolbar";
@@ -240,9 +240,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
         {/* ── Zoom Range Bar ─────────────────────────────────────────────────── */}
         <div className="align-items-center bg-gray-50 border-bottom border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 gap-2 px-3 py-1 w-100">
-          <span className="text-muted small text-nowrap" style={{ fontSize: "0.75rem", minWidth: "3.5rem" }}>
-            Zoom: {Math.round(zoomLevel * 100)}%
-          </span>
+          <MagnifyingGlassIcon className="flex-shrink-0 text-muted ui-icon-4" title="Zoom" />
           <input
             type="range"
             min="0.5"
@@ -251,17 +249,16 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
             value={zoomLevel}
             onChange={(e) => setZoomLevel(parseFloat(e.target.value) || 1)}
             className="flex-grow-1 form-range"
-            title={`Zoom: ${Math.round(zoomLevel * 100)}%`}
+            title={`${Math.round(zoomLevel * 100)}%`}
             style={{ cursor: "pointer" }}
           />
           <button
             type="button"
             onClick={() => setZoomLevel(1)}
-            className="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+            className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center p-1 rounded-circle"
             title="Reset zoom to 100%"
-            style={{ fontSize: "0.75rem" }}
           >
-            Reset
+            <ArrowPathIcon className="ui-icon-4" />
           </button>
         </div>
 
@@ -342,12 +339,10 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               )}
 
               {/* Rich text editor */}
-              <div className="flex-1 overflow-hidden p-0 template-editor-richtext-wrap" style={{ zoom: zoomLevel }}>
-                <div className="border border-gray-300 dark:border-gray-600 h-full overflow-hidden rounded">
-                  <Suspense fallback={<div className="flex h-full items-center justify-center text-gray-500 text-sm">Loading editor…</div>}>
-                    <Editor_RichText ref={editorCallbackRef} content={content} onChange={setContent} />
-                  </Suspense>
-                </div>
+              <div className="flex-1 h-full min-h-0 overflow-hidden p-0 template-editor-richtext-wrap w-100" style={{ zoom: zoomLevel }}>
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-gray-500 text-sm">Loading editor…</div>}>
+                  <Editor_RichText ref={editorCallbackRef} content={content} onChange={setContent} />
+                </Suspense>
               </div>
             </div>
             {/* /component-body-inner */}
@@ -357,13 +352,13 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* /component-body */}
 
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
-        <div className="component-footer d-flex flex-column p-0" style={{ gap: 0 }}>
+        <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column p-0" style={{ gap: 0, alignItems: "stretch" }}>
           {/* Row 1: editor controls */}
-          <div className="template-editor-toolbar-shell">
+          <div className="template-editor-toolbar-shell w-100">
             <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} wrapToolbar />
           </div>
           {/* Row 2: template metadata + dropups */}
-          <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0">
+          <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0 w-100">
             <div className="template-editor-meta-group ui-flex-center-gap-1">
               <div className="template-editor-meta-controls ui-flex-center-gap-1">
                 <input
@@ -476,8 +471,8 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
 
           {/* Row 3: save/cancel */}
-          <div className="border-top d-flex gap-1 p-0">
-            <div className="component-footer-left d-flex align-items-center gap-1">
+          <div className="border-top d-flex align-items-center justify-content-start gap-1 p-1 w-100">
+            <div className="component-footer-left d-flex align-items-center gap-1 justify-content-start">
               <button type="button" onClick={handleSave} className="align-items-center btn btn-primary btn-sm d-flex gap-1" disabled={saving} title="Save Template">
                 {saving ? (
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">

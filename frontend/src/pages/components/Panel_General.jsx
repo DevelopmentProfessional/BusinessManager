@@ -308,7 +308,7 @@ const Panel_General = ({
           title="Select Logo from Documents"
           centered={true}
           footer={
-            <div className="d-flex gap-2 justify-content-end">
+            <div className="d-flex gap-2 justify-content-start">
               <button type="button" className="align-items-center btn btn-secondary d-flex gap-2" onClick={() => setLogoPickerOpen(false)}>
                 <XMarkIcon className="ui-icon-4" />
                 <span>Close</span>

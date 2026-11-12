@@ -1084,7 +1084,7 @@ function ProcessTab({
       {/* Footer: Pay selected */}
       {selectedUnpaid.length > 0 && (
         <div className="app-standard-footer bg-white border-gray-200 border-top dark:bg-gray-800 dark:border-gray-700 px-1 py-0">
-          <div className="align-items-center d-flex justify-content-between">
+          <div className="align-items-center d-flex justify-content-start gap-3">
             <div>
               <div className="fw-medium" style={{ fontSize: "0.84rem" }}>
                 {selectedUnpaid.length} employee{selectedUnpaid.length !== 1 ? "s" : ""} selected

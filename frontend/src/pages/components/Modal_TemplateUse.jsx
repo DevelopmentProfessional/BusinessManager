@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { templatesAPI, clientsAPI, clientCartAPI } from "../../services/api";
+import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "./Button_Toolbar";
 import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables } from "./Utils_TemplateVariables";
@@ -605,12 +606,24 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
 
       {isEmailPreviewOpen && selected && (
-        <div className="align-items-center bg-black/50 d-flex fixed inset-0 justify-content-center px-1 z-[60]">
-          <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded w-100" style={{ maxWidth: "760px" }}>
-            <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
-              <h3 className="dark:text-white font-semibold mb-0 text-gray-900 text-sm">Email Preview</h3>
+        <Modal
+          isOpen={isEmailPreviewOpen}
+          onClose={() => setIsEmailPreviewOpen(false)}
+          title="Email Preview"
+          footer={
+            <div className="align-items-center d-flex gap-2 justify-content-start">
+              <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
+                <EnvelopeIcon className="ui-icon-4" />
+                Email
+              </button>
+              <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+                <XMarkIcon className="ui-icon-4" />
+                Close
+              </button>
             </div>
-
+          }
+        >
+          <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
             <div className="bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
               <div className="mb-1 small text-gray-500">To</div>
               <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No client email available"}</div>
@@ -622,28 +635,14 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               <div className="dark:text-white text-gray-900 text-sm">{pdfFileName} (generated on send)</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 px-1 py-1" style={{ maxHeight: "42vh", overflowY: "auto" }}>
+            <div className="bg-white dark:bg-gray-900 px-1 py-1">
               <div className="mb-2 small text-gray-500">Body</div>
               <pre className="dark:text-gray-200 m-0 text-gray-800 text-sm" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
                 {emailBody}
               </pre>
             </div>
-
-            <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
-              <div className="align-items-center d-flex position-relative" style={{ minHeight: "2.5rem" }}>
-                <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
-                  <EnvelopeIcon className="ui-icon-4" />
-                  Email
-                </button>
-
-                <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="align-items-center btn btn-outline-secondary d-flex gap-1 position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }}>
-                  <XMarkIcon className="ui-icon-4" />
-                  Close
-                </button>
-              </div>
-            </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

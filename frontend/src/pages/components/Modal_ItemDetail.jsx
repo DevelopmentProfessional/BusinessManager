@@ -1105,26 +1105,15 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   if (!item) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={!isSalesMode ? "Edit Item" : undefined}
-      noPadding={true}
-      footer={
-        !isSalesMode ? (
-          <Footer_Actions
-            start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}
-            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
-          />
-        ) : (
-          <Footer_Actions
-            start={<Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" />}
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
-          />
-        )
-      }
-    >
-      <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+      <div className="ui-page-shell">
+        {/* Header for Inventory Mode - Fixed at top */}
+        {!isSalesMode && (
+          <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+            <h6 className="app-modal-title ui-heading-strong">Edit Item</h6>
+          </div>
+        )}
+
         {/* Sales Mode: Full-width image header */}
         {isSalesMode && (
           <div className="flex-shrink-0 position-relative">
@@ -1168,7 +1157,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
           </div>
         )}
 
-        {/* Container_Scrollable Content Area */}
+        {/* Scrollable Content Area */}
         <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
           {isSalesMode ? (
             /* Sales Mode - Display only */
@@ -1608,6 +1597,23 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               </div>
             </>
           )}
+        </div>
+
+        {/* Footer with Action Buttons */}
+        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
+          <div className="w-100">
+            {!isSalesMode ? (
+              <Footer_Actions
+                start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleUpdateInventory} className="btn-outline-secondary" title="Save changes" />}
+                center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
+              />
+            ) : (
+              <Footer_Actions
+                start={<Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" />}
+                center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+              />
+            )}
+          </div>
         </div>
       </div>
 
