@@ -43,6 +43,23 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
   const variantClass = variant ? VARIANT_CLASS[variant] || variant : "";
   const effectiveClass = training ? adjustTrainingMargins(className) : className;
 
+  const cancelInlineStyle = isCancel
+    ? {
+        width: "var(--app-btn-height, 2rem)",
+        height: "var(--app-btn-height, 2rem)",
+        minWidth: "var(--app-btn-height, 2rem)",
+        maxWidth: "var(--app-btn-height, 2rem)",
+        minHeight: "var(--app-btn-height, 2rem)",
+        maxHeight: "var(--app-btn-height, 2rem)",
+        flex: "0 0 var(--app-btn-height, 2rem)",
+        borderRadius: "50%",
+        aspectRatio: "1 / 1",
+        padding: 0,
+      }
+    : undefined;
+
+  const mergedStyle = cancelInlineStyle ? { ...cancelInlineStyle, ...(rest.style || {}) } : rest.style;
+
   return (
     <button
       type={type}
@@ -50,10 +67,11 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       disabled={disabled}
       title={tooltipLabel}
       aria-label={tooltipLabel}
+      style={mergedStyle}
       className={`btn flex-shrink-0 d-flex align-items-center
         app-btn app-action-btn
         ${showText ? "" : "app-action-btn--icon-only"}
-        ${isCancel ? "rounded-circle btn-circle p-0 justify-content-center" : training ? (showText ? "rounded-pill ps-0 pe-0 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
+        ${isCancel ? "btn-circle btn-cancel-circle p-0 justify-content-center" : training ? (showText ? "rounded-pill ps-0 pe-0 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
         ${variantClass} ${effectiveClass}
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}

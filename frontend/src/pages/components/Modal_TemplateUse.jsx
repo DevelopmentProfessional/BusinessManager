@@ -452,65 +452,45 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   };
 
   return (
-    <div className="app-modal-layer fixed inset-0 overflow-hidden z-50">
-      <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" onClick={onClose} />
-      <div className="app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-900 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] right-0 rounded-t-lg shadow-xl text-left w-full z-10">
-        {/* Header */}
-      <div className="align-items-center bg-white border-b border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 justify-content-between px-3 py-2">
-        <div className="align-items-center d-flex gap-2 min-w-0">
-          <h2 className="app-modal-title text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
-          {selected && (
-            <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
-              {selected.template_type}
-            </span>
-          )}
-        </div>
-
-        {/* Top-right: Print and Download icon buttons */}
-        <div className="align-items-center d-flex gap-2">
-          <Button_Toolbar
-            icon={PrinterIcon}
-            label=""
-            compact
-            onClick={handlePrint}
-            disabled={!selected}
-            className="btn-outline-secondary rounded-circle"
-            title="Print"
-          />
-          <Button_Toolbar
-            icon={ArrowDownTrayIcon}
-            label=""
-            compact
-            onClick={handleDownloadPdf}
-            disabled={!selected || isDownloadingPdf}
-            className="btn-outline-secondary rounded-circle"
-            title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Full-width preview area */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {selected ? (
-            <div className="bg-gray-100 dark:bg-gray-800 flex-1 overflow-hidden p-2">
-              <div className="bg-white h-full overflow-hidden rounded shadow-sm">
-                <iframe ref={printIframeRef} srcDoc={iframeContent} className="border-0 h-full w-full" title="Template preview" sandbox="allow-same-origin allow-modals" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">
-              {loading ? "Loading templates..." : "Select a template to preview"}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Footer actions: Edit, Temp (dropup), Use on left; Close floating in center */}
-      <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 px-3 py-2">
-        <div className="align-items-center d-flex justify-content-between position-relative" style={{ minHeight: "2.5rem" }}>
-          {/* Left: Edit, Temp dropup, Use */}
+    <>
+      <Modal
+        isOpen={true}
+        onClose={onClose}
+        title={
+          <div className="align-items-center d-flex gap-2 min-w-0">
+            <span className="text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</span>
+            {selected && (
+              <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
+                {selected.template_type}
+              </span>
+            )}
+          </div>
+        }
+        headerActions={
           <div className="align-items-center d-flex gap-2">
+            <Button_Toolbar
+              icon={PrinterIcon}
+              label=""
+              compact
+              onClick={handlePrint}
+              disabled={!selected}
+              className="btn-outline-secondary rounded-circle"
+              title="Print"
+            />
+            <Button_Toolbar
+              icon={ArrowDownTrayIcon}
+              label=""
+              compact
+              onClick={handleDownloadPdf}
+              disabled={!selected || isDownloadingPdf}
+              className="btn-outline-secondary rounded-circle"
+              title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
+            />
+          </div>
+        }
+        noPadding={false}
+        footer={
+          <div className="align-items-center d-flex gap-2 justify-content-start w-100">
             {!isPayslip && (
               <Button_Toolbar
                 icon={PencilSquareIcon}
@@ -593,15 +573,32 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
             <Button_Toolbar
               icon={XMarkIcon}
-              label="Close"
+              label="Cancel"
               onClick={onClose}
               className="btn-outline-secondary"
-              title="Close"
+              title="Cancel"
             />
           </div>
+        }
+      >
+        {/* Hidden iframe used solely for native window.print() */}
+        <iframe ref={printIframeRef} srcDoc={iframeContent} style={{ display: "none" }} title="Print frame" />
+
+        {/* Natural template preview: content dictates height, expanding modal upward until max-height */}
+        <div className="template-use-preview bg-white dark:bg-gray-900 rounded p-2 text-gray-900 dark:text-gray-100" style={{ minHeight: "80px" }}>
+          {selected ? (
+            <div
+              className="template-rendered-content"
+              style={{ fontSize: "13px", lineHeight: "1.6", color: "inherit", overflow: "visible" }}
+              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+            />
+          ) : (
+            <div className="flex items-center justify-center text-gray-400 text-sm py-4">
+              {loading ? "Loading templates..." : "Select a template to preview"}
+            </div>
+          )}
         </div>
-      </div>
-    </div>
+      </Modal>
 
       {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
 
@@ -644,6 +641,6 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
           </div>
         </Modal>
       )}
-    </div>
+    </>
   );
 }

@@ -111,7 +111,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
     if (!editor) return;
     const src = documentsAPI.fileUrl(doc.id);
     const alt = doc.original_filename || doc.filename || "";
-    editor.chain().focus().setImage({ src, alt, width: 320, float: "none" }).run();
+    editor.chain().focus().setImage({ src, alt, width: 320, wrapMode: "through", x: 0, y: 0 }).run();
     setActiveTab(TAB_NONE);
   };
 
