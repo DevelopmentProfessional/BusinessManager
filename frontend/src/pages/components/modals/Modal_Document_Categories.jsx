@@ -1,8 +1,9 @@
 // FILE: Modal_Document_Categories.jsx
 // Dedicated modal for managing document categories
 import React from "react";
-import { CheckIcon, XMarkIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 
 export default function Modal_Document_Categories({
@@ -80,8 +81,8 @@ export default function Modal_Document_Categories({
                         <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => startEditCategory(cat)} title="Edit">
                           <PencilSquareIcon style={{ width: 14, height: 14 }} />
                         </button>
-                        <button type="button" className="btn btn-outline-danger btn-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => handleDeleteCategory(cat.id)} title="Delete">
-                          <XMarkIcon style={{ width: 14, height: 14 }} />
+                        <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleDeleteCategory(cat.id)} title="Delete">
+                          <TrashIcon style={{ width: 14, height: 14 }} />
                         </button>
                       </>
                     )}
@@ -112,22 +113,19 @@ export default function Modal_Document_Categories({
             </div>
             <Footer_Actions
               start={
-                <button type="submit" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-1" title="Add category">
-                  <CheckIcon style={{ width: 18, height: 18 }} />
-                </button>
+                <Button_Toolbar type="submit" icon={CheckIcon} label="Add" className="btn-primary" title="Add category" />
               }
               center={
-                <button
-                  type="button"
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Close"
                   onClick={() => {
                     onClose();
                     cancelEditCategory?.();
                   }}
-                  className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-1"
+                  className="btn-outline-secondary"
                   title="Close"
-                >
-                  <XMarkIcon style={{ width: 14, height: 14 }} />
-                </button>
+                />
               }
             />
           </form>

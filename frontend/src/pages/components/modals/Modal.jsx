@@ -111,8 +111,8 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex }}>
       {Overlay}
       <div
-        className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full ${
-          fullScreen ? "h-full max-h-screen rounded-none app-modal-sheet--fullscreen" : "max-h-[90vh] rounded-t-lg"
+        className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full rounded-t-lg ${
+          fullScreen ? "max-h-screen max-h-[95vh] app-modal-sheet--fullscreen" : "max-h-[90vh]"
         }`}
         style={{ zIndex: layerZIndex + 1 }}
       >

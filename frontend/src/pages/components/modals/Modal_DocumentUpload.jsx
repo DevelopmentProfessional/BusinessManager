@@ -109,21 +109,16 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <Button_Toolbar
-              type="submit"
-              icon={ArrowDownTrayIcon}
-              label={uploading ? "Uploading…" : "Upload"}
-              className="btn-outline-secondary"
-              disabled={uploading || !file}
-              title="Upload file"
-            />
-            <button type="button" onClick={handleClose} disabled={uploading} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar
+            type="submit"
+            icon={ArrowDownTrayIcon}
+            label={uploading ? "Uploading…" : "Upload"}
+            className="btn-primary"
+            disabled={uploading || !file}
+            title="Upload file"
+          />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} disabled={uploading} className="btn-outline-secondary" title="Cancel" />
         </div>
       </form>
     </Modal>

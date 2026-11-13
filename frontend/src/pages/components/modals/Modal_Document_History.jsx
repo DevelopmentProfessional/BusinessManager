@@ -2,6 +2,8 @@
 // Dedicated modal for viewing and replacing document version history
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import { ArrowUpTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { formatDateTime } from "../../../utils/dateFormatters";
 import { documentsAPI } from "../../../services/api";
 
@@ -18,6 +20,11 @@ export default function Modal_Document_History({
       onClose={onClose}
       title={historyDoc ? `History: ${historyDoc.original_filename}` : "History"}
       contentGravity="bottom"
+      footer={
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
+        </div>
+      }
     >
       {isOpen && historyDoc && (
         <div className="space-y-4">
@@ -67,10 +74,8 @@ export default function Modal_Document_History({
               <input type="text" id="newVersionNote" name="newVersionNote" placeholder="Version Note" className="form-control ui-control-sm" />
               <label htmlFor="newVersionNote">Version Note (optional)</label>
             </div>
-            <div className="flex justify-end">
-              <button type="submit" className="btn btn-primary">
-                Replace
-              </button>
+            <div className="d-flex justify-content-start gap-2 pt-1">
+              <Button_Toolbar icon={ArrowUpTrayIcon} label="Replace" type="submit" className="btn-primary" title="Upload new version" />
             </div>
           </form>
         </div>

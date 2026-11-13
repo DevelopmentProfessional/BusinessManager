@@ -226,21 +226,16 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <Button_Toolbar
-              icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
-              label={uploading ? "Importing..." : "Import"}
-              onClick={handleUpload}
-              disabled={!Object.values(files).some((file) => file !== null) || uploading}
-              className="btn-outline-secondary"
-              title="Import data"
-            />
-            <button type="button" onClick={handleClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar
+            icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
+            label={uploading ? "Importing..." : "Import"}
+            onClick={handleUpload}
+            disabled={!Object.values(files).some((file) => file !== null) || uploading}
+            className="btn-primary"
+            title="Import data"
+          />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} className="btn-outline-secondary" title="Cancel" />
         </div>
       </div>
     </Modal>

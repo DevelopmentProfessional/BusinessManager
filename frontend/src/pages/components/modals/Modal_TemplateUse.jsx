@@ -609,14 +609,8 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
           title="Email Preview"
           footer={
             <div className="align-items-center d-flex gap-2 justify-content-start">
-              <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
-                <EnvelopeIcon className="ui-icon-4" />
-                Email
-              </button>
-              <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="align-items-center btn btn-outline-secondary d-flex gap-1">
-                <XMarkIcon className="ui-icon-4" />
-                Close
-              </button>
+              <Button_Toolbar icon={EnvelopeIcon} label="Email" onClick={handleOpenEmailDraft} disabled={!selected} className="btn-primary" title="Open email draft" />
+              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setIsEmailPreviewOpen(false)} className="btn-outline-secondary" title="Close" />
             </div>
           }
         >

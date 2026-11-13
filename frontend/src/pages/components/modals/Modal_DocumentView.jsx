@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon } from "@heroicons/react/24/outline";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../../services/api";
 import { renderAsync } from "docx-preview";
 import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from "../editors/documentEditorUtils";
@@ -558,32 +559,27 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
             )}
 
             {document.is_signed ? (
-              <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-1 py-1.5 rounded text-green-700 text-sm">Signed</span>
+              <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-2 py-1 rounded text-green-700 text-sm">Signed</span>
             ) : (
               onSign && (
-                <button type="button" onClick={() => onSign(document)} className="align-items-center btn btn-outline-secondary d-flex gap-1">
-                  Sign
-                </button>
+                <Button_Toolbar icon={PencilIcon} label="Sign" onClick={() => onSign(document)} className="btn-outline-secondary" title="Sign document" />
               )
             )}
 
             {onDelete && (
-              <button type="button" onClick={() => onDelete(document)} className="align-items-center btn btn-outline-danger d-flex gap-1">
-                <XMarkIcon className="ui-icon-4" />
-                Delete
-              </button>
+              <Button_Toolbar icon={TrashIcon} label="Delete" variant="danger" onClick={() => onDelete(document)} title="Delete document" />
             )}
 
             {onWorkflow && (
-              <button type="button" onClick={() => onWorkflow(document)} className="align-items-center btn btn-outline-primary d-flex gap-1">
-                Workflow
-              </button>
+              <Button_Toolbar label="Workflow" onClick={() => onWorkflow(document)} className="btn-outline-primary" title="View workflow" />
             )}
 
-            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 flex gap-1 hover:bg-gray-200 items-center px-1 py-1.5 rounded text-gray-700 text-sm">
+            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
               <ArrowDownTrayIcon className="ui-icon-4" />
               Download
             </a>
+
+            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} className="btn-outline-secondary" title="Close" />
           </div>
         </div>
       </div>

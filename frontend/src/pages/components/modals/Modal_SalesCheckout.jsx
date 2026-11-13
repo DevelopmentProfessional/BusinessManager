@@ -30,6 +30,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Modal from "./Modal";
 import Modal_TemplateUse from "./Modal_TemplateUse";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { clientsAPI } from "../../../services/api";
 import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ShoppingCartIcon, PrinterIcon, DevicePhoneMobileIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
@@ -213,7 +214,32 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
   const checkoutDateLabel = checkoutContext?.appointmentDate ? new Date(checkoutContext.appointmentDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} noPadding={true} centered={true} contentGravity="top">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      noPadding={true}
+      centered={true}
+      contentGravity="top"
+      footer={
+        !paymentSuccess ? (
+          <div className="d-flex gap-2 justify-content-start align-items-center">
+            <Button_Toolbar
+              icon={CheckCircleIcon}
+              label={isProcessing ? "…" : isCardScan || isTapPay ? "Checkout" : "Confirm"}
+              onClick={handleSubmit}
+              disabled={isProcessing || selectedLineCount === 0 || ((isCardScan || isTapPay) && !stripeReady)}
+              className="btn-success"
+              title="Process Payment"
+            />
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={isProcessing} className="btn-outline-secondary" title="Cancel" />
+          </div>
+        ) : (
+          <div className="d-flex gap-2 justify-content-start align-items-center">
+            <Button_Toolbar icon={CheckCircleIcon} label="Done" onClick={handleDone} className="btn-primary" title="Finish checkout" />
+          </div>
+        )
+      }
+    >
       <div className="bg-white dark:bg-gray-900 flex flex-col h-full w-full">
         {/* Header */}
         <div className="bg-gradient-to-r border-b border-gray-200 dark:border-gray-700 flex flex-shrink-0 from-emerald-500 items-center justify-between p-1 to-emerald-600">

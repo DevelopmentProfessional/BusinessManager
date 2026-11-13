@@ -22,6 +22,7 @@
 
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
@@ -138,9 +139,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                 { value: "90d", label: "Last 90 Days" },
               ]}
             />
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
-              <XMarkIcon />
-            </button>
+            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
           </div>
           <div className="component-footer-right"></div>
         </div>

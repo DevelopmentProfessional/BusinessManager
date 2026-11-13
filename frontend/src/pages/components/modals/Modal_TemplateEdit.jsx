@@ -4,6 +4,7 @@ import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "../uti
 import { documentsAPI } from "../../../services/api";
 import Editor_Toolbar from "../editors/Editor_Toolbar";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
@@ -471,24 +472,23 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           </div>
 
           {/* Row 3: save/cancel */}
-          <div className="border-top d-flex align-items-center justify-content-start gap-1 p-1 w-100">
-            <div className="component-footer-left d-flex align-items-center gap-1 justify-content-start">
-              <button type="button" onClick={handleSave} className="align-items-center btn btn-primary btn-sm d-flex gap-1" disabled={saving} title="Save Template">
-                {saving ? (
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : (
-                  <CheckIcon className="flex-shrink-0 h-4 w-4" />
-                )}
-                <span className="d-none d-sm-inline">{saving ? "Saving…" : isNew ? "Add" : "Save"}</span>
-              </button>
-              <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} disabled={saving} title="Cancel">
-                <XMarkIcon />
-              </button>
-            </div>
-            <div className="component-footer-right"></div>
+          <div className="border-top d-flex align-items-center justify-content-start gap-2 p-1 w-100">
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={saving ? "Saving…" : isNew ? "Add" : "Save"}
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-primary"
+              title="Save Template"
+            />
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
+              onClick={onClose}
+              disabled={saving}
+              className="btn-outline-secondary"
+              title="Cancel"
+            />
           </div>
         </div>
         {/* /component-footer */}

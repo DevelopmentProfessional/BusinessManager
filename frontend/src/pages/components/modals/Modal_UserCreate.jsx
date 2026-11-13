@@ -21,6 +21,7 @@
  */
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
@@ -73,17 +74,9 @@ export default function Modal_Create_User({
           </div>
         </div>
 
-        <div className="component-footer">
-          <div className="component-footer-left d-flex align-items-center gap-1">
-            <button type="submit" form="create-user-form" disabled={loading} className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-1" title="Create user">
-              <CheckIcon style={{ width: 16, height: 16 }} />
-              Create
-            </button>
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar type="submit" form="create-user-form" disabled={loading} icon={CheckIcon} label="Create" className="btn-primary" title="Create user" />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
         </div>
       </div>
     </Modal>

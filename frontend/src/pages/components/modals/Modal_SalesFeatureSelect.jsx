@@ -22,6 +22,7 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { inventoryFeaturesAPI } from "../../../services/api";
 
 export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onConfirm }) {
@@ -207,23 +208,15 @@ export default function Modal_Feature_Select_Sales({ isOpen, onClose, item, onCo
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <div className="me-2">
-              <div className="ui-small-muted">Total</div>
-              <div className="fw-bold text-primary" style={{ fontSize: "1.25rem" }}>
-                ${(resolvedPrice * quantity).toFixed(2)}
-              </div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <div className="me-2">
+            <div className="ui-small-muted">Total</div>
+            <div className="fw-bold text-primary" style={{ fontSize: "1.25rem" }}>
+              ${(resolvedPrice * quantity).toFixed(2)}
             </div>
-            <button type="button" className="align-items-center btn btn-primary d-flex gap-2 justify-content-center" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0}>
-              <ShoppingCartIcon className="ui-icon-5" />
-              Add
-            </button>
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
-              <XMarkIcon />
-            </button>
           </div>
-          <div className="component-footer-right"></div>
+          <Button_Toolbar icon={ShoppingCartIcon} label="Add" onClick={handleConfirm} disabled={!allSelected || maxQty <= 0} className="btn-primary" title="Add to cart" />
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       </div>
     </Modal>
