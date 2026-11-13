@@ -393,10 +393,8 @@ export default function Modal_Cart_Sales({
               className="btn-success text-white"
               style={{ borderColor: "#059669", backgroundColor: "#059669" }}
             />
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn btn-outline-secondary" title="Close">
-              Close
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
+              <XMarkIcon />
             </button>
           </div>
           <div className="component-footer-right"></div>

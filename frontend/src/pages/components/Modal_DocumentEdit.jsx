@@ -365,7 +365,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
               {/* ── Description ──────────────────────────────────────────────────── */}
               <div className="form-floating mb-3">
-                <textarea id="doc_description" className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+                <textarea id="doc_description" rows={6} className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
                 <label htmlFor="doc_description">Description</label>
               </div>
 
@@ -558,14 +558,12 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
         </div>
         {/* /component-body */}
         <div className="component-footer">
-          <div className="component-footer-left">
+          <div className="component-footer-left d-flex align-items-center gap-1">
             <button type="submit" className="align-items-center btn btn-primary d-inline-flex gap-1" disabled={saving}>
               <CheckIcon className="app-icon" aria-hidden="true" />
               {saving ? "Saving…" : "Save"}
             </button>
-          </div>
-          <div className="component-footer-center">
-            <button type="button" className="btn ui-btn-circle-outline-secondary" onClick={onClose} title="Cancel">
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} title="Cancel">
               <XMarkIcon />
             </button>
           </div>

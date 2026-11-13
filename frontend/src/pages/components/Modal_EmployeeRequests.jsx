@@ -138,9 +138,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                 { value: "90d", label: "Last 90 Days" },
               ]}
             />
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
               <XMarkIcon />
             </button>
           </div>

@@ -972,22 +972,32 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
 
   // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="ui-page-shell">
-        {/* Header */}
-        <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 flex-shrink-0 px-1 py-0">
-          <div className="ui-flex-center-gap-2">
-            <CalculatorIcon className="h-5 text-blue-600 w-5" />
-            <h5 className="app-modal-title ui-heading-strong">Forecaster</h5>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Forecaster"
+      noPadding={true}
+      footer={
+        <Footer_Actions
+          start={
+            <div className="btn-group btn-group-sm" role="group">
+              <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "month" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("month")}>
+                <span>Year</span>
+              </button>
+              <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "year" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("year")}>
+                <span>Decade</span>
+              </button>
+            </div>
+          }
+          center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+        />
+      }
+    >
+      <div className="d-flex flex-column flex-grow-1 overflow-auto no-scrollbar px-1 py-0" style={{ minHeight: 0 }}>
+        {/* Chart */}
+        <div className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 mb-3 p-1 rounded-lg">
+          <Line ref={chartRef} data={forecastData} options={chartOptions} />
         </div>
-
-        {/* Main Content: Chart (pinned) + Scrollable Inputs */}
-        <div className="d-flex flex-column flex-grow-1 px-1 py-0" style={{ minHeight: 0 }}>
-          {/* Chart */}
-          <div className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 mb-3 p-1 rounded-lg">
-            <Line ref={chartRef} data={forecastData} options={chartOptions} />
-          </div>
 
           {/* Summary Cards (Accordion) */}
           <div className="border border-gray-200 dark:border-gray-700 flex-shrink-0 mb-3 rounded-lg">
@@ -1631,24 +1641,6 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
-          <Footer_Actions
-            start={
-              <div className="btn-group btn-group-sm" role="group">
-                <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "month" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("month")}>
-                  <span>Year</span>
-                </button>
-                <button type="button" className={`btn d-flex align-items-center gap-2 ${timeView === "year" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setTimeView("year")}>
-                  <span>Decade</span>
-                </button>
-              </div>
-            }
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
-          />
-        </div>
-      </div>
-    </Modal>
-  );
-}
+      </Modal>
+    );
+  }

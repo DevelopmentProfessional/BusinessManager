@@ -62,12 +62,60 @@ const tbDivider = {
 
 // ─── Node View ────────────────────────────────────────────────────────────────
 
-function ResizableImageView({ node, updateAttributes, selected, deleteNode, getPos, editor }) {
-  const { src, alt, width, float: imgFloat, rotation, flipH, flipV } = node.attrs;
+function ResizableImageView({ node, updateAttributes, selected, deleteNode }) {
+  const { src, alt, width, float: imgFloat, rotation, flipH, flipV, wrapMode = "through", x = 0, y = 0 } = node.attrs;
+  const isThrough = wrapMode === "through";
+  const [livePos, setLivePos] = useState({ x: x || 0, y: y || 0 });
+  const [isPositioning, setIsPositioning] = useState(false);
   const imgRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeDropZone, setActiveDropZone] = useState(null);
-  const touchDragRef = useRef(null);
+
+  useEffect(() => {
+    setLivePos({ x: node.attrs.x || 0, y: node.attrs.y || 0 });
+  }, [node.attrs.x, node.attrs.y]);
+
+  // ── Drag to position freely ("Through" layer mode) ───────────────────────────
+  const startDrag = useCallback(
+    (e) => {
+      // Don't drag if clicking buttons, resize handle, or toolbar
+      if (e.target.closest("button, .resize-handle, .image-toolbar")) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const startPointerX = e.touches ? e.touches[0].clientX : e.clientX;
+      const startPointerY = e.touches ? e.touches[0].clientY : e.clientY;
+      const startX = livePos.x || 0;
+      const startY = livePos.y || 0;
+      setIsPositioning(true);
+
+      const onMove = (mv) => {
+        const clientX = mv.touches ? mv.touches[0].clientX : mv.clientX;
+        const clientY = mv.touches ? mv.touches[0].clientY : mv.clientY;
+        const nextX = Math.round(startX + (clientX - startPointerX));
+        const nextY = Math.round(startY + (clientY - startPointerY));
+        setLivePos({ x: nextX, y: nextY });
+      };
+
+      const onUp = (up) => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+        window.removeEventListener("touchmove", onMove);
+        window.removeEventListener("touchend", onUp);
+        setIsPositioning(false);
+
+        const endX = up.changedTouches ? up.changedTouches[0].clientX : up.clientX;
+        const endY = up.changedTouches ? up.changedTouches[0].clientY : up.clientY;
+        const finalX = Math.round(startX + (endX - startPointerX));
+        const finalY = Math.round(startY + (endY - startPointerY));
+        updateAttributes({ x: finalX, y: finalY });
+      };
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      window.addEventListener("touchmove", onMove, { passive: false });
+      window.addEventListener("touchend", onUp);
+    },
+    [livePos, updateAttributes]
+  );
 
   // ── Resize (bottom-right corner drag — mouse + touch) ──────────────────────
   const startResize = useCallback(
@@ -78,8 +126,8 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
       const startWidth = imgRef.current ? imgRef.current.offsetWidth : width || 200;
 
       const onMove = (mv) => {
-        const x = mv.touches ? mv.touches[0].clientX : mv.clientX;
-        const newWidth = Math.max(40, startWidth + (x - startX));
+        const cx = mv.touches ? mv.touches[0].clientX : mv.clientX;
+        const newWidth = Math.max(40, startWidth + (cx - startX));
         updateAttributes({ width: Math.round(newWidth) });
       };
       const onUp = () => {
@@ -96,234 +144,291 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
     [width, updateAttributes]
   );
 
-  // ── Alignment ──────────────────────────────────────────────────────────────
-  const isLeft = imgFloat === "left";
-  const isRight = imgFloat === "right";
-  const isCenter = !isLeft && !isRight;
-  const justifyContent = isLeft ? "flex-start" : isRight ? "flex-end" : "center";
-  const setAlignment = useCallback(
-    (align) => {
-      if (align === "left") updateAttributes({ float: "left" });
-      else if (align === "right") updateAttributes({ float: "right" });
-      else updateAttributes({ float: "none" });
-    },
-    [updateAttributes]
-  );
+  // ── Mode & Alignment ───────────────────────────────────────────────────────
+  const toggleWrapMode = useCallback(() => {
+    const nextMode = isThrough ? "inline" : "through";
+    updateAttributes({ wrapMode: nextMode });
+  }, [isThrough, updateAttributes]);
 
-  const handleDragStart = useCallback(
-    (event) => {
-      if (!selected) return;
-      setIsDragging(true);
-      setActiveDropZone(null);
-      if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = "move";
-        try {
-          event.dataTransfer.setData("text/plain", "image-align");
-        } catch {}
-      }
-    },
-    [selected]
-  );
+  const resetPosition = useCallback(() => {
+    setLivePos({ x: 0, y: 0 });
+    updateAttributes({ x: 0, y: 0 });
+  }, [updateAttributes]);
 
-  const handleDragEnd = useCallback(() => {
-    if (activeDropZone) {
-      setAlignment(activeDropZone);
-    }
-    setIsDragging(false);
-    setActiveDropZone(null);
-  }, [activeDropZone, setAlignment]);
-
-  // ── Touch drag (mobile) ────────────────────────────────────────────────────
-  const handleTouchStart = useCallback(
-    (e) => {
-      if (e.touches.length !== 1) return;
-      e.stopPropagation();
-      const touch = e.touches[0];
-      touchDragRef.current = { startX: touch.clientX, startY: touch.clientY, active: false };
-
-      const onMove = (mv) => {
-        if (!touchDragRef.current || mv.touches.length !== 1) return;
-        const t = mv.touches[0];
-        const dx = t.clientX - touchDragRef.current.startX;
-        const dy = t.clientY - touchDragRef.current.startY;
-        if (!touchDragRef.current.active && Math.hypot(dx, dy) > 8) {
-          touchDragRef.current.active = true;
-        }
-        if (touchDragRef.current.active) {
-          mv.preventDefault();
-          setIsDragging(true);
-          const w = window.innerWidth || 1;
-          const third = w / 3;
-          setActiveDropZone(t.clientX < third ? "left" : t.clientX < third * 2 ? "center" : "right");
-        }
-      };
-
-      const onEnd = (up) => {
-        window.removeEventListener("touchmove", onMove);
-        window.removeEventListener("touchend", onEnd);
-        if (!touchDragRef.current?.active) {
-          touchDragRef.current = null;
-          return;
-        }
-        const t = up.changedTouches[0];
-        const w = window.innerWidth || 1;
-        const third = w / 3;
-        const align = t.clientX < third ? "left" : t.clientX < third * 2 ? "center" : "right";
-        setAlignment(align);
-        // Reposition node in document at the touch drop point
-        if (editor && typeof getPos === "function") {
-          const docPos = editor.view.posAtCoords({ left: t.clientX, top: t.clientY });
-          if (docPos) {
-            const from = getPos();
-            const { state, dispatch } = editor.view;
-            const resolvedNode = state.doc.nodeAt(from);
-            if (resolvedNode && from !== docPos.pos) {
-              const adjustedTo = docPos.pos > from ? docPos.pos - resolvedNode.nodeSize : docPos.pos;
-              const tr = state.tr;
-              tr.delete(from, from + resolvedNode.nodeSize);
-              tr.insert(adjustedTo, resolvedNode);
-              dispatch(tr);
-            }
-          }
-        }
-        setIsDragging(false);
-        setActiveDropZone(null);
-        touchDragRef.current = null;
-      };
-
-      window.addEventListener("touchmove", onMove, { passive: false });
-      window.addEventListener("touchend", onEnd);
-    },
-    [setAlignment, editor, getPos]
-  );
-
-  useEffect(() => {
-    if (!isDragging) return undefined;
-
-    const updateZoneFromPointer = (clientX) => {
-      const width = window.innerWidth || 1;
-      const third = width / 3;
-      if (clientX < third) {
-        setActiveDropZone("left");
-      } else if (clientX < third * 2) {
-        setActiveDropZone("center");
-      } else {
-        setActiveDropZone("right");
-      }
-    };
-
-    const handleWindowDragOver = (event) => {
-      updateZoneFromPointer(event.clientX);
-    };
-
-    const handleWindowDrop = (event) => {
-      updateZoneFromPointer(event.clientX);
-    };
-
-    window.addEventListener("dragover", handleWindowDragOver);
-    window.addEventListener("drop", handleWindowDrop);
-
-    return () => {
-      window.removeEventListener("dragover", handleWindowDragOver);
-      window.removeEventListener("drop", handleWindowDrop);
-    };
-  }, [isDragging]);
-
-  // ── Rotate ─────────────────────────────────────────────────────────────────
+  // ── Rotate & Flip ──────────────────────────────────────────────────────────
   const rotateCW = useCallback(() => updateAttributes({ rotation: ((rotation || 0) + 90) % 360 }), [rotation, updateAttributes]);
   const rotateCCW = useCallback(() => updateAttributes({ rotation: ((rotation || 0) - 90 + 360) % 360 }), [rotation, updateAttributes]);
-
-  // ── Flip ───────────────────────────────────────────────────────────────────
   const toggleFlipH = useCallback(() => updateAttributes({ flipH: !flipH }), [flipH, updateAttributes]);
   const toggleFlipV = useCallback(() => updateAttributes({ flipV: !flipV }), [flipV, updateAttributes]);
 
   // ── Styles ──────────────────────────────────────────────────────────────────
   const isRotated90 = rotation === 90 || rotation === 270;
   const displayWidth = width ? `${width}px` : "auto";
-
-  const wrapStyle = {
-    display: "block",
-    position: "relative",
-    margin: "0.5rem 0",
-    width: displayWidth,
-    maxWidth: "100%",
-    // When rotated 90/270, add vertical padding equal to half the width delta so the
-    // image doesn't overflow its line box.
-    paddingTop: isRotated90 ? `calc((${displayWidth} - 100%) / 2)` : 0,
-    paddingBottom: isRotated90 ? `calc((${displayWidth} - 100%) / 2)` : 0,
-    lineHeight: 0,
-    verticalAlign: "top",
-    overflow: isRotated90 ? "visible" : "hidden",
-  };
-
-  const outerStyle = {
-    display: "flex",
-    justifyContent,
-    width: "100%",
-    overflow: "visible",
-  };
-
   const transform = buildTransform(rotation || 0, !!flipH, !!flipV);
 
-  return (
-    <NodeViewWrapper as="div" style={outerStyle}>
-      {isDragging && (
-        <div
-          contentEditable={false}
+  if (isThrough) {
+    return (
+      <NodeViewWrapper
+        as="span"
+        className="image-resizable-root image-through-layer"
+        style={{
+          display: "inline-block",
+          position: "relative",
+          width: 0,
+          height: 0,
+          margin: 0,
+          padding: 0,
+          lineHeight: 0,
+          verticalAlign: "top",
+          overflow: "visible",
+          userSelect: "none",
+        }}
+      >
+        <span
+          className="image-through-inner"
           style={{
-            position: "fixed",
-            inset: 0,
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            zIndex: 999,
-            pointerEvents: "none",
+            display: "inline-block",
+            position: "absolute",
+            left: `${livePos.x}px`,
+            top: `${livePos.y}px`,
+            width: displayWidth,
+            zIndex: selected ? 25 : 15,
+            cursor: isPositioning ? "grabbing" : "grab",
+            userSelect: "none",
+            touchAction: "none",
           }}
+          onMouseDown={startDrag}
+          onTouchStart={startDrag}
         >
-          {[
-            { key: "left", label: "Align Left" },
-            { key: "center", label: "Align Center" },
-            { key: "right", label: "Align Right" },
-          ].map((zone) => {
-            const isActive = activeDropZone === zone.key;
-            return (
-              <div
-                key={zone.key}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: isActive ? "rgba(99, 102, 241, 0.28)" : "rgba(17, 24, 39, 0.12)",
-                  borderLeft: zone.key !== "left" ? "1px solid rgba(255,255,255,0.35)" : "none",
-                  borderRight: zone.key !== "right" ? "1px solid rgba(255,255,255,0.35)" : "none",
-                  color: isActive ? "#312e81" : "#111827",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  letterSpacing: "0.02em",
-                  transition: "background-color 0.12s ease, color 0.12s ease",
-                }}
-              >
-                <span
-                  style={{
-                    background: "rgba(255,255,255,0.82)",
-                    borderRadius: 999,
-                    padding: "0.45rem 0.8rem",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                  }}
-                >
-                  {zone.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+          {/* ── Toolbar (shown when node is selected) ── */}
+          {selected && (
+            <span
+              contentEditable={false}
+              className="image-toolbar"
+              style={{
+                position: "absolute",
+                bottom: -38,
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                background: "#1f2937",
+                borderRadius: 6,
+                padding: "3px 5px",
+                zIndex: 30,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                whiteSpace: "nowrap",
+                userSelect: "none",
+              }}
+            >
+              {/* Drag indicator */}
+              <span style={{ color: "#38bdf8", fontSize: 11, paddingRight: 4, display: "flex", alignItems: "center", gap: 2 }}>
+                <span>✋</span>
+                <span>Through</span>
+              </span>
 
-      {/* data-drag-handle lets ProseMirror treat the whole div as a draggable node */}
-      <div style={wrapStyle} data-drag-handle draggable="true" onDragStart={handleDragStart} onDragEnd={handleDragEnd} onTouchStart={handleTouchStart}>
-        {/* ── Toolbar (shown when node is selected) ── */}
+              <div style={tbDivider} />
+
+              {/* Mode toggle */}
+              <button
+                type="button"
+                title="Switch to inline mode"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  toggleWrapMode();
+                }}
+                style={tbBtn(false)}
+              >
+                In-line
+              </button>
+
+              <div style={tbDivider} />
+
+              {/* Rotate CCW */}
+              <button
+                type="button"
+                title="Rotate 90° CCW"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  rotateCCW();
+                }}
+                style={tbBtn()}
+              >
+                ↺
+              </button>
+
+              {/* Rotate CW */}
+              <button
+                type="button"
+                title="Rotate 90° CW"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  rotateCW();
+                }}
+                style={tbBtn()}
+              >
+                ↻
+              </button>
+
+              <div style={tbDivider} />
+
+              {/* Flip H */}
+              <button
+                type="button"
+                title="Flip horizontal"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  toggleFlipH();
+                }}
+                style={tbBtn(!!flipH)}
+              >
+                ↔
+              </button>
+
+              {/* Flip V */}
+              <button
+                type="button"
+                title="Flip vertical"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  toggleFlipV();
+                }}
+                style={tbBtn(!!flipV)}
+              >
+                ↕
+              </button>
+
+              {(livePos.x !== 0 || livePos.y !== 0) && (
+                <>
+                  <div style={tbDivider} />
+                  <button
+                    type="button"
+                    title="Reset position to origin"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      resetPosition();
+                    }}
+                    style={tbBtn()}
+                  >
+                    Reset
+                  </button>
+                </>
+              )}
+
+              <div style={tbDivider} />
+
+              {/* Position / Size readout */}
+              <span style={{ color: "#9ca3af", fontSize: 10, paddingLeft: 2, paddingRight: 2 }}>
+                {width ? `${width}px` : "auto"} · ({livePos.x}, {livePos.y})
+              </span>
+            </span>
+          )}
+
+          {/* ── Delete button (top-left, shown when selected) ── */}
+          {selected && (
+            <button
+              type="button"
+              contentEditable={false}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                deleteNode();
+              }}
+              title="Remove image"
+              style={{
+                position: "absolute",
+                top: 4,
+                left: 4,
+                width: 20,
+                height: 20,
+                background: "#ef4444",
+                border: "none",
+                borderRadius: "50%",
+                cursor: "pointer",
+                zIndex: 25,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontSize: 14,
+                lineHeight: 1,
+                padding: 0,
+                userSelect: "none",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+              }}
+            >
+              ×
+            </button>
+          )}
+
+          {/* ── The image ── */}
+          <img
+            ref={imgRef}
+            src={src}
+            alt={alt || ""}
+            draggable={false}
+            style={{
+              display: "block",
+              width: width ? `${width}px` : "auto",
+              maxWidth: "none",
+              height: "auto",
+              borderRadius: 4,
+              outline: selected ? "2px solid #6366f1" : "1px dashed rgba(99, 102, 241, 0.4)",
+              transition: "outline 0.1s",
+              cursor: isPositioning ? "grabbing" : "grab",
+              transform,
+              transformOrigin: "center center",
+              pointerEvents: "auto",
+            }}
+          />
+
+          {/* ── Resize handle (bottom-right corner, shown when selected) ── */}
+          {selected && (
+            <span
+              contentEditable={false}
+              className="resize-handle"
+              onMouseDown={startResize}
+              onTouchStart={startResize}
+              title="Drag to resize"
+              style={{
+                position: "absolute",
+                bottom: -2,
+                right: -2,
+                width: 18,
+                height: 18,
+                background: "#6366f1",
+                borderRadius: "0 0 4px 0",
+                cursor: "se-resize",
+                zIndex: 25,
+                userSelect: "none",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+              }}
+            />
+          )}
+        </span>
+      </NodeViewWrapper>
+    );
+  }
+
+  // ── Inline mode fallback ───────────────────────────────────────────────────
+  const isLeft = imgFloat === "left";
+  const isRight = imgFloat === "right";
+  const isCenter = !isLeft && !isRight;
+  const justifyContent = isLeft ? "flex-start" : isRight ? "flex-end" : "center";
+  const setAlignment = (align) => {
+    if (align === "left") updateAttributes({ float: "left" });
+    else if (align === "right") updateAttributes({ float: "right" });
+    else updateAttributes({ float: "none" });
+  };
+
+  return (
+    <NodeViewWrapper as="div" style={{ display: "flex", justifyContent, width: "100%", overflow: "visible" }}>
+      <div style={{ display: "block", position: "relative", margin: "0.5rem 0", width: displayWidth, maxWidth: "100%", lineHeight: 0, verticalAlign: "top" }}>
         {selected && (
           <div
             contentEditable={false}
+            className="image-toolbar"
             style={{
               position: "absolute",
               bottom: -38,
@@ -341,7 +446,18 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
               userSelect: "none",
             }}
           >
-            {/* Alignment */}
+            <button
+              type="button"
+              title="Switch to through (free layer) mode"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                toggleWrapMode();
+              }}
+              style={tbBtn(true)}
+            >
+              Through
+            </button>
+            <div style={tbDivider} />
             {[
               { label: "L", val: "left", title: "Align left", symbol: "◧" },
               { label: "C", val: "center", title: "Align center", symbol: "▣" },
@@ -349,6 +465,7 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
             ].map(({ label, val, title, symbol }) => (
               <button
                 key={val}
+                type="button"
                 title={title}
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -360,106 +477,14 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
                 <span style={{ fontSize: 10, marginLeft: 2 }}>{label}</span>
               </button>
             ))}
-
             <div style={tbDivider} />
-
-            {/* Rotate CCW */}
-            <button
-              title="Rotate 90° counter-clockwise"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                rotateCCW();
-              }}
-              style={tbBtn()}
-            >
-              ↺
-            </button>
-
-            {/* Rotate CW */}
-            <button
-              title="Rotate 90° clockwise"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                rotateCW();
-              }}
-              style={tbBtn()}
-            >
-              ↻
-            </button>
-
+            <button type="button" title="Rotate CCW" onMouseDown={(e) => { e.preventDefault(); rotateCCW(); }} style={tbBtn()}>↺</button>
+            <button type="button" title="Rotate CW" onMouseDown={(e) => { e.preventDefault(); rotateCW(); }} style={tbBtn()}>↻</button>
             <div style={tbDivider} />
-
-            {/* Flip H */}
-            <button
-              title="Flip horizontal"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                toggleFlipH();
-              }}
-              style={tbBtn(!!flipH)}
-            >
-              ↔
-            </button>
-
-            {/* Flip V */}
-            <button
-              title="Flip vertical"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                toggleFlipV();
-              }}
-              style={tbBtn(!!flipV)}
-            >
-              ↕
-            </button>
-
-            <div style={tbDivider} />
-
-            {/* Width readout */}
-            <span style={{ color: "#9ca3af", fontSize: 10, paddingLeft: 2, paddingRight: 2 }}>
-              {width ? `${width}px` : "auto"}
-              {rotation ? ` · ${rotation}°` : ""}
-            </span>
+            <button type="button" title="Flip H" onMouseDown={(e) => { e.preventDefault(); toggleFlipH(); }} style={tbBtn(!!flipH)}>↔</button>
+            <button type="button" title="Flip V" onMouseDown={(e) => { e.preventDefault(); toggleFlipV(); }} style={tbBtn(!!flipV)}>↕</button>
           </div>
         )}
-
-        {/* ── Delete button (top-left, shown when selected) ── */}
-        {selected && (
-          <button
-            contentEditable={false}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              deleteNode();
-            }}
-            title="Remove image"
-            style={{
-              position: "absolute",
-              top: 4,
-              left: 4,
-              width: 20,
-              height: 20,
-              background: "#ef4444",
-              border: "none",
-              borderRadius: "50%",
-              cursor: "pointer",
-              zIndex: 15,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontSize: 14,
-              lineHeight: 1,
-              padding: 0,
-              userSelect: "none",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-            }}
-          >
-            ×
-          </button>
-        )}
-
-        {/* ── The image ── */}
         <img
           ref={imgRef}
           src={src}
@@ -472,17 +497,14 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
             height: "auto",
             borderRadius: 4,
             outline: selected ? "2px solid #6366f1" : "2px solid transparent",
-            transition: "outline 0.1s",
-            cursor: "default",
             transform,
             transformOrigin: "center center",
           }}
         />
-
-        {/* ── Resize handle (bottom-right corner, shown when selected) ── */}
         {selected && (
           <div
             contentEditable={false}
+            className="resize-handle"
             onMouseDown={startResize}
             onTouchStart={startResize}
             title="Drag to resize"
@@ -497,7 +519,6 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
               cursor: "se-resize",
               zIndex: 10,
               userSelect: "none",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
             }}
           />
         )}
@@ -510,9 +531,10 @@ function ResizableImageView({ node, updateAttributes, selected, deleteNode, getP
 
 export const Image_Resizable = Node.create({
   name: "image",
-  group: "block",
+  group: "inline",
+  inline: true,
   atom: true,
-  draggable: true,
+  draggable: false,
 
   addCommands() {
     return {
@@ -521,7 +543,13 @@ export const Image_Resizable = Node.create({
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: options,
+            attrs: {
+              wrapMode: "through",
+              x: 0,
+              y: 0,
+              width: 320,
+              ...options,
+            },
           });
         },
     };
@@ -533,12 +561,33 @@ export const Image_Resizable = Node.create({
       alt: { default: null },
       title: { default: null },
       width: {
-        default: null,
+        default: 320,
         parseHTML: (el) => {
           const w = el.style.width || el.getAttribute("width");
           return w ? parseInt(w, 10) || null : null;
         },
         renderHTML: (attrs) => (attrs.width ? { style: `width:${attrs.width}px;` } : {}),
+      },
+      wrapMode: {
+        default: "through",
+        parseHTML: (el) => el.getAttribute("data-wrap") || "through",
+        renderHTML: (attrs) => ({ "data-wrap": attrs.wrapMode || "through" }),
+      },
+      x: {
+        default: 0,
+        parseHTML: (el) => {
+          const v = el.getAttribute("data-x");
+          return v != null ? parseInt(v, 10) || 0 : 0;
+        },
+        renderHTML: (attrs) => ({ "data-x": attrs.x ?? 0 }),
+      },
+      y: {
+        default: 0,
+        parseHTML: (el) => {
+          const v = el.getAttribute("data-y");
+          return v != null ? parseInt(v, 10) || 0 : 0;
+        },
+        renderHTML: (attrs) => ({ "data-y": attrs.y ?? 0 }),
       },
       float: {
         default: "none",
@@ -564,19 +613,43 @@ export const Image_Resizable = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: "img[src]" }];
+    return [
+      { tag: "span[data-wrap='through'] img[src]" },
+      { tag: "img[src]" },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { width, float: floatAttr, rotation, flipH, flipV, ...rest } = HTMLAttributes;
+    const { width, float: floatAttr, rotation, flipH, flipV, wrapMode: wrapAttr, x: xAttr, y: yAttr, ...rest } = HTMLAttributes;
+    const isThrough = (wrapAttr || HTMLAttributes["data-wrap"] || "through") === "through";
     const imageFloat = floatAttr || HTMLAttributes["data-float"] || "none";
+    const posX = xAttr ?? (HTMLAttributes["data-x"] ? parseInt(HTMLAttributes["data-x"], 10) : 0);
+    const posY = yAttr ?? (HTMLAttributes["data-y"] ? parseInt(HTMLAttributes["data-y"], 10) : 0);
+    const transform = buildTransform(rotation || 0, !!flipH, !!flipV);
+
+    if (isThrough) {
+      let imgStyle = `position:absolute;left:${posX}px;top:${posY}px;z-index:10;max-width:none;height:auto;display:block;border-radius:4px;pointer-events:auto;`;
+      if (width) imgStyle += `width:${width}px;`;
+      if (transform !== "none") imgStyle += `transform:${transform};transform-origin:center center;`;
+      return [
+        "span",
+        {
+          class: "image-through-container",
+          "data-wrap": "through",
+          "data-x": posX,
+          "data-y": posY,
+          style: "display:inline-block;position:relative;width:0;height:0;line-height:0;margin:0;padding:0;overflow:visible;vertical-align:top;",
+        },
+        ["img", mergeAttributes(rest, { style: imgStyle })],
+      ];
+    }
+
     let style = "max-width:100%;height:auto;display:block;border-radius:4px;margin:0.5rem auto;";
     if (width) style += `width:${width}px;`;
     if (imageFloat === "left") style += "margin:0.5rem auto 0.5rem 0;";
     if (imageFloat === "right") style += "margin:0.5rem 0 0.5rem auto;";
-    const transform = buildTransform(rotation || 0, !!flipH, !!flipV);
     if (transform !== "none") style += `transform:${transform};transform-origin:center center;`;
-    return ["img", mergeAttributes(rest, { style, "data-float": imageFloat })];
+    return ["img", mergeAttributes(rest, { style, "data-float": imageFloat, "data-wrap": "inline" })];
   },
 
   addNodeView() {

@@ -40,17 +40,21 @@ export const ModalContainerContext = createContext(null);
  *   title: string | ReactNode
  *   onClose: () => void
  *   showClose?: boolean — header X button (default true)
+ *   actions?: ReactNode — optional action buttons to place before the close button
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalHeader({ title, onClose, showClose = true, className = "" }) {
+export function ModalHeader({ title, onClose, showClose = true, actions = null, className = "" }) {
   return (
     <div className={`app-modal-header d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`.trim()}>
       <h3 className="app-modal-title">{title}</h3>
-      {showClose && onClose ? (
-        <button type="button" onClick={onClose} title="Close" aria-label="Close" className="app-modal-close align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
-          <XMarkIcon className="h-6 w-6" />
-        </button>
-      ) : null}
+      <div className="d-flex align-items-center gap-2">
+        {actions}
+        {showClose && onClose ? (
+          <button type="button" onClick={onClose} title="Close" aria-label="Close" className="app-modal-close align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -71,7 +75,7 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, contentGravity = "top", container = null }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, headerActions = null, contentGravity = "top", container = null }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
   const containerContext = useContext(ModalContainerContext);
@@ -86,7 +90,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     return (
       <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
         <ModalStackContext.Provider value={nextDepth}>
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
+          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "" : "p-2"} no-scrollbar`}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
@@ -100,53 +104,30 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   const layerZIndex = 1200 + currentDepth * 20;
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
-  const Overlay = <div className="bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
+  const Overlay = <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
 
-  let modalElement = null;
-
-  // ─── 2 FULLSCREEN VARIANT ──────────────────────────────────────────────────────
-  if (fullScreen) {
-    modalElement = (
-      <div className="app-modal-layer fixed inset-0" style={{ zIndex: layerZIndex }}>
-        {Overlay}
-        <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0" style={{ zIndex: layerZIndex + 1 }}>
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} className="bg-white dark:bg-gray-900" />}
-          <div className={`${noPadding ? "" : "p-1"} flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-900 no-scrollbar text-gray-900 dark:text-gray-100`}>{contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}</div>
-          {footer && <ModalFooter>{footer}</ModalFooter>}
+  // ─── 2 BOTTOM-ANCHORED MODAL SHEET (Global standard: all modals float to bottom and grow upwards) ─────
+  const modalElement = (
+    <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex }}>
+      {Overlay}
+      <div
+        className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full ${
+          fullScreen ? "h-full max-h-screen rounded-none app-modal-sheet--fullscreen" : "max-h-[90vh] rounded-t-lg"
+        }`}
+        style={{ zIndex: layerZIndex + 1 }}
+      >
+        {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
+        <div
+          className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${
+            noPadding ? "p-0" : "p-1"
+          }`}
+        >
+          {children}
         </div>
+        {footer && <ModalFooter>{footer}</ModalFooter>}
       </div>
-    );
-  } else if (centered) {
-    // ─── 3 CENTERED VARIANT ────────────────────────────────────────────────────────
-    modalElement = (
-      <div className="app-modal-layer fixed inset-0" style={{ zIndex: layerZIndex }}>
-        {Overlay}
-        <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-[90vh] overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full" style={{ zIndex: layerZIndex + 1 }}>
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-            {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
-          </div>
-          {footer && <ModalFooter className="border-gray-200 border-t dark:border-gray-700 flex-shrink-0">{footer}</ModalFooter>}
-        </div>
-      </div>
-    );
-  } else {
-    // ─── 4 DEFAULT VARIANT (BOTTOM SHEET) ──────────────────────────────────────────
-    modalElement = (
-      <div className="app-modal-layer fixed inset-0 overflow-y-auto" style={{ zIndex: layerZIndex }}>
-        <div className="flex items-end justify-center min-h-screen">
-          {Overlay}
-          <div className="bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 max-h-screen overflow-hidden right-0 rounded-t-lg shadow-xl text-left transform transition-all w-full" style={{ zIndex: layerZIndex + 1 }}>
-            {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
-            <div className={`flex-grow-1 min-h-0 overflow-auto bg-white dark:bg-gray-800 no-scrollbar ${noPadding ? "" : "p-1"}`}>
-              {contentGravity === "bottom" ? <div className={`${gravityClass} text-gray-900 dark:text-gray-100`}>{children}</div> : <div className="dark:text-gray-100 text-gray-900">{children}</div>}
-            </div>
-            {footer && <ModalFooter>{footer}</ModalFooter>}
-          </div>
-        </div>
-      </div>
-    );
-  }
+    </div>
+  );
 
   const stackContent = (
     <ModalStackContext.Provider value={nextDepth}>

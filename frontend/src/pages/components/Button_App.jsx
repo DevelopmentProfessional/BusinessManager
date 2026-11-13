@@ -33,14 +33,33 @@ function adjustTrainingMargins(className) {
 
 export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
   const { isTrainingMode } = useViewMode();
-  const training = isTrainingMode && !compact;
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
+  const isCancel = normalizedLabel.toLowerCase() === "cancel" || titleProp?.toLowerCase() === "cancel" || variant === "cancel";
+  const training = isTrainingMode && !compact && !isCancel;
   const displayLabel = typeof label === "string" ? buttonDisplayLabel(normalizedLabel) : normalizedLabel;
-  const showText = training && displayLabel.length > 0;
+  const showText = training && displayLabel.length > 0 && !isCancel;
+  const isIconOnly = !showText;
   const tooltipLabel = titleProp ?? (normalizedLabel || label);
   const iconClass = "app-icon flex-shrink-0";
   const variantClass = variant ? VARIANT_CLASS[variant] || variant : "";
   const effectiveClass = training ? adjustTrainingMargins(className) : className;
+
+  const iconOnlyStyle = isIconOnly
+    ? {
+        width: "var(--app-btn-height, 2rem)",
+        height: "var(--app-btn-height, 2rem)",
+        minWidth: "var(--app-btn-height, 2rem)",
+        maxWidth: "var(--app-btn-height, 2rem)",
+        minHeight: "var(--app-btn-height, 2rem)",
+        maxHeight: "var(--app-btn-height, 2rem)",
+        flex: "0 0 var(--app-btn-height, 2rem)",
+        borderRadius: "50%",
+        aspectRatio: "1 / 1",
+        padding: 0,
+      }
+    : undefined;
+
+  const mergedStyle = iconOnlyStyle ? { ...iconOnlyStyle, ...(rest.style || {}) } : rest.style;
 
   return (
     <button
@@ -49,10 +68,10 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       disabled={disabled}
       title={tooltipLabel}
       aria-label={tooltipLabel}
+      style={mergedStyle}
       className={`btn flex-shrink-0 d-flex align-items-center
         app-btn app-action-btn
-        ${showText ? "" : "app-action-btn--icon-only"}
-        ${training ? (showText ? "rounded-pill ps-0 pe-0 gap-1 justify-content-start" : "rounded-pill p-0 gap-0 justify-content-center") : "rounded-circle p-0 justify-content-center"}
+        ${isIconOnly ? "btn-circle app-action-btn--icon-only rounded-circle p-0 justify-content-center" : "rounded-pill ps-2 pe-2 gap-1 justify-content-start"}
         ${variantClass} ${effectiveClass}
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}

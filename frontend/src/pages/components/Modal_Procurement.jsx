@@ -376,12 +376,28 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
     <div className={`d-flex flex-column min-h-0 h-100 ${embedded ? "procurement-ui--embedded" : ""}`}>
       {showCreate ? renderCreateForm() : renderPoList()}
 
-      <Modal isOpen={!!detailPoId} onClose={() => { setDetailPoId(null); setDetailPo(null); }} fullScreen noPadding>
-        <div className="ui-page-shell">
-          <div className="border-bottom flex-shrink-0 p-0">
-            <h6 className="app-modal-title">{detailPo?.po_number || "Purchase order"}</h6>
-          </div>
-          <div className="flex-grow-1 min-h-0 overflow-auto p-1">
+      <Modal
+        isOpen={!!detailPoId}
+        onClose={() => { setDetailPoId(null); setDetailPo(null); }}
+        title={detailPo?.po_number || "Purchase order"}
+        footer={
+          <Footer_Actions
+            center={
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Close"
+                onClick={() => {
+                  setDetailPoId(null);
+                  setDetailPo(null);
+                }}
+                className="btn-outline-secondary"
+                title="Close"
+              />
+            }
+          />
+        }
+      >
+        <div className="flex-grow-1 min-h-0 overflow-auto p-1">
             {detailLoading ? (
               <div className="py-1 small text-center text-muted">Loading…</div>
             ) : detailPo ? (
@@ -451,23 +467,6 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
             ) : (
               <p className="ui-small-muted">Could not load purchase order.</p>
             )}
-          </div>
-          <div className="app-footer-padding app-form-footer app-standard-footer border-top flex-shrink-0">
-            <Footer_Actions
-              center={
-                <Button_Toolbar
-                  icon={XMarkIcon}
-                  label="Close"
-                  onClick={() => {
-                    setDetailPoId(null);
-                    setDetailPo(null);
-                  }}
-                  className="btn-outline-secondary"
-                  title="Close"
-                />
-              }
-            />
-          </div>
         </div>
       </Modal>
 

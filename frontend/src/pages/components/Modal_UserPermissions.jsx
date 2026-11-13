@@ -290,9 +290,8 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
 
         {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
         <div className="component-footer">
-          <div className="component-footer-left"></div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
               <XMarkIcon />
             </button>
           </div>

@@ -119,9 +119,9 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
         </div>
 
         <div className="component-footer">
-          <div className="component-footer-left">{!showSignaturePad && savedSignature && <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />}</div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            {!showSignaturePad && savedSignature && <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />}
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
               <XMarkIcon />
             </button>
           </div>

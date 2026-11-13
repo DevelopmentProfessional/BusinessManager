@@ -56,6 +56,7 @@ import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, of
 import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/Modal_Signature";
+import Modal from "./components/Modal";
 import useBranding from "../services/useBranding";
 import { applyActiveColorTheme } from "../services/activeColorTheme";
 import Modal_Settings from "./components/Modal_Settings";
@@ -196,10 +197,20 @@ const Profile = () => {
   const persistCurrentUserProfile = useCallback(
     async (patch) => {
       if (!user?.id) return null;
-      const response = await profileAPI.updateMyProfile(patch);
-      const updatedUser = response?.data ?? response;
-      if (!updatedUser || typeof updatedUser !== "object") return null;
-      const mergedUser = { ...user, ...updatedUser };
+      let updatedUser = null;
+      try {
+        const response = await profileAPI.updateMyProfile(patch);
+        updatedUser = response?.data ?? response;
+      } catch (err) {
+        console.warn("updateMyProfile failed, attempting isud update fallback:", err);
+        try {
+          const response = await api.put(`/isud/user/${user.id}`, patch);
+          updatedUser = response?.data ?? response;
+        } catch (fallbackErr) {
+          console.error("isud fallback update also failed:", fallbackErr);
+        }
+      }
+      const mergedUser = { ...user, ...(updatedUser && typeof updatedUser === "object" ? updatedUser : patch) };
       setUser(mergedUser);
       if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
       if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
@@ -1851,96 +1862,77 @@ const Profile = () => {
       <Modal_Signature isOpen={signatureModalOpen} onClose={() => setSignatureModalOpen(false)} userId={user?.id} />
 
       {/* Request Modal */}
-      {showLeaveModal && (
-        <div
-          className="d-block modal"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowLeaveModal(false);
-              setLeaveError("");
-            }
-          }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-sm">
-            <div className="modal-content">
-              <div className="modal-header py-0">
-                <h6 className="mb-0 modal-title">New Request</h6>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => {
-                    setShowLeaveModal(false);
-                    setLeaveError("");
-                  }}
-                />
-              </div>
-              <form onSubmit={handleLeaveSubmit}>
-                <div className="modal-body py-1">
-                  {leaveError && <div className="alert alert-danger mb-2 py-1 small">{leaveError}</div>}
-                  <div className="mb-2">
-                    <label className="form-label ui-form-label-sm">Request Type</label>
-                    <Dropdown_Custom
-                      className="ui-control-sm"
-                      value={leaveModalType}
-                      onChange={(e) => {
-                        setLeaveModalType(e.target.value);
-                        setLeaveForm({ start_date: "", end_date: "", notes: "" });
-                        setLeaveError("");
-                      }}
-                      options={[
-                        { value: "vacation", label: "Vacation" },
-                        { value: "sick", label: "Sick" },
-                        { value: "onboarding", label: "Onboarding" },
-                        { value: "offboarding", label: "Offboarding" },
-                      ]}
-                      placeholder="Request type"
-                      closeOnSelect
-                    />
-                  </div>
-                  {leaveModalType === "vacation" || leaveModalType === "sick" ? (
-                    <>
-                      <div className="mb-2">
-                        <label className="form-label ui-form-label-sm">Start Date</label>
-                        <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
-                      </div>
-                      <div className="mb-2">
-                        <label className="form-label ui-form-label-sm">End Date</label>
-                        <input type="date" className="form-control ui-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mb-2">
-                      <label className="form-label ui-form-label-sm">Requested Date (optional)</label>
-                      <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
-                    </div>
-                  )}
-                  <div className="mb-0">
-                    <label className="form-label ui-form-label-sm">Notes (optional)</label>
-                    <textarea className="form-control ui-control-sm" rows="2" value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
-                  </div>
-                </div>
-                <div className="modal-footer py-0">
-                  <button
-                    type="button"
-                    className="btn ui-btn-outline-secondary-sm"
-                    onClick={() => {
-                      setShowLeaveModal(false);
-                      setLeaveError("");
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
-                    {leaveSubmitting ? "Submitting…" : "Submit"}
-                  </button>
-                </div>
-              </form>
-            </div>
+      <Modal
+        isOpen={showLeaveModal}
+        onClose={() => {
+          setShowLeaveModal(false);
+          setLeaveError("");
+        }}
+        title="New Request"
+        footer={
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            <button type="submit" form="profile-leave-form" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
+              {leaveSubmitting ? "Submitting…" : "Submit"}
+            </button>
+            <button
+              type="button"
+              className="btn ui-btn-circle-outline-secondary btn-circle"
+              onClick={() => {
+                setShowLeaveModal(false);
+                setLeaveError("");
+              }}
+              title="Cancel"
+            >
+              <XMarkIcon />
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="profile-leave-form" onSubmit={handleLeaveSubmit} className="p-1">
+          {leaveError && <div className="alert alert-danger mb-2 py-1 small">{leaveError}</div>}
+          <div className="mb-2">
+            <label className="form-label ui-form-label-sm">Request Type</label>
+            <Dropdown_Custom
+              className="ui-control-sm"
+              value={leaveModalType}
+              onChange={(e) => {
+                setLeaveModalType(e.target.value);
+                setLeaveForm({ start_date: "", end_date: "", notes: "" });
+                setLeaveError("");
+              }}
+              options={[
+                { value: "vacation", label: "Vacation" },
+                { value: "sick", label: "Sick" },
+                { value: "onboarding", label: "Onboarding" },
+                { value: "offboarding", label: "Offboarding" },
+              ]}
+              placeholder="Request type"
+              closeOnSelect
+            />
+          </div>
+          {leaveModalType === "vacation" || leaveModalType === "sick" ? (
+            <>
+              <div className="mb-2">
+                <label className="form-label ui-form-label-sm">Start Date</label>
+                <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
+              </div>
+              <div className="mb-2">
+                <label className="form-label ui-form-label-sm">End Date</label>
+                <input type="date" className="form-control ui-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
+              </div>
+            </>
+          ) : (
+            <div className="mb-2">
+              <label className="form-label ui-form-label-sm">Requested Date (optional)</label>
+              <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
+            </div>
+          )}
+          <div className="mb-0">
+            <label className="form-label ui-form-label-sm">Notes (optional)</label>
+            <textarea className="form-control ui-control-sm" rows={6} value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
+          </div>
+        </form>
+      </Modal>
 
       {selectedSlip && <Modal_TemplateUse page="employees" entity={selectedSlip} employee={user} currentUser={user} settings={{ ...companyInfo, company_logo_data_url: companyLogoDataUrl }} filterType="payslip" onClose={() => setSelectedSlip(null)} />}
     </div>
