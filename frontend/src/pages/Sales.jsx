@@ -42,19 +42,19 @@ import { useLocation, useNavigate } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
-import Button_Toolbar from "./components/Button_Toolbar";
-import Filter_CatalogCheckboxes from "./components/Filter_CatalogCheckboxes";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
-import PageControlsModal from "./components/Page_ControlsModal";
+import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
 import { templatesAPI } from "../services/api";
-import Modal_Detail_Item from "./components/Modal_ItemDetail";
-import Modal_Checkout_Sales from "./components/Modal_SalesCheckout";
-import Modal_Cart_Sales from "./components/Modal_SalesCart";
-import Modal_History_Sales from "./components/Modal_SalesHistory";
-import Modal_Feature_Select_Sales from "./components/Modal_SalesFeatureSelect";
-import Modal_TemplateUse from "./components/Modal_TemplateUse";
-import Dropdown_Custom from "./components/Dropdown_Custom";
-import { getDisplayImageUrl } from "./components/Utils_Image";
+import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
+import Modal_Checkout_Sales from "./components/modals/Modal_SalesCheckout";
+import Modal_Cart_Sales from "./components/modals/Modal_SalesCart";
+import Modal_History_Sales from "./components/modals/Modal_SalesHistory";
+import Modal_Feature_Select_Sales from "./components/modals/Modal_SalesFeatureSelect";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import { getDisplayImageUrl } from "./components/utils/Utils_Image";
 import useViewMode from "../services/useViewMode";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 
@@ -2044,10 +2044,9 @@ export default function Sales() {
         />
       )}
 
-      <PageControlsModal
+      <Modal_Sales_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Sales Page Controls"
         onOpen={() => {
           templatesAPI
             .getAll("receipt")
@@ -2062,89 +2061,12 @@ export default function Sales() {
             })
             .catch(() => {});
         }}
-      >
-        <div className="mb-2 ui-small-muted">Use these controls to manage the sales experience on this page.</div>
-
-        {/* Card Display Settings */}
-        <hr className="my-2" />
-        <div className="fw-semibold mb-2 ui-text-sm">Card Display Settings</div>
-
-        <div className="mb-2">
-          <label className="d-block mb-1 small text-muted">Item Card Style</label>
-          <div style={{ maxWidth: "16rem" }}>
-            <Dropdown_Custom
-              className="ui-control-sm"
-              value={cardViewMode}
-              onChange={(e) => {
-                const nextMode = e.target.value;
-                setCardViewMode(nextMode);
-                try {
-                  localStorage.setItem("sales_card_view", nextMode);
-                } catch {}
-              }}
-              options={[
-                { value: "full", label: "Full Card View" },
-                { value: "compact", label: "Compact Card View" },
-                { value: "mixed", label: "Mix (Compact without image)" },
-              ]}
-              placeholder="Card style"
-              closeOnSelect
-            />
-          </div>
-          <div className="mt-1 ui-small-muted">
-            {cardViewMode === "compact"
-              ? "All items display as compact cards."
-              : cardViewMode === "mixed"
-              ? "Items with images display full-size; items without images display compact."
-              : "All items display as full-size cards."}
-          </div>
-        </div>
-
-        {/* Receipt Settings */}
-        <hr className="my-2" />
-        <div className="fw-semibold mb-2 ui-text-sm">Receipt Settings</div>
-
-        <div className="mb-2">
-          <label className="d-block mb-1 small text-muted">Receipt Template</label>
-          <Dropdown_Custom
-            className="ui-control-sm"
-            value={receiptSettings.templateId ?? ""}
-            onChange={(e) => {
-              const id = e.target.value;
-              const tpl = rcptTemplates.find((t) => String(t.id) === id);
-              const next = { ...receiptSettings, templateId: id || null, templateName: tpl?.name || "" };
-              setReceiptSettings(next);
-              localStorage.setItem("sales_receipt_settings", JSON.stringify(next));
-            }}
-            options={[{ value: "", label: "— No template selected —" }, ...rcptTemplates.map((t) => ({ value: String(t.id), label: t.name }))]}
-            placeholder="Select receipt template"
-            closeOnSelect
-          />
-          {rcptTemplates.length === 0 && <div className="mt-1 ui-small-muted">No receipt templates found. Create one in Documents → Templates.</div>}
-        </div>
-
-        <div className="mb-2">
-          <label className="d-block mb-1 small text-muted">After Receipt Selected</label>
-          <Dropdown_Custom
-            className="ui-control-sm"
-            value={receiptSettings.action}
-            onChange={(e) => {
-              const next = { ...receiptSettings, action: e.target.value };
-              setReceiptSettings(next);
-              localStorage.setItem("sales_receipt_settings", JSON.stringify(next));
-            }}
-            options={[
-              { value: "select", label: "Ask (show template list)" },
-              { value: "print", label: "Print" },
-              { value: "email", label: "Email to Client" },
-              { value: "pdf-print", label: "Print to PDF" },
-              { value: "pdf-download", label: "Download PDF" },
-            ]}
-            placeholder="Post-selection action"
-            closeOnSelect
-          />
-        </div>
-      </PageControlsModal>
+        cardViewMode={cardViewMode}
+        setCardViewMode={setCardViewMode}
+        receiptSettings={receiptSettings}
+        setReceiptSettings={setReceiptSettings}
+        rcptTemplates={rcptTemplates}
+      />
     </div>
   );
 }

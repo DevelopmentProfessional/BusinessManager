@@ -48,23 +48,26 @@ import { useNavigate } from "react-router-dom";
 import useStore from "../services/useStore";
 import useDarkMode from "../services/useDarkMode";
 import useViewMode from "../services/useViewMode";
-import Button_Toolbar from "./components/Button_Toolbar";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
-import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
+import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
-import Modal_Signature from "./components/Modal_Signature";
-import Modal from "./components/Modal";
+import Modal_Signature from "./components/modals/Modal_Signature";
+import Modal from "./components/modals/Modal";
 import useBranding from "../services/useBranding";
 import { applyActiveColorTheme } from "../services/activeColorTheme";
-import Modal_Settings from "./components/Modal_Settings";
-import Panel_General from "./components/Panel_General";
-import Panel_WageHistory from "./components/Panel_WageHistory";
-import Modal_TemplateUse from "./components/Modal_TemplateUse";
-import Panel_Database from "./components/Panel_Database";
-import Dropdown_Custom from "./components/Dropdown_Custom";
+import Modal_Settings from "./components/modals/Modal_Settings";
+import Panel_General from "./components/panels/Panel_General";
+import Panel_WageHistory from "./components/panels/Panel_WageHistory";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Panel_Database from "./components/panels/Panel_Database";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import Panel_Profile_Information from "./components/panels/Panel_Profile_Information";
+import Panel_Profile_TimeOff from "./components/panels/Panel_Profile_TimeOff";
+import Modal_Profile_LeaveRequest from "./components/modals/Modal_Profile_LeaveRequest";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
@@ -1333,97 +1336,17 @@ const Profile = () => {
 
             <div style={{ flexShrink: 0, minHeight: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
-                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
-                  {meSectionOpen === "profile" && (
-                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
-                      <div className="row">
-                        <div className="col-sm-6">
-                          <div className="flex mb-1 wrap">
-                            <UserIcon className="w-4" />{" "}
-                            <div className="fw-medium p-1">
-                              {user.first_name} {user.last_name}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="flex mb-1 wrap">
-                            <span className={`badge bg-${getRoleBadgeColor(user.role)} text-capitalize`}>{user.role || "Employee"}</span>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="flex mb-1 wrap">
-                            <div className="fw-medium p-1">{user.email || "Not set"}</div>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="flex mb-1 wrap">
-                            <div className="fw-medium p-1">{user.phone || "Not set"}</div>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="flex mb-1 wrap">
-                            <div className="fw-medium p-1">{formatDate(user.hire_date)}</div>
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="flex mb-1 wrap">
-                            <div className="fw-medium p-1">{formatDate(user.last_login)}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <hr className="my-2" />
-                      <h6 className="fw-semibold mb-2">Details</h6>
-                      <div className="row ui-row-g2">
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Username</div>
-                          <div className="fw-medium">{user.username || "Not set"}</div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Employee ID</div>
-                          <div className="fw-medium">{user.id || "N/A"}</div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Location</div>
-                          <div className="fw-medium">{user.location || "Not set"}</div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">IOD Number</div>
-                          <div className="fw-medium">{user.iod_number || "Not set"}</div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Reports To</div>
-                          <div className="fw-medium">{user.reports_to_name || user.reports_to || "Not set"}</div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Active</div>
-                          <div className="fw-medium">{user.is_active === false ? "No" : "Yes"}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div
-                    ref={(el) => {
-                      meSectionHeaderRefs.current.profile = el;
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className="profile-accordion-header"
-                    data-active={meSectionOpen === "profile"}
-                    onClick={() => toggleMeSection("profile")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleMeSection("profile");
-                      }
-                    }}
-                  >
-                    <div className="ui-flex-center-gap-1">
-                      <UserIcon className="ui-icon-4" />
-                      <span className="fw-semibold">Profile</span>
-                    </div>
-                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "profile" ? "rotate(180deg)" : "none" }} />
-                  </div>
-                </div>
+                <Panel_Profile_Information
+                  user={user}
+                  isOpen={meSectionOpen === "profile"}
+                  onToggle={() => toggleMeSection("profile")}
+                  maxHeight={meSectionBodyMaxHeight}
+                  formatDate={formatDate}
+                  getRoleBadgeColor={getRoleBadgeColor}
+                  headerRef={(el) => {
+                    meSectionHeaderRefs.current.profile = el;
+                  }}
+                />
 
                 <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
@@ -1451,107 +1374,26 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
-                  {meSectionOpen === "benefits" && (
-                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
-                      <div className="g-2 mb-3 row">
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Salary</div>
-                          <div className="fw-medium">{user.salary != null ? `$${Number(user.salary).toLocaleString()}` : "Not set"}</div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Pay Frequency</div>
-                          <div className="fw-medium" style={{ textTransform: "capitalize" }}>
-                            {user.pay_frequency || "Not set"}
-                          </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="ui-small-muted">Insurance Plan</div>
-                          <div className="ui-flex-center-gap-2">
-                            <span className="fw-medium">{user.insurance_plan || "Not set"}</span>
-                            {user.insurance_plan && <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === user.insurance_plan)?.id} planName={user.insurance_plan} insurancePlans={insurancePlans} title="View your insurance plan document" />}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="border-top pt-1">
-                        <h6 className="fw-semibold mb-3">Requests</h6>
-
-                        {leaveRequestsLoading ? (
-                          <div className="py-1 text-center">
-                            <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                          </div>
-                        ) : (
-                          <>
-                            <div className="g-2 mb-3 row">
-                              <div className="col-6">
-                                <div className="bg-light p-0 rounded small">
-                                  <div className="fw-semibold text-primary">Vacation Days</div>
-                                  <div className="mb-1 small text-muted">
-                                    {vacUsed} / {vacTotal} used
-                                  </div>
-                                  <div className="progress">
-                                    <div className="bg-primary progress-bar" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
-                                  </div>
-                                  <div className="mt-1 ui-small-muted">{vacRemaining} remaining</div>
-                                </div>
-                              </div>
-                              <div className="col-6">
-                                <div className="bg-light p-0 rounded small">
-                                  <div className="fw-semibold text-warning">Sick Days</div>
-                                  <div className="mb-1 small text-muted">
-                                    {sickUsed} / {sickTotal} used
-                                  </div>
-                                  <div className="progress">
-                                    <div className="bg-warning progress-bar" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
-                                  </div>
-                                  <div className="mt-1 ui-small-muted">{sickRemaining} remaining</div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="mb-3">
-                              <h6 className="fw-semibold mb-2 ui-text-sm">Pending Requests</h6>
-                              <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status === "pending"))} emptyMessage="No pending requests" />
-                            </div>
-
-                            <div className="mb-3">
-                              <h6 className="fw-semibold mb-2 ui-text-sm">History</h6>
-                              <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
-                            </div>
-
-                            <button type="button" className="btn btn-primary btn-sm w-100" onClick={() => openLeaveModal()}>
-                              <PlusCircleIcon className="h-4 me-1 w-4" style={{ display: "inline" }} />
-                              New
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div
-                    ref={(el) => {
-                      meSectionHeaderRefs.current.benefits = el;
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className="profile-accordion-header"
-                    data-active={meSectionOpen === "benefits"}
-                    onClick={() => toggleMeSection("benefits")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleMeSection("benefits");
-                      }
-                    }}
-                  >
-                    <div className="ui-flex-center-gap-1">
-                      <HeartIcon className="ui-icon-4" />
-                      <span className="fw-semibold">Benefits</span>
-                    </div>
-                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "benefits" ? "rotate(180deg)" : "none" }} />
-                  </div>
-                </div>
+                <Panel_Profile_TimeOff
+                  user={user}
+                  isOpen={meSectionOpen === "benefits"}
+                  onToggle={() => toggleMeSection("benefits")}
+                  maxHeight={meSectionBodyMaxHeight}
+                  insurancePlans={insurancePlans}
+                  leaveRequestsLoading={leaveRequestsLoading}
+                  vacUsed={vacUsed}
+                  vacTotal={vacTotal}
+                  vacRemaining={vacRemaining}
+                  sickUsed={sickUsed}
+                  sickTotal={sickTotal}
+                  sickRemaining={sickRemaining}
+                  vacationRequests={vacationRequests}
+                  sickRequests={sickRequests}
+                  onOpenNewRequest={openLeaveModal}
+                  headerRef={(el) => {
+                    meSectionHeaderRefs.current.benefits = el;
+                  }}
+                />
 
                 <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
                   {meSectionOpen === "settings" && (
@@ -1862,77 +1704,21 @@ const Profile = () => {
       <Modal_Signature isOpen={signatureModalOpen} onClose={() => setSignatureModalOpen(false)} userId={user?.id} />
 
       {/* Request Modal */}
-      <Modal
+      <Modal_Profile_LeaveRequest
         isOpen={showLeaveModal}
         onClose={() => {
           setShowLeaveModal(false);
           setLeaveError("");
         }}
-        title="New Request"
-        footer={
-          <div className="component-footer-left d-flex align-items-center gap-1">
-            <button type="submit" form="profile-leave-form" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
-              {leaveSubmitting ? "Submitting…" : "Submit"}
-            </button>
-            <button
-              type="button"
-              className="btn ui-btn-circle-outline-secondary btn-circle"
-              onClick={() => {
-                setShowLeaveModal(false);
-                setLeaveError("");
-              }}
-              title="Cancel"
-            >
-              <XMarkIcon />
-            </button>
-          </div>
-        }
-      >
-        <form id="profile-leave-form" onSubmit={handleLeaveSubmit} className="p-1">
-          {leaveError && <div className="alert alert-danger mb-2 py-1 small">{leaveError}</div>}
-          <div className="mb-2">
-            <label className="form-label ui-form-label-sm">Request Type</label>
-            <Dropdown_Custom
-              className="ui-control-sm"
-              value={leaveModalType}
-              onChange={(e) => {
-                setLeaveModalType(e.target.value);
-                setLeaveForm({ start_date: "", end_date: "", notes: "" });
-                setLeaveError("");
-              }}
-              options={[
-                { value: "vacation", label: "Vacation" },
-                { value: "sick", label: "Sick" },
-                { value: "onboarding", label: "Onboarding" },
-                { value: "offboarding", label: "Offboarding" },
-              ]}
-              placeholder="Request type"
-              closeOnSelect
-            />
-          </div>
-          {leaveModalType === "vacation" || leaveModalType === "sick" ? (
-            <>
-              <div className="mb-2">
-                <label className="form-label ui-form-label-sm">Start Date</label>
-                <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
-              </div>
-              <div className="mb-2">
-                <label className="form-label ui-form-label-sm">End Date</label>
-                <input type="date" className="form-control ui-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
-              </div>
-            </>
-          ) : (
-            <div className="mb-2">
-              <label className="form-label ui-form-label-sm">Requested Date (optional)</label>
-              <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
-            </div>
-          )}
-          <div className="mb-0">
-            <label className="form-label ui-form-label-sm">Notes (optional)</label>
-            <textarea className="form-control ui-control-sm" rows={6} value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
-          </div>
-        </form>
-      </Modal>
+        onSubmit={handleLeaveSubmit}
+        leaveForm={leaveForm}
+        setLeaveForm={setLeaveForm}
+        leaveModalType={leaveModalType}
+        setLeaveModalType={setLeaveModalType}
+        leaveError={leaveError}
+        setLeaveError={setLeaveError}
+        leaveSubmitting={leaveSubmitting}
+      />
 
       {selectedSlip && <Modal_TemplateUse page="employees" entity={selectedSlip} employee={user} currentUser={user} settings={{ ...companyInfo, company_logo_data_url: companyLogoDataUrl }} filterType="payslip" onClose={() => setSelectedSlip(null)} />}
     </div>

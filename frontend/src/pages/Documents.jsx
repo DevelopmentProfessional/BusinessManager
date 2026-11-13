@@ -48,151 +48,29 @@ import useViewMode from "../services/useViewMode";
 import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
-import Button_Toolbar from "./components/Button_Toolbar";
-import Footer_Actions from "./components/Footer_Actions";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Footer_Actions from "./components/footers/Footer_Actions";
 import api, { documentsAPI, documentCategoriesAPI, documentStatusesAPI, templatesAPI, documentTagsAPI } from "../services/api";
-import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_ControlsModal";
-import TableSettingsControls from "./components/TableSettingsControls";
-import Gate_Permission from "./components/Gate_Permission";
-import Modal_Viewer_Document from "./components/Modal_DocumentView";
-import Modal_Edit_Document from "./components/Modal_DocumentEdit";
-import Modal_Template_Editor from "./components/Modal_TemplateEdit";
-import PageTableFooter from "./components/Page_TableFooter";
-import PageTableHeader from "./components/Page_TableHeader";
-import Modal_Generic from "./components/Modal";
-import { WorkflowModal, WorkflowStatusTracker } from "./components/Panel_Workflow";
-import Dropdown_Filter from "./components/Dropdown_Filter";
-import Modal_MultiEdit from "./components/Modal_MultiEdit";
-import Modal_ManageLookup from "./components/Modal_ManageLookup";
-import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import Modal from "./components/modals/Modal";
+import Modal_Documents_Settings from "./components/modals/Modal_Documents_Settings";
+import Modal_Document_Form from "./components/modals/Modal_Document_Form";
+import Modal_Document_History from "./components/modals/Modal_Document_History";
+import Modal_Document_Sign from "./components/modals/Modal_Document_Sign";
+import Modal_Document_Categories from "./components/modals/Modal_Document_Categories";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Modal_Viewer_Document from "./components/modals/Modal_DocumentView";
+import Modal_Edit_Document from "./components/modals/Modal_DocumentEdit";
+import Modal_Template_Editor from "./components/modals/Modal_TemplateEdit";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import Modal_Generic from "./components/modals/Modal";
+import { WorkflowModal, WorkflowStatusTracker } from "./components/panels/Panel_Workflow";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
-
-// ─── 2  DOCUMENT UPLOAD FORM COMPONENT ───────────────────────────────────
-function DocumentUploadForm({ onSubmit, onCancel }) {
-  const [formData, setFormData] = useState({
-    description: "",
-    file: null,
-  });
-  const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState(null);
-  const [, setUploadProgress] = useState(0);
-  const [previewUrl, setPreviewUrl] = useState(null);
-
-  useEffect(() => {
-    if (!formData.file || !formData.file.type.startsWith("image/")) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(formData.file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [formData.file]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (error) setError(null);
-  };
-
-  const handleFileChange = (e) => {
-    setFormData((prev) => ({ ...prev, file: e.target.files[0] }));
-    if (error) setError(null);
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFormData((prev) => ({ ...prev, file: e.dataTransfer.files[0] }));
-      if (error) setError(null);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.file) {
-      setError("Please select a file to upload");
-      return;
-    }
-    try {
-      setUploading(true);
-      setError(null);
-      setUploadProgress(0);
-      await onSubmit(formData);
-    } catch (err) {
-      const errorMsg = err?.response?.data?.detail || err?.message || "Upload failed. Please try again.";
-      setError(errorMsg);
-      setUploading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="ui-page-shell">
-      <div className="flex-grow-1 min-h-0 overflow-auto p-1">
-        <div className="fw-semibold mb-2 small text-muted">Upload Document</div>
-
-        <div className={`border border-2 border-dashed rounded p-1 text-center ${dragActive ? "border-primary bg-primary bg-opacity-10" : ""}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}>
-          {formData.file ? (
-            <>
-              {formData.file.type.startsWith("image/") ? <img src={previewUrl} alt="preview" className="mb-2 mx-auto rounded" style={{ maxHeight: "8rem" }} /> : <DocumentIcon className="app-icon-40 mb-2 mx-auto text-muted" />}
-              <p className="fw-medium mb-1 small">{formData.file.name}</p>
-              <p className="mb-2 ui-small-muted">{formatFileSize(formData.file.size)}</p>
-              <button
-                type="button"
-                className="btn btn-outline-danger btn-sm"
-                onClick={() => {
-                  if (previewUrl) URL.revokeObjectURL(previewUrl);
-                  setFormData((prev) => ({ ...prev, file: null }));
-                }}
-              >
-                Remove
-              </button>
-            </>
-          ) : (
-            <>
-              <DocumentIcon className="app-icon-40 mb-2 mx-auto text-muted" />
-              <p className="mb-2 ui-small-muted">Drag and drop or choose a file</p>
-              <input type="file" id="documents-page-upload-file" name="file" onChange={handleFileChange} className="d-none" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" />
-              <label htmlFor="documents-page-upload-file" className="btn btn-outline-primary btn-sm mb-0">
-                Select file
-              </label>
-            </>
-          )}
-        </div>
-
-        <p className="mb-0 mt-2 small text-muted">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
-
-        <div className="form-floating mt-3">
-          <textarea id="documents-upload-description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
-          <label htmlFor="documents-upload-description">Description (optional)</label>
-        </div>
-
-        {error && <div className="alert alert-danger mb-0 mt-2 py-0 small">{error}</div>}
-      </div>
-
-      <div className="app-footer-padding app-form-footer bg-white border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 flex-shrink-0">
-        <Footer_Actions
-          start={<Button_Toolbar type="submit" icon={ArrowDownTrayIcon} label={uploading ? "Uploading…" : "Upload"} className="btn-outline-secondary" disabled={uploading || !formData.file} title="Upload document" />}
-          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" disabled={uploading} title="Cancel" />}
-        />
-      </div>
-    </form>
-  );
-}
 
 // ─── 3  FILE TYPE ICON HELPER ───────────────────────────────────────────
 function getFileTypeIcon(filename = "", contentType = "") {
@@ -1178,9 +1056,11 @@ export default function Documents() {
       )}
 
       {/* Document Upload Modal */}
-      <Modal isOpen={isModalOpen && modalContent === "document-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "document-form" && <DocumentUploadForm onSubmit={handleSubmitDocument} onCancel={closeModal} />}
-      </Modal>
+      <Modal_Document_Form
+        isOpen={isModalOpen && modalContent === "document-form"}
+        onClose={closeModal}
+        onSubmit={handleSubmitDocument}
+      />
 
       {/* Document Viewer Modal */}
       <Modal_Viewer_Document
@@ -1233,265 +1113,61 @@ export default function Documents() {
       <Modal_Edit_Document isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} document={editDoc} onSave={handleSaveEdit} />
 
       {/* History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title={historyDoc ? `History: ${historyDoc.original_filename}` : "History"} contentGravity="bottom">
-        {isHistoryOpen && historyDoc && (
-          <div className="space-y-4">
-            <div className="border dark:border-gray-700 max-h-[40vh] overflow-auto rounded">
-              <table className="dark:divide-gray-700 divide-gray-200 divide-y min-w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Date</th>
-                    <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Note</th>
-                    <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 dark:divide-gray-700 divide-gray-200 divide-y">
-                  {historyItems.map((h) => (
-                    <tr key={h.id}>
-                      <td className="dark:text-gray-300 px-1 py-0 text-gray-700 text-sm">{formatDateTime(h.created_at)}</td>
-                      <td className="dark:text-gray-300 px-1 py-0 text-gray-700 text-sm">{h.note || "-"}</td>
-                      <td className="px-1 py-0 text-sm">
-                        <a
-                          className="dark:text-indigo-400 hover:text-indigo-800 text-indigo-600"
-                          href={documentsAPI.historyFileUrl(h.id, {
-                            download: true,
-                          })}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Download
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                  {historyItems.length === 0 && (
-                    <tr>
-                      <td className="dark:text-gray-400 px-1 py-1 text-gray-500 text-sm" colSpan={3}>
-                        No history yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <form onSubmit={handleReplaceContent} className="space-y-2">
-              <label className="block dark:text-gray-300 font-medium text-gray-700 text-sm">Upload new version</label>
-              <input type="file" name="newVersionFile" className="form-control form-control-sm mb-2" />
-              <div className="form-floating ui-form-floating-mb2">
-                <input type="text" id="newVersionNote" name="newVersionNote" placeholder="Version Note" className="form-control ui-control-sm" />
-                <label htmlFor="newVersionNote">Version Note (optional)</label>
-              </div>
-              <div className="flex justify-end">
-                <button type="submit" className="btn btn-primary">
-                  Replace
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-      </Modal>
+      <Modal_Document_History
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        historyDoc={historyDoc}
+        historyItems={historyItems}
+        onReplaceContent={handleReplaceContent}
+      />
 
       {/* Sign Document Modal */}
-      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} title="Sign Document" contentGravity="top">
-        {isSignOpen && signDoc && (
-          <div className="space-y-4">
-            <p className="dark:text-gray-400 text-gray-600 text-sm">{signDoc.original_filename}</p>
-
-            {signaturePreview ? (
-              <>
-                <div className="text-center">
-                  <p className="dark:text-gray-400 mb-2 text-gray-600 text-sm">Your signature:</p>
-                  <div className="bg-white border inline-block p-1 rounded">
-                    <img src={signaturePreview} alt="Your signature" style={{ maxWidth: "300px", maxHeight: "100px" }} />
-                  </div>
-                  <p className="dark:text-gray-400 mt-2 text-gray-500 text-xs">
-                    Signing as: {user?.first_name} {user?.last_name}
-                  </p>
-                </div>
-                <div className="flex justify-end pt-0 space-x-3">
-                  <button type="button" onClick={() => setIsSignOpen(false)} className="btn btn-secondary" disabled={signLoading}>
-                    Cancel
-                  </button>
-                  <button type="button" onClick={handleSubmitSign} className="btn btn-primary" disabled={signLoading}>
-                    {signLoading ? "Signing..." : "Sign"}
-                  </button>
-                </div>
-              </>
-            ) : signaturePreview === null && !signDoc ? (
-              <div className="py-1 text-center">
-                <div className="animate-spin border-b-2 border-primary-600 h-6 mx-auto rounded-full w-6"></div>
-              </div>
-            ) : (
-              <>
-                <div className="py-1 text-center">
-                  <p className="dark:text-gray-400 mb-2 text-gray-600">No signature saved yet.</p>
-                  <p className="dark:text-gray-500 text-gray-500 text-sm">Go to Employees &gt; Edit your profile &gt; Signature tab to create your signature.</p>
-                </div>
-                <div className="flex justify-end pt-0">
-                  <button type="button" onClick={() => setIsSignOpen(false)} className="btn btn-secondary">
-                    Close
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
+      <Modal_Document_Sign
+        isOpen={isSignOpen}
+        onClose={() => setIsSignOpen(false)}
+        signDoc={signDoc}
+        signaturePreview={signaturePreview}
+        user={user}
+        signLoading={signLoading}
+        onSubmitSign={handleSubmitSign}
+      />
 
       {/* Categories Management Modal */}
-      <Modal
+      <Modal_Document_Categories
         isOpen={isCategoriesOpen}
         onClose={() => {
           setIsCategoriesOpen(false);
           cancelEditCategory();
         }}
-        title="Manage Categories"
-      >
-        <div className="bg-white d-flex dark:bg-gray-900 flex-column">
-          {/* Scrollable list */}
-          <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
-            {categories.length === 0 ? (
-              <p className="py-1 small text-center text-muted">No categories yet. Add one below.</p>
-            ) : (
-              <div className="d-flex flex-column gap-2 pb-0">
-                {sortedCategories.map((cat) => (
-                  <div key={cat.id} className="align-items-center border d-flex justify-content-between p-0 rounded">
-                    {/* Name + description (or inline edit inputs) */}
-                    <div className="flex-grow-1 me-2" style={{ minWidth: 0 }}>
-                      {editingCatId === cat.id ? (
-                        <div className="d-flex gap-2">
-                          <input className="form-control ui-control-sm" value={editingCatName} onChange={(e) => setEditingCatName(e.target.value)} placeholder="Name" />
-                          <input className="form-control ui-control-sm" value={editingCatDesc} onChange={(e) => setEditingCatDesc(e.target.value)} placeholder="Description" />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>
-                            {cat.name}
-                          </div>
-                          {cat.description && (
-                            <div className="text-muted" style={{ fontSize: "0.78rem" }}>
-                              {cat.description}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+        categories={categories}
+        sortedCategories={sortedCategories}
+        editingCatId={editingCatId}
+        editingCatName={editingCatName}
+        setEditingCatName={setEditingCatName}
+        editingCatDesc={editingCatDesc}
+        setEditingCatDesc={setEditingCatDesc}
+        startEditCategory={startEditCategory}
+        saveEditCategory={saveEditCategory}
+        cancelEditCategory={cancelEditCategory}
+        handleDeleteCategory={handleDeleteCategory}
+        newCatName={newCatName}
+        setNewCatName={setNewCatName}
+        newCatDesc={newCatDesc}
+        setNewCatDesc={setNewCatDesc}
+        handleCreateCategory={handleCreateCategory}
+      />
 
-                    {/* Action buttons */}
-                    <div className="d-flex flex-shrink-0 gap-1">
-                      {editingCatId === cat.id ? (
-                        <>
-                          <button type="button" className="btn btn-outline-success btn-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => saveEditCategory(cat.id)} title="Save">
-                            <CheckIcon style={{ width: 14, height: 14 }} />
-                          </button>
-                          <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={cancelEditCategory} title="Cancel">
-                            <XMarkIcon style={{ width: 14, height: 14 }} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => startEditCategory(cat)} title="Edit">
-                            <PencilSquareIcon style={{ width: 14, height: 14 }} />
-                          </button>
-                          <button type="button" className="btn btn-outline-danger btn-sm" style={{ padding: "0.2rem 0.4rem" }} onClick={() => handleDeleteCategory(cat.id)} title="Delete">
-                            <XMarkIcon style={{ width: 14, height: 14 }} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer — Add / Edit form */}
-          <div className="app-footer-padding app-form-footer bg-white border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 flex-shrink-0">
-            <form onSubmit={handleCreateCategory} className="d-flex flex-column gap-2">
-              <div className="fw-semibold small text-muted">New Category</div>
-              <div className="row ui-row-g2">
-                <div className="col-6">
-                  <div className="form-floating">
-                    <input type="text" id="newCatName" className="form-control ui-control-sm" placeholder="Category Name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} required />
-                    <label htmlFor="newCatName">Category Name *</label>
-                  </div>
-                </div>
-                <div className="col-6">
-                  <div className="form-floating">
-                    <input type="text" id="newCatDesc" className="form-control ui-control-sm" placeholder="Description" value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} />
-                    <label htmlFor="newCatDesc">Description</label>
-                  </div>
-                </div>
-              </div>
-              <Footer_Actions
-                start={
-                  <button type="submit" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-1" title="Add category">
-                    <CheckIcon style={{ width: 18, height: 18 }} />
-                  </button>
-                }
-                center={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCategoriesOpen(false);
-                      cancelEditCategory();
-                    }}
-                    className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center p-1"
-                    title="Close"
-                  >
-                    <XMarkIcon style={{ width: 14, height: 14 }} />
-                  </button>
-                }
-              />
-            </form>
-          </div>
-        </div>
-      </Modal>
-
-      <PageControlsModal
+      <Modal_Documents_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Document Page Controls"
         onSave={async () => {
           await savePageSettings("documents", pendingSettings);
         }}
-      >
-        <div className="ui-small-muted">Use these controls to manage document and template views.</div>
-        <div className="small">Search, filters, upload, and templates are in the page footer. Open Categories to add or edit category labels.</div>
-        <div className="page-controls-actions-group">
-          <Button_Toolbar
-            icon={TagIcon}
-            label="Cats"
-            title="Manage document categories"
-            onClick={() => {
-              setShowPageControls(false);
-              setIsCategoriesOpen(true);
-            }}
-            className="btn-primary"
-          />
-          <Button_Toolbar
-            icon={CheckCircleIcon}
-            label="Status"
-            title="Manage document statuses"
-            onClick={() => {
-              setShowPageControls(false);
-              setShowStatusManager(true);
-            }}
-            className="btn-primary"
-          />
-        </div>
-        <TableSettingsControls
-          settings={pendingSettings}
-          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
-          toggles={[
-            { key: "showCategory", label: "Show Category", description: "Display category badge on document row items" },
-            { key: "showType", label: "Show Document Type", description: "Display document entity type under filename" },
-            { key: "showTags", label: "Show Document Tags", description: "Display tag badges on row items" },
-            { key: "showActions", label: "Show View Action", description: "Display quick-view button column" },
-          ]}
-        />
-      </PageControlsModal>
+        onOpenCategories={() => setIsCategoriesOpen(true)}
+        onOpenStatuses={() => setShowStatusManager(true)}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
 
       <Modal_ManageLookup
         isOpen={showStatusManager}

@@ -5,8 +5,8 @@ import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";
 import { chatAPI, isudAPI } from "../../services/api";
-import Badge_PendingOrder from "./Badge_PendingOrder";
-import Modal from "./Modal";
+import Badge_PendingOrder from "./badges/Badge_PendingOrder";
+import Modal from "./modals/Modal";
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Sales, Schedule, Settings

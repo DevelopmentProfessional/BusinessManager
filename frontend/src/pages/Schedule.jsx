@@ -68,16 +68,16 @@ import usePagePermission from "../services/usePagePermission";
 import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, clientCartAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import Button_Toolbar from "./components/Button_Toolbar";
-import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_ControlsModal";
-import Form_Schedule from "./components/Form_Schedule";
-import Gate_Permission from "./components/Gate_Permission";
-import Widget_Attendance from "./components/Widget_Attendance";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Modal_Schedule_Appointment from "./components/modals/Modal_Schedule_Appointment";
+import Modal_Schedule_Settings from "./components/modals/Modal_Schedule_Settings";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Widget_Attendance from "./components/widgets/Widget_Attendance";
 import useDarkMode from "../services/useDarkMode";
-import Dropup_ScheduleFilter from "./components/Dropup_ScheduleFilter";
-import Modal_TemplateUse from "./components/Modal_TemplateUse";
-import Modal_SettingsSchedule from "./components/Modal_SettingsSchedule";
+import Dropup_ScheduleFilter from "./components/dropdowns/Dropup_ScheduleFilter";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Modal_SettingsSchedule from "./components/modals/Modal_SettingsSchedule";
+import Modal_Schedule_Overlaps from "./components/modals/Modal_Schedule_Overlaps";
 
 // SVG icon wrappers for schedule view buttons
 const MonthViewIcon = ({ className, size = 16 }) => (
@@ -1610,24 +1610,23 @@ export default function Schedule() {
           </div>
         </footer>
 
-        <Modal isOpen={isModalOpen} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-          <Form_Schedule
-            appointment={editingAppointment}
-            onSubmit={handleSubmitAppointment}
-            onCancel={closeModal}
-            onDelete={handleDeleteAppointment}
-            onSendReminder={() => {
-              setReminderAppointment(editingAppointment);
-              setShowReminderModal(true);
-              closeModal();
-            }}
-            clients={clients}
-            services={services}
-            employees={employees}
-            attendees={selectedAttendees}
-            scheduleSettings={scheduleSettings}
-          />
-        </Modal>
+        <Modal_Schedule_Appointment
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          appointment={editingAppointment}
+          onSubmit={handleSubmitAppointment}
+          onDelete={handleDeleteAppointment}
+          onSendReminder={() => {
+            setReminderAppointment(editingAppointment);
+            setShowReminderModal(true);
+            closeModal();
+          }}
+          clients={clients}
+          services={services}
+          employees={employees}
+          attendees={selectedAttendees}
+          scheduleSettings={scheduleSettings}
+        />
 
         {showReminderModal && reminderAppointment && (
           <Modal_TemplateUse
@@ -1669,105 +1668,50 @@ export default function Schedule() {
       </Gate_Permission>
 
       {/* Overlap bottom modal */}
-      <Modal isOpen={!!overlapEvents} onClose={() => setOverlapEvents(null)} title="Overlapping Appointments" contentGravity="bottom">
-        <div className="d-flex flex-column justify-content-end">
-          <div className="flex-shrink-0 overlap-event-list">
-            {[...(overlapEvents || [])]
-              .sort((a, b) => {
-                const timeA = new Date(a.appointment_date);
-                const timeB = new Date(b.appointment_date);
-                if (timeA < timeB) return -1;
-                if (timeA > timeB) return 1;
-                const empA = employees.find((e) => e.id === a.employee_id);
-                const empB = employees.find((e) => e.id === b.employee_id);
-                const nameA = empA ? `${empA.first_name} ${empA.last_name}`.toLowerCase() : "";
-                const nameB = empB ? `${empB.first_name} ${empB.last_name}`.toLowerCase() : "";
-                return nameA.localeCompare(nameB);
-              })
-              .map((appt) => {
-                const { primaryLabel, secondaryLabel } = getAppointmentDisplay(appt);
-                const emp = employees.find((e) => e.id === appt.employee_id);
-                const empName = emp ? `${emp.first_name} ${emp.last_name}` : "";
-                const apptTime = new Date(appt.appointment_date);
-                const timeStr = apptTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-                const empColor = employeeColorMap.get(appt.employee_id) || "#2563eb";
-                const duration = appt.duration_minutes || 60;
+      <Modal_Schedule_Overlaps
+        isOpen={Boolean(overlapEvents)}
+        onClose={() => setOverlapEvents(null)}
+        overlapEvents={overlapEvents}
+        employees={employees}
+        employeeColorMap={employeeColorMap}
+        getAppointmentDisplay={getAppointmentDisplay}
+        canEditAppointment={canEditAppointment}
+        onSelectAppointment={(appt) => {
+          setOverlapEvents(null);
+          setEditingAppointment(appt);
+          setIsModalOpen(true);
+        }}
+      />
 
-                return (
-                  <div
-                    key={appt.id}
-                    className="overlap-event-item"
-                    onClick={() => {
-                      if (!canEditAppointment(appt)) return;
-                      setOverlapEvents(null);
-                      setEditingAppointment(appt);
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    <span className="overlap-emp-dot" style={{ backgroundColor: empColor }} />
-                    <div className="overlap-event-info">
-                      <div className="overlap-event-primary">
-                        <span className="overlap-event-time">{timeStr}</span>
-                        <span className="overlap-event-label">{primaryLabel}</span>
-                        {secondaryLabel && <span className="overlap-event-client">{secondaryLabel}</span>}
-                      </div>
-                      <div className="overlap-event-secondary">
-                        {empName && <span>{empName}</span>}
-                        <span>{duration} min</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* Footer with Cancel button */}
-          <div className="bg-white d-flex dark:bg-gray-900 flex-shrink-0 justify-content-start p-1 ps-1 pt-0">
-            <button type="button" className="align-items-center btn btn-outline-secondary d-flex justify-content-center" onClick={() => setOverlapEvents(null)}>
-              <XMarkIcon className="ui-icon-5" />
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      <PageControlsModal
+      <Modal_Schedule_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Schedule Page Controls"
         saving={scheduleSettingsSaving}
         onSave={async () => {
           const ok = await scheduleSettingsRef.current?.save?.();
           if (ok) setShowPageControls(false);
         }}
-      >
-        {user?.id ? (
-          <Modal_SettingsSchedule
-            ref={scheduleSettingsRef}
-            hideFooter
-            userId={user.id}
-            onSavingChange={setScheduleSettingsSaving}
-            onSaved={(updated) => {
-              if (!updated) return;
-              setScheduleSettings({
-                start_of_day: updated.start_of_day || "06:00",
-                end_of_day: updated.end_of_day || "21:00",
-                attendance_check_in_required: updated.attendance_check_in_required ?? false,
-                reminder_time_minutes: updated.reminder_time_minutes ?? 30,
-                reminder_send_notification: updated.reminder_send_notification ?? true,
-                monday_enabled: updated.monday_enabled ?? true,
-                tuesday_enabled: updated.tuesday_enabled ?? true,
-                wednesday_enabled: updated.wednesday_enabled ?? true,
-                thursday_enabled: updated.thursday_enabled ?? true,
-                friday_enabled: updated.friday_enabled ?? true,
-                saturday_enabled: updated.saturday_enabled ?? true,
-                sunday_enabled: updated.sunday_enabled ?? true,
-              });
-            }}
-          />
-        ) : (
-          <div className="ui-small-muted">Sign in to manage schedule settings.</div>
-        )}
-      </PageControlsModal>
+        user={user}
+        scheduleSettingsRef={scheduleSettingsRef}
+        onSavingChange={setScheduleSettingsSaving}
+        onSaved={(updated) => {
+          if (!updated) return;
+          setScheduleSettings({
+            start_of_day: updated.start_of_day || "06:00",
+            end_of_day: updated.end_of_day || "21:00",
+            attendance_check_in_required: updated.attendance_check_in_required ?? false,
+            reminder_time_minutes: updated.reminder_time_minutes ?? 30,
+            reminder_send_notification: updated.reminder_send_notification ?? true,
+            monday_enabled: updated.monday_enabled ?? true,
+            tuesday_enabled: updated.tuesday_enabled ?? true,
+            wednesday_enabled: updated.wednesday_enabled ?? true,
+            thursday_enabled: updated.thursday_enabled ?? true,
+            friday_enabled: updated.friday_enabled ?? true,
+            saturday_enabled: updated.saturday_enabled ?? true,
+            sunday_enabled: updated.sunday_enabled ?? true,
+          });
+        }}
+      />
 
       <style>{`
         /* Schedule Clock */

@@ -1,0 +1,46 @@
+import React, { useRef } from "react";
+import useViewMode from "../../../services/useViewMode";
+
+/**
+ * PageTableFooter
+ *
+ * Props:
+ *   searchTerm: string
+ *   onSearch: (value: string) => void
+ *   searchPlaceholder?: string
+ *   beforeSearch?: ReactNode  — optional row rendered above the search input
+ *   hideSearch?: boolean      — when true, the search input is not rendered
+ *   addButton?: ReactNode     — optional button rendered to the left of search input
+ *   children: Button_Toolbar buttons and filter dropdowns (rendered above search)
+ *
+ * On mobile the footer is position:fixed (floats above content like the nav "..." button).
+ * A sibling spacer div reserves the same height in the flex flow so content doesn't
+ * scroll all the way behind the footer.
+ */
+export default function PageTableFooter({ searchTerm, onSearch, searchPlaceholder = "Search...", beforeSearch, hideSearch, addButton, children }) {
+  const { footerAlign } = useViewMode();
+  const footerRef = useRef(null);
+
+  const alignClass = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
+  return (
+    <>
+      <footer ref={footerRef} className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm">
+        {/* Controls: optional top row + search + buttons */}
+        <div className="app-footer-padding app-standard-footer bg-white dark:bg-gray-800">
+          <div className="app-footer-stack">
+            {beforeSearch && <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100 ${alignClass}`}>{beforeSearch}</div>}
+            {/* Buttons row - now above search */}
+            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center w-100 ${alignClass}`}>{children}</div>
+            {/* Search row - Add button + search input */}
+            {!hideSearch && (
+              <div className="align-items-center app-footer-search-row app-search-row d-flex gap-1 w-100">
+                {addButton && <div>{addButton}</div>}
+                <input type="text" placeholder={searchPlaceholder} value={searchTerm} onChange={(e) => onSearch(e.target.value)} className="app-search-input form-control rounded-pill w-100" />
+              </div>
+            )}
+          </div>
+        </div>
+      </footer>
+    </>
+  );
+}

@@ -58,33 +58,31 @@ import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
-import Button_Toolbar from "./components/Button_Toolbar";
-import Dropdown_Filter from "./components/Dropdown_Filter";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import api, { employeesAPI, rolesAPI, employeeStatusesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
-import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_ControlsModal";
-import TableSettingsControls from "./components/TableSettingsControls";
-import Form_Employee from "./components/Form_Employee";
-import Gate_Permission from "./components/Gate_Permission";
-import PageTableFooter from "./components/Page_TableFooter";
-import PageTableHeader from "./components/Page_TableHeader";
-import PageTableRow from "./components/Page_TableRow";
+import Modal_Employee_Form from "./components/modals/Modal_Employee_Form";
+import Modal_Employees_Settings from "./components/modals/Modal_Employees_Settings";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableRow from "./components/tables/Page_TableRow";
 import useDarkMode from "../services/useDarkMode";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
-import Modal_Create_User from "./components/Modal_UserCreate";
-import Modal_Permissions_User from "./components/Modal_UserPermissions";
-import Modal_Manage_Roles from "./components/Modal_RolesManage";
-import Modal_Requests_Employee from "./components/Modal_EmployeeRequests";
-import Modal_InsurancePlans from "./components/Modal_InsurancePlans";
-import Chat_Employee from "./components/Chat_Employee";
-import Modal_Wages from "./components/Modal_Wages";
-import Modal_Pay_Employee from "./components/Modal_EmployeePay";
-import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
-import Modal_MultiEdit from "./components/Modal_MultiEdit";
-import Modal_ManageLookup from "./components/Modal_ManageLookup";
-import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import Modal_Create_User from "./components/modals/Modal_UserCreate";
+import Modal_Permissions_User from "./components/modals/Modal_UserPermissions";
+import Modal_Manage_Roles from "./components/modals/Modal_RolesManage";
+import Modal_Requests_Employee from "./components/modals/Modal_EmployeeRequests";
+import Modal_InsurancePlans from "./components/modals/Modal_InsurancePlans";
+import Chat_Employee from "./components/widgets/Chat_Employee";
+import Modal_Wages from "./components/modals/Modal_Wages";
+import Modal_Pay_Employee from "./components/modals/Modal_EmployeePay";
+import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 
 export default function Employees() {
@@ -1253,9 +1251,14 @@ export default function Employees() {
       />
 
       {/* Employee Form Modal */}
-      <Modal isOpen={isModalOpen && modalContent === "employee-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "employee-form" && <Form_Employee employee={editingEmployee} onSubmit={handleSubmit} onCancel={closeModal} onManagePermissions={editingEmployee && hasPermission("employees", "admin") ? handleManagePermissions : null} employees={employees} />}
-      </Modal>
+      <Modal_Employee_Form
+        isOpen={isModalOpen && modalContent === "employee-form"}
+        onClose={closeModal}
+        employee={editingEmployee}
+        onSubmit={handleSubmit}
+        onManagePermissions={editingEmployee && hasPermission("employees", "admin") ? handleManagePermissions : null}
+        employees={employees}
+      />
 
       {/* Create User Modal */}
       <Modal_Create_User isOpen={showCreateUser} onClose={() => setShowCreateUser(false)} newUser={newUser} setNewUser={setNewUser} onSubmit={handleCreateUser} loading={loading} roles={roles} />
@@ -1395,49 +1398,20 @@ export default function Employees() {
       {/* Wages Modal */}
       {showWagesModal && <Modal_Wages employees={employees} onClose={() => setShowWagesModal(false)} />}
 
-      <PageControlsModal
+      <Modal_Employees_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Employee Page Controls"
         onSave={async () => {
           await savePageSettings("employees", pendingSettings);
         }}
-      >
-        <div className="ui-small-muted">Use these controls to manage employee views and actions.</div>
-        <div className="small">Search, role/status filters, and add actions are available.</div>
-        <div className="page-controls-actions-group">
-          <Button_Toolbar
-            icon={UserGroupIcon}
-            label="Roles"
-            onClick={() => {
-              setShowPageControls(false);
-              loadRoles();
-              setShowRolesModal(true);
-            }}
-            className="btn-primary"
-            title="Manage roles"
-          />
-          <Button_Toolbar
-            icon={CheckCircleIcon}
-            label="Status"
-            onClick={() => {
-              setShowPageControls(false);
-              setShowStatusManager(true);
-            }}
-            className="btn-primary"
-            title="Manage employee statuses"
-          />
-        </div>
-        <TableSettingsControls
-          settings={pendingSettings}
-          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
-          toggles={[
-            { key: "showRole", label: "Show Role Column", description: "Display employee role column in table" },
-            { key: "showDepartment", label: "Show Department Badge", description: "Display department badge under employee name" },
-            { key: "showChat", label: "Show Chat Action", description: "Display quick-chat button column" },
-          ]}
-        />
-      </PageControlsModal>
+        onOpenRoles={() => {
+          loadRoles();
+          setShowRolesModal(true);
+        }}
+        onOpenStatuses={() => setShowStatusManager(true)}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}
