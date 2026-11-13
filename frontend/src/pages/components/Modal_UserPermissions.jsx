@@ -25,7 +25,7 @@
 import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Modal from "./Modal";
-import { XMarkIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckCircleIcon, XCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useWordSafeLabel } from "../../utils/wordSafeTruncate";
 
 const PERMISSION_DESCRIPTIONS = {
@@ -266,7 +266,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                             title="Delete Permission"
                             type="button"
                           >
-                            <XMarkIcon style={{ width: 14, height: 14 }} />
+                            <TrashIcon style={{ width: 14, height: 14 }} />
                           </button>
                           <button
                             type="button"

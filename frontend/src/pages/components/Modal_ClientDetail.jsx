@@ -32,7 +32,7 @@
  */
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
@@ -805,7 +805,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
       headerActions={
         canDelete && (
           <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
-            <XMarkIcon style={{ width: 18, height: 18 }} />
+            <TrashIcon style={{ width: 18, height: 18 }} />
           </button>
         )
       }

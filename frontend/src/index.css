@@ -1806,14 +1806,25 @@ button,
   box-shadow: none !important;
 }
 
-/* Compact mode: any icon-bearing action button should render icon-only. */
-body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon) {
+/* Compact mode: any icon-bearing action button should render as an exact 1:1 circle */
+body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon):not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.app-compact-exempt) {
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  justify-content: center !important;
   font-size: 0 !important;
   line-height: 1 !important;
 }
 
 /* Hide common text wrappers while preserving direct icon nodes and badges. */
-body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden) {
+body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon):not(.app-compact-exempt) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden) {
   display: none !important;
 }
 

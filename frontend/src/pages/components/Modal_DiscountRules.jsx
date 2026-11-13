@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-import { XMarkIcon, TagIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TagIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 import { discountRulesAPI, inventoryAPI } from "../../services/api";
 
@@ -372,7 +372,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
                         <td className="text-end" onClick={(e) => e.stopPropagation()}>
                           <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
-                            <XMarkIcon style={{ width: 14, height: 14 }} />
+                            <TrashIcon style={{ width: 14, height: 14 }} />
                           </button>
                         </td>
                       </tr>

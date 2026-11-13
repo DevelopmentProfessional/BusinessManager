@@ -2,6 +2,7 @@
 // unified button replacing Button_Toolbar (icon+label+training mode) and Button_Icon (icon-only+variants)
 // Dimensions: Profile → TextSize + training/compact (frontend/src/constants/buttonTextSize.js)
 import React from "react";
+import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import useViewMode from "../../services/useViewMode";
 import compactButtonLabel from "../../utils/compactButtonLabel";
 
@@ -13,7 +14,8 @@ export function buttonDisplayLabel(label) {
 
 const VARIANT_CLASS = {
   primary: "btn-app-primary",
-  danger: "btn-app-danger",
+  danger: "btn-app-danger btn-outline-danger",
+  delete: "btn-app-danger btn-outline-danger",
   secondary: "btn-app-secondary",
   cancel: "btn-app-cancel",
   ghost: "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800",
@@ -34,15 +36,34 @@ function adjustTrainingMargins(className) {
 export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
-  const isCancel = normalizedLabel.toLowerCase() === "cancel" || titleProp?.toLowerCase() === "cancel" || variant === "cancel";
-  const training = isTrainingMode && !compact && !isCancel;
+  const normalizedTitle = typeof titleProp === "string" ? titleProp.trim().toLowerCase() : "";
+  const isCancel =
+    normalizedLabel.toLowerCase() === "cancel" ||
+    normalizedTitle === "cancel" ||
+    variant === "cancel" ||
+    normalizedLabel.toLowerCase() === "close" ||
+    normalizedTitle === "close" ||
+    normalizedTitle.startsWith("close ");
+
+  const isDelete =
+    normalizedLabel.toLowerCase() === "delete" ||
+    normalizedTitle === "delete" ||
+    normalizedTitle.startsWith("delete ") ||
+    normalizedTitle.includes("delete") ||
+    variant === "danger" ||
+    variant === "delete";
+
+  const isAlwaysCircle = isCancel || isDelete;
+  const training = isTrainingMode && !compact && !isAlwaysCircle;
   const displayLabel = typeof label === "string" ? buttonDisplayLabel(normalizedLabel) : normalizedLabel;
-  const showText = training && displayLabel.length > 0 && !isCancel;
+  const showText = training && displayLabel.length > 0 && !isAlwaysCircle;
   const isIconOnly = !showText;
   const tooltipLabel = titleProp ?? (normalizedLabel || label);
   const iconClass = "app-icon flex-shrink-0";
-  const variantClass = variant ? VARIANT_CLASS[variant] || variant : "";
+  const variantClass = variant ? VARIANT_CLASS[variant] || variant : isDelete ? VARIANT_CLASS.danger : isCancel ? VARIANT_CLASS.cancel : "";
   const effectiveClass = training ? adjustTrainingMargins(className) : className;
+
+  const EffectiveIcon = isDelete ? TrashIcon : isCancel ? XMarkIcon : Icon;
 
   const iconOnlyStyle = isIconOnly
     ? {
@@ -76,7 +97,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
         ${badge ? "overflow-visible" : ""}`.trim()}
       {...rest}
     >
-      {Icon && <Icon className={iconClass} />}
+      {EffectiveIcon && <EffectiveIcon className={iconClass} />}
       {showText && (
         <span className="text-nowrap" style={{ fontSize: "var(--app-btn-label-font-size, 0.78rem)", lineHeight: 1, minWidth: 0 }}>
           {displayLabel}

@@ -309,10 +309,7 @@ const Panel_General = ({
           centered={true}
           footer={
             <div className="d-flex gap-2 justify-content-start">
-              <button type="button" className="align-items-center btn btn-secondary d-flex gap-2" onClick={() => setLogoPickerOpen(false)}>
-                <XMarkIcon className="ui-icon-4" />
-                <span>Close</span>
-              </button>
+              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setLogoPickerOpen(false)} className="btn-outline-secondary" title="Close" />
             </div>
           }
         >

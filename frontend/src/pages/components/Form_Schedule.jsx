@@ -49,7 +49,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import useStore from "../../services/useStore";
 import { isudAPI, serviceRelationsAPI, inventoryAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../services/api";
-import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import Dropdown_Custom from "./Dropdown_Custom";
@@ -1096,7 +1096,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />}
           center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
-          end={appointment?.id && onDelete ? <Button_Toolbar icon={XMarkIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" /> : null}
+          end={appointment?.id && onDelete ? <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" /> : null}
         />
       </div>
     </div>

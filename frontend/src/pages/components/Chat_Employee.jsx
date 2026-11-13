@@ -317,24 +317,44 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
         {/* ── Bottom Input & Action Bar ── */}
         <div className={`flex-shrink-0 border-top p-2 ${dm ? "bg-dark border-secondary" : "bg-white border-gray-200"}`} style={{ margin: 0 }}>
           <form onSubmit={handleSend} className="align-items-center d-flex gap-2 w-100">
-            {/* Close button - X icon only, no text */}
+            {/* Close button - X icon only, circle */}
             <button
               type="button"
               onClick={onClose}
-              className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center p-0 rounded-circle"
-              style={{ width: "2.25rem", height: "2.25rem" }}
+              className="align-items-center btn btn-circle btn-outline-secondary d-flex flex-shrink-0 justify-content-center p-0"
+              style={{
+                width: "2.25rem",
+                height: "2.25rem",
+                minWidth: "2.25rem",
+                maxWidth: "2.25rem",
+                minHeight: "2.25rem",
+                maxHeight: "2.25rem",
+                flex: "0 0 2.25rem",
+                borderRadius: "50%",
+                aspectRatio: "1 / 1",
+              }}
               title="Close chat"
               aria-label="Close"
             >
               <XMarkIcon style={{ width: 18, height: 18 }} />
             </button>
 
-            {/* Attach button - referencing documents from the documents page */}
+            {/* Attach button - circle */}
             <button
               type="button"
               title="Attach document from Documents library"
-              className={`align-items-center btn btn-sm d-flex flex-shrink-0 justify-content-center p-0 rounded-circle ${showDocPicker ? "btn-primary" : "btn-outline-secondary"}`}
-              style={{ width: "2.25rem", height: "2.25rem" }}
+              className={`align-items-center btn btn-circle d-flex flex-shrink-0 justify-content-center p-0 ${showDocPicker ? "btn-primary" : "btn-outline-secondary"}`}
+              style={{
+                width: "2.25rem",
+                height: "2.25rem",
+                minWidth: "2.25rem",
+                maxWidth: "2.25rem",
+                minHeight: "2.25rem",
+                maxHeight: "2.25rem",
+                flex: "0 0 2.25rem",
+                borderRadius: "50%",
+                aspectRatio: "1 / 1",
+              }}
               onClick={openDocPicker}
               aria-label="Attach document"
             >
@@ -366,11 +386,21 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
               }}
             />
 
-            {/* Send button */}
+            {/* Send button - circle */}
             <button
               type="submit"
-              className="align-items-center btn btn-primary d-flex flex-shrink-0 justify-content-center p-0 rounded-circle"
-              style={{ width: "2.25rem", height: "2.25rem" }}
+              className="align-items-center btn btn-circle btn-primary d-flex flex-shrink-0 justify-content-center p-0"
+              style={{
+                width: "2.25rem",
+                height: "2.25rem",
+                minWidth: "2.25rem",
+                maxWidth: "2.25rem",
+                minHeight: "2.25rem",
+                maxHeight: "2.25rem",
+                flex: "0 0 2.25rem",
+                borderRadius: "50%",
+                aspectRatio: "1 / 1",
+              }}
               disabled={!text.trim() || sending}
               title="Send"
               aria-label="Send"

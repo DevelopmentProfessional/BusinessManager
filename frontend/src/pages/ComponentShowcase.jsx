@@ -398,6 +398,7 @@ export default function ComponentShowcase() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dropdownValue, setDropdownValue] = useState("option1");
   const [multiSelectValues, setMultiSelectValues] = useState(["option1", "option2"]);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
 
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleTrainingMode } = useViewMode();
@@ -847,9 +848,82 @@ export default function ComponentShowcase() {
           </ComponentCard>
         )}
 
+        {isCardVisible("Pattern: Standard Multi-Select Bar", "Tables") && (
+          <ComponentCard title="Pattern: Standard Multi-Select Bar" category="Tables" width="460px">
+            <div className="d-flex flex-column gap-2">
+              <span className="small text-muted">Consistent selection bar across Inventory, Clients, Employees, Documents, and Services:</span>
+              <div
+                className="align-items-center border rounded d-flex flex-shrink-0 px-2 py-1 w-100"
+                style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}
+              >
+                <div className="ui-flex-center-gap-2">
+                  <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
+                    3 selected items
+                  </span>
+                  <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={noop}>
+                    <PencilSquareIcon className="app-icon-14" />
+                  </button>
+                  <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected items" onClick={noop}>
+                    <TrashIcon className="app-icon-14" />
+                  </button>
+                  <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={noop}>
+                    <XMarkIcon className="app-icon-14" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
         {/* ═══════════════════════════════════════════════════════════════════
             SECTION: FORMS (The Big Core Forms)
         ═══════════════════════════════════════════════════════════════════ */}
+        {isCardVisible("Pattern: Standard Form Shell", "Forms") && (
+          <ComponentCard title="Pattern: Standard Form Shell" category="Forms" width="520px" height="480px">
+            <div className="ui-page-shell border rounded bg-body h-100">
+              <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-2">
+                <h6 className="app-modal-title ui-heading-strong">Standard Form Shell (Pattern)</h6>
+              </div>
+              <div className="app-modal-body flex-grow-1 min-h-0 overflow-auto p-2 d-flex flex-column gap-2 bg-body">
+                <div className="form-floating">
+                  <input type="text" id="demo_item_name" className="form-control ui-control-sm" placeholder="Record Name" defaultValue="Sample Record" />
+                  <label htmlFor="demo_item_name">Record Name *</label>
+                </div>
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  options={[
+                    { value: "product", label: "Product" },
+                    { value: "service", label: "Service" },
+                    { value: "asset", label: "Asset" },
+                    { value: "resource", label: "Resource" },
+                  ]}
+                  value="product"
+                  onChange={noop}
+                  placeholder="Select Category"
+                  floatingLabel="Category"
+                />
+                <div className="form-floating">
+                  <textarea
+                    id="demo_description"
+                    rows={6}
+                    className="ui-description-textarea form-control"
+                    placeholder="Description"
+                    defaultValue="Standard 6-row description textarea demonstrating consistent vertical sizing and floating label spacing across the application."
+                  />
+                  <label htmlFor="demo_description">Description (6 rows)</label>
+                </div>
+              </div>
+              <div className="app-modal-footer app-standard-footer ui-form-footer-shell p-2 border-top">
+                <Footer_Actions
+                  start={<Button_Toolbar icon={CheckIcon} label="Save" className="btn-outline-secondary" onClick={noop} title="Save changes" />}
+                  center={<Button_Toolbar icon={XMarkIcon} label="Cancel" className="btn-outline-secondary" onClick={noop} title="Cancel" />}
+                  end={<Button_Toolbar icon={TrashIcon} label="Delete" className="btn-outline-danger" onClick={noop} title="Delete record" />}
+                />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
         {isCardVisible("Form_Client.jsx", "Forms") && (
           <ComponentCard title="Form_Client.jsx" category="Forms" width="560px" height="520px">
             <Form_Client
@@ -1039,6 +1113,53 @@ export default function ComponentShowcase() {
               onDelete={noop}
               onToggle={noop}
             />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Pattern: Standard Bottom-Sheet Modal", "Modals") && (
+          <ComponentCard title="Pattern: Standard Bottom-Sheet Modal" category="Modals" width="380px">
+            <div className="d-flex flex-column gap-2 p-1">
+              <p className="small text-muted mb-1">
+                Demonstrates standard bottom-anchored sheet, stationary top header, natural upward height expansion, and left-floated footer actions.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm align-self-start"
+                onClick={() => setDemoModalOpen(true)}
+              >
+                Launch Standard Modal Demo
+              </button>
+              {demoModalOpen && (
+                <Modal
+                  isOpen={demoModalOpen}
+                  onClose={() => setDemoModalOpen(false)}
+                  title="Standard Bottom-Sheet Modal"
+                  footer={
+                    <Footer_Actions
+                      start={<Button_Toolbar icon={CheckIcon} label="Save" className="btn-primary" onClick={() => setDemoModalOpen(false)} title="Save changes" />}
+                      center={<Button_Toolbar icon={XMarkIcon} label="Cancel" className="btn-outline-secondary" onClick={() => setDemoModalOpen(false)} title="Cancel" />}
+                      end={<Button_Toolbar icon={TrashIcon} label="Delete" className="btn-outline-danger" onClick={() => setDemoModalOpen(false)} title="Delete" />}
+                    />
+                  }
+                >
+                  <div className="p-2 d-flex flex-column gap-2 text-body">
+                    <p className="small mb-1">
+                      This modal demonstrates the standard bottom-sheet contract:
+                    </p>
+                    <ul className="small text-muted ps-3 mb-2">
+                      <li>Anchors to the bottom of the viewport with zero bottom gap.</li>
+                      <li>Expands upward to fit content naturally without unnecessary scrolling.</li>
+                      <li>Sticky header stays fixed at top when content reaches 90vh maximum height.</li>
+                      <li>Sticky footer pins action buttons to the bottom, floated to the left.</li>
+                    </ul>
+                    <div className="form-floating">
+                      <input type="text" id="modal_demo_input" className="form-control ui-control-sm" placeholder="Sample Input" defaultValue="Consistent floating input" />
+                      <label htmlFor="modal_demo_input">Sample Field</label>
+                    </div>
+                  </div>
+                </Modal>
+              )}
+            </div>
           </ComponentCard>
         )}
 
