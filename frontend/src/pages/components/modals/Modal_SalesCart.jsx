@@ -380,24 +380,19 @@ export default function Modal_Cart_Sales({
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <Button_Toolbar
-              icon={CreditCardIcon}
-              label="Pay"
-              title="Checkout"
-              onClick={() => {
-                onClose();
-                handleCheckout();
-              }}
-              className="btn-success text-white"
-              style={{ borderColor: "#059669", backgroundColor: "#059669" }}
-            />
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar
+            icon={CreditCardIcon}
+            label="Pay"
+            title="Checkout"
+            onClick={() => {
+              onClose();
+              handleCheckout();
+            }}
+            className="btn-success text-white"
+            style={{ borderColor: "#059669", backgroundColor: "#059669" }}
+          />
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       </div>
     </Modal>

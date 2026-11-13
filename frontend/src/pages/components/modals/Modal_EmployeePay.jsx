@@ -427,14 +427,9 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left d-flex align-items-center gap-1">
-            <Button_Toolbar type="submit" icon={CheckIcon} label={payLoading ? "…" : "Pay"} className="btn-outline-secondary" title="Process payment" disabled={payLoading || compensationLoading || Boolean(compensationError)} />
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar type="submit" icon={CheckIcon} label={payLoading ? "…" : "Pay"} className="btn-primary" title="Process payment" disabled={payLoading || compensationLoading || Boolean(compensationError)} />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
         </div>
       </form>
     </Modal>

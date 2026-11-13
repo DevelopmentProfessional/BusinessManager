@@ -249,9 +249,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
 
           <div className="align-items-center d-flex gap-1 pt-1">
             <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close sales history">
-              <XMarkIcon />
-            </button>
+            <Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-outline-secondary" />
             <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
           </div>
         </div>

@@ -394,26 +394,16 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
         </div>
         {/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            {!orderCreated && (
-              <div className="ui-flex-center-gap-1">
-                <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
-                {cartItems.length > 0 && (
-                  <button type="button" onClick={handleCreateOrder} disabled={creating} className="align-items-center btn btn-sm btn-success d-flex gap-1 px-1" title="Create portal order from cart">
-                    <CheckCircleIcon style={{ width: 16, height: 16 }} />
-                    {creating ? "…" : "Order"}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Close">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          {!orderCreated && (
+            <>
+              <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
+              {cartItems.length > 0 && (
+                <Button_Toolbar icon={CheckCircleIcon} label={creating ? "…" : "Order"} onClick={handleCreateOrder} disabled={creating} className="btn-success" title="Create portal order from cart" />
+              )}
+            </>
+          )}
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       </div>
     </Modal>

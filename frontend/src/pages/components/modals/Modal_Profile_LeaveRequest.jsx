@@ -1,7 +1,8 @@
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 export default function Modal_Profile_LeaveRequest({
   isOpen,
@@ -21,18 +22,9 @@ export default function Modal_Profile_LeaveRequest({
       onClose={onClose}
       title="New Request"
       footer={
-        <div className="component-footer-left d-flex align-items-center gap-1">
-          <button type="submit" form="profile-leave-form" className="btn btn-primary btn-sm" disabled={leaveSubmitting}>
-            {leaveSubmitting ? "Submitting…" : "Submit"}
-          </button>
-          <button
-            type="button"
-            className="btn ui-btn-circle-outline-secondary btn-circle"
-            onClick={onClose}
-            title="Cancel"
-          >
-            <XMarkIcon />
-          </button>
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={CheckIcon} label={leaveSubmitting ? "Submitting…" : "Submit"} type="submit" form="profile-leave-form" className="btn-primary" disabled={leaveSubmitting} title="Submit request" />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
         </div>
       }
     >

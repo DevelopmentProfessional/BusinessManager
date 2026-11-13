@@ -208,21 +208,16 @@ export default function Modal_BulkImport({
         </div>
 
         {/* Footer */}
-        <div className="component-footer app-modal-footer app-form-footer app-standard-footer">
-          <div className="component-footer-left align-items-center d-flex" style={{ gap: "var(--app-footer-btn-gap, 0.25rem)" }}>
-            <Button_Toolbar
-              icon={ArrowDownTrayIcon}
-              label={saving ? "Saving…" : parsedNames.length > 0 ? `Save (${parsedNames.length})` : "Save"}
-              onClick={handleSave}
-              className="btn-primary"
-              disabled={saving || parsedNames.length === 0}
-              title="Import rows"
-            />
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" disabled={saving} title="Cancel">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar
+            icon={ArrowDownTrayIcon}
+            label={saving ? "Saving…" : parsedNames.length > 0 ? `Save (${parsedNames.length})` : "Save"}
+            onClick={handleSave}
+            className="btn-primary"
+            disabled={saving || parsedNames.length === 0}
+            title="Import rows"
+          />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={saving} className="btn-outline-secondary" title="Cancel" />
         </div>
       </div>
     </Modal>

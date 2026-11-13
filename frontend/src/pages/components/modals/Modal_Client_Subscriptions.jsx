@@ -1,7 +1,8 @@
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { CheckCircleIcon, XCircleIcon, PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, XCircleIcon, PencilIcon, TrashIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 export default function Modal_Client_Subscriptions({
   isOpen,
@@ -24,15 +25,8 @@ export default function Modal_Client_Subscriptions({
       centered={true}
       contentGravity="top"
       footer={
-        <div className="component-footer-left d-flex align-items-center gap-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn ui-btn-circle-outline-secondary btn-circle"
-            title="Close"
-          >
-            <XMarkIcon />
-          </button>
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       }
     >
@@ -73,15 +67,22 @@ export default function Modal_Client_Subscriptions({
           </div>
           <textarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
           <div className="d-flex gap-2">
-            <button type="button" className="align-items-center btn btn-primary btn-sm d-flex gap-2" onClick={onSave} disabled={saving}>
-              <CheckCircleIcon className="ui-icon-4" />
-              <span>{editingMembershipId ? "Update" : "Create"}</span>
-            </button>
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={editingMembershipId ? "Update" : "Create"}
+              onClick={onSave}
+              disabled={saving}
+              className="btn-primary"
+              title={editingMembershipId ? "Update subscription" : "Create subscription"}
+            />
             {editingMembershipId && (
-              <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2" onClick={onReset}>
-                <XCircleIcon className="ui-icon-4" />
-                <span>Cancel</span>
-              </button>
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Cancel"
+                onClick={onReset}
+                className="btn-outline-secondary"
+                title="Cancel edit"
+              />
             )}
           </div>
         </div>

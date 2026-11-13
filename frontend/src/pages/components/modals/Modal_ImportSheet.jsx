@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../../services/showConfirm";
 
@@ -583,18 +584,17 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
         <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column" style={{ padding: "var(--app-footer-padding-y, 0.125rem) var(--app-footer-padding-x, 0.125rem)", gap: 0 }}>
           {status.message && <div className={`px-1 pt-0 pb-1 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
-          <div className="align-items-center component-footer-left d-flex" style={{ gap: "var(--app-footer-btn-gap, 0.25rem)" }}>
-            <button type="button" className="align-items-center btn btn-primary d-flex gap-1" onClick={handleImport} disabled={isSaving}>
-              <ArrowDownTrayIcon className="ui-icon-4" />
-              <span>{isSaving ? "…" : "Save"}</span>
-            </button>
-            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} disabled={isSaving} title="Cancel">
-              <XMarkIcon />
-            </button>
-            <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" onClick={handleClearGrid} disabled={isSaving}>
-              <XMarkIcon className="ui-icon-4" />
-              <span>Clear</span>
-            </button>
+          <div className="align-items-center component-footer-left d-flex gap-2 justify-content-start">
+            <Button_Toolbar
+              icon={ArrowDownTrayIcon}
+              label={isSaving ? "…" : "Save"}
+              onClick={handleImport}
+              disabled={isSaving}
+              className="btn-primary"
+              title="Save import"
+            />
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={isSaving} className="btn-outline-secondary" title="Cancel" />
+            <Button_Toolbar icon={ArrowPathIcon} label="Clear" onClick={handleClearGrid} disabled={isSaving} className="btn-outline-secondary" title="Clear table" />
           </div>
         </div>
       </div>

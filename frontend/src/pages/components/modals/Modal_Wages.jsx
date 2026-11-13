@@ -12,6 +12,8 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { BanknotesIcon, XMarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { payrollAPI } from "../../../services/api";
+import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -479,34 +481,41 @@ export default function Modal_Wages({ employees = [], onClose }) {
   // RENDER
   // ──────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="app-modal-layer fixed inset-0 overflow-hidden z-50">
-      <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" onClick={onClose} />
-      <div className="app-modal-sheet bg-white border-gray-200 border-t bottom-0 d-flex dark:bg-gray-800 dark:border-gray-700 fixed flex-column left-0 max-h-[90vh] right-0 rounded-t-lg shadow-xl text-left w-full z-10">
-        {/* ── Header + tabs ── */}
-      <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-0 px-1">
-        <div className="align-items-center d-flex gap-2 mb-2">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={
+        <span className="align-items-center d-flex gap-2">
           <BanknotesIcon className="text-muted" style={{ width: 20, height: 20 }} />
-          <h6 className="app-modal-title flex-grow-1">Wages &amp; Payroll</h6>
-          <button type="button" onClick={onClose} className="btn btn-outline-secondary btn-sm p-1">
-            <XMarkIcon style={{ width: 16, height: 16 }} />
-          </button>
+          Wages &amp; Payroll
+        </span>
+      }
+      footer={
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
-        <div className="d-flex gap-1" style={{ marginBottom: -1 }}>
-          {[
-            { key: "calendar", label: "Calendar", Icon: CalendarDaysIcon },
-            { key: "process", label: "Process", Icon: BanknotesIcon },
-            { key: "onetime", label: "One-Time", Icon: CheckIcon },
-            { key: "history", label: "History", Icon: UserGroupIcon },
-          ].map(({ key, label }) => (
-            <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm px-1 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`} style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}>
-              {label}
-            </button>
-          ))}
+      }
+      noPadding
+    >
+      <div className="d-flex flex-column h-100 w-100 overflow-hidden">
+        {/* ── Tabs header ── */}
+        <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-1 px-2">
+          <div className="d-flex gap-1" style={{ marginBottom: -1 }}>
+            {[
+              { key: "calendar", label: "Calendar", Icon: CalendarDaysIcon },
+              { key: "process", label: "Process", Icon: BanknotesIcon },
+              { key: "onetime", label: "One-Time", Icon: CheckIcon },
+              { key: "history", label: "History", Icon: UserGroupIcon },
+            ].map(({ key, label }) => (
+              <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm px-2 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`} style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ── Body ── */}
-      <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto">
+        {/* ── Body ── */}
+        <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto p-1">
         {/* ═══ CALENDAR TAB ═══ */}
         {activeTab === "calendar" && (
           <CalendarTab
@@ -568,9 +577,9 @@ export default function Modal_Wages({ employees = [], onClose }) {
 
         {/* ═══ HISTORY TAB ═══ */}
         {activeTab === "history" && <HistoryTab slipsLoading={slipsLoading} filteredHistory={filteredHistory} histSearch={histSearch} setHistSearch={setHistSearch} empMap={empMap} />}
+        </div>
       </div>
-    </div>
-  </div>
+    </Modal>
   );
 }
 

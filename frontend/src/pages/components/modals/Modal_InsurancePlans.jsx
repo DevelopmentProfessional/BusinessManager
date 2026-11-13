@@ -220,17 +220,8 @@ export default function Modal_InsurancePlans({
 
         <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
           <Footer_Actions
-            start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-outline-secondary" title={editingPlan ? "Save plan" : "Add plan"} />}
-            center={
-              <button
-                type="button"
-                onClick={editingPlan ? () => setEditingPlan(null) : onClose}
-                className="btn ui-btn-circle-outline-secondary"
-                title={editingPlan ? "Cancel edit" : "Close"}
-              >
-                <XMarkIcon />
-              </button>
-            }
+            start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-primary" title={editingPlan ? "Save plan" : "Add plan"} />}
+            center={<Button_Toolbar icon={XMarkIcon} label={editingPlan ? "Cancel" : "Close"} onClick={editingPlan ? () => setEditingPlan(null) : onClose} className="btn-outline-secondary" title={editingPlan ? "Cancel edit" : "Close"} />}
           />
         </div>
       </form>

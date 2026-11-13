@@ -24,6 +24,7 @@
 
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
@@ -155,13 +156,8 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
         </div>{/* /component-body */}
 
         {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
-        <div className="component-footer">
-          <div className="component-footer-left d-flex align-items-center gap-1">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       </div>
     </Modal>

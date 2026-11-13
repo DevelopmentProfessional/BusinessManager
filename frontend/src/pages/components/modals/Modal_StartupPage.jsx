@@ -2,6 +2,7 @@
 // Modal for configuring user's default startup / home landing page.
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import {
   CheckIcon,
   XMarkIcon,
@@ -133,13 +134,8 @@ export default function Modal_StartupPage({
           </div>
         </div>
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <button type="button" onClick={handleClose} disabled={isBusy} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} disabled={isBusy} className="btn-outline-secondary" title="Close" />
         </div>
       </div>
     </Modal>

@@ -4,9 +4,10 @@
 // Mirrors the Manage Subscriptions modal pattern on the Clients page.
 import React, { useState } from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { showConfirm } from "../../../services/showConfirm";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
-import { CheckCircleIcon, XCircleIcon, PencilIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, XCircleIcon, PencilIcon, XMarkIcon, CheckIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 export default function Modal_ManageLookup({
   isOpen,
@@ -79,18 +80,17 @@ export default function Modal_ManageLookup({
       centered={true}
       contentGravity="top"
       footer={
-        <div className="component-footer-left d-flex align-items-center gap-1">
-          <button
-            type="button"
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar
+            icon={XMarkIcon}
+            label="Close"
             onClick={() => {
               resetForm();
               onClose();
             }}
-            className="btn ui-btn-circle-outline-secondary btn-circle"
+            className="btn-outline-secondary"
             title="Close"
-          >
-            <XMarkIcon />
-          </button>
+          />
         </div>
       }
     >
@@ -99,15 +99,22 @@ export default function Modal_ManageLookup({
           <input type="text" className="form-control ui-control-sm" placeholder={`${entityLabel.charAt(0).toUpperCase()}${entityLabel.slice(1)} name`} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
           <textarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
           <div className="d-flex gap-2">
-            <button type="button" className="align-items-center btn btn-primary btn-sm d-flex gap-2" onClick={handleSave} disabled={saving}>
-              <CheckCircleIcon className="ui-icon-4" />
-              <span>{editingId ? "Update" : "Create"}</span>
-            </button>
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={editingId ? "Update" : "Create"}
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-primary"
+              title={editingId ? "Update entry" : "Create entry"}
+            />
             {editingId && (
-              <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2" onClick={resetForm}>
-                <XCircleIcon className="ui-icon-4" />
-                <span>Cancel</span>
-              </button>
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Cancel"
+                onClick={resetForm}
+                className="btn-outline-secondary"
+                title="Cancel edit"
+              />
             )}
           </div>
         </div>
@@ -125,9 +132,8 @@ export default function Modal_ManageLookup({
                   <PencilIcon className="ui-icon-4" />
                   <span>Edit</span>
                 </button>
-                <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex gap-2" onClick={() => handleDelete(item.id)}>
-                  <XMarkIcon className="ui-icon-4" />
-                  <span>Delete</span>
+                <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleDelete(item.id)} title="Delete">
+                  <TrashIcon style={{ width: 14, height: 14 }} />
                 </button>
               </div>
             </div>

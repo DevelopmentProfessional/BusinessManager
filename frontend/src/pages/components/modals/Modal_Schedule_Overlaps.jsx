@@ -1,5 +1,6 @@
 import React from "react";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function Modal_Schedule_Overlaps({
@@ -19,10 +20,8 @@ export default function Modal_Schedule_Overlaps({
       title="Overlapping Appointments"
       contentGravity="bottom"
       footer={
-        <div className="component-footer-left d-flex align-items-center gap-1">
-          <button type="button" className="btn btn-circle btn-outline-secondary" onClick={onClose} title="Close">
-            <XMarkIcon style={{ width: 16, height: 16 }} />
-          </button>
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       }
     >

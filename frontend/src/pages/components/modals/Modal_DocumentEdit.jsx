@@ -31,6 +31,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { documentsAPI, documentCategoriesAPI, documentStatusesAPI, employeesAPI, documentTagsAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import Modal from "./Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon, TagIcon, MagnifyingGlassIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
 
@@ -557,17 +558,9 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
           {/* /component-body-inner */}
         </div>
         {/* /component-body */}
-        <div className="component-footer">
-          <div className="component-footer-left d-flex align-items-center gap-1">
-            <button type="submit" className="align-items-center btn btn-primary d-inline-flex gap-1" disabled={saving}>
-              <CheckIcon className="app-icon" aria-hidden="true" />
-              {saving ? "Saving…" : "Save"}
-            </button>
-            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={onClose} title="Cancel">
-              <XMarkIcon />
-            </button>
-          </div>
-          <div className="component-footer-right"></div>
+        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar type="submit" icon={CheckIcon} label={saving ? "Saving…" : "Save"} className="btn-primary" disabled={saving} title="Save changes" />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
         </div>
       </form>
     </Modal>

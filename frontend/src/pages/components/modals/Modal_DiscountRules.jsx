@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-import { XMarkIcon, TagIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TagIcon, CheckIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 import { discountRulesAPI, inventoryAPI } from "../../../services/api";
 
@@ -301,15 +301,11 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
         </span>
       }
       headerActions={
-        <button type="button" className="btn btn-primary btn-sm" onClick={startNew}>
-          New
-        </button>
+        <Button_Toolbar icon={PlusIcon} label="New" onClick={startNew} className="btn-primary" title="New Rule" />
       }
       footer={
-        <div className="component-footer-left d-flex align-items-center gap-1">
-          <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Close">
-            <XMarkIcon />
-          </button>
+        <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       }
     >
@@ -505,9 +501,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
             <div className="align-items-center border-top d-flex flex-shrink-0 gap-2 p-0">
               <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save rule" />
-              <button type="button" onClick={resetForm} className="btn ui-btn-circle-outline-secondary" title="Cancel" disabled={saving}>
-                <XMarkIcon />
-              </button>
+              <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={resetForm} className="btn-outline-secondary" disabled={saving} title="Cancel" />
             </div>
           </div>
         )}
