@@ -25,6 +25,7 @@ import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 export const ModalStackContext = createContext(0);
+export const ModalContainerContext = createContext(null);
 
 // ─── NAMED SUB-COMPONENTS ───────────────────────────────────────────────────
 
@@ -70,16 +71,33 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, contentGravity = "top" }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, contentGravity = "top", container = null }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
+  const containerContext = useContext(ModalContainerContext);
+  const effectiveContainer = container || containerContext;
 
   if (!isOpen) return null;
 
+  const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
+
+  // When container is set to "inline", render self-contained without portaling or full-screen overlays
+  if (effectiveContainer === "inline") {
+    return (
+      <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
+        <ModalStackContext.Provider value={nextDepth}>
+          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} />}
+          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "" : "p-2"} no-scrollbar`}>
+            {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
+          </div>
+          {footer && <ModalFooter>{footer}</ModalFooter>}
+        </ModalStackContext.Provider>
+      </div>
+    );
+  }
+
   // Stacking z-index: each nested modal renders on top of its parent modal and any page elements
   const layerZIndex = 1200 + currentDepth * 20;
-
-  const gravityClass = "overflow-scroll-content overflow-scroll-content--bottom";
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
   const Overlay = <div className="bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;

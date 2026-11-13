@@ -30,6 +30,7 @@ const Documents = lazy(() => import("./pages/Documents"));
 const Editor_Document = lazy(() => import("./pages/Editor_Document"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Reports = lazy(() => import("./pages/Reports"));
+const ComponentShowcase = lazy(() => import("./pages/ComponentShowcase"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -347,6 +348,14 @@ function App() {
                   </PageErrorBoundary>
                 </Layout>
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/components"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ComponentShowcase />
+              </Suspense>
             }
           />
           {/* Catch-all route for any unmatched paths */}
