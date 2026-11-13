@@ -66,14 +66,12 @@ export default function Modal_Create_User({ isOpen, onClose, newUser, setNewUser
         </div>
 
         <div className="component-footer">
-          <div className="component-footer-left">
+          <div className="component-footer-left d-flex align-items-center gap-1">
             <button type="submit" form="create-user-form" disabled={loading} className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-1" title="Create user">
               <CheckIcon style={{ width: 16, height: 16 }} />
               Create
             </button>
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" title="Cancel">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

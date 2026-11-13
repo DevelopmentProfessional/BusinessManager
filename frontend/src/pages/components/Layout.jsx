@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";
-import { chatAPI } from "../../services/api";
+import { chatAPI, isudAPI } from "../../services/api";
 import Badge_PendingOrder from "./Badge_PendingOrder";
+import Modal from "./Modal";
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Sales, Schedule, Settings
@@ -31,10 +32,66 @@ const APP_NAV_Z_INDEX = 1100;
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [undoLoading, setUndoLoading] = useState(false);
+  const [undoResult, setUndoResult] = useState(null);
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
   const { isTrainingMode, buttonTextSize, uiScale } = useViewMode();
+
+  // Restore any pending undo notification after page refresh
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem("app_undo_popup");
+      if (pending) {
+        sessionStorage.removeItem("app_undo_popup");
+        const parsed = JSON.parse(pending);
+        if (parsed && parsed.message) {
+          setUndoResult(parsed);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const handleUndo = async () => {
+    if (undoLoading) return;
+    setUndoLoading(true);
+    setExpandedMenuOpen(false);
+    try {
+      const res = await isudAPI.undo();
+      const data = res?.data || {};
+      if (data.success) {
+        try {
+          sessionStorage.setItem(
+            "app_undo_popup",
+            JSON.stringify({
+              success: true,
+              message: data.message || "Action undone successfully",
+            })
+          );
+        } catch {
+          // ignore
+        }
+        window.location.reload();
+        return;
+      }
+
+      setUndoResult({
+        success: false,
+        message: data.message || "Can no longer undo",
+      });
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || "Failed to undo action";
+      setUndoResult({
+        success: false,
+        message: String(msg),
+      });
+    } finally {
+      setUndoLoading(false);
+    }
+  };
 
   const employeeUnreadTotal = Object.values(unreadCounts).reduce((total, count) => {
     const numericCount = Number(count) || 0;
@@ -140,7 +197,31 @@ export default function Layout({ children }) {
           <div className="bg-dark bg-opacity-25 h-100 position-absolute start-0 top-0 w-100" onClick={() => setExpandedMenuOpen(false)} />
 
           {/* Menu positioned bottom-right */}
-          <div className="app-nav-bottom-menu-panel position-absolute ps-0 rounded-3" style={{ minWidth: "1rem" }}>
+          <div className="app-nav-bottom-menu-panel position-absolute ps-0 rounded-3 d-flex gap-2 align-items-end" style={{ minWidth: "1rem" }}>
+            {/* Left side: Global options */}
+            <div className="app-nav-bottom-global-menu d-flex flex-column gap-2 align-items-center">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={undoLoading}
+                className={classNames(
+                  "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
+                  isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
+                )}
+                style={{
+                  backgroundColor: "var(--bs-tertiary-bg)",
+                  color: "var(--bs-body-color)",
+                  borderColor: "var(--bs-border-color)",
+                }}
+                title="Undo previous action"
+                aria-label="Undo"
+              >
+                <ArrowUturnLeftIcon className="app-icon flex-shrink-0" />
+                {isTrainingMode && <span>Undo</span>}
+              </button>
+            </div>
+
+            {/* Right side: Navigation items */}
             <div className="app-nav-bottom-menu d-flex flex-column gap-2">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
@@ -173,15 +254,28 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Navigation toggle — icon-only in every view mode */}
+      {/* Navigation toggle — unique bottom-right button */}
       <button
         type="button"
         onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
-        title={expandedMenuOpen ? "Close menu" : "Open menu"}
-        aria-label={expandedMenuOpen ? "Close menu" : "Open menu"}
-        className={classNames(expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary", "btn-app-nav app-nav-bottom-toggle app-action-btn--icon-only position-absolute shadow-lg d-flex align-items-center rounded-circle position-relative", "p-0 justify-content-center")}
+        title={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        className={classNames(
+          expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
+          "btn-app-nav app-nav-bottom-toggle position-fixed shadow-lg d-flex align-items-center justify-content-center p-0"
+        )}
         style={{
+          position: "fixed",
+          bottom: "calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem))",
+          right: "calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem))",
+          left: "auto",
           zIndex: APP_NAV_Z_INDEX,
+          width: "var(--app-btn-nav-width, 2.25rem)",
+          height: "var(--app-btn-height, 2rem)",
+          minWidth: "var(--app-btn-nav-width, 2.25rem)",
+          maxWidth: "var(--app-btn-nav-width, 2.25rem)",
+          borderRadius: "50%",
+          aspectRatio: "1 / 1",
           backgroundColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
           color: expandedMenuOpen ? "var(--bs-white)" : "var(--bs-body-color)",
           borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
@@ -190,6 +284,37 @@ export default function Layout({ children }) {
         {expandedMenuOpen ? <XMarkIcon className="app-icon flex-shrink-0" /> : <Bars3Icon className="app-icon flex-shrink-0" />}
         <Badge_PendingOrder clientId={user?.client_id} />
       </button>
+
+      {/* Undo Result Modal Popup */}
+      {undoResult && (
+        <Modal
+          isOpen={Boolean(undoResult)}
+          onClose={() => setUndoResult(null)}
+          title="Undo"
+          centered
+        >
+          <div className="p-3 d-flex flex-column align-items-center text-center gap-2">
+            {undoResult.success ? (
+              <CheckCircleIcon className="text-success" style={{ width: 40, height: 40 }} />
+            ) : (
+              <ExclamationTriangleIcon className="text-warning" style={{ width: 40, height: 40 }} />
+            )}
+            <div className="fw-semibold" style={{ fontSize: "1rem" }}>
+              {undoResult.message}
+            </div>
+          </div>
+          <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex justify-content-start">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setUndoResult(null)}
+              autoFocus
+            >
+              OK
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

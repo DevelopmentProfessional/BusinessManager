@@ -182,54 +182,47 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="ui-page-shell">
-        {/* Header */}
-        <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
-          <h6 className="app-modal-title ui-heading-strong">Service History</h6>
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Service History"
+      noPadding={true}
+      footer={<Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />}
+    >
+      <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
+        {loading && (
+          <div className="d-flex justify-content-center py-1">
+            <div className="spinner-border spinner-border-sm text-primary" role="status" />
+          </div>
+        )}
+        {error && <div className="alert alert-danger mx-3 py-0 small">{error}</div>}
 
-        {/* Scrollable body */}
-        <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
-          {loading && (
-            <div className="d-flex justify-content-center py-1">
-              <div className="spinner-border spinner-border-sm text-primary" role="status" />
-            </div>
-          )}
-          {error && <div className="alert alert-danger mx-3 py-0 small">{error}</div>}
+        {!loading && !error && (
+          <>
+            {schedules.length === 0 && (
+              <div className="py-1 text-center text-muted">
+                <SparklesIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
+                <div>No service history yet</div>
+              </div>
+            )}
 
-          {!loading && !error && (
-            <>
-              {schedules.length === 0 && (
-                <div className="py-1 text-center text-muted">
-                  <SparklesIcon style={{ width: 32, height: 32, margin: "0 auto 8px" }} />
-                  <div>No service history yet</div>
-                </div>
-              )}
+            {/* Past — oldest at top */}
+            {past.length > 0 && (
+              <div className="mb-2">
+                <div className="fw-semibold mb-1 pt-0 px-1 small text-muted">Past ({past.length})</div>
+                {past.map((s) => renderRow(s, false))}
+              </div>
+            )}
 
-              {/* Past — oldest at top */}
-              {past.length > 0 && (
-                <div className="mb-2">
-                  <div className="fw-semibold mb-1 pt-0 px-1 small text-muted">Past ({past.length})</div>
-                  {past.map((s) => renderRow(s, false))}
-                </div>
-              )}
-
-              {/* Upcoming — nearest first, furthest at bottom; tap to edit */}
-              {upcoming.length > 0 && (
-                <div>
-                  <div className="fw-semibold mb-1 pt-0 px-1 small text-primary">Upcoming ({upcoming.length}) — tap to edit</div>
-                  {upcoming.map((s) => renderRow(s, true))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
-          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
-        </div>
+            {/* Upcoming — nearest first, furthest at bottom; tap to edit */}
+            {upcoming.length > 0 && (
+              <div>
+                <div className="fw-semibold mb-1 pt-0 px-1 small text-primary">Upcoming ({upcoming.length}) — tap to edit</div>
+                {upcoming.map((s) => renderRow(s, true))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </Modal>
   );
@@ -465,13 +458,53 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="bottom">
-      <div className="ui-page-shell">
-        <div className="bg-white border-bottom border-gray-200 dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 p-0">
-          <h6 className="app-modal-title ui-heading-strong">Purchase History</h6>
-        </div>
-
-        <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Purchase History"
+      noPadding={true}
+      footer={
+        <Footer_Actions
+          start={
+            <div className="align-items-center d-flex flex-wrap gap-1">
+              <PurchasePeriodFilterDropup periods={availablePeriods} value={periodFilter} onChange={setPeriodFilter} />
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("pos");
+                  setExpandedId(null);
+                }}
+                className={`btn btn-sm position-relative ${tab === "pos" ? "btn-primary" : "btn-outline-secondary"}`}
+              >
+                POS
+                {posCount > 0 && (
+                  <span className="badge bg-danger position-absolute rounded-pill start-100 top-0 translate-middle" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
+                    {posCount > 99 ? "99+" : posCount}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTab("portal");
+                  setExpandedId(null);
+                }}
+                className={`btn btn-sm position-relative ${tab === "portal" ? "btn-primary" : "btn-outline-secondary"}`}
+              >
+                Portal
+                {portalCount > 0 && (
+                  <span className="badge bg-danger position-absolute rounded-pill start-100 top-0 translate-middle" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
+                    {portalCount > 99 ? "99+" : portalCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          }
+          center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+        />
+      }
+    >
+      <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
           {loading && (
             <div className="d-flex justify-content-center py-1">
               <div className="spinner-border spinner-border-sm text-primary" role="status" />
@@ -637,54 +670,12 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
           )}
         </div>
 
-        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
-          <Footer_Actions
-            start={
-              <div className="align-items-center d-flex flex-wrap gap-1">
-                <PurchasePeriodFilterDropup periods={availablePeriods} value={periodFilter} onChange={setPeriodFilter} />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("pos");
-                    setExpandedId(null);
-                  }}
-                  className={`btn btn-sm position-relative ${tab === "pos" ? "btn-primary" : "btn-outline-secondary"}`}
-                >
-                  POS
-                  {posCount > 0 && (
-                    <span className="badge bg-danger position-absolute rounded-pill start-100 top-0 translate-middle" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
-                      {posCount > 99 ? "99+" : posCount}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTab("portal");
-                    setExpandedId(null);
-                  }}
-                  className={`btn btn-sm position-relative ${tab === "portal" ? "btn-primary" : "btn-outline-secondary"}`}
-                >
-                  Portal
-                  {portalCount > 0 && (
-                    <span className="badge bg-danger position-absolute rounded-pill start-100 top-0 translate-middle" style={{ fontSize: "0.6rem", minWidth: "18px" }}>
-                      {portalCount > 99 ? "99+" : portalCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            }
-            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
-          />
-        </div>
-      </div>
-
-      {invoiceTx && (
-        <div className="fixed inset-0 z-[60]">
-          <Modal_TemplateUse page="sales" entity={invoiceTx} client={client} items={items[invoiceTx.id] || []} currentUser={currentUser} settings={appSettings} filterType="invoice" onClose={() => setInvoiceTx(null)} />
-        </div>
-      )}
-    </Modal>
+        {invoiceTx && (
+          <div className="fixed inset-0 z-[60]">
+            <Modal_TemplateUse page="sales" entity={invoiceTx} client={client} items={items[invoiceTx.id] || []} currentUser={currentUser} settings={appSettings} filterType="invoice" onClose={() => setInvoiceTx(null)} />
+          </div>
+        )}
+      </Modal>
   );
 }
 
@@ -806,22 +797,24 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
   if (!client) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="ui-page-shell">
-        {/* ─── 6 HEADER ─────────────────────────────────────────────────── */}
-        {/* Header */}
-        <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 gap-2 justify-content-between p-0">
-          <h6 className="app-modal-title ui-heading-strong">Client Details</h6>
-          {canDelete && (
-            <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
-              <XMarkIcon style={{ width: 18, height: 18 }} />
-            </button>
-          )}
-        </div>
-
-        {/* Scrollable content */}
-        <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pe-0 pt-1 px-1 text-gray-900">
-          {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Client Details"
+      noPadding={true}
+      headerActions={
+        canDelete && (
+          <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
+            <XMarkIcon style={{ width: 18, height: 18 }} />
+          </button>
+        )
+      }
+      footer={
+        <Footer_Actions start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />} center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />} />
+      }
+    >
+      <div className="flex-grow-1 min-h-0 pe-0 pt-1 px-1 text-gray-900 dark:text-gray-100">
+        {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
           {/* Avatar + name + tier */}
           <div className="align-items-center d-flex gap-3 mb-3">
             <div className="align-items-center d-flex flex-shrink-0 fw-bold justify-content-center rounded-circle text-white" style={{ width: 56, height: 56, background: avatarColor, fontSize: "1.25rem" }}>
@@ -949,13 +942,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <label htmlFor="dc_notes">Notes</label>
           </div>
         </div>
-
-        {/* ─── 9 FIXED FOOTER ──────────────────────────────────────────────── */}
-        {/* Fixed footer */}
-        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
-          <Footer_Actions start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />} center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />} />
-        </div>
-      </div>
 
       {/* ─── 10 SUB-MODAL MOUNTS ──────────────────────────────────────────── */}
       {/* Service History Sub-modal */}

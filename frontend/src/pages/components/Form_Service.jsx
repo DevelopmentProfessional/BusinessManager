@@ -454,7 +454,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   return (
     <div className="ui-page-shell">
       {/* Header */}
-      <div className="align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+      <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
         <h6 className="app-modal-title ui-heading-strong">{service ? "Edit Service" : "Add Service"}</h6>
         {!service && onBulkImport && (
           <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm dark:text-gray-400 p-1 text-gray-500" style={{ lineHeight: 1 }}>
@@ -583,7 +583,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
                 {/* Description at the bottom */}
                 <div className="form-floating ui-form-floating-mb2">
-                  <textarea id="description" name="description" value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
+                  <textarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
                   <label htmlFor="description">Description</label>
                 </div>
 

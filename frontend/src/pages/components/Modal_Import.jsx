@@ -236,9 +236,7 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
               className="btn-outline-secondary"
               title="Import data"
             />
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={handleClose} className="btn ui-btn-circle-outline-secondary" title="Cancel">
+            <button type="button" onClick={handleClose} className="btn ui-btn-circle-outline-secondary btn-circle" title="Cancel">
               <XMarkIcon />
             </button>
           </div>

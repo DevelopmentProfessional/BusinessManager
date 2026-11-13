@@ -177,7 +177,7 @@ function DocumentUploadForm({ onSubmit, onCancel }) {
         <p className="mb-0 mt-2 small text-muted">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
 
         <div className="form-floating mt-3">
-          <textarea id="documents-upload-description" name="description" value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
+          <textarea id="documents-upload-description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
           <label htmlFor="documents-upload-description">Description (optional)</label>
         </div>
 
@@ -980,7 +980,7 @@ export default function Documents() {
         </div>
 
         {selectedIds.size > 0 && !showTemplates && (
-          <div className="align-items-center border-top d-flex flex-shrink-0 position-relative px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+          <div className="align-items-center border-top d-flex flex-shrink-0 px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
             <div className="ui-flex-center-gap-2">
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
@@ -993,10 +993,10 @@ export default function Documents() {
                   <TrashIcon className="app-icon-14" />
                 </button>
               </Gate_Permission>
+              <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionDoc}>
+                <XMarkIcon className="app-icon-14" />
+              </button>
             </div>
-            <button type="button" className="btn btn-circle btn-outline-secondary position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }} title="Clear selection" onClick={clearSelectionDoc}>
-              <XMarkIcon className="app-icon-14" />
-            </button>
           </div>
         )}
         <PageTableHeader
@@ -1233,10 +1233,9 @@ export default function Documents() {
       <Modal_Edit_Document isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} document={editDoc} onSave={handleSaveEdit} />
 
       {/* History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} noPadding={true} fullScreen={true} contentGravity="bottom">
+      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title={historyDoc ? `History: ${historyDoc.original_filename}` : "History"} contentGravity="bottom">
         {isHistoryOpen && historyDoc && (
           <div className="space-y-4">
-            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg">History: {historyDoc.original_filename}</h3>
             <div className="border dark:border-gray-700 max-h-[40vh] overflow-auto rounded">
               <table className="dark:divide-gray-700 divide-gray-200 divide-y min-w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
@@ -1294,10 +1293,9 @@ export default function Documents() {
       </Modal>
 
       {/* Sign Document Modal */}
-      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} noPadding={true} fullScreen={true} contentGravity="top">
+      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)} title="Sign Document" contentGravity="top">
         {isSignOpen && signDoc && (
           <div className="space-y-4">
-            <h3 className="dark:text-gray-100 font-medium text-gray-900 text-lg">Sign Document</h3>
             <p className="dark:text-gray-400 text-gray-600 text-sm">{signDoc.original_filename}</p>
 
             {signaturePreview ? (
@@ -1348,15 +1346,9 @@ export default function Documents() {
           setIsCategoriesOpen(false);
           cancelEditCategory();
         }}
-        noPadding={true}
-        fullScreen={true}
+        title="Manage Categories"
       >
         <div className="bg-white d-flex dark:bg-gray-900 flex-column">
-          {/* Header */}
-          <div className="align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 flex-shrink-0 p-0">
-            <h6 className="ui-heading-strong">Manage Categories</h6>
-          </div>
-
           {/* Scrollable list */}
           <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
             {categories.length === 0 ? (

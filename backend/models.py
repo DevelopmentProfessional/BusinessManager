@@ -520,7 +520,7 @@ class InventoryFeatureOptionData(BaseModel, table=True):
 class InventoryFeatureCombination(BaseModel, table=True):
     """Stock tracked for a full option combination on a specific inventory item."""
     __tablename__ = "inventory_feature_combination"
-    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), index=True, nullable=False))
     combination_key: str = Field(index=True)
     option_ids_json: str
     quantity: int = Field(default=0, ge=0)
@@ -841,6 +841,31 @@ class DocumentAssignmentRead(SQLModel):
     notes: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── UNDO ACTION MODEL ────────────────────────────────────────────────────────
+class UserUndoAction(BaseModel, table=True):
+    """Stores up to 10 undoable database actions per user."""
+    __tablename__ = "user_undo_action"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    action_type: str = Field(index=True)  # "INSERT", "UPDATE", "DELETE"
+    table_name: str = Field(index=True)
+    record_id: str = Field(index=True)
+    entity_title: Optional[str] = Field(default=None)
+    before_state: Optional[str] = Field(default=None)  # JSON serialized snapshot of row
+
+
+class UserUndoActionRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    action_type: str
+    table_name: str
+    record_id: str
+    entity_title: Optional[str] = None
+    before_state: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -2898,7 +2923,7 @@ class ProcurementOrderLine(BaseModel, table=True):
     __tablename__ = "procurement_order_line"
     
     po_id: UUID = Field(foreign_key="procurement_order.id", index=True)
-    inventory_id: UUID = Field(foreign_key="inventory.id")
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False))
     
     quantity_ordered: int
     quantity_received: int = Field(default=0)
@@ -2912,7 +2937,7 @@ class InventoryCost(BaseModel, table=True):
     """Track inventory valuation and cost"""
     __tablename__ = "inventory_cost"
     
-    inventory_id: UUID = Field(foreign_key="inventory.id", unique=True)
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), unique=True, nullable=False))
     
     standard_cost: Optional[float] = None  # Standard/expected cost
     actual_cost: Optional[float] = None  # Weighted average cost

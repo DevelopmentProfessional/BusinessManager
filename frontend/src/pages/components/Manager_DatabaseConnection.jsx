@@ -3,6 +3,7 @@ import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon, EyeIcon, EyeSlashI
 import api from "../../services/api";
 import { showConfirm } from "../../services/showConfirm";
 import Dropdown_Custom from "./Dropdown_Custom";
+import Modal from "./Modal";
 
 const ENVIRONMENT_OPTIONS = [{ value: "production", label: "Production" }];
 const SSL_MODE_OPTIONS = [
@@ -239,17 +240,23 @@ export default function Manager_DatabaseConnection() {
       )}
 
       {/* Add Connection Modal */}
-      {showAddModal && (
-        <div className="d-block modal show" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-dialog-scrollable modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Add Database Connection</h5>
-                <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
-                  <div className="g-3 row">
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add Database Connection"
+        footer={
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            <button type="submit" form="add-db-conn-form" className="btn btn-primary" disabled={loading}>
+              {loading ? "Adding..." : "Add Connection"}
+            </button>
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={() => setShowAddModal(false)} title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+        }
+      >
+        <form id="add-db-conn-form" onSubmit={handleSubmit} className="p-1">
+          <div className="g-3 row">
                     {/* Name */}
                     <div className="col-md-6">
                       <div className="form-floating">
@@ -346,7 +353,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Description */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <textarea id="conn_description" className="ui-description-textarea form-control form-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
+                        <textarea id="conn_description" rows={6} className="ui-description-textarea form-control form-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
                         <label htmlFor="conn_description">Description</label>
                       </div>
                     </div>
@@ -367,20 +374,8 @@ export default function Manager_DatabaseConnection() {
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? "Adding..." : "Add Connection"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

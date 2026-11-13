@@ -930,6 +930,7 @@ export const assetUnitsAPI = {
 };
 
 export const isudAPI = {
+  undo: () => api.post("/isud/undo"),
   clients: clientsAPI,
   memberships: membershipsAPI,
   clientMemberships: clientMembershipsAPI,

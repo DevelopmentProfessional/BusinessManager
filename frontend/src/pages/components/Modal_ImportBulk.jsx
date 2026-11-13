@@ -208,8 +208,8 @@ export default function Modal_BulkImport({
         </div>
 
         {/* Footer */}
-        <div className="component-footer">
-          <div className="component-footer-left">
+        <div className="component-footer app-modal-footer app-form-footer app-standard-footer">
+          <div className="component-footer-left align-items-center d-flex" style={{ gap: "var(--app-footer-btn-gap, 0.25rem)" }}>
             <Button_Toolbar
               icon={ArrowDownTrayIcon}
               label={saving ? "Saving…" : parsedNames.length > 0 ? `Save (${parsedNames.length})` : "Save"}
@@ -218,9 +218,7 @@ export default function Modal_BulkImport({
               disabled={saving || parsedNames.length === 0}
               title="Import rows"
             />
-          </div>
-          <div className="component-footer-center">
-            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary" disabled={saving} title="Close">
+            <button type="button" onClick={onClose} className="btn ui-btn-circle-outline-secondary btn-circle" disabled={saving} title="Cancel">
               <XMarkIcon />
             </button>
           </div>

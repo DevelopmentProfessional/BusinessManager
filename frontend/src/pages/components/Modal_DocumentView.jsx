@@ -512,10 +512,10 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
   };
 
   return (
-    <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} fullScreen={true} contentGravity="top">
-      <div className="absolute bg-white dark:bg-gray-800 flex flex-col inset-0 lg:m-6 m-2 overflow-hidden rounded-lg shadow-xl sm:m-4">
+    <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} contentGravity="top">
+      <div className="bg-white dark:bg-gray-800 flex flex-col h-full w-full overflow-hidden">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between px-1 py-0">
+        <div className="app-modal-header bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center justify-between px-1 py-0">
           <div className="flex gap-3 items-center min-w-0">
             <DocumentIcon className="flex-shrink-0 h-6 text-gray-400 w-6" />
             <h3 className="app-modal-title truncate">{document.original_filename}</h3>
@@ -531,7 +531,7 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
         <div className="flex-1 min-h-0 overflow-hidden">{mode === "edit" ? <EditorArea document={document} documentType={documentType} /> : renderViewer()}</div>
 
         {/* Footer with document info */}
-        <div className="bg-gray-50 border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 px-1 py-0 text-gray-600 text-sm">
+        <div className="app-modal-footer app-standard-footer bg-gray-50 border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 flex-shrink-0 px-1 py-0 text-gray-600 text-sm">
           <div className="flex flex-wrap gap-4">
             <span>Type: {document.content_type || "Unknown"}</span>
             <span>Size: {document.file_size ? formatFileSize(document.file_size) : "Unknown"}</span>

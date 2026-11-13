@@ -97,6 +97,9 @@
   --app-input-font-size: 0.75rem;
   --app-search-input-padding-x: 0.75rem;
 
+  /* Floating Labels */
+  --app-floating-label-font-size: var(--app-input-font-size, 0.75rem);
+
   /* Dropups & Dropdowns */
   --app-dropdown-min-width: 11rem;
   --app-dropdown-border-radius: 0.75rem;
@@ -761,7 +764,7 @@ table::-webkit-scrollbar,
   inset: 0;
   z-index: var(--app-modal-z-index);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
 }
 
@@ -772,46 +775,62 @@ table::-webkit-scrollbar,
   backdrop-filter: blur(0.125rem);
 }
 
-.app-modal-dialog {
-  position: relative;
+.app-modal-dialog,
+.app-modal-sheet {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   z-index: 1;
-  width: 100%;
-  max-width: 32rem;
-  background: var(--bs-body-bg);
-  border-radius: var(--app-modal-border-radius);
-  border: 0.0625rem solid var(--bs-border-color);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  overflow: hidden;
+  width: 100% !important;
+  background: var(--bs-body-bg) !important;
+  border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .app-modal-dialog--fullscreen {
   max-width: 100% !important;
-  max-height: 100% !important;
-  height: 100% !important;
-  border-radius: 0 !important;
-  border: none !important;
+  max-height: 90vh !important;
+  border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
 }
 
-.app-modal-content {
-  flex-grow: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--app-modal-padding);
-}
-
-/* ─── 13. MODAL HEADER ─── */
-.app-modal-header {
-  height: var(--app-modal-header-height);
-  min-height: var(--app-modal-header-height);
-  padding: 0 var(--app-modal-padding);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 0.0625rem solid var(--bs-border-color);
-  background: var(--bs-body-bg);
-  flex-shrink: 0;
+/* ─── 13. MODAL HEADER (Always stationary at the top, separate from body scroll) ─── */
+.app-modal-header,
+.component-header,
+.ui-modal-header,
+.ui-page-shell > div:first-child:has(.app-modal-title),
+.ui-page-shell > div:first-child:has(.ui-heading-strong) {
+  height: var(--app-modal-header-height, 3rem) !important;
+  min-height: var(--app-modal-header-height, 3rem) !important;
+  padding: 0 var(--app-modal-padding, 1rem) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 0.0625rem solid var(--bs-border-color) !important;
+  background: var(--bs-body-bg) !important;
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
 }
 
 /* ==========================================================================
@@ -819,9 +838,10 @@ table::-webkit-scrollbar,
    Consistent header text style across all modals and modal components.
    ========================================================================== */
 .app-modal-title,
-.modal-title {
+.modal-title,
+.component-header-left {
   margin: 0 !important;
-  font-size: 1rem !important;
+  font-size: var(--app-text-size-medium, 1rem) !important;
   font-weight: 600 !important;
   line-height: 1.25 !important;
   color: var(--bs-body-color) !important;
@@ -830,7 +850,8 @@ table::-webkit-scrollbar,
 }
 
 .dark .app-modal-title,
-.dark .modal-title {
+.dark .modal-title,
+.dark .component-header-left {
   color: var(--bs-body-color) !important;
 }
 
@@ -845,17 +866,93 @@ table::-webkit-scrollbar,
   padding: 0.25rem;
 }
 
-/* ─── 14. MODAL FOOTER ─── */
-.app-modal-footer {
-  min-height: var(--app-standard-footer-height);
-  padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--app-footer-btn-gap);
-  border-top: 0.0625rem solid var(--bs-border-color);
-  background: var(--bs-body-bg);
-  flex-shrink: 0;
+/* ─── 14. MODAL BODY (Only scrollable area, smooth touch & hidden scrollbars) ─── */
+.app-modal-body,
+.app-modal-content,
+.component-body,
+.component-body-inner {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.app-modal-body::-webkit-scrollbar,
+.app-modal-content::-webkit-scrollbar,
+.component-body::-webkit-scrollbar,
+.component-body-inner::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.app-modal-body input,
+.app-modal-body textarea,
+.app-modal-body select,
+.app-modal-content input,
+.app-modal-content textarea,
+.app-modal-content select,
+.component-body input,
+.component-body textarea,
+.component-body select {
+  touch-action: auto;
+}
+
+/* ─── 15. MODAL FOOTER (Always stationary at bottom, touching interface) ─── */
+.app-modal-footer,
+.modal-footer,
+.component-footer,
+.ui-modal-footer,
+.ui-page-shell > .app-form-footer,
+.ui-page-shell > .ui-form-footer-shell,
+.ui-page-shell > div:last-child:has(.btn) {
+  min-height: var(--app-standard-footer-height) !important;
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  background: var(--bs-body-bg) !important;
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+}
+
+/* Modals sit flush at the bottom of the viewport with no gap */
+.app-modal-sheet,
+.app-modal-dialog {
+  bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Modal footers: flush at bottom, no right-hand nav reserve needed */
+.app-modal .app-modal-footer,
+.app-modal .modal-footer,
+.app-modal .component-footer,
+.app-modal .app-form-footer,
+.app-modal .app-standard-footer,
+.app-modal-sheet .app-modal-footer,
+.app-modal-sheet .modal-footer,
+.app-modal-sheet .component-footer,
+.app-modal-sheet .app-form-footer,
+.app-modal-sheet .app-standard-footer {
+  padding-left: var(--app-footer-padding-x) !important;
+  padding-right: var(--app-footer-padding-x) !important;
+  padding-top: var(--app-footer-padding-y) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
+  margin-bottom: 0 !important;
+  bottom: 0 !important;
+  border-bottom: none !important;
 }
 
 .app-modal-actions {
@@ -1152,17 +1249,75 @@ table::-webkit-scrollbar,
   color: var(--bs-secondary-color);
 }
 
-.ui-component-shell {
-  min-height: 0;
-  height: 100%;
+.ui-component-shell,
+.ui-page-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
-.ui-page-shell {
-  display: flex;
-  min-height: 0;
-  height: 100%;
-  flex-direction: column;
-  background-color: #ffffff;
+/* Ensure modal headers stay fixed at top when scrolling */
+.app-modal-header,
+.component-header,
+.ui-modal-header,
+.ui-page-shell > .app-modal-header,
+.ui-page-shell > .border-bottom,
+.ui-page-shell > div:first-child:has(.app-modal-title),
+.ui-page-shell > div:first-child:has(.ui-heading-strong) {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background: var(--bs-body-bg) !important;
+}
+
+/* Ensure inner scrollable content inside shells scrolls smoothly */
+.ui-component-shell > .component-body,
+.ui-component-shell > .component-body-inner,
+.ui-page-shell > .component-body,
+.ui-page-shell > form,
+.ui-page-shell > div.overflow-auto,
+.ui-page-shell > div[class*="overflow-auto"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.ui-component-shell > .component-body::-webkit-scrollbar,
+.ui-component-shell > .component-body-inner::-webkit-scrollbar,
+.ui-page-shell > .component-body::-webkit-scrollbar,
+.ui-page-shell > form::-webkit-scrollbar,
+.ui-page-shell > div.overflow-auto::-webkit-scrollbar,
+.ui-page-shell > div[class*="overflow-auto"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Ensure modal footers stay fixed at bottom when scrolling */
+.app-modal-footer,
+.modal-footer,
+.component-footer,
+.ui-modal-footer,
+.ui-page-shell > .app-modal-footer,
+.ui-page-shell > .app-form-footer,
+.ui-page-shell > .ui-form-footer-shell,
+.ui-page-shell > div:last-child:has(.btn) {
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  background: var(--bs-body-bg) !important;
 }
 
 .dark .ui-page-shell {
@@ -1346,9 +1501,13 @@ table::-webkit-scrollbar,
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE / Edge legacy */
   overscroll-behavior: contain;
-  height: 6rem;
-  min-height: 6rem;
-  max-height: 6rem;
+  height: 9rem;
+  min-height: 9rem;
+}
+
+.form-floating > .ui-description-textarea {
+  height: 10.5rem;
+  min-height: 10.5rem;
 }
 
 .ui-description-textarea::-webkit-scrollbar {
@@ -1376,10 +1535,28 @@ table::-webkit-scrollbar,
   text-align: end;
 }
 
-/* Bulk import grid: hide scrollbars while preserving scroll */
+/* Bulk import grid: hide scrollbars while preserving mobile and desktop scroll */
 .bulk-import-grid-scroll {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
+  overscroll-behavior: contain;
+}
+
+.bulk-import-grid-scroll table,
+.bulk-import-grid-scroll th,
+.bulk-import-grid-scroll td,
+.bulk-import-grid-scroll input {
+  touch-action: pan-x pan-y !important;
+}
+
+.component-body-inner--flush {
+  padding: 0;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
 }
 
 .bulk-import-grid-scroll::-webkit-scrollbar {
@@ -1511,16 +1688,19 @@ footer[aria-label="Actions"] {
   }
 }
 
-/* Page footers — every toolbar button same width (TextSize sets --app-btn-width) */
-.app-footer-search .btn.app-action-btn.rounded-circle,
-.schedule-footer .btn.app-action-btn.rounded-circle,
-.profile-footer-nav .btn.app-action-btn.rounded-circle,
-footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle {
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
-  max-width: var(--app-btn-width) !important;
-  flex: 0 0 var(--app-btn-width) !important;
+/* Page footers — toolbar buttons with icons only are exact circles */
+.app-footer-search .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.schedule-footer .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.profile-footer-nav .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
   margin: 0 !important;
+  padding: 0 !important;
   overflow: hidden;
 }
 
@@ -1569,10 +1749,19 @@ footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
   gap: 0.125rem !important;
 }
 
-.btn.app-action-btn.rounded-circle {
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
-  max-width: var(--app-btn-width) !important;
+.btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.btn.app-action-btn.btn-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.btn.app-action-btn--icon-only:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
 }
 
 .btn.app-action-btn.rounded-pill {
@@ -2049,11 +2238,18 @@ body.training-mode .btn.rounded-pill .text-nowrap {
   color: #cbd5e1;
 }
 
-/* Icon-only / circular toolbar buttons */
-.btn.rounded-circle {
-  width: var(--app-btn-width) !important;
-  min-width: var(--app-btn-width) !important;
-  height: var(--app-btn-height) !important;
+/* Icon-only / circular buttons: ALWAYS an exact 1:1 circle */
+.btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.rounded-pill),
+.btn.app-action-btn--icon-only:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
   padding: 0 !important;
 }
 
@@ -2093,9 +2289,13 @@ body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
 }
 
 /* Bottom-right nav toggle — same bottom/right inset as page footers */
+.btn.btn-app-nav,
 .app-nav-bottom-toggle {
-  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0rem)) !important;
-  right: calc(var(--app-nav-bottom-right-inset) + env(safe-area-inset-right, 0rem)) !important;
+  position: fixed !important;
+  bottom: calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem)) !important;
+  right: calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem)) !important;
+  left: auto !important;
+  z-index: 1050 !important;
 }
 
 body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
@@ -2142,13 +2342,15 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
   bottom: calc(var(--app-footer-padding-y) + var(--app-btn-nav-width) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0rem));
 }
 
-.app-nav-bottom-menu {
+.app-nav-bottom-menu,
+.app-nav-bottom-global-menu {
   align-items: stretch;
   padding: var(--app-footer-padding-y) 0;
 }
 
 .app-nav-bottom-menu .btn,
-.app-nav-bottom-menu a.btn {
+.app-nav-bottom-menu a.btn,
+.app-nav-bottom-global-menu .btn {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
 }
@@ -2187,34 +2389,91 @@ body.training-mode .btn.settings-accordion-btn {
   margin: 0 !important;
 }
 
-.app-footer-search .btn.rounded-circle,
-.schedule-footer .btn.rounded-circle,
-.profile-footer-nav .btn.rounded-circle,
-.modal-footer .btn.rounded-circle,
-footer[aria-label="Actions"] .btn.rounded-circle,
-.flex-shrink-0.border-top .btn.rounded-circle,
-.flex-shrink-0.border-t .btn.rounded-circle,
-[class*="footer"] .btn.rounded-circle {
+.app-footer-search .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.schedule-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.modal-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+[class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   padding: 0 !important;
   width: var(--app-btn-width) !important;
   height: var(--app-btn-height) !important;
   min-width: var(--app-btn-width) !important;
 }
 
-body.training-mode .app-footer-search .btn.rounded-circle,
-body.training-mode .schedule-footer .btn.rounded-circle,
-body.training-mode .profile-footer-nav .btn.rounded-circle,
-body.training-mode .modal-footer .btn.rounded-circle,
-body.training-mode footer[aria-label="Actions"] .btn.rounded-circle,
-body.training-mode .flex-shrink-0.border-top .btn.rounded-circle,
-body.training-mode .flex-shrink-0.border-t .btn.rounded-circle,
-body.training-mode [class*="footer"] .btn.rounded-circle {
+body.training-mode .app-footer-search .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .schedule-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .modal-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
   width: var(--app-btn-width) !important;
   min-width: var(--app-btn-width) !important;
   max-width: var(--app-btn-width) !important;
   height: var(--app-btn-height) !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Circle buttons (settings + cancel): always icon-only circle; size DOES NOT follow compact / training-mode toggle */
+.btn-circle,
+.btn-cancel-circle,
+.ui-btn-circle-outline-secondary,
+.btn[title*="Cancel" i],
+.btn[aria-label*="Cancel" i],
+.btn[title*="Close" i],
+.btn[aria-label*="Close" i],
+.btn.app-action-btn.btn-circle,
+.btn.app-action-btn.btn-cancel-circle,
+body.training-mode .btn-circle,
+body.training-mode .btn-cancel-circle,
+body.training-mode [class*="footer"] .btn.btn-circle,
+body.training-mode [class*="footer"] .btn.btn-cancel-circle,
+body.training-mode [class*="footer"] .btn[title*="Cancel" i],
+body.training-mode [class*="footer"] .btn[aria-label*="Cancel" i],
+body.training-mode [class*="footer"] .btn[title*="Close" i],
+body.training-mode [class*="footer"] .btn[aria-label*="Close" i] {
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.btn-circle svg,
+.btn-cancel-circle svg,
+.ui-btn-circle-outline-secondary svg,
+.btn[title*="Cancel" i] svg,
+.btn[aria-label*="Cancel" i] svg,
+.btn[title*="Close" i] svg,
+.btn[aria-label*="Close" i] svg {
+  width: var(--app-icon-size, 1rem) !important;
+  height: var(--app-icon-size, 1rem) !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-circle span,
+.btn-cancel-circle span,
+.ui-btn-circle-outline-secondary span,
+.btn[title*="Cancel" i] span,
+.btn[aria-label*="Cancel" i] span,
+.btn[title*="Close" i] span,
+.btn[aria-label*="Close" i] span {
+  display: none !important;
 }
 
 .profile-footer-nav .btn.profile-footer-btn {
@@ -2380,7 +2639,7 @@ input[type="number"],
   height: 100%;
   padding-left: 1.25rem !important;
   padding-top: 0.35rem;
-  font-size: var(--app-input-font-size) !important;
+  font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
   transform-origin: 0 0;
   pointer-events: none;
   transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
@@ -2388,7 +2647,7 @@ input[type="number"],
 
 .form-floating > .app-floating-label,
 .app-dropdown-root.form-floating > .app-floating-label {
-  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
 }
 .form-floating > .form-control:focus ~ label,
 .form-floating > .form-control:not(:placeholder-shown) ~ label,
@@ -3033,7 +3292,14 @@ textarea.form-control {
 
 .text-size-small,
 .app-text-small {
-  font-size: 0.75rem !important;
+  font-size: var(--app-text-size-small, 0.75rem) !important;
+}
+
+.text-size-small th,
+.text-size-small td,
+.app-text-small th,
+.app-text-small td {
+  font-size: var(--app-text-size-small, 0.75rem) !important;
 }
 
 .text-size-medium,
@@ -3460,19 +3726,36 @@ select.form-select {
 
 /* ── Circle buttons (settings + cancel) ──
    Always icon-only circle; size DOES NOT follow compact / training-mode toggle. */
-.btn-circle {
+.btn-circle,
+.btn-cancel-circle,
+.ui-btn-circle-outline-secondary,
+.btn[title*="Cancel" i],
+.btn[aria-label*="Cancel" i],
+.btn[title*="Close" i],
+.btn[aria-label*="Close" i] {
   width: 2rem !important;
   height: 2rem !important;
   min-width: 2rem !important;
+  max-width: 2rem !important;
+  min-height: 2rem !important;
+  max-height: 2rem !important;
+  flex: 0 0 2rem !important;
   border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
 }
 
-.btn-circle svg {
+.btn-circle svg,
+.btn-cancel-circle svg,
+.ui-btn-circle-outline-secondary svg,
+.btn[title*="Cancel" i] svg,
+.btn[aria-label*="Cancel" i] svg,
+.btn[title*="Close" i] svg,
+.btn[aria-label*="Close" i] svg {
   width: 1rem !important;
   height: 1rem !important;
   flex-shrink: 0;
@@ -3504,7 +3787,7 @@ select.form-select {
   align-items: center;
   border-bottom: 0.0625rem solid var(--bs-border-color);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0.5rem;
 }
 
@@ -3518,40 +3801,92 @@ select.form-select {
 }
 
 .template-editor-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  overflow-y: auto;
-  padding-bottom: calc(var(--app-standard-footer-height) * 2.5);
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .template-editor-content-shell {
-  min-height: 0;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap .tiptap-editor {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .template-editor-richtext-wrap .tiptap-editor .tiptap {
-  padding-bottom: calc(var(--app-standard-footer-height) * 3);
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 1rem !important;
 }
 
 .template-editor-toolbar-shell {
   min-width: 0;
   max-width: 100%;
+  width: 100% !important;
   overflow: hidden;
   position: relative;
   z-index: 1;
+  display: flex !important;
+  justify-content: flex-start !important;
 }
 
 .template-editor-meta-row {
   min-width: 0;
   max-width: 100%;
+  width: 100% !important;
   overflow: visible;
   position: relative;
   z-index: 20;
+  display: flex !important;
+  justify-content: flex-start !important;
 }
 
 .template-editor-toolbar-shell .editor-toolbar {
   min-width: 0;
   max-width: 100%;
+}
+
+/* Floating through-layer image for templates (independent overlay layer, zero text displacement) */
+.image-through-container,
+.image-resizable-root.image-through-layer {
+  display: inline-block !important;
+  position: relative !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+}
+
+.image-through-inner {
+  user-select: none;
+  touch-action: none;
 }
 
 .template-editor-toolbar-shell .editor-toolbar-row {

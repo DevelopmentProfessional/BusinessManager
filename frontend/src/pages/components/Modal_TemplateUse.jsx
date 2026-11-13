@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { templatesAPI, clientsAPI, clientCartAPI } from "../../services/api";
+import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "./Button_Toolbar";
 import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables } from "./Utils_TemplateVariables";
@@ -451,63 +452,45 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 fixed flex flex-col inset-0 z-50">
-      {/* Header */}
-      <div className="align-items-center bg-white border-b border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 justify-content-between px-3 py-2">
-        <div className="align-items-center d-flex gap-2 min-w-0">
-          <h2 className="app-modal-title text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</h2>
-          {selected && (
-            <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
-              {selected.template_type}
-            </span>
-          )}
-        </div>
-
-        {/* Top-right: Print and Download icon buttons */}
-        <div className="align-items-center d-flex gap-2">
-          <Button_Toolbar
-            icon={PrinterIcon}
-            label=""
-            compact
-            onClick={handlePrint}
-            disabled={!selected}
-            className="btn-outline-secondary rounded-circle"
-            title="Print"
-          />
-          <Button_Toolbar
-            icon={ArrowDownTrayIcon}
-            label=""
-            compact
-            onClick={handleDownloadPdf}
-            disabled={!selected || isDownloadingPdf}
-            className="btn-outline-secondary rounded-circle"
-            title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Full-width preview area */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {selected ? (
-            <div className="bg-gray-100 dark:bg-gray-800 flex-1 overflow-hidden p-2">
-              <div className="bg-white h-full overflow-hidden rounded shadow-sm">
-                <iframe ref={printIframeRef} srcDoc={iframeContent} className="border-0 h-full w-full" title="Template preview" sandbox="allow-same-origin allow-modals" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-gray-400 text-sm">
-              {loading ? "Loading templates..." : "Select a template to preview"}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Footer actions: Edit, Temp (dropup), Use on left; Close floating in center */}
-      <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 px-3 py-2">
-        <div className="align-items-center d-flex justify-content-between position-relative" style={{ minHeight: "2.5rem" }}>
-          {/* Left: Edit, Temp dropup, Use */}
+    <>
+      <Modal
+        isOpen={true}
+        onClose={onClose}
+        title={
+          <div className="align-items-center d-flex gap-2 min-w-0">
+            <span className="text-truncate">{isPayslip ? "Pay Slip" : "Use Template"}</span>
+            {selected && (
+              <span className={`px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${TYPE_BADGE_COLOR[selected.template_type] || TYPE_BADGE_COLOR.custom}`}>
+                {selected.template_type}
+              </span>
+            )}
+          </div>
+        }
+        headerActions={
           <div className="align-items-center d-flex gap-2">
+            <Button_Toolbar
+              icon={PrinterIcon}
+              label=""
+              compact
+              onClick={handlePrint}
+              disabled={!selected}
+              className="btn-outline-secondary rounded-circle"
+              title="Print"
+            />
+            <Button_Toolbar
+              icon={ArrowDownTrayIcon}
+              label=""
+              compact
+              onClick={handleDownloadPdf}
+              disabled={!selected || isDownloadingPdf}
+              className="btn-outline-secondary rounded-circle"
+              title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
+            />
+          </div>
+        }
+        noPadding={false}
+        footer={
+          <div className="align-items-center d-flex gap-2 justify-content-start w-100">
             {!isPayslip && (
               <Button_Toolbar
                 icon={PencilSquareIcon}
@@ -590,24 +573,54 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
             <Button_Toolbar
               icon={XMarkIcon}
-              label="Close"
+              label="Cancel"
               onClick={onClose}
               className="btn-outline-secondary"
-              title="Close"
+              title="Cancel"
             />
           </div>
+        }
+      >
+        {/* Hidden iframe used solely for native window.print() */}
+        <iframe ref={printIframeRef} srcDoc={iframeContent} style={{ display: "none" }} title="Print frame" />
+
+        {/* Natural template preview: content dictates height, expanding modal upward until max-height */}
+        <div className="template-use-preview bg-white dark:bg-gray-900 rounded p-2 text-gray-900 dark:text-gray-100" style={{ minHeight: "80px" }}>
+          {selected ? (
+            <div
+              className="template-rendered-content"
+              style={{ fontSize: "13px", lineHeight: "1.6", color: "inherit", overflow: "visible" }}
+              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+            />
+          ) : (
+            <div className="flex items-center justify-center text-gray-400 text-sm py-4">
+              {loading ? "Loading templates..." : "Select a template to preview"}
+            </div>
+          )}
         </div>
-      </div>
+      </Modal>
 
       {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
 
       {isEmailPreviewOpen && selected && (
-        <div className="align-items-center bg-black/50 d-flex fixed inset-0 justify-content-center px-1 z-[60]">
-          <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded w-100" style={{ maxWidth: "760px" }}>
-            <div className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
-              <h3 className="dark:text-white font-semibold mb-0 text-gray-900 text-sm">Email Preview</h3>
+        <Modal
+          isOpen={isEmailPreviewOpen}
+          onClose={() => setIsEmailPreviewOpen(false)}
+          title="Email Preview"
+          footer={
+            <div className="align-items-center d-flex gap-2 justify-content-start">
+              <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
+                <EnvelopeIcon className="ui-icon-4" />
+                Email
+              </button>
+              <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="align-items-center btn btn-outline-secondary d-flex gap-1">
+                <XMarkIcon className="ui-icon-4" />
+                Close
+              </button>
             </div>
-
+          }
+        >
+          <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
             <div className="bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
               <div className="mb-1 small text-gray-500">To</div>
               <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No client email available"}</div>
@@ -619,29 +632,15 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               <div className="dark:text-white text-gray-900 text-sm">{pdfFileName} (generated on send)</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 px-1 py-1" style={{ maxHeight: "42vh", overflowY: "auto" }}>
+            <div className="bg-white dark:bg-gray-900 px-1 py-1">
               <div className="mb-2 small text-gray-500">Body</div>
               <pre className="dark:text-gray-200 m-0 text-gray-800 text-sm" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
                 {emailBody}
               </pre>
             </div>
-
-            <div className="bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
-              <div className="align-items-center d-flex position-relative" style={{ minHeight: "2.5rem" }}>
-                <button type="button" onClick={handleOpenEmailDraft} disabled={!selected} className="align-items-center btn btn-primary d-flex gap-1">
-                  <EnvelopeIcon className="ui-icon-4" />
-                  Email
-                </button>
-
-                <button type="button" onClick={() => setIsEmailPreviewOpen(false)} className="align-items-center btn btn-outline-secondary d-flex gap-1 position-absolute" style={{ left: "50%", transform: "translateX(-50%)" }}>
-                  <XMarkIcon className="ui-icon-4" />
-                  Close
-                </button>
-              </div>
-            </div>
           </div>
-        </div>
+        </Modal>
       )}
-    </div>
+    </>
   );
 }
