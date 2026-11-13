@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../services/showConfirm";
 
 const DEFAULT_ROW_COUNT = 100;
@@ -540,7 +540,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
                       <td className="align-middle small text-center text-muted">
                         <div className="align-items-center d-flex gap-1 justify-content-center">
                           <button type="button" className="btn btn-link btn-sm p-0 text-danger" title="Delete this row" onClick={() => handleDeleteRow(rowIndex)}>
-                            <XMarkIcon style={{ width: 12, height: 12 }} />
+                            <TrashIcon style={{ width: 14, height: 14 }} />
                           </button>
                           <span>{rowIndex + 1}</span>
                         </div>

@@ -10,9 +10,11 @@
  */
 
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import { CheckIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, ExclamationTriangleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { settingsAPI } from "../../services/api";
 import useDarkMode from "../../services/useDarkMode";
+import Button_Toolbar from "./Button_Toolbar";
+import Dropdown_Custom from "./Dropdown_Custom";
 
 const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ userId, HelpIcon, onSaved, onSavingChange, hideFooter = false }, ref) {
   const { isDarkMode } = useDarkMode();
@@ -178,27 +180,40 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       </div>
 
       {/* Days of Operation */}
-      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Days of Operation {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}</h4>
-        <div className="gap-2 grid grid-cols-2 sm:grid-cols-4">
-          {[
-            { key: "monday_enabled", label: "Mon", fullLabel: "Monday" },
-            { key: "tuesday_enabled", label: "Tue", fullLabel: "Tuesday" },
-            { key: "wednesday_enabled", label: "Wed", fullLabel: "Wednesday" },
-            { key: "thursday_enabled", label: "Thu", fullLabel: "Thursday" },
-            { key: "friday_enabled", label: "Fri", fullLabel: "Friday" },
-            { key: "saturday_enabled", label: "Sat", fullLabel: "Saturday" },
-            { key: "sunday_enabled", label: "Sun", fullLabel: "Sunday" },
-          ].map((day) => (
-            <div key={day.key} className={`flex items-center p-0 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
-              <input type="checkbox" id={day.key} checked={formData[day.key]} onChange={(e) => handleInputChange(day.key, e.target.checked)} className="h-4 rounded w-4" />
-              <label htmlFor={day.key} className={`ml-2 text-sm font-medium cursor-pointer ${isDarkMode ? "text-gray-200" : ""}`}>
-                <span className="hidden sm:inline">{day.fullLabel}</span>
-                <span className="sm:hidden">{day.label}</span>
-              </label>
-            </div>
-          ))}
-        </div>
+      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+        <h4 className={`font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Days of Operation {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}</h4>
+        <Dropdown_Custom
+          className="ui-control-sm"
+          options={[
+            { value: "monday_enabled", label: "Monday" },
+            { value: "tuesday_enabled", label: "Tuesday" },
+            { value: "wednesday_enabled", label: "Wednesday" },
+            { value: "thursday_enabled", label: "Thursday" },
+            { value: "friday_enabled", label: "Friday" },
+            { value: "saturday_enabled", label: "Saturday" },
+            { value: "sunday_enabled", label: "Sunday" },
+          ]}
+          value={[
+            "monday_enabled", "tuesday_enabled", "wednesday_enabled",
+            "thursday_enabled", "friday_enabled", "saturday_enabled", "sunday_enabled"
+          ].filter((k) => formData[k])}
+          onChange={(e) => {
+            const nextVals = Array.isArray(e.target.value) ? e.target.value : [];
+            const updated = {};
+            [
+              "monday_enabled", "tuesday_enabled", "wednesday_enabled",
+              "thursday_enabled", "friday_enabled", "saturday_enabled", "sunday_enabled"
+            ].forEach((k) => {
+              updated[k] = nextVals.includes(k);
+            });
+            setFormData((p) => ({ ...p, ...updated }));
+          }}
+          placeholder="Select operating days"
+          floatingLabel="Operating Days"
+          multiSelect={true}
+          searchable={true}
+          closeOnSelect={false}
+        />
       </div>
 
       {/* Attendance Check-in */}
@@ -297,13 +312,22 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
       )}
 
       {!hideFooter && (
-        <div className={`flex gap-2 pt-1 border-t justify-content-start ${isDarkMode ? "border-gray-600" : ""}`}>
-          <button type="button" onClick={handleSaveSettings} disabled={saving} className="bg-blue-600 disabled:opacity-50 font-medium hover:bg-blue-700 px-1 py-0 rounded-lg text-white">
-            {saving ? "Saving..." : "Save"}
-          </button>
-          <button type="button" onClick={loadScheduleSettings} className={`px-1 py-0 border rounded-lg font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-            Reset
-          </button>
+        <div className={`d-flex gap-2 pt-2 border-top justify-content-start align-items-center ${isDarkMode ? "border-gray-600" : ""}`}>
+          <Button_Toolbar
+            icon={CheckIcon}
+            label={saving ? "Saving..." : "Save"}
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="btn-primary"
+            title="Save schedule settings"
+          />
+          <Button_Toolbar
+            icon={ArrowPathIcon}
+            label="Reset"
+            onClick={loadScheduleSettings}
+            className="btn-outline-secondary"
+            title="Reset settings"
+          />
         </div>
       )}
     </div>

@@ -164,7 +164,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       sessionStorage.removeItem("token");
-      if (window.location.pathname !== "/login") {
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/components") {
         window.location.href = "/login";
       }
     }

@@ -42,7 +42,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./Button_Toolbar";
 import Footer_Actions from "./Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../services/api";
@@ -1716,13 +1716,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             end={
               employee && canDelete ? (
                 <Button_Toolbar
-                  icon={XMarkIcon}
+                  icon={TrashIcon}
                   label="Delete"
                   title="Delete employee"
                   onClick={async () => {
                     if (await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" })) onDelete(employee.id);
                   }}
-                  className="btn-outline-secondary"
+                  className="btn-outline-danger"
                 />
               ) : null
             }
