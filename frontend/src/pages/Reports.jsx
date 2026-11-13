@@ -72,17 +72,16 @@ import useStore from "../services/useStore";
 import { reportsAPI, employeesAPI, servicesAPI, payrollAPI } from "../services/api";
 import useBranding from "../services/useBranding";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
-import Chart_Report from "./components/Chart_Report";
-import Button_Toolbar from "./components/Button_Toolbar";
-import Report_SelectorDropup from "./components/Report_SelectorDropup";
-import Dropdown_Custom from "./components/Dropdown_Custom";
+import Chart_Report from "./components/panels/Chart_Report";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Report_SelectorDropup from "./components/dropdowns/Report_SelectorDropup";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import useViewMode from "../services/useViewMode";
-import Modal_ForecastCalculator from "./components/Modal_ForecastCalculator";
-import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_ControlsModal";
-import TableSettingsControls from "./components/TableSettingsControls";
-import PageTableFooter from "./components/Page_TableFooter";
-import Dashboard_Financial from "./components/Dashboard_Financial";
+import Modal_ForecastCalculator from "./components/modals/Modal_ForecastCalculator";
+import Modal_Reports_SaveFilter from "./components/modals/Modal_Reports_SaveFilter";
+import Modal_Reports_FinancialDashboard from "./components/modals/Modal_Reports_FinancialDashboard";
+import Modal_Reports_Settings from "./components/modals/Modal_Reports_Settings";
+import PageTableFooter from "./components/footers/Page_TableFooter";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -1672,95 +1671,35 @@ export default function Reports() {
       {/* Forecast Calculator Modal */}
       <Modal_ForecastCalculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
 
-      <Modal isOpen={showFinancialDashboard} onClose={() => setShowFinancialDashboard(false)} noPadding>
-        <div className="ui-component-shell">
-          <div className="component-header">
-            <div className="component-header-left">Financial Controls</div>
-            <div className="component-header-center" />
-            <div className="component-header-right" />
-          </div>
-          <div className="component-body">
-            <div className="component-body-inner">
-              <Dashboard_Financial />
-            </div>
-          </div>
-          <div className="component-footer">
-            <div className="component-footer-left">
-              <Button_Toolbar
-                icon={CalculatorIcon}
-                label="Forecast"
-                onClick={() => {
-                  setShowFinancialDashboard(false);
-                  setShowForecastCalculator(true);
-                }}
-                className="btn-outline-secondary"
-                title="Open forecast calculator"
-              />
-            </div>
-            <div className="component-footer-center">
-              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setShowFinancialDashboard(false)} className="btn-outline-secondary" title="Close" />
-            </div>
-            <div className="component-footer-right" />
-            ...
-          </div>
-        </div>
-      </Modal>
+      <Modal_Reports_FinancialDashboard
+        isOpen={showFinancialDashboard}
+        onClose={() => setShowFinancialDashboard(false)}
+        onOpenForecast={() => setShowForecastCalculator(true)}
+      />
 
-      <PageControlsModal
+      <Modal_Reports_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Report Page Controls"
         onSave={async () => {
           await savePageSettings("reports", pendingReportsSettings);
         }}
-      >
-        <div className="mb-2 ui-small-muted">Configure report display and export options.</div>
-        <div className="fw-semibold mb-1 small">Summary Cards</div>
-        {Object.keys(kpiVisibility).map((label) => (
-          <div key={label} className="form-check mb-1">
-            <input type="checkbox" id={`kpi-vis-${label}`} className="form-check-input" checked={kpiVisibility[label]} onChange={(e) => setKpiVisibility((prev) => ({ ...prev, [label]: e.target.checked }))} />
-            <label className="form-check-label small" htmlFor={`kpi-vis-${label}`}>
-              {label}
-            </label>
-          </div>
-        ))}
-        <TableSettingsControls settings={pendingReportsSettings} onChange={(patch) => setPendingReportsSettings((prev) => ({ ...prev, ...patch }))} />
-      </PageControlsModal>
+        kpiVisibility={kpiVisibility}
+        setKpiVisibility={setKpiVisibility}
+        pendingReportsSettings={pendingReportsSettings}
+        setPendingReportsSettings={setPendingReportsSettings}
+      />
 
       {/* Save Filter Modal */}
-      <Modal isOpen={showSaveFilterModal} onClose={() => setShowSaveFilterModal(false)} title="Save Filter" contentGravity="top">
-        <div className="p-1">
-          <label className="form-label">Filter Name</label>
-          <input
-            type="text"
-            className="form-control"
-            value={saveFilterName}
-            onChange={(e) => setSaveFilterName(e.target.value)}
-            placeholder="Enter a name for this filter..."
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && saveFilterName.trim()) {
-                handleSaveFilter();
-              }
-            }}
-            autoFocus
-          />
-          <div className="d-flex gap-2 justify-content-end mt-3">
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={() => {
-                setShowSaveFilterModal(false);
-                setSaveFilterName("");
-              }}
-            >
-              Cancel
-            </button>
-            <button type="button" className="btn btn-primary" onClick={handleSaveFilter} disabled={!saveFilterName.trim()}>
-              Save
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <Modal_Reports_SaveFilter
+        isOpen={showSaveFilterModal}
+        onClose={() => {
+          setShowSaveFilterModal(false);
+          setSaveFilterName("");
+        }}
+        filterName={saveFilterName}
+        setFilterName={setSaveFilterName}
+        onSave={handleSaveFilter}
+      />
     </div>
   );
 }

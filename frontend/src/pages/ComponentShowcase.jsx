@@ -24,77 +24,109 @@ import {
   MoonIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
+  ChevronUpIcon,
+  Bars3BottomLeftIcon,
 } from "@heroicons/react/24/outline";
 
 // ─── DIRECT COMPONENT REFERENCES (Original .jsx files) ─────────────────────────
 // Buttons
-import Button_App from "./components/Button_App";
-import Button_Icon from "./components/Button_Icon";
-import Button_AddMobile from "./components/Button_AddMobile";
-import Button_InsuranceDocument from "./components/Button_InsuranceDocument";
-import Button_Toolbar from "./components/Button_Toolbar";
+import Button_App from "./components/buttons/Button_App";
+import Button_Icon from "./components/buttons/Button_Icon";
+import Button_AddMobile from "./components/buttons/Button_AddMobile";
+import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
 
 // Badges
-import Badge from "./components/Badge";
-import Badge_Status from "./components/Badge_Status";
-import Badge_PendingOrder from "./components/Badge_PendingOrder";
+import Badge from "./components/badges/Badge";
+import Badge_Status from "./components/badges/Badge_Status";
+import Badge_PendingOrder from "./components/badges/Badge_PendingOrder";
 
 // Dropdowns & Selection Filters
-import Dropdown_Custom from "./components/Dropdown_Custom";
-import Dropdown_Filter from "./components/Dropdown_Filter";
-import Dropup_ScheduleFilter from "./components/Dropup_ScheduleFilter";
-import Filter_CatalogCheckboxes from "./components/Filter_CatalogCheckboxes";
-import Filter_SourceToggle from "./components/Filter_SourceToggle";
-import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Dropup_ScheduleFilter from "./components/dropdowns/Dropup_ScheduleFilter";
+import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
+import Filter_SourceToggle from "./components/dropdowns/Filter_SourceToggle";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 
 // Tables & Layout Footers
-import PageTableHeader from "./components/Page_TableHeader";
-import PageTableFooter from "./components/Page_TableFooter";
-import PageTableRow from "./components/Page_TableRow";
-import TableSettingsControls from "./components/TableSettingsControls";
-import Inventory_RowDetail from "./components/Inventory_RowDetail";
-import Footer_Actions from "./components/Footer_Actions";
-import Footer_Action from "./components/Footer_Action";
-import Footer_Settings from "./components/Footer_Settings";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableRow from "./components/tables/Page_TableRow";
+import TableSettingsControls from "./components/tables/TableSettingsControls";
+import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
+import Footer_Actions from "./components/footers/Footer_Actions";
+import Footer_Action from "./components/footers/Footer_Action";
+import Footer_Settings from "./components/footers/Footer_Settings";
 
 // Core Data Forms
-import Form_Client from "./components/Form_Client";
-import Form_Item from "./components/Form_Item";
-import Form_Service from "./components/Form_Service";
-import Form_Schedule from "./components/Form_Schedule";
-import Form_Employee from "./components/Form_Employee";
+import Form_Client from "./components/forms/Form_Client";
+import Form_Item from "./components/forms/Form_Item";
+import Form_Service from "./components/forms/Form_Service";
+import Form_Schedule from "./components/forms/Form_Schedule";
+import Form_Employee from "./components/forms/Form_Employee";
 
 // Panels
-import Panel_General from "./components/Panel_General";
-import Panel_Features from "./components/Panel_Features";
-import Suppliers_Panel from "./components/Panel_Suppliers";
-import Panel_WageHistory from "./components/Panel_WageHistory";
-import Panel_Database from "./components/Panel_Database";
+import Panel_General from "./components/panels/Panel_General";
+import Panel_Features from "./components/panels/Panel_Features";
+import Suppliers_Panel from "./components/panels/Panel_Suppliers";
+import Panel_WageHistory from "./components/panels/Panel_WageHistory";
+import Panel_Database from "./components/panels/Panel_Database";
 
 // Widgets & Specialized UI
-import Widget_Attendance from "./components/Widget_Attendance";
-import Widget_Signature from "./components/Widget_Signature";
-import Chat_Employee from "./components/Chat_Employee";
-import Dashboard_Financial from "./components/Dashboard_Financial";
-import Chart_Report from "./components/Chart_Report";
+import Widget_Attendance from "./components/widgets/Widget_Attendance";
+import Widget_Signature from "./components/widgets/Widget_Signature";
+import Chat_Employee from "./components/widgets/Chat_Employee";
+import Dashboard_Financial from "./components/panels/Dashboard_Financial";
+import Chart_Report from "./components/panels/Chart_Report";
 
 // Modals
-import Modal, { ModalContainerContext } from "./components/Modal";
-import Modal_DiscountRules from "./components/Modal_DiscountRules";
-import Modal_RolesManage from "./components/Modal_RolesManage";
-import Modal_InsurancePlans from "./components/Modal_InsurancePlans";
-import Modal_Wages from "./components/Modal_Wages";
-import Modal_ClientDetail from "./components/Modal_ClientDetail";
-import Modal_ItemDetail from "./components/Modal_ItemDetail";
-import Modal_EmployeePay from "./components/Modal_EmployeePay";
-import Modal_EmployeeRequests from "./components/Modal_EmployeeRequests";
-import Modal_ForecastCalculator from "./components/Modal_ForecastCalculator";
-import Modal_ColorPicker from "./components/Modal_ColorPicker";
-import Modal_StartupPage from "./components/Modal_StartupPage";
-import Modal_UserPermissions from "./components/Modal_UserPermissions";
-import Modal_UserCreate from "./components/Modal_UserCreate";
-import Modal_SettingsSchedule from "./components/Modal_SettingsSchedule";
-import Modal_Signature from "./components/Modal_Signature";
+import Modal, { ModalContainerContext } from "./components/modals/Modal";
+import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
+import Modal_RolesManage from "./components/modals/Modal_RolesManage";
+import Modal_InsurancePlans from "./components/modals/Modal_InsurancePlans";
+import Modal_Wages from "./components/modals/Modal_Wages";
+import Modal_ClientDetail from "./components/modals/Modal_ClientDetail";
+import Modal_ItemDetail from "./components/modals/Modal_ItemDetail";
+import Modal_EmployeePay from "./components/modals/Modal_EmployeePay";
+import Modal_EmployeeRequests from "./components/modals/Modal_EmployeeRequests";
+import Modal_ForecastCalculator from "./components/modals/Modal_ForecastCalculator";
+import Modal_ColorPicker from "./components/modals/Modal_ColorPicker";
+import Modal_StartupPage from "./components/modals/Modal_StartupPage";
+import Modal_UserPermissions from "./components/modals/Modal_UserPermissions";
+import Modal_UserCreate from "./components/modals/Modal_UserCreate";
+import Modal_SettingsSchedule from "./components/modals/Modal_SettingsSchedule";
+import Modal_Signature from "./components/modals/Modal_Signature";
+import Modal_Settings from "./components/modals/Modal_Settings";
+import Manager_DatabaseConnection from "./components/utils/Manager_DatabaseConnection";
+import Modal_SalesCart from "./components/modals/Modal_SalesCart";
+import Modal_SalesCheckout from "./components/modals/Modal_SalesCheckout";
+import Modal_SalesFeatureSelect from "./components/modals/Modal_SalesFeatureSelect";
+import Modal_SalesHistory from "./components/modals/Modal_SalesHistory";
+import Modal_DocumentEdit from "./components/modals/Modal_DocumentEdit";
+import Modal_DocumentUpload from "./components/modals/Modal_DocumentUpload";
+import Modal_TemplateEdit from "./components/modals/Modal_TemplateEdit";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_ImportSheet from "./components/modals/Modal_ImportSheet";
+import Modal_Clients_Settings from "./components/modals/Modal_Clients_Settings";
+import Modal_Client_Create from "./components/modals/Modal_Client_Create";
+import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settings";
+import Modal_Inventory_AddItem from "./components/modals/Modal_Inventory_AddItem";
+import Modal_Employees_Settings from "./components/modals/Modal_Employees_Settings";
+import Modal_Employee_Form from "./components/modals/Modal_Employee_Form";
+import Modal_Services_Settings from "./components/modals/Modal_Services_Settings";
+import Modal_Service_Form from "./components/modals/Modal_Service_Form";
+import Modal_Schedule_Settings from "./components/modals/Modal_Schedule_Settings";
+import Modal_Schedule_Appointment from "./components/modals/Modal_Schedule_Appointment";
+import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
+import Modal_Reports_Settings from "./components/modals/Modal_Reports_Settings";
+import Modal_Reports_FinancialDashboard from "./components/modals/Modal_Reports_FinancialDashboard";
+import Modal_Document_Form from "./components/modals/Modal_Document_Form";
+import Modal_Document_History from "./components/modals/Modal_Document_History";
+import Modal_Document_Sign from "./components/modals/Modal_Document_Sign";
+import Modal_Document_Categories from "./components/modals/Modal_Document_Categories";
+import Modal_Documents_Settings from "./components/modals/Modal_Documents_Settings";
 
 // ─── ERROR BOUNDARY FOR INDIVIDUAL CARDS ─────────────────────────────────────────
 class CardErrorBoundary extends Component {
@@ -384,6 +416,44 @@ const mockInsurancePlans = [
   { id: "plan-1", name: "Gold PPO Comprehensive", is_active: true, deductible: 500 },
   { id: "plan-2", name: "Silver HDHP Basic", is_active: true, deductible: 1500 },
 ];
+
+const mockCart = [
+  {
+    id: "cart-001",
+    item_id: "item-001",
+    item_name: "Premium Ergonomic Office Chair",
+    item_type: "product",
+    unit_price: 299.99,
+    quantity: 2,
+    line_total: 599.98,
+  },
+  {
+    id: "cart-002",
+    item_id: "svc-001",
+    item_name: "Deep Tissue Physical Therapy",
+    item_type: "service",
+    unit_price: 120.0,
+    quantity: 1,
+    line_total: 120.0,
+  },
+];
+
+const mockDocument = {
+  id: "doc-001",
+  filename: "Corporate_Agreement_2026.pdf",
+  original_filename: "Corporate_Agreement_2026.pdf",
+  content_type: "application/pdf",
+  file_size: 1048576,
+  created_at: "2026-11-01T12:00:00Z",
+  description: "Standard corporate terms and service level agreement.",
+};
+
+const mockTemplate = {
+  id: "tpl-001",
+  name: "Client Reminder Email",
+  template_type: "email",
+  content: "<p>Dear {{client.name}},</p><p>This is a reminder for your upcoming appointment on {{appointment.date}} at {{appointment.time}}.</p><p>Service: {{appointment.service}}</p><p>With: {{appointment.employee_name}}</p>",
+};
 
 const mockRoles = [
   { id: "role-admin", name: "Admin", description: "Full system administration access" },
@@ -980,6 +1050,120 @@ export default function ComponentShowcase() {
         {/* ═══════════════════════════════════════════════════════════════════
             SECTION: PANELS
         ═══════════════════════════════════════════════════════════════════ */}
+        {isCardVisible("Profile: Settings Accordion (Modal_Settings.jsx)", "Panels") && (
+          <ComponentCard title="Profile: Settings Accordion (Modal_Settings.jsx)" category="Panels" width="480px">
+            <div className="border rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
+              <div className="p-3 bg-body">
+                <Modal_Settings
+                  embedded={true}
+                  isMobile={false}
+                  row1PanelBottom={0}
+                  isDarkMode={isDarkMode}
+                  toggleDarkMode={toggleDarkMode}
+                  employeeColor="#3B82F6"
+                  pendingColor="#3B82F6"
+                  setPendingColor={noop}
+                  colorPickerOpen={false}
+                  setColorPickerOpen={noop}
+                  colorUpdating={false}
+                  colorMessage=""
+                  handleColorSave={noop}
+                  FooterAlignIcon={Bars3BottomLeftIcon}
+                  cycleFooterAlign={noop}
+                  user={mockEmployee}
+                  setSignatureModalOpen={noop}
+                  isTrainingMode={isTrainingMode}
+                  toggleViewMode={toggleTrainingMode}
+                  buttonTextSize="medium"
+                  cycleButtonTextSize={noop}
+                  handleLogout={noop}
+                  currentDbEnvironment="production"
+                  dbLoading={false}
+                  dbMessage=""
+                  dbError=""
+                  handleSwitchEnvironment={noop}
+                  DB_ENVIRONMENTS={{ production: { name: "Production" }, test: { name: "Test" } }}
+                  environmentLastUpdated="Nov 12, 2026, 10:21 PM"
+                  appVersion="1.0.0"
+                  appBuildLabel="Nov 13, 2026, 10:51 AM"
+                  HelpIcon={() => null}
+                  onClose={noop}
+                  onSave={noop}
+                  showCloseButton={false}
+                  startupPage="schedule"
+                  setStartupPage={noop}
+                />
+              </div>
+              <div className="profile-accordion-header d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary">
+                <div className="d-flex align-items-center gap-2">
+                  <Cog6ToothIcon className="app-icon" />
+                  <span className="fw-semibold">Settings</span>
+                </div>
+                <ChevronUpIcon className="app-icon" />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Profile: Information Accordion", "Panels") && (
+          <ComponentCard title="Profile: Information Accordion" category="Panels" width="480px">
+            <div className="border rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
+              <div className="p-3 bg-body">
+                <div className="row g-2">
+                  <div className="col-sm-6">
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                      <UserIcon className="app-icon text-muted" />
+                      <div className="fw-medium">{mockEmployee.first_name} {mockEmployee.last_name}</div>
+                    </div>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="badge bg-primary text-capitalize">{mockEmployee.role}</span>
+                  </div>
+                  <div className="col-sm-6">
+                    <div className="small text-muted">{mockEmployee.email}</div>
+                  </div>
+                  <div className="col-sm-6">
+                    <div className="small text-muted">{mockEmployee.phone}</div>
+                  </div>
+                </div>
+                <hr className="my-2" />
+                <h6 className="fw-semibold mb-2 small text-muted">Details</h6>
+                <div className="row g-2 small">
+                  <div className="col-sm-6">
+                    <span className="text-muted">Username:</span> <span className="fw-medium">{mockEmployee.username}</span>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="text-muted">Location:</span> <span className="fw-medium">{mockEmployee.location}</span>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="text-muted">Hire Date:</span> <span className="fw-medium">May 10, 2023</span>
+                  </div>
+                  <div className="col-sm-6">
+                    <span className="text-muted">Active:</span> <span className="fw-medium">{mockEmployee.is_active ? "Yes" : "No"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="profile-accordion-header d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary">
+                <div className="d-flex align-items-center gap-2">
+                  <UserIcon className="app-icon" />
+                  <span className="fw-semibold">Information</span>
+                </div>
+                <ChevronUpIcon className="app-icon" />
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Manager_DatabaseConnection.jsx", "Panels") && (
+          <ComponentCard title="Manager_DatabaseConnection.jsx" category="Panels" width="520px" height="480px">
+            <Manager_DatabaseConnection
+              isSuperAdmin={true}
+              currentEnv="production"
+              onSwitchEnv={noop}
+              onConfigChanged={noop}
+            />
+          </ComponentCard>
+        )}
         {isCardVisible("Panel_General.jsx", "Panels") && (
           <ComponentCard title="Panel_General.jsx (Settings)" category="Panels" width="520px" height="520px">
             <Panel_General
@@ -1077,6 +1261,89 @@ export default function ComponentShowcase() {
         {/* ═══════════════════════════════════════════════════════════════════
             SECTION: MODALS & DIALOGS (Contained Inline Previews)
         ═══════════════════════════════════════════════════════════════════ */}
+        {isCardVisible("Modal_SalesCart.jsx", "Modals") && (
+          <ComponentCard title="Modal_SalesCart.jsx" category="Modals" width="520px" height="520px" sandbox={true}>
+            <Modal_SalesCart isOpen={true} onClose={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_SalesCheckout.jsx", "Modals") && (
+          <ComponentCard title="Modal_SalesCheckout.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_SalesCheckout isOpen={true} onClose={noop} cart={mockCart} onProcessPayment={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_SalesFeatureSelect.jsx", "Modals") && (
+          <ComponentCard title="Modal_SalesFeatureSelect.jsx" category="Modals" width="460px" height="480px" sandbox={true}>
+            <Modal_SalesFeatureSelect isOpen={true} onClose={noop} item={mockItem} onConfirm={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_SalesHistory.jsx", "Modals") && (
+          <ComponentCard title="Modal_SalesHistory.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_SalesHistory isOpen={true} onClose={noop} filteredHistory={[]} historyFilters={{}} setHistoryFilters={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_DocumentEdit.jsx", "Modals") && (
+          <ComponentCard title="Modal_DocumentEdit.jsx" category="Modals" width="520px" height="520px" sandbox={true}>
+            <Modal_DocumentEdit isOpen={true} onClose={noop} document={mockDocument} onSave={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_DocumentUpload.jsx", "Modals") && (
+          <ComponentCard title="Modal_DocumentUpload.jsx" category="Modals" width="480px" height="480px" sandbox={true}>
+            <Modal_DocumentUpload isOpen={true} onClose={noop} entityType="client" entityId="c-1" onUploaded={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_TemplateEdit.jsx", "Modals") && (
+          <ComponentCard title="Modal_TemplateEdit.jsx" category="Modals" width="560px" height="520px" sandbox={true}>
+            <Modal_TemplateEdit template={mockTemplate} onSave={noop} onClose={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_TemplateUse.jsx", "Modals") && (
+          <ComponentCard title="Modal_TemplateUse.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_TemplateUse page="clients" entity={mockClient} currentUser={mockEmployee} settings={{}} onClose={noop} />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_MultiEdit.jsx", "Modals") && (
+          <ComponentCard title="Modal_MultiEdit.jsx" category="Modals" width="480px" height="480px" sandbox={true}>
+            <Modal_MultiEdit
+              isOpen={true}
+              onClose={noop}
+              title="Edit 3 Selected Items"
+              fields={[
+                { key: "category", label: "Category", type: "select", options: [{ value: "Furniture", label: "Furniture" }] },
+                { key: "price", label: "Price ($)", type: "number", min: 0, step: 0.01 },
+              ]}
+              selectedItems={[mockItem]}
+              onSave={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_ImportSheet.jsx", "Modals") && (
+          <ComponentCard title="Modal_ImportSheet.jsx" category="Modals" width="560px" height="520px" sandbox={true}>
+            <Modal_ImportSheet
+              isOpen={true}
+              onClose={noop}
+              title="Bulk Add Items"
+              entityLabel="item"
+              fieldOptions={[
+                { value: "name", label: "Name" },
+                { value: "price", label: "Price" },
+                { value: "quantity", label: "Quantity" },
+              ]}
+              defaultFieldSequence={["name", "price", "quantity"]}
+              buildRecord={(d) => ({ ok: true, record: d })}
+              onImport={noop}
+            />
+          </ComponentCard>
+        )}
+
         {isCardVisible("Modal_DiscountRules.jsx", "Modals") && (
           <ComponentCard title="Modal_DiscountRules.jsx" category="Modals" width="520px" height="520px" sandbox={true}>
             <Modal_DiscountRules isOpen={true} onClose={noop} />
@@ -1305,6 +1572,221 @@ export default function ComponentShowcase() {
               isOpen={true}
               onClose={noop}
               onSave={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Clients_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Clients_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Clients_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              pendingSettings={{ showEmail: true, showSubs: true, showNotify: true }}
+              setPendingSettings={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Client_Create.jsx", "Modals") && (
+          <ComponentCard title="Modal_Client_Create.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_Client_Create
+              isOpen={true}
+              onClose={noop}
+              onSubmit={noop}
+              memberships={[]}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Inventory_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Inventory_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Inventory_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              assetUnitsPerPage={25}
+              pendingSettings={{ showPrice: true, showCost: true, showCategory: true, showType: true, showStock: true }}
+              setPendingSettings={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Inventory_AddItem.jsx", "Modals") && (
+          <ComponentCard title="Modal_Inventory_AddItem.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_Inventory_AddItem
+              isOpen={true}
+              onClose={noop}
+              existingSkus={[]}
+              onCreate={noop}
+              onCreateWithExtras={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Employees_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Employees_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Employees_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              pendingSettings={{ showRole: true, showDepartment: true, showChat: true }}
+              setPendingSettings={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Employee_Form.jsx", "Modals") && (
+          <ComponentCard title="Modal_Employee_Form.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_Employee_Form
+              isOpen={true}
+              onClose={noop}
+              employee={mockEmployee}
+              onSubmit={noop}
+              employees={mockEmployeesList}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Services_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Services_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Services_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              pendingSettings={{ showCategory: true, showPrice: true, showDuration: true }}
+              setPendingSettings={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Service_Form.jsx", "Modals") && (
+          <ComponentCard title="Modal_Service_Form.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_Service_Form
+              isOpen={true}
+              onClose={noop}
+              service={mockService}
+              onSubmit={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Schedule_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Schedule_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Schedule_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              user={mockEmployee}
+              scheduleSettingsRef={{ current: null }}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Schedule_Appointment.jsx", "Modals") && (
+          <ComponentCard title="Modal_Schedule_Appointment.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_Schedule_Appointment
+              isOpen={true}
+              onClose={noop}
+              appointment={null}
+              onSubmit={noop}
+              onDelete={noop}
+              onSendReminder={noop}
+              clients={[mockClient]}
+              services={[mockService]}
+              employees={mockEmployeesList}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Sales_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Sales_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Sales_Settings
+              isOpen={true}
+              onClose={noop}
+              cardViewMode="full"
+              receiptSettings={{ action: "select", templateId: null }}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Reports_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Reports_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Reports_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              kpiVisibility={{ Revenue: true, Appointments: true, Clients: true }}
+              pendingReportsSettings={{}}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Reports_FinancialDashboard.jsx", "Modals") && (
+          <ComponentCard title="Modal_Reports_FinancialDashboard.jsx" category="Modals" width="560px" height="520px" sandbox={true}>
+            <Modal_Reports_FinancialDashboard
+              isOpen={true}
+              onClose={noop}
+              onOpenForecast={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Document_Form.jsx", "Modals") && (
+          <ComponentCard title="Modal_Document_Form.jsx" category="Modals" width="540px" height="520px" sandbox={true}>
+            <Modal_Document_Form
+              isOpen={true}
+              onClose={noop}
+              onSubmit={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Document_History.jsx", "Modals") && (
+          <ComponentCard title="Modal_Document_History.jsx" category="Modals" width="520px" height="520px" sandbox={true}>
+            <Modal_Document_History
+              isOpen={true}
+              onClose={noop}
+              historyDoc={{ original_filename: "ServiceAgreement_2026.pdf" }}
+              historyItems={[]}
+              onReplaceContent={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Document_Sign.jsx", "Modals") && (
+          <ComponentCard title="Modal_Document_Sign.jsx" category="Modals" width="500px" height="420px" sandbox={true}>
+            <Modal_Document_Sign
+              isOpen={true}
+              onClose={noop}
+              signDoc={{ original_filename: "Contract_Signed.pdf" }}
+              signaturePreview={null}
+              user={mockEmployee}
+              onSubmitSign={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Document_Categories.jsx", "Modals") && (
+          <ComponentCard title="Modal_Document_Categories.jsx" category="Modals" width="500px" height="520px" sandbox={true}>
+            <Modal_Document_Categories
+              isOpen={true}
+              onClose={noop}
+              categories={[{ id: "1", name: "Invoices", description: "Customer invoices" }]}
+              sortedCategories={[{ id: "1", name: "Invoices", description: "Customer invoices" }]}
+              handleCreateCategory={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Modal_Documents_Settings.jsx", "Modals") && (
+          <ComponentCard title="Modal_Documents_Settings.jsx" category="Modals" width="480px" height="520px" sandbox={true}>
+            <Modal_Documents_Settings
+              isOpen={true}
+              onClose={noop}
+              onSave={noop}
+              pendingSettings={{ showCategory: true, showType: true, showTags: true, showActions: true }}
+              setPendingSettings={noop}
             />
           </ComponentCard>
         )}

@@ -36,34 +36,32 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { S } from "../utils/strings";
 import { itemTypeVariant, stockVariant } from "../utils/colorMapping";
-import Badge from "./components/Badge";
+import Badge from "./components/badges/Badge";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
 import { showConfirm } from "../services/showConfirm";
-import PageLayout from "./components/Page_Layout";
-import PageTableFooter from "./components/Page_TableFooter";
-import PageTableHeader from "./components/Page_TableHeader";
-import PageTableRow from "./components/Page_TableRow";
+import PageLayout from "./components/layout/Page_Layout";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableRow from "./components/tables/Page_TableRow";
 import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "@heroicons/react/24/outline";
-import Modal_DiscountRules from "./components/Modal_DiscountRules";
-import Dropdown_Custom from "./components/Dropdown_Custom";
-import Dropdown_Filter from "./components/Dropdown_Filter";
-import Modal_MultiEdit from "./components/Modal_MultiEdit";
-import Button_Toolbar from "./components/Button_Toolbar";
+import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import useStore from "../services/useStore";
 import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI } from "../services/api";
-import Modal_Detail_Item from "./components/Modal_ItemDetail";
-import Gate_Permission from "./components/Gate_Permission";
-import Suppliers_Panel from "./components/Panel_Suppliers";
-import Modal_Bulk_Import_Items from "./components/Modal_ImportItems";
-import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_ControlsModal";
-import TableSettingsControls from "./components/TableSettingsControls";
-import Form_Item from "./components/Form_Item";
-import Modal_ManageLookup from "./components/Modal_ManageLookup";
-import Inventory_RowDetail from "./components/Inventory_RowDetail";
-import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Suppliers_Panel from "./components/panels/Panel_Suppliers";
+import Modal_Bulk_Import_Items from "./components/modals/Modal_ImportItems";
+import Modal_Inventory_AddItem from "./components/modals/Modal_Inventory_AddItem";
+import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settings";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -751,9 +749,13 @@ export default function Inventory() {
         </PageTableFooter>
       </div>
 
-      <Modal isOpen={showAddItemModal} onClose={() => setShowAddItemModal(false)} fullScreen noPadding contentGravity="top">
-        <Form_Item item={null} showInitialQuantity showScanner existingSkus={inventory.map((i) => i.sku).filter(Boolean)} onCancel={() => setShowAddItemModal(false)} onSubmit={handleCreateInventory} onSubmitWithExtras={handleCreateInventoryWithExtras} />
-      </Modal>
+      <Modal_Inventory_AddItem
+        isOpen={showAddItemModal}
+        onClose={() => setShowAddItemModal(false)}
+        existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
+        onCreate={handleCreateInventory}
+        onCreateWithExtras={handleCreateInventoryWithExtras}
+      />
 
       {/* Modals remain unchanged */}
       <Modal_Detail_Item
@@ -775,52 +777,19 @@ export default function Inventory() {
 
       <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 
-      <PageControlsModal
+      <Modal_Inventory_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Inventory Page Controls"
         onSave={async () => {
           await savePageSettings("inventory", pendingSettings);
         }}
-      >
-        <div className="ui-small-muted">Use these controls to manage inventory views and actions.</div>
-        <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available.</div>
-        <div className="page-controls-actions-group">
-          <Button_Toolbar
-            icon={TagIcon}
-            label="Cats"
-            onClick={() => {
-              setShowPageControls(false);
-              setShowCategoryManager(true);
-            }}
-            className="btn-primary"
-            title="Manage inventory categories"
-          />
-        </div>
-        <div className="d-flex align-items-center gap-2 mt-1" style={{ maxWidth: "13rem" }}>
-          <Dropdown_Custom
-            id="inventory-asset-units-per-page"
-            className="ui-control-sm"
-            style={{ width: "100%", maxWidth: "13rem" }}
-            value={String(assetUnitsPerPage)}
-            onChange={(e) => handleAssetUnitsPerPageChange(e.target.value)}
-            options={ASSET_UNITS_PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: `${size} per page` }))}
-            placeholder="Select page size"
-            closeOnSelect
-          />
-        </div>
-        <TableSettingsControls
-          settings={pendingSettings}
-          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
-          toggles={[
-            { key: "showPrice", label: "Show Price", description: "Display item selling price on table rows" },
-            { key: "showCost", label: "Show Cost", description: "Display item cost on table rows" },
-            { key: "showCategory", label: "Show Category", description: "Display category badge under item name" },
-            { key: "showType", label: "Show Type Column", description: "Display item type column (Product, Resource, Asset, etc.)" },
-            { key: "showStock", label: "Show Count Column", description: "Display stock count column" },
-          ]}
-        />
-      </PageControlsModal>
+        onOpenCategories={() => setShowCategoryManager(true)}
+        assetUnitsPerPage={assetUnitsPerPage}
+        onAssetUnitsPerPageChange={handleAssetUnitsPerPageChange}
+        assetUnitsPageSizeOptions={ASSET_UNITS_PAGE_SIZE_OPTIONS}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
 
       <Modal_ManageLookup
         isOpen={showCategoryManager}

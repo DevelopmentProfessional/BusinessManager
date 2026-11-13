@@ -11,13 +11,13 @@ import useTableSettings from "./services/useTableSettings";
 import { applyButtonDimensions } from "./constants/buttonTextSize";
 import useBranding from "./services/useBranding";
 import { initializeActiveColorTheme } from "./services/activeColorTheme";
-import Modal_Client from "./pages/components/Modal_Client";
-import Modal_Service from "./pages/components/Modal_Service";
-import Modal_Item from "./pages/components/Modal_Item";
-import Manager_MobileAddressBar from "./pages/components/Manager_MobileAddressBar";
-import Prompt_InstallApp from "./pages/components/Prompt_InstallApp";
-import PageErrorBoundary from "./pages/components/ErrorBoundary";
-import Dropup_SearchOverlay from "./pages/components/Dropup_SearchOverlay";
+import Modal_Client from "./pages/components/modals/Modal_Client";
+import Modal_Service from "./pages/components/modals/Modal_Service";
+import Modal_Item from "./pages/components/modals/Modal_Item";
+import Manager_MobileAddressBar from "./pages/components/layout/Manager_MobileAddressBar";
+import Prompt_InstallApp from "./pages/components/layout/Prompt_InstallApp";
+import PageErrorBoundary from "./pages/components/layout/ErrorBoundary";
+import Dropup_SearchOverlay from "./pages/components/dropdowns/Dropup_SearchOverlay";
 
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import("./pages/Clients"));

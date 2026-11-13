@@ -1,0 +1,381 @@
+import React, { useState, useEffect } from "react";
+import { ChevronDownIcon, ChevronUpIcon, PlusIcon, XMarkIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import api from "../../../services/api";
+import { showConfirm } from "../../../services/showConfirm";
+import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Modal from "../modals/Modal";
+
+const ENVIRONMENT_OPTIONS = [{ value: "production", label: "Production" }];
+const SSL_MODE_OPTIONS = [
+  { value: "require", label: "Require" },
+  { value: "prefer", label: "Prefer" },
+  { value: "disable", label: "Disable" },
+];
+
+export default function Manager_DatabaseConnection() {
+  const [connections, setConnections] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [formData, setFormData] = useState({
+    name: "",
+    environment: "production",
+    host: "",
+    port: 5432,
+    database_name: "",
+    username: "",
+    password: "",
+    ssl_mode: "require",
+    is_active: true,
+    visible_to_users: false,
+    description: "",
+    external_url: "",
+    internal_url: "",
+    pool_size: 10,
+    max_overflow: 20,
+  });
+
+  useEffect(() => {
+    loadConnections();
+  }, []);
+
+  const loadConnections = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await api.get("/database-connections/");
+      setConnections(response.data);
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || err.message || "Failed to load database connections";
+      setError(errorMsg);
+      console.error("Error loading connections:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  const handleToggleVisibility = async (id) => {
+    try {
+      await api.patch(`/database-connections/${id}/toggle-visibility`);
+      setSuccess("Visibility updated successfully");
+      setTimeout(() => setSuccess(""), 3000);
+      loadConnections();
+    } catch (err) {
+      setError("Failed to toggle visibility");
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!(await showConfirm("Are you sure you want to delete this database connection?"))) return;
+
+    try {
+      await api.delete(`/database-connections/${id}`);
+      setSuccess("Connection deleted successfully");
+      setTimeout(() => setSuccess(""), 3000);
+      loadConnections();
+    } catch (err) {
+      setError("Failed to delete connection");
+      console.error(err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.post("/database-connections/", formData);
+      setSuccess("Connection added successfully");
+      setTimeout(() => setSuccess(""), 3000);
+      setShowAddModal(false);
+      resetForm();
+      loadConnections();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to add connection");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      environment: "production",
+      host: "",
+      port: 5432,
+      database_name: "",
+      username: "",
+      password: "",
+      ssl_mode: "require",
+      is_active: true,
+      visible_to_users: false,
+      description: "",
+      external_url: "",
+      internal_url: "",
+      pool_size: 10,
+      max_overflow: 20,
+    });
+  };
+
+  const getEnvironmentBadgeColor = (env) => {
+    switch (env.toLowerCase()) {
+      case "production":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+      case "test":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
+      default:
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+    }
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="dark:text-white font-medium text-gray-900 text-lg">Database Connections</h3>
+        <button onClick={() => setShowAddModal(true)} className="align-items-center btn btn-primary btn-sm d-flex gap-1">
+          <PlusIcon className="ui-icon-4" />
+          Add
+        </button>
+      </div>
+
+      {/* Success/Error Messages */}
+      {success && <div className="alert alert-success mb-3">{success}</div>}
+      {error && <div className="alert alert-danger mb-3">{error}</div>}
+
+      {/* Loading State */}
+      {loading && !connections.length ? (
+        <div className="py-1 text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Connections List - Accordion Style */}
+      {!loading && (
+        <div className="space-y-2">
+          {connections.length === 0 ? (
+            <div className="dark:text-gray-400 py-1 text-center text-gray-500">No database connections configured. Click "Add Connection" to create one.</div>
+          ) : (
+            connections.map((conn) => (
+              <div key={conn.id} className="border border-gray-200 dark:border-gray-700 overflow-hidden rounded-lg">
+                {/* Accordion Header */}
+                <div className="bg-gray-50 cursor-pointer dark:bg-gray-800 dark:hover:bg-gray-750 hover:bg-gray-100 p-1 transition-colors" onClick={() => handleToggleExpand(conn.id)}>
+                  <div className="align-items-center d-flex justify-content-between">
+                    <div className="align-items-center d-flex flex-grow-1 gap-2">
+                      {expandedId === conn.id ? <ChevronUpIcon className="h-4 text-gray-500 w-4" /> : <ChevronDownIcon className="h-4 text-gray-500 w-4" />}
+                      <span className="dark:text-white font-medium text-gray-900">{conn.name}</span>
+                      <span className={`px-0 py-0.5 rounded text-xs font-medium ${getEnvironmentBadgeColor(conn.environment)}`}>{conn.environment}</span>
+                      {!conn.is_active && <span className="bg-gray-200 dark:bg-gray-700 dark:text-gray-400 font-medium px-0 py-0.5 rounded text-gray-600 text-xs">Inactive</span>}
+                    </div>
+
+                    {/* Visibility Toggle */}
+                    <div className="ui-flex-center-gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => handleToggleVisibility(conn.id)} className={`btn btn-sm ${conn.visible_to_users ? "btn-success" : "btn-outline-secondary"}`} title={conn.visible_to_users ? "Visible to users" : "Hidden from users"}>
+                        {conn.visible_to_users ? <EyeIcon className="ui-icon-4" /> : <EyeSlashIcon className="ui-icon-4" />}
+                      </button>
+                      <button onClick={() => handleDelete(conn.id)} className="btn btn-outline-danger btn-sm" title="Delete connection">
+                        <XMarkIcon className="ui-icon-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Accordion Body */}
+                {expandedId === conn.id && (
+                  <div className="bg-white border-gray-200 border-t dark:bg-gray-900 dark:border-gray-700 p-1">
+                    <div className="gap-3 grid grid-cols-1 md:grid-cols-2 text-sm">
+                      <div>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Host:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.host}</span>
+                      </div>
+                      <div>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Port:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.port}</span>
+                      </div>
+                      <div>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Database:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.database_name}</span>
+                      </div>
+                      <div>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Username:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.username}</span>
+                      </div>
+                      <div>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">SSL Mode:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.ssl_mode}</span>
+                      </div>
+                      <div>
+                        <span className="dark:text-gray-300 font-medium text-gray-700">Pool Size:</span>
+                        <span className="dark:text-gray-400 ml-2 text-gray-600">{conn.pool_size}</span>
+                      </div>
+                      {conn.description && (
+                        <div className="col-span-2">
+                          <span className="dark:text-gray-300 font-medium text-gray-700">Description:</span>
+                          <p className="dark:text-gray-400 mt-1 text-gray-600">{conn.description}</p>
+                        </div>
+                      )}
+                      {conn.external_url && (
+                        <div className="col-span-2">
+                          <span className="dark:text-gray-300 font-medium text-gray-700">External URL:</span>
+                          <p className="break-all dark:text-gray-400 font-mono mt-1 text-gray-600 text-xs">{conn.external_url}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Add Connection Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add Database Connection"
+        footer={
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            <button type="submit" form="add-db-conn-form" className="btn btn-primary" disabled={loading}>
+              {loading ? "Adding..." : "Add Connection"}
+            </button>
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={() => setShowAddModal(false)} title="Cancel">
+              <XMarkIcon />
+            </button>
+          </div>
+        }
+      >
+        <form id="add-db-conn-form" onSubmit={handleSubmit} className="p-1">
+          <div className="g-3 row">
+                    {/* Name */}
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="text" id="conn_name" className="form-control ui-control-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Connection Name" required />
+                        <label htmlFor="conn_name">Connection Name *</label>
+                      </div>
+                    </div>
+
+                    {/* Environment */}
+                    <div className="col-md-6">
+                      <div>
+                        <label htmlFor="conn_environment" className="form-label ui-form-label-sm">Environment *</label>
+                        <Dropdown_Custom
+                          id="conn_environment"
+                          className="form-select ui-control-sm"
+                          value={formData.environment}
+                          onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                          options={ENVIRONMENT_OPTIONS}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Host */}
+                    <div className="col-md-8">
+                      <div className="form-floating">
+                        <input type="text" id="conn_host" className="form-control ui-control-sm" value={formData.host} onChange={(e) => setFormData({ ...formData, host: e.target.value })} placeholder="Host" required />
+                        <label htmlFor="conn_host">Host *</label>
+                      </div>
+                    </div>
+
+                    {/* Port */}
+                    <div className="col-md-4">
+                      <div className="form-floating">
+                        <input type="number" id="conn_port" className="form-control ui-control-sm" value={formData.port} onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })} placeholder="Port" required />
+                        <label htmlFor="conn_port">Port *</label>
+                      </div>
+                    </div>
+
+                    {/* Database Name */}
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="text" id="conn_database_name" className="form-control ui-control-sm" value={formData.database_name} onChange={(e) => setFormData({ ...formData, database_name: e.target.value })} placeholder="Database Name" required />
+                        <label htmlFor="conn_database_name">Database Name *</label>
+                      </div>
+                    </div>
+
+                    {/* Username */}
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="text" id="conn_username" className="form-control ui-control-sm" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Username" required />
+                        <label htmlFor="conn_username">Username *</label>
+                      </div>
+                    </div>
+
+                    {/* Password */}
+                    <div className="col-12">
+                      <div className="form-floating">
+                        <input type="password" id="conn_password" className="form-control ui-control-sm" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Password" required />
+                        <label htmlFor="conn_password">Password *</label>
+                      </div>
+                    </div>
+
+                    {/* SSL Mode */}
+                    <div className="col-md-6">
+                      <div>
+                        <label htmlFor="conn_ssl_mode" className="form-label ui-form-label-sm">SSL Mode</label>
+                        <Dropdown_Custom
+                          id="conn_ssl_mode"
+                          className="form-select ui-control-sm"
+                          value={formData.ssl_mode}
+                          onChange={(e) => setFormData({ ...formData, ssl_mode: e.target.value })}
+                          options={SSL_MODE_OPTIONS}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pool Size */}
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="number" id="conn_pool_size" className="form-control ui-control-sm" value={formData.pool_size} onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })} placeholder="Pool Size" />
+                        <label htmlFor="conn_pool_size">Pool Size</label>
+                      </div>
+                    </div>
+
+                    {/* External URL (Render) */}
+                    <div className="col-12">
+                      <div className="form-floating">
+                        <input type="text" id="conn_external_url" className="font-monospace form-control form-control-sm" value={formData.external_url} onChange={(e) => setFormData({ ...formData, external_url: e.target.value })} placeholder="External URL" />
+                        <label htmlFor="conn_external_url">External URL (Optional - Render)</label>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="col-12">
+                      <div className="form-floating">
+                        <textarea id="conn_description" rows={6} className="ui-description-textarea form-control form-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
+                        <label htmlFor="conn_description">Description</label>
+                      </div>
+                    </div>
+
+                    {/* Checkboxes */}
+                    <div className="col-12">
+                      <div className="form-check">
+                        <input type="checkbox" className="form-check-input" id="isActive" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
+                        <label className="form-check-label" htmlFor="isActive">
+                          Active
+                        </label>
+                      </div>
+                      <div className="form-check">
+                        <input type="checkbox" className="form-check-input" id="visibleToUsers" checked={formData.visible_to_users} onChange={(e) => setFormData({ ...formData, visible_to_users: e.target.checked })} />
+                        <label className="form-check-label" htmlFor="visibleToUsers">
+                          Visible to Users (show in profile)
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}

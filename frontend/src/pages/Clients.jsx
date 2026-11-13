@@ -35,30 +35,29 @@ import useStore from "../services/useStore";
 import { tierVariant } from "../utils/colorMapping";
 import { S } from "../utils/strings";
 import { showConfirm } from "../services/showConfirm";
-import Badge from "./components/Badge";
-import Dropdown_Filter from "./components/Dropdown_Filter";
-import Dropdown_Custom from "./components/Dropdown_Custom";
+import Badge from "./components/badges/Badge";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import { clientsAPI, membershipsAPI, clientStatusesAPI, settingsAPI } from "../services/api";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import Modal from "./components/Modal";
-import PageControlsModal from "./components/Page_ControlsModal";
-import TableSettingsControls from "./components/TableSettingsControls";
-import Form_Client from "./components/Form_Client";
-import Modal_Detail_Client from "./components/Modal_ClientDetail";
-import Gate_Permission from "./components/Gate_Permission";
+import Modal_Detail_Client from "./components/modals/Modal_ClientDetail";
+import Modal_Clients_Settings from "./components/modals/Modal_Clients_Settings";
+import Modal_Client_Create from "./components/modals/Modal_Client_Create";
+import Gate_Permission from "./components/layout/Gate_Permission";
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
-import Button_Toolbar from "./components/Button_Toolbar";
-import Modal_TemplateUse from "./components/Modal_TemplateUse";
-import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
-import Modal_MultiEdit from "./components/Modal_MultiEdit";
-import Modal_ManageLookup from "./components/Modal_ManageLookup";
-import PageLayout from "./components/Page_Layout";
-import PageTableFooter from "./components/Page_TableFooter";
-import PageTableHeader from "./components/Page_TableHeader";
-import PageTableRow from "./components/Page_TableRow";
-import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Modal_Client_Subscriptions from "./components/modals/Modal_Client_Subscriptions";
+import PageLayout from "./components/layout/Page_Layout";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableRow from "./components/tables/Page_TableRow";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -669,141 +668,42 @@ export default function Clients() {
       <Modal_Detail_Client isOpen={isModalOpen && modalContent === "client-detail"} onClose={closeModal} client={editingClient} onUpdate={handleUpdateClient} memberships={memberships} statuses={sortedClientStatuses} />
 
       {/* Create Client Modal (bottom-sheet form) */}
-      <Modal isOpen={isModalOpen && modalContent === "client-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "client-form" && <Form_Client client={null} onSubmit={handleSubmitCreate} onCancel={closeModal} error={error} onBulkImport={handleBulkImportClients} memberships={sortedMemberships} />}
-      </Modal>
+      <Modal_Client_Create
+        isOpen={isModalOpen && modalContent === "client-form"}
+        onClose={closeModal}
+        onSubmit={handleSubmitCreate}
+        error={error}
+        onBulkImport={handleBulkImportClients}
+        memberships={sortedMemberships}
+      />
 
-      <PageControlsModal
+      <Modal_Clients_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Client Page Controls"
         onSave={async () => {
           await savePageSettings("clients", pendingSettings);
         }}
-      >
-        <div className="ui-small-muted">Use these controls to manage the Clients page view.</div>
-        <div className="small">Subscription filter and search are available.</div>
-        <div className="page-controls-actions-group">
-          <Button_Toolbar
-            icon={TicketIcon}
-            label="Subs"
-            onClick={() => {
-              setShowPageControls(false);
-              setShowMembershipManager(true);
-            }}
-            className="btn-primary"
-            title="Manage subscriptions"
-          />
-          <Button_Toolbar
-            icon={CheckCircleIcon}
-            label="Status"
-            onClick={() => {
-              setShowPageControls(false);
-              setShowStatusManager(true);
-            }}
-            className="btn-primary"
-            title="Manage client statuses"
-          />
-        </div>
-        <TableSettingsControls
-          settings={pendingSettings}
-          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
-          toggles={[
-            { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
-            { key: "showSubs", label: "Show Subscription Column", description: "Display client membership tier column" },
-            { key: "showNotify", label: "Show Notify Column", description: "Display quick-template notify button" },
-          ]}
-        />
-      </PageControlsModal>
+        onOpenSubscriptions={() => setShowMembershipManager(true)}
+        onOpenStatuses={() => setShowStatusManager(true)}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
 
-      <Modal
+      <Modal_Client_Subscriptions
         isOpen={showMembershipManager}
         onClose={() => {
           setShowMembershipManager(false);
           resetMembershipForm();
         }}
-        title="Manage Subscriptions"
-        centered={true}
-        contentGravity="top"
-      >
-        <div className="d-flex flex-column gap-3">
-          <div className="border d-flex flex-column gap-2 p-0 ui-pill-container">
-            <input type="text" className="form-control ui-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
-            <div className="d-flex gap-2">
-              <input type="number" min="0" step="0.01" className="form-control ui-control-sm ui-number-narrow" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
-              <Dropdown_Custom
-                className="ui-control-sm flex-grow-1"
-                value={membershipForm.billing_frequency}
-                onChange={(e) => setMembershipForm((p) => ({ ...p, billing_frequency: e.target.value }))}
-                options={[
-                  { value: "daily", label: "Daily" },
-                  { value: "weekly", label: "Weekly" },
-                  { value: "monthly", label: "Monthly" },
-                  { value: "yearly", label: "Yearly" },
-                ]}
-                placeholder="Billing frequency"
-                closeOnSelect
-              />
-            </div>
-            <div className="d-flex gap-2">
-              <input type="number" min="0" className="form-control ui-control-sm ui-number-narrow" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
-              <Dropdown_Custom
-                className="ui-control-sm flex-grow-1"
-                value={membershipForm.lock_term_unit}
-                onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_unit: e.target.value }))}
-                options={[
-                  { value: "days", label: "Days" },
-                  { value: "weeks", label: "Weeks" },
-                  { value: "months", label: "Months" },
-                  { value: "years", label: "Years" },
-                ]}
-                placeholder="Lock term unit"
-                closeOnSelect
-              />
-            </div>
-            <textarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
-            <label className="align-items-center d-flex gap-2 small">
-              <input type="checkbox" checked={membershipForm.is_active} onChange={(e) => setMembershipForm((p) => ({ ...p, is_active: e.target.checked }))} />
-              Active
-            </label>
-            <div className="d-flex gap-2">
-              <button type="button" className="align-items-center btn btn-primary btn-sm d-flex gap-2" onClick={handleSaveMembership}>
-                <CheckCircleIcon className="ui-icon-4" />
-                <span>{editingMembershipId ? "Update" : "Create"}</span>
-              </button>
-              {editingMembershipId && (
-                <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2" onClick={resetMembershipForm}>
-                  <XCircleIcon className="ui-icon-4" />
-                  <span>Cancel</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="d-flex flex-column gap-2" style={{ maxHeight: "220px", overflowY: "auto" }}>
-            {sortedMemberships.map((membership) => (
-              <div key={membership.id} className="align-items-start border d-flex gap-2 justify-content-between p-0 ui-pill-container">
-                <div className="small">
-                  <div className="fw-semibold">{membership.name}</div>
-                  <div className="text-muted">{`$${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</div>
-                  <div className="text-muted">{`Lock: ${membership.lock_term_count || 0} ${membership.lock_term_unit || "months"}`}</div>
-                </div>
-                <div className="d-flex gap-1">
-                  <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" onClick={() => handleEditMembership(membership)}>
-                    <PencilIcon className="ui-icon-4" />
-                    <span>Edit</span>
-                  </button>
-                  <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex gap-2" onClick={() => handleDeleteMembership(membership.id)}>
-                    <XMarkIcon className="ui-icon-4" />
-                    <span>Delete</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-            {memberships.length === 0 && <div className="ui-small-muted">No subscriptions yet.</div>}
-          </div>
-        </div>
-      </Modal>
+        memberships={sortedMemberships}
+        membershipForm={membershipForm}
+        setMembershipForm={setMembershipForm}
+        editingMembershipId={editingMembershipId}
+        onSave={handleSaveMembership}
+        onEdit={handleEditMembership}
+        onDelete={handleDeleteMembership}
+        onReset={resetMembershipForm}
+      />
 
       {/* Bulk Import Sheet Modal */}
       <Modal_Bulk_Import_Sheet

@@ -35,25 +35,23 @@ import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import PageLayout from "./components/Page_Layout";
-import PageTableFooter from "./components/Page_TableFooter";
-import PageTableHeader from "./components/Page_TableHeader";
-import PageTableRow from "./components/Page_TableRow";
+import PageLayout from "./components/layout/Page_Layout";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableRow from "./components/tables/Page_TableRow";
 import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../services/showConfirm";
-import Button_Toolbar from "./components/Button_Toolbar";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI, serviceCategoriesAPI, getDetailedApiErrorMessage } from "../services/api";
-import Modal from "./components/Modal";
-import Dropdown_Filter from "./components/Dropdown_Filter";
-import PageControlsModal from "./components/Page_ControlsModal";
-import TableSettingsControls from "./components/TableSettingsControls";
-import Form_Service from "./components/Form_Service";
-import Modal_ManageLookup from "./components/Modal_ManageLookup";
-import Gate_Permission from "./components/Gate_Permission";
-import Modal_Bulk_Import_Sheet from "./components/Modal_ImportSheet";
-import Modal_MultiEdit from "./components/Modal_MultiEdit";
-import Toggle_MultiSelectIcon from "./components/Toggle_MultiSelectIcon";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Modal_Service_Form from "./components/modals/Modal_Service_Form";
+import Modal_Services_Settings from "./components/modals/Modal_Services_Settings";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -487,42 +485,24 @@ export default function Services() {
       />
 
       {/* Service Form Modal */}
-      <Modal isOpen={isModalOpen && modalContent === "service-form"} onClose={closeModal} noPadding={true} fullScreen={true} contentGravity="top">
-        {isModalOpen && modalContent === "service-form" && <Form_Service service={editingService} onSubmit={handleSubmitService} onCancel={closeModal} onBulkImport={!editingService ? handleBulkImportServices : null} />}
-      </Modal>
+      <Modal_Service_Form
+        isOpen={isModalOpen && modalContent === "service-form"}
+        onClose={closeModal}
+        service={editingService}
+        onSubmit={handleSubmitService}
+        onBulkImport={handleBulkImportServices}
+      />
 
-      <PageControlsModal
+      <Modal_Services_Settings
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
-        title="Service Page Controls"
         onSave={async () => {
           await savePageSettings("services", pendingSettings);
         }}
-      >
-        <div className="ui-small-muted">Use these controls to manage the Services page view.</div>
-        <div className="small">Search, category filter, and add actions are available.</div>
-        <div className="page-controls-actions-group">
-          <Button_Toolbar
-            icon={FolderOpenIcon}
-            label="Cats"
-            onClick={() => {
-              setShowPageControls(false);
-              setShowCategoryManager(true);
-            }}
-            className="btn-primary"
-            title="Manage service categories"
-          />
-        </div>
-        <TableSettingsControls
-          settings={pendingSettings}
-          onChange={(patch) => setPendingSettings((prev) => ({ ...prev, ...patch }))}
-          toggles={[
-            { key: "showCategory", label: "Show Category", description: "Display category badge under service name" },
-            { key: "showPrice", label: "Show Price Column", description: "Display service price column" },
-            { key: "showDuration", label: "Show Duration Column", description: "Display service duration column" },
-          ]}
-        />
-      </PageControlsModal>
+        onOpenCategories={() => setShowCategoryManager(true)}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
 
       <Modal_ManageLookup isOpen={showCategoryManager} onClose={() => setShowCategoryManager(false)} title="Manage Categories" entityLabel="category" items={managedCategories} onItemsChanged={loadManagedCategories} api={serviceCategoriesAPI} />
 
