@@ -26,6 +26,7 @@ import React, { useState, useRef } from "react";
 import ReactDOM from "react-dom";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import { XMarkIcon, CheckCircleIcon, XCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 
@@ -290,8 +291,8 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
         </div>{/* /component-body */}
 
         {/* ─── 5 FOOTER ───────────────────────────────────────────────────────── */}
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
+        <div className="component-footer">
+          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
     </Modal>

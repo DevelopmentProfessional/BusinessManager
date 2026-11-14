@@ -28,6 +28,7 @@ import Widget_Signature from "../widgets/Widget_Signature";
 import api from "../../../services/api";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
@@ -118,9 +119,11 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
           </div>
         </div>
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          {!showSignaturePad && savedSignature && <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" />}
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
+        <div className="component-footer">
+          <Footer_Actions
+            start={!showSignaturePad && savedSignature ? <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" /> : null}
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+          />
         </div>
       </div>
     </Modal>

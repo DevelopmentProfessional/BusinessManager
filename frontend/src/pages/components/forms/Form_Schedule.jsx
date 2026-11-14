@@ -53,6 +53,7 @@ import { XMarkIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import FormControl from "../fields/FormControl";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const APPOINTMENT_TYPES = [
@@ -774,7 +775,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
+                    <FormControl type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -799,7 +800,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               <div className="row ui-row-g2">
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control ui-control-sm" required />
+                    <FormControl type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control ui-control-sm" required />
                     <label htmlFor="meeting_title">Meeting Title</label>
                   </div>
                 </div>

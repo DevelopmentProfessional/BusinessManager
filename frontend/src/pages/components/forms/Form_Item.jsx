@@ -47,6 +47,7 @@ import Scanner_Barcode from "../widgets/Scanner_Barcode";
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import FormControl from "../fields/FormControl";
 import cacheService from "../../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../../services/api";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
@@ -602,7 +603,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
           {/* Full-width form fields below */}
           <div className="d-flex gap-2 mb-2">
             <div className="flex-grow-1 form-floating mb-0">
-              <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
+              <FormControl type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
               <label htmlFor="name">Name *</label>
             </div>
             {!isLocation && (
@@ -793,7 +794,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
               {/* Add component row */}
               <div className="ui-flex-center-gap-2">
-                <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <FormControl type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
                 <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
                 <Dropdown_Custom
                   className="ui-control-sm"
@@ -833,7 +834,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               <div className="align-items-center d-flex flex-wrap gap-3 mb-2">
                 <div className="ui-flex-center-gap-2">
                   <label className="mb-0 ui-small-muted">Total qty:</label>
-                  <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
+                  <FormControl type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
                 </div>
                 <div className="ui-flex-center-gap-2">
                   <input type="checkbox" id="mix-has-max-inline" checked={mixHasMax} onChange={(e) => setMixHasMax(e.target.checked)} />

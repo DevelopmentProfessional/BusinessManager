@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import {
   CheckIcon,
   XMarkIcon,
@@ -134,8 +135,8 @@ export default function Modal_StartupPage({
           </div>
         </div>
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} disabled={isBusy} className="btn-outline-secondary" title="Close" />
+        <div className="component-footer">
+          <Footer_Actions center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} disabled={isBusy} className="btn-outline-secondary" title="Close" />} />
         </div>
       </div>
     </Modal>

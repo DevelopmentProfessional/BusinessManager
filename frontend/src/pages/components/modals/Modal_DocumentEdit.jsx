@@ -32,6 +32,7 @@ import { documentsAPI, documentCategoriesAPI, documentStatusesAPI, employeesAPI,
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import { XMarkIcon, TagIcon, MagnifyingGlassIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
 
@@ -558,9 +559,11 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
           {/* /component-body-inner */}
         </div>
         {/* /component-body */}
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar type="submit" icon={CheckIcon} label={saving ? "Saving…" : "Save"} className="btn-primary" disabled={saving} title="Save changes" />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
+        <div className="component-footer">
+          <Footer_Actions
+            start={<Button_Toolbar type="submit" icon={CheckIcon} label={saving ? "Saving…" : "Save"} className="btn-primary" disabled={saving} title="Save changes" />}
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />}
+          />
         </div>
       </form>
     </Modal>
