@@ -1,585 +1,1726 @@
-import React, { useState, useEffect } from 'react';
-import useStore from '../store/useStore';
-import useDarkMode from '../store/useDarkMode';
-import api, { attendanceAPI } from '../services/api';
-import { 
-  UserIcon, 
-  EnvelopeIcon, 
-  ShieldCheckIcon, 
-  CalendarIcon, 
-  KeyIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  UserGroupIcon,
-  CogIcon,
-  ArrowRightIcon,
-  LockClosedIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  SunIcon
-} from '@heroicons/react/24/outline';
-import DarkModeToggle from '../components/DarkModeToggle';
+/*
+ * ============================================================
+ * FILE: Profile.jsx
+ *
+ * PURPOSE:
+ *   Orchestrator for the logged-in user's personal hub page. Owns all state and
+ *   handler logic; delegates panel rendering to dedicated Panel_* components in
+ *   frontend/src/pages/components/.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports
+ *   [2]  Module-level style injection — accordion pop-up animation CSS, no-scrollbar rules
+ *   [3]  Module-level constants — DB_ENVIRONMENTS map, statusColor helper, AlignIcons
+ *   [4]  State declarations
+ *   [5]  Layout measurement effects
+ *   [6]  Settings load effects
+ *   [7]  Database / import effects
+ *   [8]  Settings handlers
+ *   [9]  CSV import handlers
+ *   [10] User sync helpers
+ *   [11] Payroll load effect
+ *   [12] Leave request effects & handlers
+ *   [13] Action handlers
+ *   [14] Performance tracking effect
+ *   [15] Render helpers
+ *   [16] Render — panel components, leave management panel, footer tabs, modals
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-05-15 | Copilot | Shortened leave-management action labels for compact training-mode layouts
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Reduced Profile footer tab width and side padding
+ *   2026-03-07 | Claude  | Fixed compact-mode footer centering and training toggle width
+ *   2026-03-28 | Claude  | Refactored: extracted panel JSX into Panel_* components
+ *   2026-07-25 | GitHub Copilot | Added environment metadata (last updated + app version/build timestamp) to settings accordion
+ *   2026-09-11 | GitHub Copilot | Removed unused settings helpers/state and fixed useEffect dependency warnings
+ *   2026-09-11 | GitHub Copilot | Rendered company-branded payslip templates from Wage history
+ *   2026-11-08 | GitHub Copilot | Made accordion headers rounded pills and scaled sizing with button text size
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS ──────────────────────────────────────────────────────────────
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useStore from "../services/useStore";
+import useDarkMode from "../services/useDarkMode";
+import useViewMode from "../services/useViewMode";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import { getMobileEnvironment } from "../services/mobileEnvironment";
+import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
+import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
+import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
+import { runAppSync } from "../services/appSync";
+import Modal_Signature from "./components/modals/Modal_Signature";
+import Modal from "./components/modals/Modal";
+import useBranding from "../services/useBranding";
+import { applyActiveColorTheme } from "../services/activeColorTheme";
+import Modal_Settings from "./components/modals/Modal_Settings";
+import Panel_General from "./components/panels/Panel_General";
+import Panel_WageHistory from "./components/panels/Panel_WageHistory";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Panel_Database from "./components/panels/Panel_Database";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import Panel_Profile_Information from "./components/panels/Panel_Profile_Information";
+import Panel_Profile_TimeOff from "./components/panels/Panel_Profile_TimeOff";
+import Modal_Profile_LeaveRequest from "./components/modals/Modal_Profile_LeaveRequest";
+import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+
+// ─── Inline alignment icons for the footer-align triple toggle ───────────────
+const AlignLeftIcon = ({ className = "app-icon flex-shrink-0" }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
+    <rect x="2" y="8.75" width="11" height="2.5" rx="1.25" />
+    <rect x="2" y="14.5" width="14" height="2.5" rx="1.25" />
+  </svg>
+);
+const AlignCenterIcon = ({ className = "app-icon flex-shrink-0" }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
+    <rect x="4.5" y="8.75" width="11" height="2.5" rx="1.25" />
+    <rect x="3" y="14.5" width="14" height="2.5" rx="1.25" />
+  </svg>
+);
+const AlignRightIcon = ({ className = "app-icon flex-shrink-0" }) => (
+  <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden="true">
+    <rect x="2" y="3" width="16" height="2.5" rx="1.25" />
+    <rect x="7" y="8.75" width="11" height="2.5" rx="1.25" />
+    <rect x="4" y="14.5" width="14" height="2.5" rx="1.25" />
+  </svg>
+);
+
+// ─── 2 MODULE-LEVEL STYLE INJECTION ──────────────────────────────────────────
+const accordionStyles = `
+  @keyframes popUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .accordion-popup {
+    animation: popUp 0.3s ease-out;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .accordion-popup::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+  .accordion-popup * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  .accordion-popup *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+  .profile-page * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  .profile-page *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+`;
+
+if (typeof document !== "undefined") {
+  if (!document.head.querySelector("style[data-accordion-popup]")) {
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = accordionStyles;
+    styleSheet.setAttribute("data-accordion-popup", "true");
+    document.head.appendChild(styleSheet);
+  }
+}
+
+if (typeof document !== "undefined") {
+  if (!document.head.querySelector("style[data-profile-no-scrollbar]")) {
+    const styleSheet = document.createElement("style");
+    styleSheet.setAttribute("data-profile-no-scrollbar", "true");
+    styleSheet.textContent = `
+      .profile-page * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+      .profile-page *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+    `;
+    document.head.appendChild(styleSheet);
+  }
+}
+
+// ─── 3 MODULE-LEVEL CONSTANTS & HELPERS ──────────────────────────────────────
+const DB_ENVIRONMENTS = {
+  production: { name: "Production", description: "Live production database" },
+};
+
+const statusColor = (status) => {
+  const s = String(status || "").toLowerCase();
+  if (s === "approved") return "success";
+  if (s === "rejected") return "danger";
+  if (s === "pending") return "warning";
+  return "secondary";
+};
+
+const sortLeaveRequestsDesc = (requests) =>
+  [...requests].sort((a, b) => {
+    const ta = Date.parse(a.start_date || "") || 0;
+    const tb = Date.parse(b.start_date || "") || 0;
+    return tb - ta;
+  });
+
+function LeaveRequestsTable({ requests, emptyMessage }) {
+  if (!requests.length) {
+    return <p className="mb-0 ui-small-muted">{emptyMessage}</p>;
+  }
+  return (
+    <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
+        <thead className="table-light">
+          <tr>
+            <th>Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {requests.map((req) => (
+            <tr key={req.id}>
+              <td>{req.leave_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick"}</td>
+              <td>{req.start_date}</td>
+              <td>{req.end_date}</td>
+              <td>{req.days_requested ?? "—"}</td>
+              <td>
+                <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
+                  {req.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 const Profile = () => {
-  const { user, setUser } = useStore();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  });
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [leaveRequests, setLeaveRequests] = useState([]);
-  const [hasEmployeeProfile, setHasEmployeeProfile] = useState(true);
-  const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
+  const { user, logout, setUser, hasPermission, refetchPermissions, refreshUserPermissions } = useStore();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isTrainingMode, toggleViewMode, buttonTextSize, setButtonTextSize, footerAlign, setFooterAlign, uiScale, setUiScale } = useViewMode();
+  const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
+  const FooterAlignIcon = footerAlign === "center" ? AlignCenterIcon : footerAlign === "right" ? AlignRightIcon : AlignLeftIcon;
+  const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
 
-  useEffect(() => {
-    // Only load user data if not already loaded
-    if (!userData && user) {
-      setUserData(user);
-    } else if (!userData && !user) {
-      // Try to get from localStorage as fallback
+  const persistCurrentUserProfile = useCallback(
+    async (patch) => {
+      if (!user?.id) return null;
+      let updatedUser = null;
       try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const currentUser = JSON.parse(storedUser);
-          setUserData(currentUser);
-          setUser(currentUser);
-        }
+        const response = await profileAPI.updateMyProfile(patch);
+        updatedUser = response?.data ?? response;
       } catch (err) {
-        console.error('Error parsing stored user data:', err);
+        console.warn("updateMyProfile failed, attempting isud update fallback:", err);
+        try {
+          const response = await api.put(`/isud/user/${user.id}`, patch);
+          updatedUser = response?.data ?? response;
+        } catch (fallbackErr) {
+          console.error("isud fallback update also failed:", fallbackErr);
+        }
       }
-    }
-  }, [user, setUser, userData]);
+      const mergedUser = { ...user, ...(updatedUser && typeof updatedUser === "object" ? updatedUser : patch) };
+      setUser(mergedUser);
+      if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
+      if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
+      return mergedUser;
+    },
+    [user, setUser]
+  );
 
-  // Only fetch attendance data when userData is available and we haven't loaded it yet
-  useEffect(() => {
-    if (userData && attendanceRecords.length === 0) {
-      fetchAttendanceRecords();
-    }
-  }, [userData]);
+  const cyclePersistedFooterAlign = useCallback(() => {
+    const next = footerAlign === "left" ? "center" : footerAlign === "center" ? "right" : "left";
+    setFooterAlign(next);
+    void persistCurrentUserProfile({ footer_align: next }).catch(() => {});
+  }, [footerAlign, setFooterAlign, persistCurrentUserProfile]);
 
-  const checkEmployeeProfile = async () => {
+  const cyclePersistedButtonTextSize = useCallback(() => {
+    const sizes = ["small", "medium", "large"];
+    const currentIndex = sizes.indexOf(buttonTextSize);
+    const nextSize = sizes[currentIndex >= 0 ? (currentIndex + 1) % sizes.length : 1];
+    setButtonTextSize(nextSize);
+    void persistCurrentUserProfile({ button_text_size: nextSize }).catch(() => {});
+  }, [buttonTextSize, setButtonTextSize, persistCurrentUserProfile]);
+
+  const setPersistedUiScale = useCallback(
+    (scale) => {
+      setUiScale(scale);
+      void persistCurrentUserProfile({ ui_scale: Number(scale) }).catch(() => {});
+    },
+    [setUiScale, persistCurrentUserProfile]
+  );
+
+  const cyclePersistedUiScale = useCallback(() => {
+    const zoomLevels = [90, 100, 110, 125, 150];
+    const currentIndex = zoomLevels.indexOf(uiScale);
+    const nextScale = zoomLevels[currentIndex >= 0 ? (currentIndex + 1) % zoomLevels.length : 1];
+    setUiScale(nextScale);
+    void persistCurrentUserProfile({ ui_scale: nextScale }).catch(() => {});
+  }, [uiScale, setUiScale, persistCurrentUserProfile]);
+
+  const setPersistedStartupPage = useCallback(
+    async (page) => {
+      return await persistCurrentUserProfile({ startup_page: page });
+    },
+    [persistCurrentUserProfile]
+  );
+
+  // ─── 4 STATE DECLARATIONS ──────────────────────────────────────────────────
+  // Admin-only: Check/Start Database button state
+  const [dbCheckLoading, setDbCheckLoading] = useState(false);
+  const [dbCheckStatus, setDbCheckStatus] = useState("");
+
+  // Admin-only: Check/Start Database handler
+  const handleCheckStartDatabase = async () => {
+    setDbCheckLoading(true);
+    setDbCheckStatus("");
     try {
-      const response = await attendanceAPI.checkUser();
-      const hasProfile = response.data.has_employee_profile;
-      setHasEmployeeProfile(hasProfile);
-      return hasProfile;
+      const res = await adminAPI.checkOrStartDatabase();
+      setDbCheckStatus(res?.data?.message || "Database is running.");
     } catch (err) {
-      console.error('Error checking employee profile:', err);
-      setHasEmployeeProfile(false);
-      return false;
-    }
-  };
-
-  const fetchAttendanceRecords = async () => {
-    try {
-      // Only fetch if we haven't already loaded the data
-      if (attendanceRecords.length > 0) return;
-      
-      // First check if user has an employee profile
-      const hasProfile = await checkEmployeeProfile();
-      
-      if (!hasProfile) {
-        setAttendanceRecords([]);
-        return;
-      }
-      
-      // Fetch attendance for the current user (backend resolves linked employee)
-      const response = await attendanceAPI.me();
-      setAttendanceRecords(response.data);
-    } catch (err) {
-      console.error('Error fetching attendance records:', err);
-      // If user doesn't have an employee profile, that's okay - just show empty list
-      setAttendanceRecords([]);
-      setHasEmployeeProfile(false);
-    }
-  };
-
-  const fetchLeaveRequests = async () => {
-    try {
-      // This would be implemented when leave management is added
-      // const response = await api.get(`/leave/employee/${user.id}`);
-      // setLeaveRequests(response.data);
-    } catch (err) {
-      console.error('Error fetching leave requests:', err);
-    }
-  };
-
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handlePasswordUpdate = async (e) => {
-    e.preventDefault();
-    
-    if (passwordData.new_password !== passwordData.confirm_password) {
-      setError('New passwords do not match');
-      return;
-    }
-    
-    if (passwordData.new_password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      await api.post('/auth/change-password', {
-        current_password: passwordData.current_password,
-        new_password: passwordData.new_password
-      });
-      
-      setSuccess('Password updated successfully!');
-      setShowPasswordChange(false);
-      setPasswordData({
-        current_password: '',
-        new_password: '',
-        confirm_password: ''
-      });
-      
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to update password');
+      setDbCheckStatus("Error: " + (err?.response?.data?.detail || err?.message || "Failed to check/start database."));
     } finally {
-      setLoading(false);
+      setDbCheckLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (getPerformanceSessionActive()) logComponentLoad("Profile Component");
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const appVersion = (typeof __APP_VERSION__ !== "undefined" && __APP_VERSION__) || import.meta.env.VITE_APP_VERSION || "0.0.0";
+  const appBuildTimestamp = (typeof __APP_BUILD_TIMESTAMP__ !== "undefined" && __APP_BUILD_TIMESTAMP__) || null;
+
+  const currentDbEnvironment = user?.db_environment === "production" ? "production" : "production";
+  const [dbLoading, setDbLoading] = useState(false);
+  const [dbMessage, setDbMessage] = useState("");
+  const [dbError, setDbError] = useState("");
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [employeeColor, setEmployeeColor] = useState(user?.color || "#3B82F6");
+  const [pendingColor, setPendingColor] = useState(user?.color || "#3B82F6");
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [colorUpdating, setColorUpdating] = useState(false);
+  const [colorMessage, setColorMessage] = useState("");
+  const [openAccordion, setOpenAccordion] = useState("");
+  const [meSectionOpen, setMeSectionOpen] = useState("");
+  const [leaveManagementOpen, setLeaveManagementOpen] = useState(false);
+
+  const [vacationRequests, setVacationRequests] = useState([]);
+  const [sickRequests, setSickRequests] = useState([]);
+  const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveModalType, setLeaveModalType] = useState("vacation");
+  const [leaveForm, setLeaveForm] = useState({ start_date: "", end_date: "", notes: "" });
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [leaveError, setLeaveError] = useState("");
+  const [insurancePlans, setInsurancePlans] = useState([]);
+
+  const [paySlips, setPaySlips] = useState([]);
+  const [paySlipsLoading, setPaySlipsLoading] = useState(false);
+  const [selectedSlip, setSelectedSlip] = useState(null);
+  const [companyLogoDataUrl, setCompanyLogoDataUrl] = useState("");
+
+  const row1Ref = useRef(null);
+  const [row1Height, setRow1Height] = useState(44);
+
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsSuccess, setSettingsSuccess] = useState("");
+  const [syncLoading, setSyncLoading] = useState(false);
+
+  const { branding, updateBranding } = useBranding();
+  const [localBranding, setLocalBranding] = useState(branding);
+
+  const [brandingLogoUploading, setBrandingLogoUploading] = useState(false);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
+  const [logoPickerLoading, setLogoPickerLoading] = useState(false);
+  const [logoPickerError, setLogoPickerError] = useState("");
+  const [logoPickerDocs, setLogoPickerDocs] = useState([]);
+
+  const [, setDbSettings] = useState({ connectionString: "", apiBaseUrl: "", onlyofficeUrl: "" });
+
+  const [, setScheduleSettings] = useState({
+    start_of_day: "06:00",
+    end_of_day: "21:00",
+    attendance_check_in_required: true,
+    reminder_time_minutes: 30,
+    reminder_send_notification: true,
+    monday_enabled: true,
+    tuesday_enabled: true,
+    wednesday_enabled: true,
+    thursday_enabled: true,
+    friday_enabled: true,
+    saturday_enabled: true,
+    sunday_enabled: true,
+  });
+  const [companyInfo, setCompanyInfo] = useState({
+    company_name: "",
+    company_email: "",
+    company_phone: "",
+    company_address: "",
+    company_timezone: "",
+    tax_rate: 0,
+  });
+  const [companyLoading, setCompanyLoading] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState(null);
+
+  const [openAccordions, setOpenAccordions] = useState({
+    application: false,
+    companyInfo: false,
+    branding: false,
+    clientPortal: false,
+    payments: false,
+    notifications: false,
+  });
+
+  const [stripeSettings, setStripeSettings] = useState({
+    stripe_enabled: false,
+    stripe_mode: "test",
+    stripe_test_publishable_key: "",
+    stripe_test_secret_key: "",
+    stripe_test_webhook_secret: "",
+    stripe_live_publishable_key: "",
+    stripe_live_secret_key: "",
+    stripe_live_webhook_secret: "",
+    stripe_publishable_key: "",
+    stripe_secret_key: "",
+    stripe_webhook_secret: "",
+  });
+  const [stripeSettingsLoading, setStripeSettingsLoading] = useState(false);
+  const [stripeTestLoading, setStripeTestLoading] = useState(false);
+
+  const [portalBranding, setPortalBranding] = useState({
+    portal_hero_title: "",
+    portal_hero_subtitle: "",
+    portal_hero_tagline: "",
+    portal_hero_bg_color: "#4f46e5",
+    portal_hero_text_color: "#ffffff",
+    portal_hero_image_url: "",
+    portal_banner_text: "",
+    portal_banner_color: "#4f46e5",
+    portal_show_hero: true,
+    portal_show_banner: false,
+    portal_footer_text: "",
+    portal_primary_color: "#4f46e5",
+    portal_secondary_color: "#0ea5e9",
+  });
+  const [portalBrandingLoading, setPortalBrandingLoading] = useState(false);
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
+
+  const [availableTables, setAvailableTables] = useState([]);
+  const [selectedTable, setSelectedTable] = useState("");
+  const [tableColumns, setTableColumns] = useState([]);
+  const [csvData, setCsvData] = useState(null);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const csvFileInputRef = useRef(null);
+
+  const [notifications, setNotifications] = useState({
+    emailEnabled: true,
+    pushEnabled: false,
+    appointmentReminders: true,
+    dailyDigest: false,
+  });
+
+  useEffect(() => {
+    const savedColor = user?.color || "#3B82F6";
+    setEmployeeColor(savedColor);
+    if (!colorPickerOpen) setPendingColor(savedColor);
+  }, [user?.color, colorPickerOpen]);
+
+  // ─── 5 LAYOUT MEASUREMENT EFFECTS ────────────────────────────────────────
+  useEffect(() => {
+    if (!row1Ref.current) return;
+    const update = () => setRow1Height(row1Ref.current.offsetHeight);
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(row1Ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // ─── 6 SETTINGS LOAD EFFECTS ─────────────────────────────────────────────
+  useEffect(() => {
+    setLocalBranding(branding);
+  }, [branding]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    insurancePlansAPI
+      .getAll()
+      .then((res) => {
+        const data = res?.data ?? res ?? [];
+        setInsurancePlans(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setInsurancePlans([]));
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(getMobileEnvironment().isMobileViewport);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const savedDb = localStorage.getItem("app_db_settings");
+    if (savedDb) {
+      try {
+        setDbSettings(JSON.parse(savedDb));
+      } catch {
+        /* ignore */
+      }
+    } else {
+      setDbSettings({ connectionString: "", apiBaseUrl: import.meta.env.VITE_API_URL || "", onlyofficeUrl: import.meta.env.VITE_ONLYOFFICE_URL || "" });
+    }
+    const savedNotif = localStorage.getItem("app_notifications");
+    if (savedNotif) {
+      try {
+        setNotifications(JSON.parse(savedNotif));
+      } catch {
+        /* ignore */
+      }
+    }
+    const loadSchedule = async () => {
+      try {
+        const res = await settingsAPI.getScheduleSettings();
+        if (res.data) {
+          setScheduleSettings({
+            start_of_day: res.data.start_of_day || "06:00",
+            end_of_day: res.data.end_of_day || "21:00",
+            attendance_check_in_required: res.data.attendance_check_in_required ?? false,
+            reminder_time_minutes: res.data.reminder_time_minutes ?? 30,
+            reminder_send_notification: res.data.reminder_send_notification ?? true,
+            monday_enabled: res.data.monday_enabled ?? true,
+            tuesday_enabled: res.data.tuesday_enabled ?? true,
+            wednesday_enabled: res.data.wednesday_enabled ?? true,
+            thursday_enabled: res.data.thursday_enabled ?? true,
+            friday_enabled: res.data.friday_enabled ?? true,
+            saturday_enabled: res.data.saturday_enabled ?? true,
+            sunday_enabled: res.data.sunday_enabled ?? true,
+          });
+          setCompanyInfo({
+            company_name: res.data.company_name || "",
+            company_email: res.data.company_email || "",
+            company_phone: res.data.company_phone || "",
+            company_address: res.data.company_address || "",
+            company_timezone: res.data.company_timezone || "",
+            tax_rate: res.data.tax_rate ?? 0,
+          });
+          setPortalBranding((prev) => ({
+            ...prev,
+            portal_hero_title: res.data.portal_hero_title || "",
+            portal_hero_subtitle: res.data.portal_hero_subtitle || "",
+            portal_hero_tagline: res.data.portal_hero_tagline || "",
+            portal_hero_bg_color: res.data.portal_hero_bg_color || "#4f46e5",
+            portal_hero_text_color: res.data.portal_hero_text_color || "#ffffff",
+            portal_hero_image_url: res.data.portal_hero_image_url || "",
+            portal_banner_text: res.data.portal_banner_text || "",
+            portal_banner_color: res.data.portal_banner_color || "#4f46e5",
+            portal_show_hero: res.data.portal_show_hero !== false,
+            portal_show_banner: res.data.portal_show_banner || false,
+            portal_footer_text: res.data.portal_footer_text || "",
+            portal_primary_color: res.data.portal_primary_color || "#4f46e5",
+            portal_secondary_color: res.data.portal_secondary_color || "#0ea5e9",
+          }));
+          setStripeSettings({
+            stripe_enabled: res.data.stripe_enabled ?? false,
+            stripe_mode: (res.data.stripe_mode || "test").toLowerCase() === "live" ? "live" : "test",
+            stripe_test_publishable_key: res.data.stripe_test_publishable_key || "",
+            stripe_test_secret_key: res.data.stripe_test_secret_key || "",
+            stripe_test_webhook_secret: res.data.stripe_test_webhook_secret || "",
+            stripe_live_publishable_key: res.data.stripe_live_publishable_key || "",
+            stripe_live_secret_key: res.data.stripe_live_secret_key || "",
+            stripe_live_webhook_secret: res.data.stripe_live_webhook_secret || "",
+            stripe_publishable_key: res.data.stripe_publishable_key || "",
+            stripe_secret_key: res.data.stripe_secret_key || "",
+            stripe_webhook_secret: res.data.stripe_webhook_secret || "",
+          });
+        }
+      } catch {
+        /* silently degrade */
+      }
+    };
+    loadSchedule();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    settingsAPI
+      .getCompanyLogo()
+      .then((response) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (!cancelled) setCompanyLogoDataUrl(typeof reader.result === "string" ? reader.result : "");
+        };
+        reader.readAsDataURL(response.data);
+      })
+      .catch(() => {
+        if (!cancelled) setCompanyLogoDataUrl("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ─── 7 DATABASE / IMPORT EFFECTS ─────────────────────────────────────────
+  useEffect(() => {
+    if (openAccordion === "database" && availableTables.length === 0) loadTables();
+  }, [openAccordion, availableTables.length]);
+
+  useEffect(() => {
+    if (selectedTable) loadTableColumns(selectedTable);
+  }, [selectedTable]);
+
+  // ─── 8 SETTINGS HANDLERS ─────────────────────────────────────────────────
+  const toNumber = (value) => {
+    const parsed = Number(value ?? 0);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const HelpIcon = ({ id, text }) => (
+    <div className="inline-block ml-1 relative">
+      <QuestionMarkCircleIcon className="cursor-help h-4 hover:text-gray-600 text-gray-400 transition-colors w-4" onClick={() => setActiveTooltip(activeTooltip === id ? null : id)} onMouseEnter={() => setActiveTooltip(id)} onMouseLeave={() => setActiveTooltip(null)} />
+      {activeTooltip === id && (
+        <div className="-translate-x-1/2 absolute bg-gray-800 bottom-full left-1/2 max-w-xs mb-2 px-1 py-0 rounded-lg shadow-lg text-center text-white text-xs z-10">
+          {text}
+          <div className="-translate-x-1/2 absolute border-4 border-t-gray-800 border-transparent left-1/2 top-full"></div>
+        </div>
+      )}
+    </div>
+  );
+
+  const toggleAccordion = (id) => setOpenAccordions((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const uploadDocumentAsCompanyLogo = async (doc) => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const response = await fetch(documentsAPI.fileUrl(doc.id), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch document (${response.status})`);
+    }
+    const blob = await response.blob();
+    const filename = doc.original_filename || `logo-${doc.id}.png`;
+    const file = new File([blob], filename, {
+      type: blob.type || doc.content_type || "image/png",
+    });
+    await settingsAPI.uploadCompanyLogo(file);
+  };
+
+  const handleSaveBranding = async () => {
+    setBrandingLogoUploading(true);
+    setSettingsError("");
+    try {
+      // Backward-compatible bridge: if an existing local branding document is selected,
+      // sync it into company logo_data so the client portal can render it.
+      if (localBranding.logoDocumentId) {
+        const selectedDoc = logoPickerDocs.find((d) => String(d.id) === String(localBranding.logoDocumentId)) || { id: localBranding.logoDocumentId, original_filename: `logo-${localBranding.logoDocumentId}.png`, content_type: "image/png" };
+        await uploadDocumentAsCompanyLogo(selectedDoc);
+      }
+
+      updateBranding(localBranding);
+      setSettingsSuccess("Branding saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      console.error("Failed to save branding", err);
+      setSettingsError("Failed to save branding.");
+    } finally {
+      setBrandingLogoUploading(false);
+    }
+  };
+  const handleBrandingChange = (field, value) => setLocalBranding((prev) => ({ ...prev, [field]: value }));
+
+  const isImageDocument = (doc) => {
+    const ct = String(doc?.content_type || "").toLowerCase();
+    const name = String(doc?.original_filename || "").toLowerCase();
+    return ct.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+  };
+
+  const loadLogoPickerDocs = async () => {
+    setLogoPickerLoading(true);
+    setLogoPickerError("");
+    try {
+      const res = await documentsAPI.getAll();
+      const docs = Array.isArray(res.data) ? res.data : [];
+      setLogoPickerDocs(docs.filter(isImageDocument));
+    } catch (err) {
+      console.warn("Failed to load documents for logo picker", err);
+      setLogoPickerDocs([]);
+      setLogoPickerError("Failed to load images.");
+    } finally {
+      setLogoPickerLoading(false);
     }
   };
 
-  const clockIn = async () => {
-    if (!hasEmployeeProfile) {
-      setError('No employee profile linked to your account. Please contact your administrator.');
+  const handleUploadBrandingLogo = async (file) => {
+    if (!file) return;
+    setBrandingLogoUploading(true);
+    setSettingsError("");
+    try {
+      await settingsAPI.uploadCompanyLogo(file);
+      setLocalBranding((prev) => ({
+        ...prev,
+        logoDocumentId: null,
+        logoUrl: URL.createObjectURL(file),
+      }));
+      setSettingsSuccess("Company logo uploaded!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      console.error("Branding logo upload failed", err);
+      setSettingsError("Failed to upload logo.");
+    } finally {
+      setBrandingLogoUploading(false);
+    }
+  };
+
+  const handleSelectLogoFromDocuments = async (doc) => {
+    if (!doc?.id) return;
+    setBrandingLogoUploading(true);
+    setSettingsError("");
+    try {
+      await uploadDocumentAsCompanyLogo(doc);
+      setLocalBranding((prev) => ({ ...prev, logoDocumentId: doc.id, logoUrl: "" }));
+      setLogoPickerOpen(false);
+      setSettingsSuccess("Company logo updated from document!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      console.error("Selecting branding logo from documents failed", err);
+      setSettingsError("Failed to set logo from document.");
+    } finally {
+      setBrandingLogoUploading(false);
+    }
+  };
+
+  const handleSaveNotifications = () => {
+    localStorage.setItem("app_notifications", JSON.stringify(notifications));
+    setSettingsSuccess("Notification settings saved!");
+    setTimeout(() => setSettingsSuccess(""), 3000);
+  };
+  const handleNotificationChange = (field, value) => setNotifications((prev) => ({ ...prev, [field]: value }));
+
+  const handleCompanyInfoChange = (field, value) => setCompanyInfo((prev) => ({ ...prev, [field]: value }));
+
+  const handleSaveCompanyInfo = async () => {
+    setCompanyLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      await settingsAPI.updateSettings(companyInfo);
+      setSettingsSuccess("Company info saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Failed to save company info");
+    } finally {
+      setCompanyLoading(false);
+    }
+  };
+
+  const handlePortalBrandingChange = (field, value) => setPortalBranding((prev) => ({ ...prev, [field]: value }));
+
+  const handleStripeSettingsChange = (field, value) => setStripeSettings((prev) => ({ ...prev, [field]: value }));
+
+  const handleSaveStripeSettings = async () => {
+    setStripeSettingsLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      await settingsAPI.updateSettings(stripeSettings);
+      setSettingsSuccess("Stripe settings saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Failed to save Stripe settings");
+    } finally {
+      setStripeSettingsLoading(false);
+    }
+  };
+
+  // TEMPORARY: isolated Stripe test checkout launcher (easy to remove).
+  const handleStripeTestCheckout = async () => {
+    setStripeTestLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      const res = await settingsAPI.createStripeTestCheckout(0.5);
+      const checkoutUrl = res?.data?.checkout_url || res?.checkout_url;
+      if (!checkoutUrl) {
+        throw new Error("No checkout URL returned from Stripe test endpoint.");
+      }
+      setSettingsSuccess("Stripe test checkout created. Redirecting...");
+      window.location.assign(checkoutUrl);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || err.message || "Failed to start Stripe test checkout");
+    } finally {
+      setStripeTestLoading(false);
+    }
+  };
+
+  const handleSavePortalBranding = async () => {
+    setPortalBrandingLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      await settingsAPI.updateSettings(portalBranding);
+      setSettingsSuccess("Client portal settings saved!");
+      setTimeout(() => setSettingsSuccess(""), 3000);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Failed to save portal settings");
+    } finally {
+      setPortalBrandingLoading(false);
+    }
+  };
+
+  const handleSaveGeneralPanel = async () => {
+    const tasks = [];
+    if (openAccordions.companyInfo) tasks.push(handleSaveCompanyInfo());
+    if (openAccordions.branding) tasks.push(handleSaveBranding());
+    if (openAccordions.notifications) tasks.push(handleSaveNotifications());
+    if (openAccordions.clientPortal) tasks.push(handleSavePortalBranding());
+    if (openAccordions.payments && user?.role === "admin") tasks.push(handleSaveStripeSettings());
+    if (tasks.length > 0) await Promise.all(tasks);
+  };
+
+  const handleUploadHeroImage = async (file) => {
+    if (!file) return;
+    setHeroImageUploading(true);
+    setSettingsError("");
+    try {
+      const res = await documentsAPI.upload(file, "Portal hero image");
+      const doc = res?.data;
+      if (doc?.id) {
+        const url = documentsAPI.fileUrl(doc.id);
+        setPortalBranding((prev) => ({ ...prev, portal_hero_image_url: url }));
+      }
+    } catch {
+      setSettingsError("Failed to upload hero image.");
+    } finally {
+      setHeroImageUploading(false);
+    }
+  };
+
+  const resetPortalBrandingDefaults = () => {
+    setPortalBranding({
+      portal_hero_title: companyInfo.company_name || "",
+      portal_hero_subtitle: "Browse our products and services",
+      portal_hero_tagline: "",
+      portal_hero_bg_color: "#4f46e5",
+      portal_hero_text_color: "#ffffff",
+      portal_hero_image_url: "",
+      portal_banner_text: "",
+      portal_banner_color: "#4f46e5",
+      portal_show_hero: true,
+      portal_show_banner: false,
+      portal_footer_text: "",
+      portal_primary_color: "#4f46e5",
+      portal_secondary_color: "#0ea5e9",
+    });
+  };
+
+  const handleManualSync = async () => {
+    setSyncLoading(true);
+    setSettingsError("");
+    setSettingsSuccess("");
+    try {
+      await Promise.allSettled([refreshUserPermissions?.(), refetchPermissions?.(), syncCurrentUser()]);
+      setSettingsSuccess("App data refreshed. Reloading...");
+      await runAppSync();
+    } catch {
+      setSettingsError("App refresh failed. Please try again.");
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // ─── 9 CSV IMPORT HANDLERS ───────────────────────────────────────────────
+  const loadTables = async () => {
+    try {
+      const res = await schemaAPI.getTables();
+      setAvailableTables(res.data || []);
+    } catch {
+      /* silently degrade */
+    }
+  };
+
+  const loadTableColumns = async (tableName) => {
+    try {
+      const res = await schemaAPI.getTableColumns(tableName);
+      setTableColumns(res.data || []);
+      setColumnMapping({});
+      setCsvData(null);
+      setCsvHeaders([]);
+      setImportResult(null);
+    } catch {
+      setTableColumns([]);
+    }
+  };
+
+  const parseCSVLine = (line) => {
+    const result = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const parseCSV = (text) => {
+    const lines = text.split("\n").filter((l) => l.trim());
+    if (lines.length < 2) return { headers: [], data: [] };
+    const headers = parseCSVLine(lines[0]);
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length === headers.length) {
+        const row = {};
+        headers.forEach((h, idx) => {
+          row[h] = values[idx];
+        });
+        data.push(row);
+      }
+    }
+    return { headers, data };
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const { headers, data } = parseCSV(e.target.result);
+      setCsvHeaders(headers);
+      setCsvData(data);
+      const autoMapping = {};
+      headers.forEach((header) => {
+        const norm = header.toLowerCase().replace(/\s+/g, "_");
+        const match = tableColumns.find((col) => col.name.toLowerCase() === norm || col.display_name.toLowerCase() === header.toLowerCase());
+        if (match) autoMapping[header] = match.name;
+      });
+      setColumnMapping(autoMapping);
+      setImportResult(null);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleColumnMappingChange = (csvHeader, dbColumn) => {
+    setColumnMapping((prev) => ({ ...prev, [csvHeader]: dbColumn || undefined }));
+  };
+
+  const handleImport = async () => {
+    if (!csvData || csvData.length === 0) {
+      setSettingsError("No data to import");
       return;
     }
-    
+    setImportLoading(true);
+    setSettingsError("");
+    setImportResult(null);
     try {
-      await attendanceAPI.clockIn();
-      setSuccess('Clocked in successfully!');
-      fetchAttendanceRecords();
+      const transformedData = csvData
+        .map((row) => {
+          const newRow = {};
+          Object.entries(columnMapping).forEach(([csvH, dbCol]) => {
+            if (dbCol && row[csvH] !== undefined) newRow[dbCol] = row[csvH];
+          });
+          return newRow;
+        })
+        .filter((row) => Object.keys(row).length > 0);
+      const res = await schemaAPI.bulkImport(selectedTable, transformedData);
+      setImportResult(res.data);
+      if (res.data.imported > 0) {
+        setSettingsSuccess(`Imported ${res.data.imported} records!`);
+        setTimeout(() => setSettingsSuccess(""), 5000);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to clock in');
+      setSettingsError(err.response?.data?.detail || "Import failed");
+    } finally {
+      setImportLoading(false);
     }
   };
 
-  const clockOut = async () => {
-    if (!hasEmployeeProfile) {
-      setError('No employee profile linked to your account. Please contact your administrator.');
+  const resetImport = () => {
+    setCsvData(null);
+    setCsvHeaders([]);
+    setColumnMapping({});
+    setImportResult(null);
+    if (csvFileInputRef.current) csvFileInputRef.current.value = "";
+  };
+
+  // ─── 10 USER SYNC HELPER ─────────────────────────────────────────────────
+  const syncCurrentUser = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await employeesAPI.getUserData(user.id);
+      const refreshedUser = response?.data ?? response;
+      if (!refreshedUser || typeof refreshedUser !== "object") return;
+      const mergedUser = { ...user, ...refreshedUser };
+      setUser(mergedUser);
+      if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
+      if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
+    } catch {
+      /* silently degrade */
+    }
+  }, [user, setUser]);
+
+  useEffect(() => {
+    if (!user?.id || user?.color) return;
+    syncCurrentUser();
+  }, [user?.id, user?.color, syncCurrentUser]);
+
+  // ─── 11 PAYROLL LOAD EFFECT ───────────────────────────────────────────────
+  useEffect(() => {
+    if (meSectionOpen !== "wage" || !user?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      setPaySlipsLoading(true);
+      try {
+        const res = await payrollAPI.getByEmployee(user.id);
+        if (!cancelled) setPaySlips(Array.isArray(res?.data) ? res.data : []);
+      } catch {
+        /* silently degrade */
+      } finally {
+        if (!cancelled) setPaySlipsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [meSectionOpen, user?.id]);
+
+  // ─── 12 LEAVE REQUEST EFFECTS & HANDLERS ─────────────────────────────────
+  useEffect(() => {
+    if ((meSectionOpen !== "benefits" && !leaveManagementOpen) || !user?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      setLeaveRequestsLoading(true);
+      try {
+        await syncCurrentUser();
+        const [vacRes, sickRes] = await Promise.all([leaveRequestsAPI.getByUser(user.id, "vacation"), leaveRequestsAPI.getByUser(user.id, "sick")]);
+        if (cancelled) return;
+        setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
+        setSickRequests(Array.isArray(sickRes?.data) ? sickRes.data : []);
+      } catch {
+        /* silently degrade */
+      } finally {
+        if (!cancelled) setLeaveRequestsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [meSectionOpen, leaveManagementOpen, user?.id, syncCurrentUser]);
+
+  const refreshLeaveRequests = async () => {
+    if (!user?.id) return;
+    setLeaveRequestsLoading(true);
+    try {
+      const [vacRes, sickRes] = await Promise.all([leaveRequestsAPI.getByUser(user.id, "vacation"), leaveRequestsAPI.getByUser(user.id, "sick")]);
+      setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
+      setSickRequests(Array.isArray(sickRes?.data) ? sickRes.data : []);
+    } catch {
+      /* silently degrade */
+    } finally {
+      setLeaveRequestsLoading(false);
+    }
+  };
+
+  const handleLeaveSubmit = async (e) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    setLeaveSubmitting(true);
+    setLeaveError("");
+    try {
+      const isLeave = leaveModalType === "vacation" || leaveModalType === "sick";
+      if (isLeave) {
+        const start = new Date(leaveForm.start_date);
+        const end = new Date(leaveForm.end_date);
+        if (end < start) {
+          setLeaveError("End date must be on or after start date.");
+          setLeaveSubmitting(false);
+          return;
+        }
+        const daysRequested = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        if (leaveModalType === "vacation") {
+          const remaining = Math.max(0, toNumber(user.vacation_days) - toNumber(user.vacation_days_used));
+          if (daysRequested > remaining) {
+            setLeaveError(`You only have ${remaining} vacation day(s) remaining.`);
+            setLeaveSubmitting(false);
+            return;
+          }
+        } else {
+          const remaining = Math.max(0, toNumber(user.sick_days) - toNumber(user.sick_days_used));
+          if (daysRequested > remaining) {
+            setLeaveError(`You only have ${remaining} sick day(s) remaining.`);
+            setLeaveSubmitting(false);
+            return;
+          }
+        }
+        await leaveRequestsAPI.create({ user_id: user.id, supervisor_id: user.reports_to || null, leave_type: leaveModalType, start_date: leaveForm.start_date, end_date: leaveForm.end_date, days_requested: daysRequested, notes: leaveForm.notes || null, status: "pending" });
+        await refreshLeaveRequests();
+      } else if (leaveModalType === "onboarding") {
+        await onboardingRequestsAPI.create({ user_id: user.id, supervisor_id: user.reports_to || null, request_date: leaveForm.start_date || null, notes: leaveForm.notes || null, status: "pending" });
+      } else if (leaveModalType === "offboarding") {
+        await offboardingRequestsAPI.create({ user_id: user.id, supervisor_id: user.reports_to || null, request_date: leaveForm.start_date || null, notes: leaveForm.notes || null, status: "pending" });
+      }
+      setShowLeaveModal(false);
+      setLeaveForm({ start_date: "", end_date: "", notes: "" });
+    } catch (err) {
+      setLeaveError(err?.response?.data?.detail || "Failed to submit request.");
+    } finally {
+      setLeaveSubmitting(false);
+    }
+  };
+
+  // ─── 13 ACTION HANDLERS ───────────────────────────────────────────────────
+  const handleSwitchEnvironment = async (env) => {
+    if (env === currentDbEnvironment || !user?.id) return;
+    setDbLoading(true);
+    setDbMessage("");
+    setDbError("");
+    try {
+      await persistCurrentUserProfile({ db_environment: env });
+      setDbMessage(`Database preference updated to ${DB_ENVIRONMENTS[env]?.name || env}.`);
+      setTimeout(() => setDbMessage(""), 3000);
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || "Failed to update database preference";
+      setDbError(detail);
+      setTimeout(() => setDbError(""), 5000);
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  const handleColorChange = async (newColor) => {
+    setEmployeeColor(newColor);
+    applyActiveColorTheme(newColor);
+    setColorUpdating(true);
+    setColorMessage("");
+    try {
+      await persistCurrentUserProfile({ color: newColor });
+      setColorMessage("Theme color updated!");
+      setTimeout(() => setColorMessage(""), 2000);
+      return true;
+    } catch (error) {
+      const detail = error?.response?.data?.detail || error?.message || "Failed to update color";
+      setColorMessage(detail);
+      const fallbackColor = user?.color || "#3B82F6";
+      setEmployeeColor(fallbackColor);
+      applyActiveColorTheme(fallbackColor);
+      setTimeout(() => setColorMessage(""), 3000);
+      return false;
+    } finally {
+      setColorUpdating(false);
+    }
+  };
+
+  const handleDarkModeToggle = async () => {
+    if (!user?.id) {
+      toggleDarkMode();
       return;
     }
-    
+
+    const nextDarkMode = !isDarkMode;
+    toggleDarkMode();
     try {
-      await attendanceAPI.clockOut();
-      setSuccess('Clocked out successfully!');
-      fetchAttendanceRecords();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to clock out');
+      await persistCurrentUserProfile({ dark_mode: nextDarkMode });
+    } catch {
+      // Local theme already toggled; profile refresh on the next launch will re-seed it.
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+  const handleColorSave = async () => {
+    const ok = await handleColorChange(pendingColor);
+    if (ok) setColorPickerOpen(false);
   };
 
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString();
-  };
+  // ─── 14 PERFORMANCE TRACKING EFFECT ──────────────────────────────────────
+  useEffect(() => {
+    if (getPerformanceSessionActive()) {
+      const trackedSections = ["Employee Information Section", "Theme Settings Section", "Database Environment Section", "Install App Section", "Access Token Section"];
+      const checkSections = () => {
+        const checkInterval = setInterval(() => {
+          trackedSections.forEach((section) => {
+            if (getPerformanceSessionActive()) logComponentLoad(section);
+          });
+          clearInterval(checkInterval);
+        }, 100);
+      };
+      checkSections();
+      const rafId = requestAnimationFrame(() => {
+        setTimeout(() => {
+          finalizePerformanceReport();
+        }, 300);
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, [user]);
 
-  if (!userData) {
+  const totalFooterHeight = openAccordion ? Math.max(row1Height, 84) : (row1Height || 44);
+  const row1PanelBottom = totalFooterHeight;
+  const [meSectionHeaderHeight, setMeSectionHeaderHeight] = useState(44);
+  const meSectionHeaderRefs = useRef({});
+
+  const scrollHeaderToBottom = useCallback((el) => {
+    if (!el) return;
+    setTimeout(() => {
+      try {
+        el.scrollIntoView({ block: "end" });
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+  }, []);
+
+  const toggleMeSection = useCallback(
+    (id) => {
+      setMeSectionOpen((prev) => {
+        const next = prev === id ? "" : id;
+        scrollHeaderToBottom(meSectionHeaderRefs.current?.[id]);
+        return next;
+      });
+    },
+    [scrollHeaderToBottom]
+  );
+
+  useEffect(() => {
+    const id = meSectionOpen;
+    if (!id) return;
+    const el = meSectionHeaderRefs.current?.[id];
+    if (!el) return;
+    const height = el.offsetHeight;
+    if (height && Number.isFinite(height)) setMeSectionHeaderHeight(height);
+  }, [meSectionOpen, row1PanelBottom]);
+
+  // ─── 15 RENDER HELPERS ───────────────────────────────────────────────────
+  if (!user) {
     return (
-      <div className="container-fluid py-4">
+      <div className="container-fluid py-1">
         <div className="card">
           <div className="card-body text-center">
-            <div className="spinner-border text-primary mb-3" role="status">
+            <div className="mb-3 spinner-border text-primary" role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
-            <h2 className="h5 mb-2">Loading Profile...</h2>
-            <p className="text-muted">Please wait while we load your profile information.</p>
-            <div className="alert alert-warning mt-3">
-              <p className="mb-0 small">
-                <strong>Debug Info:</strong> User data not loaded. This might be due to authentication issues.
-              </p>
-            </div>
+            <h2 className="h5 mb-2">Loading...</h2>
           </div>
         </div>
       </div>
     );
   }
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const parsed = new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) return "N/A";
+    return parsed.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const environmentLastUpdated = formatDateTime(user?.updated_at || user?.last_login || null);
+  const appBuildLabel = formatDateTime(appBuildTimestamp);
+
+  const getRoleBadgeColor = (role) => {
+    switch (role?.toLowerCase()) {
+      case "admin":
+        return "danger";
+      case "manager":
+        return "warning";
+      case "employee":
+        return "primary";
+      case "viewer":
+        return "secondary";
+      default:
+        return "secondary";
+    }
+  };
+
+  const vacTotal = toNumber(user.vacation_days);
+  const vacUsed = toNumber(user.vacation_days_used);
+  const vacRemaining = Math.max(0, vacTotal - vacUsed);
+  const sickTotal = toNumber(user.sick_days);
+  const sickUsed = toNumber(user.sick_days_used);
+  const sickRemaining = Math.max(0, sickTotal - sickUsed);
+
+  const openLeaveModal = (type) => {
+    const defaultType = type || (vacRemaining > 0 ? "vacation" : sickRemaining > 0 ? "sick" : "onboarding");
+    setLeaveModalType(defaultType);
+    setLeaveForm({ start_date: "", end_date: "", notes: "" });
+    setLeaveError("");
+    setShowLeaveModal(true);
+  };
+
+  const canAccessSettings = hasPermission("settings", "read");
+  const canAccessGeneralSettings = ["manager", "admin"].includes((user?.role || "").toLowerCase());
+
+  const meSectionBodyMaxHeight = `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px - ${meSectionHeaderHeight}px - 24px)`;
+
+  const settingsPanelStyle = {
+    position: "fixed",
+    top: 0,
+    bottom: `${totalFooterHeight}px`,
+    left: 0,
+    right: 0,
+    width: "100%",
+    height: `calc(var(--vvp-height, 100dvh) - ${totalFooterHeight}px)`,
+    overflowY: "auto",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    backgroundColor: "var(--bs-body-bg)",
+    zIndex: 1000,
+    paddingTop: "1rem",
+    paddingLeft: "1rem",
+    paddingRight: "1rem",
+    paddingBottom: "0.25rem",
+    display: "flex",
+    flexDirection: "column",
+  };
+
+  /** General settings — opens upward from the profile footer (same pattern as me-section accordions). */
+  const generalPanelStyle = {
+    position: "fixed",
+    bottom: `${row1PanelBottom}px`,
+    left: 0,
+    right: 0,
+    maxHeight: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
+    overflowY: "auto",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
+    backgroundColor: "var(--bs-body-bg)",
+    zIndex: 1000,
+    paddingLeft: "0.75rem",
+    paddingRight: "0.75rem",
+    paddingTop: "0.75rem",
+    paddingBottom: "0.5rem",
+    display: "flex",
+    flexDirection: "column",
+    borderTopLeftRadius: "0.75rem",
+    borderTopRightRadius: "0.75rem",
+    boxShadow: "0 -4px 24px rgba(0, 0, 0, 0.12)",
+  };
+
+  // ─── 16 RENDER ───────────────────────────────────────────────────────────
   return (
-    <div className="container-fluid py-4">
-      <div className="card">
-        {/* Header */}
-        <div className="card-header">
-          <h1 className="h3 mb-0">My Profile</h1>
-        </div>
+    <div className="d-flex flex-column flex-grow-1 h-100 min-h-0 overflow-hidden profile-page " style={{ height: "var(--vvp-height, 100dvh)" }}>
+      <div
+        className="d-flex flex-column flex-grow-1 min-h-0 overflow-auto"
+        style={{
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          backgroundColor: "var(--bs-body-bg)",
+          paddingTop: "0.5rem",
+          paddingLeft: "0.5rem",
+          paddingRight: "0.5rem",
+          paddingBottom: "0.5rem",
+        }}
+      >
+        {openAccordion === "" && (
+          <>
+            <div style={{ flexGrow: 1, minHeight: 0 }} aria-hidden="true" />
 
-        <div className="card-body">
-          <div className="row g-4">
-            {/* User Information */}
-            <div className="col-12">
-              <h2 className="h5 mb-3">Personal Information</h2>
-              <div className="card">
-                <div className="card-body">
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <UserIcon className="h-5 w-5 text-primary" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="form-label small text-muted mb-1">Full Name</label>
-                          <p className="mb-0 fw-medium">{userData.first_name} {userData.last_name}</p>
-                        </div>
-                      </div>
+            <div style={{ flexShrink: 0, minHeight: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
+                <Panel_Profile_Information
+                  user={user}
+                  isOpen={meSectionOpen === "profile"}
+                  onToggle={() => toggleMeSection("profile")}
+                  maxHeight={meSectionBodyMaxHeight}
+                  formatDate={formatDate}
+                  getRoleBadgeColor={getRoleBadgeColor}
+                  headerRef={(el) => {
+                    meSectionHeaderRefs.current.profile = el;
+                  }}
+                />
+
+                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.wage = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "wage"}
+                    onClick={() => toggleMeSection("wage")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("wage");
+                      }
+                    }}
+                  >
+                    <div className="ui-flex-center-gap-1">
+                      <CurrencyDollarIcon className="ui-icon-4" />
+                      <span className="fw-semibold">Wage</span>
                     </div>
-                    <div className="col-md-6">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <UserIcon className="h-5 w-5 text-success" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="form-label small text-muted mb-1">Username</label>
-                          <p className="mb-0 fw-medium">{userData.username}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <EnvelopeIcon className="h-5 w-5 text-info" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="form-label small text-muted mb-1">Email Address</label>
-                          <p className="mb-0 fw-medium">{userData.email}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <ShieldCheckIcon className="h-5 w-5 text-warning" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="form-label small text-muted mb-1">Role</label>
-                          <p className="mb-0 fw-medium text-capitalize">{userData.role}</p>
-                        </div>
-                      </div>
-                    </div>
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "wage" ? "rotate(180deg)" : "none" }} />
                   </div>
-                  <div className="border-top pt-3 mt-3">
-                    <div className="col-12">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <CalendarIcon className="h-5 w-5 text-secondary" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="form-label small text-muted mb-1">Account Created</label>
-                          <p className="mb-0 fw-medium">
-                            {userData.created_at ? new Date(userData.created_at).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            }) : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
+                </div>
+
+                <Panel_Profile_TimeOff
+                  user={user}
+                  isOpen={meSectionOpen === "benefits"}
+                  onToggle={() => toggleMeSection("benefits")}
+                  maxHeight={meSectionBodyMaxHeight}
+                  insurancePlans={insurancePlans}
+                  leaveRequestsLoading={leaveRequestsLoading}
+                  vacUsed={vacUsed}
+                  vacTotal={vacTotal}
+                  vacRemaining={vacRemaining}
+                  sickUsed={sickUsed}
+                  sickTotal={sickTotal}
+                  sickRemaining={sickRemaining}
+                  vacationRequests={vacationRequests}
+                  sickRequests={sickRequests}
+                  onOpenNewRequest={openLeaveModal}
+                  headerRef={(el) => {
+                    meSectionHeaderRefs.current.benefits = el;
+                  }}
+                />
+
+                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  {meSectionOpen === "settings" && (
+                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
+                      <Modal_Settings
+                        embedded={true}
+                        isMobile={isMobile}
+                        row1PanelBottom={row1PanelBottom}
+                        isDarkMode={isDarkMode}
+                        toggleDarkMode={handleDarkModeToggle}
+                        employeeColor={employeeColor}
+                        pendingColor={pendingColor}
+                        setPendingColor={setPendingColor}
+                        colorPickerOpen={colorPickerOpen}
+                        setColorPickerOpen={setColorPickerOpen}
+                        colorUpdating={colorUpdating}
+                        colorMessage={colorMessage}
+                        handleColorSave={handleColorSave}
+                        FooterAlignIcon={FooterAlignIcon}
+                        cycleFooterAlign={cyclePersistedFooterAlign}
+                        user={user}
+                        setSignatureModalOpen={setSignatureModalOpen}
+                        isTrainingMode={isTrainingMode}
+                        toggleViewMode={toggleViewMode}
+                        buttonTextSize={buttonTextSize}
+                        cycleButtonTextSize={cyclePersistedButtonTextSize}
+                        handleLogout={handleLogout}
+                        currentDbEnvironment={currentDbEnvironment}
+                        dbLoading={dbLoading}
+                        dbMessage={dbMessage}
+                        dbError={dbError}
+                        handleSwitchEnvironment={handleSwitchEnvironment}
+                        DB_ENVIRONMENTS={DB_ENVIRONMENTS}
+                        environmentLastUpdated={environmentLastUpdated}
+                        appVersion={appVersion}
+                        appBuildLabel={appBuildLabel}
+                        HelpIcon={HelpIcon}
+                        onClose={() => setMeSectionOpen("")}
+                        onSave={() => setMeSectionOpen("")}
+                        showCloseButton={false}
+                        startupPage={user?.startup_page || "schedule"}
+                        setStartupPage={setPersistedStartupPage}
+                      />
                     </div>
+                  )}
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.settings = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "settings"}
+                    onClick={() => toggleMeSection("settings")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("settings");
+                      }
+                    }}
+                  >
+                    <div className="ui-flex-center-gap-1">
+                      <CogIcon className="ui-icon-4" />
+                      <span className="fw-semibold">Settings</span>
+                    </div>
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
                   </div>
                 </div>
               </div>
             </div>
+          </>
+        )}
+      </div>
 
-            {/* Dark Mode Preference */}
-            <div className="col-12">
-              <h2 className="h5 mb-3">Appearance Settings</h2>
-              <div className="card">
-                <div className="card-body">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <div className="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                          <SunIcon className="h-5 w-5 text-warning" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="form-label small text-muted mb-1">Dark Mode</label>
-                        <p className="mb-0 small">Toggle between light and dark theme</p>
-                      </div>
-                    </div>
-                    <DarkModeToggle />
-                  </div>
+      {openAccordion === "general" && canAccessGeneralSettings && (
+        <Panel_General
+          panelStyle={generalPanelStyle}
+          openAccordions={openAccordions}
+          toggleAccordion={toggleAccordion}
+          uiScale={uiScale}
+          setUiScale={setPersistedUiScale}
+          cycleUiScale={cyclePersistedUiScale}
+          syncLoading={syncLoading}
+          handleManualSync={handleManualSync}
+          user={user}
+          companyInfo={companyInfo}
+          companyLoading={companyLoading}
+          handleCompanyInfoChange={handleCompanyInfoChange}
+          handleSaveCompanyInfo={handleSaveCompanyInfo}
+          localBranding={localBranding}
+          brandingLogoUploading={brandingLogoUploading}
+          logoPickerOpen={logoPickerOpen}
+          setLogoPickerOpen={setLogoPickerOpen}
+          logoPickerLoading={logoPickerLoading}
+          logoPickerError={logoPickerError}
+          logoPickerDocs={logoPickerDocs}
+          handleBrandingChange={handleBrandingChange}
+          handleUploadBrandingLogo={handleUploadBrandingLogo}
+          handleSelectLogoFromDocuments={handleSelectLogoFromDocuments}
+          handleSaveBranding={handleSaveBranding}
+          loadLogoPickerDocs={loadLogoPickerDocs}
+          notifications={notifications}
+          handleNotificationChange={handleNotificationChange}
+          handleSaveNotifications={handleSaveNotifications}
+          portalBranding={portalBranding}
+          portalBrandingLoading={portalBrandingLoading}
+          heroImageUploading={heroImageUploading}
+          handlePortalBrandingChange={handlePortalBrandingChange}
+          handleSavePortalBranding={handleSavePortalBranding}
+          handleUploadHeroImage={handleUploadHeroImage}
+          resetPortalBrandingDefaults={resetPortalBrandingDefaults}
+          stripeSettings={stripeSettings}
+          stripeSettingsLoading={stripeSettingsLoading}
+          stripeTestLoading={stripeTestLoading}
+          handleStripeSettingsChange={handleStripeSettingsChange}
+          handleSaveStripeSettings={handleSaveStripeSettings}
+          handleStripeTestCheckout={handleStripeTestCheckout}
+          settingsSuccess={settingsSuccess}
+          HelpIcon={HelpIcon}
+          onCheckStartDatabase={handleCheckStartDatabase}
+          dbCheckLoading={dbCheckLoading}
+          dbCheckStatus={dbCheckStatus}
+          onSave={handleSaveGeneralPanel}
+          onClose={() => setOpenAccordion("")}
+          saving={companyLoading || portalBrandingLoading || brandingLogoUploading || stripeSettingsLoading}
+        />
+      )}
+
+      {openAccordion === "database" && canAccessSettings && (
+        <Panel_Database
+          isMobile={isMobile}
+          settingsPanelStyle={settingsPanelStyle}
+          onClose={() => setOpenAccordion("")}
+          availableTables={availableTables}
+          selectedTable={selectedTable}
+          setSelectedTable={setSelectedTable}
+          tableColumns={tableColumns}
+          csvData={csvData}
+          csvHeaders={csvHeaders}
+          columnMapping={columnMapping}
+          handleColumnMappingChange={handleColumnMappingChange}
+          handleFileSelect={handleFileSelect}
+          handleImport={handleImport}
+          importLoading={importLoading}
+          importResult={importResult}
+          resetImport={resetImport}
+          csvFileInputRef={csvFileInputRef}
+          settingsError={settingsError}
+          HelpIcon={HelpIcon}
+        />
+      )}
+
+      {/* Leave Management Panel */}
+      {leaveManagementOpen && (
+        <div style={{ position: "fixed", bottom: `${row1PanelBottom}px`, left: 0, right: 0, maxHeight: "calc(100vh - 164px)", overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none", backgroundColor: "var(--bs-body-bg)", zIndex: 1000 }} className="accordion-popup">
+          <div className="border-0 card rounded-0" style={{ minHeight: "200px" }}>
+            <div className="card-body">
+              <h6 className="card-title mb-3">Leave Management</h6>
+              {leaveRequestsLoading ? (
+                <div className="py-1 text-center">
+                  <div className="spinner-border spinner-border-sm text-primary" role="status" />
                 </div>
-              </div>
-            </div>
-
-            {/* Password Change */}
-            <div className="col-12">
-              <h2 className="h5 mb-3">Security</h2>
-              <div className="card">
-                <div className="card-body">
-                  <div className="d-flex align-items-center justify-content-between mb-3">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <div className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                          <KeyIcon className="h-5 w-5 text-danger" />
+              ) : (
+                <>
+                  <div className="g-2 mb-3 row">
+                    <div className="col-6">
+                      <div className="bg-light p-0 rounded small">
+                        <div className="fw-semibold text-primary">Vacation Days</div>
+                        <div className="mb-1 small text-muted">
+                          {vacUsed} / {vacTotal} used
                         </div>
-                      </div>
-                      <div>
-                        <h3 className="h6 mb-1">Password</h3>
-                        <p className="mb-0 small text-muted">Update your password to keep your account secure</p>
+                        <div className="progress">
+                          <div className="bg-primary progress-bar" style={{ width: `${vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0}%` }} />
+                        </div>
+                        <div className="mt-1 ui-small-muted">{vacRemaining} remaining</div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setShowPasswordChange(!showPasswordChange)}
-                      className="btn btn-primary"
-                    >
-                      Change Password
+                    <div className="col-6">
+                      <div className="bg-light p-0 rounded small">
+                        <div className="fw-semibold text-warning">Sick Days</div>
+                        <div className="mb-1 small text-muted">
+                          {sickUsed} / {sickTotal} used
+                        </div>
+                        <div className="progress">
+                          <div className="bg-warning progress-bar" style={{ width: `${sickTotal > 0 ? Math.min(100, (sickUsed / sickTotal) * 100) : 0}%` }} />
+                        </div>
+                        <div className="mt-1 ui-small-muted">{sickRemaining} remaining</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <h6 className="fw-semibold mb-2 ui-text-sm">Pending Requests</h6>
+                    <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status === "pending"))} emptyMessage="No pending requests" />
+                  </div>
+                  <div className="mb-3">
+                    <h6 className="fw-semibold mb-2 ui-text-sm">History</h6>
+                    <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button type="button" className="btn btn-primary btn-sm flex-grow-1" onClick={() => openLeaveModal()}>
+                      <PlusCircleIcon className="h-4 me-1 w-4" style={{ display: "inline" }} />
+                      Request
+                    </button>
+                    <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setLeaveManagementOpen(false)}>
+                      Close
                     </button>
                   </div>
-
-                  {showPasswordChange && (
-                    <div className="border-top pt-3">
-                      <form onSubmit={handlePasswordUpdate}>
-                        <div className="row g-3">
-                          <div className="col-md-6">
-                            <label className="form-label">Current Password</label>
-                            <input
-                              type="password"
-                              name="current_password"
-                              value={passwordData.current_password}
-                              onChange={handlePasswordChange}
-                              className="form-control"
-                              placeholder="Enter your current password"
-                              required
-                            />
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label">New Password</label>
-                            <input
-                              type="password"
-                              name="new_password"
-                              value={passwordData.new_password}
-                              onChange={handlePasswordChange}
-                              className="form-control"
-                              placeholder="Enter your new password"
-                              required
-                            />
-                            <div className="form-text">Minimum 6 characters</div>
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label">Confirm New Password</label>
-                            <input
-                              type="password"
-                              name="confirm_password"
-                              value={passwordData.confirm_password}
-                              onChange={handlePasswordChange}
-                              className="form-control"
-                              placeholder="Confirm your new password"
-                              required
-                            />
-                          </div>
-                          <div className="col-12">
-                            <div className="d-flex gap-2">
-                              <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn btn-primary"
-                              >
-                                {loading ? (
-                                  <>
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Updating...
-                                  </>
-                                ) : (
-                                  'Update Password'
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowPasswordChange(false);
-                                  setPasswordData({
-                                    current_password: '',
-                                    new_password: '',
-                                    confirm_password: ''
-                                  });
-                                }}
-                                className="btn btn-outline-secondary"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Attendance */}
-            <div className="col-12">
-              <h2 className="h5 mb-3">Attendance</h2>
-              <div className="card">
-                <div className="card-body">
-                  <div className="d-flex align-items-center justify-content-between mb-3">
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '2.5rem', height: '2.5rem' }}>
-                          <ClockIcon className="h-5 w-5 text-info" />
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="h6 mb-1">Time Tracking</h3>
-                        <p className="mb-0 small text-muted">Clock in and out of your shifts</p>
-                      </div>
-                    </div>
-                    <div className="d-flex gap-2">
-                      <button
-                        onClick={clockIn}
-                        disabled={!hasEmployeeProfile}
-                        className="btn btn-success btn-sm"
-                      >
-                        <ClockIcon className="h-4 w-4 me-1" />
-                        Clock In
-                      </button>
-                      <button
-                        onClick={clockOut}
-                        disabled={!hasEmployeeProfile}
-                        className="btn btn-danger btn-sm"
-                      >
-                        <ClockIcon className="h-4 w-4 me-1" />
-                        Clock Out
-                      </button>
-                    </div>
-                  </div>
-
-                  {!hasEmployeeProfile ? (
-                    <div className="alert alert-warning">
-                      <div className="d-flex align-items-center">
-                        <ExclamationTriangleIcon className="h-5 w-5 text-warning me-2" />
-                        <div>
-                          <strong>No Employee Profile:</strong> Your user account is not linked to an employee profile. 
-                          Attendance tracking is not available. Please contact your administrator to set up an employee profile.
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="alert alert-info">
-                      <div className="d-flex align-items-center">
-                        <InformationCircleIcon className="h-5 w-5 text-info me-2" />
-                        <div>
-                          <strong>Note:</strong> Attendance tracking requires an employee profile to be linked to your user account. 
-                          If you don't see any attendance records, please contact your administrator.
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="table-responsive">
-                    <table className="table table-striped">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Clock In</th>
-                          <th>Clock Out</th>
-                          <th>Total Hours</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {attendanceRecords.length === 0 ? (
-                          <tr>
-                            <td colSpan="4" className="text-center py-4">
-                              <DocumentTextIcon className="h-12 w-12 text-muted mx-auto mb-2" />
-                              <p className="text-muted">No attendance records found</p>
-                            </td>
-                          </tr>
-                        ) : (
-                          attendanceRecords.map((record) => (
-                            <tr key={record.id}>
-                              <td className="fw-medium">{formatDate(record.date)}</td>
-                              <td>
-                                {record.clock_in ? (
-                                  <span className="badge bg-success">
-                                    {formatTime(record.clock_in)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted">-</span>
-                                )}
-                              </td>
-                              <td>
-                                {record.clock_out ? (
-                                  <span className="badge bg-danger">
-                                    {formatTime(record.clock_out)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted">-</span>
-                                )}
-                              </td>
-                              <td>
-                                {record.total_hours ? (
-                                  <span className="badge bg-primary">
-                                    {record.total_hours}h
-                                  </span>
-                                ) : (
-                                  <span className="text-muted">-</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           </div>
-
-          {/* Messages */}
-          {error && (
-            <div className="alert alert-danger mt-3">
-              <div className="d-flex align-items-center">
-                <ExclamationTriangleIcon className="h-5 w-5 text-danger me-2" />
-                <div>{error}</div>
-              </div>
-            </div>
-          )}
-          
-          {success && (
-            <div className="alert alert-success mt-3">
-              <div className="d-flex align-items-center">
-                <CheckCircleIcon className="h-5 w-5 text-success me-2" />
-                <div>{success}</div>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
+
+      {(canAccessSettings || canAccessGeneralSettings) && (
+        <>
+          {/* Footer Tabs */}
+          <footer
+            ref={row1Ref}
+            className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 profile-footer-nav shadow-sm"
+            style={{
+              zIndex: 1050,
+              ...(isMobile
+                ? {
+                    position: "fixed",
+                    bottom: "var(--keyboard-offset, 0px)",
+                    left: 0,
+                    right: 0,
+                  }
+                : null),
+            }}
+          >
+            <div className="bg-white dark:bg-gray-800 ps-2 pe-2">
+              <div className="app-footer-stack">
+                {/* Row 1: Settings actions when an accordion panel (general or database) is open */}
+                {openAccordion === "general" && (
+                  <div className={`align-items-center app-footer-toolbar border-bottom border-gray-200 dark:border-gray-700 d-flex pb-1 pt-1 w-100 ${footerJustify}`}>
+                    <div className="d-flex align-items-center gap-1">
+                      <Button_Toolbar
+                        icon={CheckIcon}
+                        label={
+                          companyLoading || portalBrandingLoading || brandingLogoUploading || stripeSettingsLoading
+                            ? "Saving..."
+                            : "Save"
+                        }
+                        onClick={handleSaveGeneralPanel}
+                        className="btn-outline-secondary"
+                        disabled={companyLoading || portalBrandingLoading || brandingLogoUploading || stripeSettingsLoading}
+                        title="Save"
+                      />
+                      <Button_Toolbar
+                        icon={XMarkIcon}
+                        label="Close"
+                        onClick={() => setOpenAccordion("")}
+                        className="btn-outline-secondary"
+                        title="Close"
+                      />
+                    </div>
+                  </div>
+                )}
+                {openAccordion === "database" && (
+                  <div className={`align-items-center app-footer-toolbar border-bottom border-gray-200 dark:border-gray-700 d-flex pb-1 pt-1 w-100 ${footerJustify}`}>
+                    <div className="d-flex align-items-center gap-1">
+                      <Button_Toolbar
+                        icon={XMarkIcon}
+                        label="Close"
+                        onClick={() => setOpenAccordion("")}
+                        className="btn-outline-secondary"
+                        title="Close"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Row 2: Standard Profile Navigation (Data, General Settings) */}
+                <div className="align-items-center app-footer-toolbar d-flex search-hide-on-focus w-100">
+                  <div className={`d-flex align-items-center gap-1 flex-grow-1 min-w-0 mt-1 ${footerJustify}`}>
+                    {canAccessSettings && (
+                      <Button_Toolbar
+                        icon={CircleStackIcon}
+                        label="Data"
+                        onClick={() => setOpenAccordion(openAccordion === "database" ? "" : "database")}
+                        className={`btn btn-sm ${isTrainingMode ? "ps-0 pe-1" : "p-0"} flex-shrink-0 d-flex align-items-center profile-footer-btn ${openAccordion === "database" ? "btn-primary" : "btn-outline-secondary"}`}
+                        data-active={openAccordion === "database"}
+                        title="Data"
+                      />
+                    )}
+                    {canAccessGeneralSettings && (
+                      <Button_Toolbar
+                        icon={CogIcon}
+                        label=""
+                        onClick={() => setOpenAccordion(openAccordion === "general" ? "" : "general")}
+                        className={`btn btn-sm p-0 flex-shrink-0 d-flex align-items-center profile-footer-btn profile-footer-general-btn ${openAccordion === "general" ? "btn-primary" : "btn-outline-secondary"}`}
+                        data-active={openAccordion === "general"}
+                        title="General"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-grow-1 min-w-0" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
+          </footer>
+        </>
+      )}
+
+      {/* Signature Modal */}
+      <Modal_Signature isOpen={signatureModalOpen} onClose={() => setSignatureModalOpen(false)} userId={user?.id} />
+
+      {/* Request Modal */}
+      <Modal_Profile_LeaveRequest
+        isOpen={showLeaveModal}
+        onClose={() => {
+          setShowLeaveModal(false);
+          setLeaveError("");
+        }}
+        onSubmit={handleLeaveSubmit}
+        leaveForm={leaveForm}
+        setLeaveForm={setLeaveForm}
+        leaveModalType={leaveModalType}
+        setLeaveModalType={setLeaveModalType}
+        leaveError={leaveError}
+        setLeaveError={setLeaveError}
+        leaveSubmitting={leaveSubmitting}
+      />
+
+      {selectedSlip && <Modal_TemplateUse page="employees" entity={selectedSlip} employee={user} currentUser={user} settings={{ ...companyInfo, company_logo_data_url: companyLogoDataUrl }} filterType="payslip" onClose={() => setSelectedSlip(null)} />}
     </div>
   );
 };

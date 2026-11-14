@@ -1,391 +1,822 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { ExclamationTriangleIcon, PencilIcon, PlusIcon, CameraIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
-import { inventoryAPI, itemsAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import BarcodeScanner from '../components/BarcodeScanner';
-import ItemForm from '../components/ItemForm';
-import PermissionGate from '../components/PermissionGate';
+/*
+ * ============================================================
+ * FILE: Inventory.jsx
+ *
+ * PURPOSE:
+ *   Displays and manages the business inventory list. Allows users to view,
+ *   search, filter, create, edit, and delete inventory items (Products, Resources,
+ *   Assets, Locations, and generic Items). Access is gated by role permissions.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports              — React, router, icons, store, API, and component imports
+ *   [2]  State & Refs         — Editing target, search term, type/stock filter toggles, scroll ref
+ *   [3]  Lifecycle            — One-shot data fetch on mount; auto-scroll to bottom on data change
+ *   [4]  Data Loading         — loadInventoryData fetches all inventory items from the API
+ *   [5]  CRUD Handlers        — handleUpdateInventory, handleOpenBulkImport, handleSubmitUpdate,
+ *                               handleBulkImportItems, handleDeleteItem
+ *   [6]  Display Utilities    — getItemTypeLabel, isLocationOrAsset,
+ *                               isLowStock, getTypeFilterButtonClass, getStockFilterButtonClass
+ *                               — badge variants via colorMapping.js utilities
+ *   [7]  Derived Data         — filteredInventory memoized from search, type, and stock filters
+ *   [8]  Render               — Header, error banner, upside-down scrollable table, footer
+ *                               controls (search, Add, Type filter, Stock filter), and modals
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Copilot | Added type filter help popover trigger (`?`) in footer dropdown
+ *   2026-03-19 | GitHub Copilot | Replaced single-add with spreadsheet-style bulk import modal flow
+ *   2026-07-24 | GitHub Copilot | Switched delete to a selection-first bulk action and removed single-item delete from inventory row/edit flows
+ *   2026-09-11 | GitHub Copilot | Removed dead inventory delete/UI imports and aligned memo dependencies for ESLint
+ * ============================================================
+ */
 
-function InventoryUpdateForm({ inventoryItem, onSubmit, onCancel }) {
-  const [quantity, setQuantity] = useState(inventoryItem?.quantity || 0);
-  const [minStockLevel, setMinStockLevel] = useState(inventoryItem?.min_stock_level || 10);
+// ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
+import React, { useCallback, useEffect, useState, useMemo, useRef } from "react";
+import { S } from "../utils/strings";
+import { itemTypeVariant, stockVariant } from "../utils/colorMapping";
+import Badge from "./components/badges/Badge";
+import useFetchOnce from "../services/useFetchOnce";
+import usePagePermission from "../services/usePagePermission";
+import useViewMode from "../services/useViewMode";
+import { showConfirm } from "../services/showConfirm";
+import PageLayout from "./components/layout/Page_Layout";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableRow from "./components/tables/Page_TableRow";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "@heroicons/react/24/outline";
+import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import useStore from "../services/useStore";
+import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI } from "../services/api";
+import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Suppliers_Panel from "./components/panels/Panel_Suppliers";
+import Modal_Bulk_Import_Items from "./components/modals/Modal_ImportItems";
+import Modal_Inventory_AddItem from "./components/modals/Modal_Inventory_AddItem";
+import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settings";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(inventoryItem.item_id, { 
-      quantity: parseInt(quantity),
-      min_stock_level: parseInt(minStockLevel)
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Update Inventory
-        </h3>
-      </div>
-
-      <div>
-        <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-          Current Quantity *
-        </label>
-        <input
-          type="number"
-          id="quantity"
-          min="0"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="input-field mt-1"
-          placeholder="Enter current quantity"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="minStockLevel" className="block text-sm font-medium text-gray-700">
-          Minimum Stock Level *
-        </label>
-        <input
-          type="number"
-          id="minStockLevel"
-          min="0"
-          value={minStockLevel}
-          onChange={(e) => setMinStockLevel(e.target.value)}
-          className="input-field mt-1"
-          placeholder="Enter minimum stock level"
-        />
-      </div>
-
-      <div className="flex justify-end space-x-3 pt-4">
-        <button type="button" onClick={onCancel} className="btn-secondary">
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary">
-          Update Inventory
-        </button>
-      </div>
-    </form>
-  );
-}
+const ASSET_UNITS_PAGE_SIZE_KEY = "inventory_asset_units_page_size";
+const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function Inventory() {
-  const { 
-    inventory, setInventory, items, setItems,
-    loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
-  } = useStore();
+  // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
+  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
   // Use the permission refresh hook
-  usePermissionRefresh();
 
-  // Check permissions at page level
-  if (!hasPermission('inventory', 'read') && 
-      !hasPermission('inventory', 'write') && 
-      !hasPermission('inventory', 'delete') && 
-      !hasPermission('inventory', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
+  usePagePermission("inventory");
 
+  // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
-  const [scannedCode, setScannedCode] = useState('');
+  const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
+  const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
+  const [showDiscountRules, setShowDiscountRules] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState([]); // multi-select: [] = all, else subset of 'PRODUCT', 'RESOURCE', 'ASSET', ...
+  const [stockFilter, setStockFilter] = useState("all"); // 'all', 'low', 'ok'
+  const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
+  const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
+  const [assetUnitCounts, setAssetUnitCounts] = useState({});
+  const [showPageControls, setShowPageControls] = useState(false);
+  const [assetUnitsPerPage, setAssetUnitsPerPage] = useState(() => {
+    const saved = parseInt(localStorage.getItem(ASSET_UNITS_PAGE_SIZE_KEY) || "", 10);
+    return ASSET_UNITS_PAGE_SIZE_OPTIONS.includes(saved) ? saved : 25;
+  });
+  const [inventoryCategories, setInventoryCategories] = useState([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const selectionMode = selectedIds.size > 0;
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState("name");
+  const [sortAsc, setSortAsc] = useState(true);
+  const { isTrainingMode } = useViewMode();
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("inventory");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
 
   useEffect(() => {
-    loadInventoryData();
-  }, []);
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
 
+  const scrollRef = useRef(null);
+
+  const multiEditFields = useMemo(() => {
+    const clearOption = { value: "__CLEAR__", label: "— Clear value —" };
+    const locations = [...new Set(inventory.flatMap((item) => [item.location, (item.type || "").toUpperCase() === "LOCATION" ? item.name : ""]).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const categories = [...new Set(inventory.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+    return [
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        options: [
+          { value: "PRODUCT", label: "Product" },
+          { value: "BUNDLE", label: "Bundle" },
+          { value: "MIX", label: "Mix" },
+          { value: "RESOURCE", label: "Resource" },
+          { value: "ASSET", label: "Asset" },
+          { value: "LOCATION", label: "Location" },
+          { value: "ITEM", label: "Item" },
+        ],
+      },
+      { key: "location", label: "Location", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, clearOption, ...locations.map((location) => ({ value: location, label: location }))] },
+      { key: "min_stock_level", label: "Min Stock Level", type: "number", placeholder: "e.g. 10", min: 0 },
+      { key: "category", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, clearOption, ...categories.map((category) => ({ value: category, label: category }))] },
+      {
+        key: "cost_type",
+        label: "Cost Type",
+        type: "select",
+        options: [
+          { value: "one_time", label: "One-time" },
+          { value: "recurring", label: "Recurring" },
+        ],
+      },
+    ];
+  }, [inventory]);
+
+  const typeFilterOptions = useMemo(
+    () => [
+      {
+        value: "all",
+        label: "All Types",
+        description: "Shows every inventory item type together (Products, Resources, Assets, Locations, and Items). Use this to clear type filtering.",
+      },
+      {
+        value: "PRODUCT",
+        label: "Products",
+        description: "Shows sellable product records only. New inventory entries saved as Product appear when this filter is selected.",
+      },
+      {
+        value: "RESOURCE",
+        label: "Resources",
+        description: "Shows consumable/internal resource items used by the business. Use this to review stock for resources only.",
+      },
+      {
+        value: "ASSET",
+        label: "Assets",
+        description: "Shows long-term business assets (equipment/property style items). Asset entries appear here when this filter is active.",
+      },
+      {
+        value: "LOCATION",
+        label: "Locations",
+        description: "Shows location-type inventory records only. Use this when managing location entries separately from stock items.",
+      },
+      {
+        value: "ITEM",
+        label: "Items",
+        description: "Shows generic item records that are not categorized as Product, Resource, Asset, or Location.",
+      },
+      {
+        value: "BUNDLE",
+        label: "Bundles",
+        description: "Shows bundle items — pre-defined sets of products sold together at a fixed price. When a bundle is sold, each component product's stock decrements automatically.",
+      },
+      {
+        value: "MIX",
+        label: "Mixes",
+        description: "Shows mix items — client picks a fixed number of products from a predefined list (e.g. any 10 blankets). Supports per-product maximums and fixed or percentage pricing.",
+      },
+    ],
+    []
+  );
+
+  const stockFilterOptions = useMemo(
+    () => [
+      {
+        value: "all",
+        label: "All Stock",
+        description: "Shows every inventory record regardless of stock level.",
+      },
+      {
+        value: "low",
+        label: "Low Stock",
+        description: "Shows only items that are at or below minimum stock level.",
+      },
+      {
+        value: "ok",
+        label: "In Stock",
+        description: "Shows items currently above minimum stock level and considered stocked.",
+      },
+    ],
+    []
+  );
+
+  const sortedTypeFilterOptions = useMemo(() => {
+    const pinned = typeFilterOptions.find((option) => option.value === "all");
+    const rest = sortItemsAlphabetically(
+      typeFilterOptions.filter((option) => option.value !== "all"),
+      ["label"]
+    );
+    return pinned ? [pinned, ...rest] : rest;
+  }, [typeFilterOptions]);
+
+  const sortedStockFilterOptions = useMemo(() => {
+    const pinned = stockFilterOptions.find((option) => option.value === "all");
+    const rest = sortItemsAlphabetically(
+      stockFilterOptions.filter((option) => option.value !== "all"),
+      ["label"]
+    );
+    return pinned ? [pinned, ...rest] : rest;
+  }, [stockFilterOptions]);
+
+  // ─── 4 LIFECYCLE / EFFECTS ───────────────────────────────────────────────────
+  useFetchOnce(() => {
+    loadInventoryData();
+    loadInventoryCategories();
+  });
+
+  const loadInventoryCategories = async () => {
+    try {
+      const res = await inventoryCategoriesAPI.getAll();
+      setInventoryCategories(res?.data || []);
+    } catch (err) {
+      console.warn("Failed to load inventory categories:", err);
+    }
+  };
+
+  // ─── 5 DATA LOADING ──────────────────────────────────────────────────────────
   const loadInventoryData = async () => {
     setLoading(true);
     try {
-      const [inventoryRes, itemsRes] = await Promise.all([
-        inventoryAPI.getAll(),
-        itemsAPI.getAll()
-      ]);
+      const [inventoryRes, summaryRes] = await Promise.all([inventoryAPI.getAll(), featuresAPI.getInventorySummary().catch(() => ({ data: {} }))]);
 
-      setInventory(inventoryRes.data);
-      setItems(itemsRes.data);
+      // Handle both direct data and response.data formats
+      const inventoryData = inventoryRes?.data ?? inventoryRes;
+      const summaryData = summaryRes?.data ?? summaryRes ?? {};
+
+      if (Array.isArray(inventoryData)) {
+        setInventory(inventoryData);
+
+        const assets = inventoryData.filter((item) => (item?.type || "").toUpperCase() === "ASSET" && item?.id);
+        if (assets.length > 0) {
+          try {
+            const counts = await Promise.all(
+              assets.map(async (asset) => {
+                const res = await assetUnitsAPI.list(asset.id);
+                const list = res?.data ?? res ?? [];
+                return [asset.id, Array.isArray(list) ? list.length : 0];
+              })
+            );
+            setAssetUnitCounts(Object.fromEntries(counts));
+          } catch {
+            setAssetUnitCounts({});
+          }
+        } else {
+          setAssetUnitCounts({});
+        }
+      } else {
+        console.error("Invalid inventory data format:", inventoryData);
+        setInventory([]);
+        setAssetUnitCounts({});
+      }
+
+      setFeatureSummary(typeof summaryData === "object" ? summaryData : {});
       clearError();
     } catch (err) {
-      setError('Failed to load inventory data');
-      console.error(err);
+      setError("Failed to load inventory data");
+      console.error("Error loading inventory:", err);
+      setInventory([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // ─── 6 CRUD HANDLERS ─────────────────────────────────────────────────────────
   const handleUpdateInventory = (inventoryItem) => {
-    if (!hasPermission('inventory', 'write')) {
-      setError('You do not have permission to update inventory');
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to update inventory");
       return;
     }
     setEditingInventory(inventoryItem);
-    openModal('inventory-form');
+    openModal("inventory-form");
   };
 
-  const handleCreateItem = () => {
-    if (!hasPermission('inventory', 'write')) {
-      setError('You do not have permission to create items');
+  const handleOpenBulkImport = () => {
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to import items");
       return;
     }
-    setScannedCode('');
-    openModal('item-form');
+    setShowBulkImport(true);
   };
 
-  const handleOpenScanner = () => {
-    setScannedCode('');
-    openModal('barcode-scan');
-  };
-
-  const handleDetectedBarcode = (code) => {
-    const scanned = String(code || '').trim();
-    setScannedCode(scanned);
-    // If item already exists, show notification instead of opening the modal
-    const exists = items.some((p) => (p?.sku || '').trim() === scanned && scanned.length > 0);
-    if (exists) {
-      closeModal();
-      setError(`Item with SKU "${scanned}" already exists in the database.`);
+  const handleOpenAddItem = () => {
+    if (!hasPermission("inventory", "write")) {
+      setError("You do not have permission to add items");
       return;
     }
-    // Otherwise open item form prefilled with scanned code
-    clearError();
-    openModal('item-form');
+    setShowAddItemModal(true);
   };
 
-  const handleSubmitUpdate = async (itemId, updateData) => {
+  const handleCreateInventory = async (createData) => {
     try {
-      await inventoryAPI.update(itemId, updateData.quantity, { min_stock_level: updateData.min_stock_level });
+      await inventoryAPI.create(createData);
+      await loadInventoryData();
+      setShowAddItemModal(false);
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to create inventory item";
+      setError(String(detail));
+    }
+  };
+
+  const handleCreateInventoryWithExtras = async (createData, extras = {}) => {
+    try {
+      const createResponse = await inventoryAPI.create(createData);
+      const createdItem = createResponse?.data ?? createResponse;
+
+      if (createdItem?.id && extras.pendingPhoto) {
+        await inventoryAPI.uploadImageFile(createdItem.id, extras.pendingPhoto, true);
+      }
+
+      if (createdItem?.id && createData.type === "BUNDLE" && Array.isArray(extras.bundleComponents) && extras.bundleComponents.length > 0) {
+        await Promise.all(extras.bundleComponents.map((component) => bundleAPI.addComponent(createdItem.id, component.id, parseFloat(component.quantity) || 1)));
+      }
+
+      if (createdItem?.id && createData.type === "MIX") {
+        if (extras.mixConfig) {
+          await mixAPI.saveConfig({
+            inventory_id: createdItem.id,
+            total_quantity: parseInt(extras.mixConfig.total_quantity, 10) || 10,
+            has_max_per_product: extras.mixConfig.max_per_product != null,
+            max_per_product: extras.mixConfig.max_per_product ?? null,
+          });
+        }
+
+        if (Array.isArray(extras.mixComponents) && extras.mixComponents.length > 0) {
+          await Promise.all(extras.mixComponents.map((component) => mixAPI.addComponent(createdItem.id, component.id, component.max_quantity ?? null)));
+        }
+      }
+
+      await loadInventoryData();
+      setShowAddItemModal(false);
+      clearError();
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to create inventory item";
+      setError(String(detail));
+    }
+  };
+
+  const handleSubmitUpdate = async (inventoryId, updateData) => {
+    try {
+      await inventoryAPI.update(inventoryId, updateData);
       // Reload inventory to get updated data
       loadInventoryData();
       closeModal();
       clearError();
     } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'Failed to update inventory';
+      const detail = err?.response?.data?.detail || err?.message || "Failed to update inventory";
       setError(String(detail));
-      console.error('Inventory update error:', err?.response || err);
+      console.error("Inventory update error:", err?.response || err);
     }
   };
 
-  const handleSubmitNewItem = async (itemData, { initialQuantity }) => {
+  const handleBulkImportItems = async (rows) => {
+    const res = await inventoryAPI.bulkImport(rows);
+    await loadInventoryData();
+    setShowBulkImport(false);
+    clearError();
+    return res?.data ?? res;
+  };
+
+  // ─── 7 DISPLAY UTILITIES ─────────────────────────────────────────────────────
+  const getItemTypeLabel = (type) => {
+    const labels = {
+      PRODUCT: "Product",
+      RESOURCE: "Resource",
+      ASSET: "Asset",
+      LOCATION: "Location",
+      ITEM: "Item",
+      BUNDLE: "Bundle",
+      MIX: "Mix",
+      product: "Product",
+      resource: "Resource",
+      asset: "Asset",
+      location: "Location",
+      item: "Item",
+    };
+    return labels[type] || type || "Product";
+  };
+
+  // Location and Asset items always have "OK" status
+  const isLocationOrAsset = useCallback((item) => {
+    const upperType = (item.type || "").toUpperCase();
+    return upperType === "LOCATION" || upperType === "ASSET";
+  }, []);
+
+  const isLowStock = useCallback(
+    (item) => {
+      // Location and Asset items are always "OK"
+      if (isLocationOrAsset(item)) return false;
+      return item.quantity <= item.min_stock_level;
+    },
+    [isLocationOrAsset]
+  );
+
+  const getTypeFilterButtonClass = () => {
+    if (typeFilter.length === 0) return "btn-app-secondary";
+    if (typeFilter.length > 1) return "bg-primary-600 text-white";
+    if (typeFilter[0] === "RESOURCE") return "bg-blue-600 text-white";
+    if (typeFilter[0] === "ASSET") return "bg-purple-600 text-white";
+    if (typeFilter[0] === "LOCATION") return "bg-teal-600 text-white";
+    if (typeFilter[0] === "ITEM") return "bg-orange-500 text-white";
+    return "bg-gray-600 text-white"; // PRODUCT
+  };
+
+  const getStockFilterButtonClass = () => {
+    if (stockFilter === "low") return "bg-orange-700 text-white";
+    if (stockFilter === "ok") return "bg-green-600 text-white";
+    return "btn-app-secondary";
+  };
+
+  const getPriceDisplay = (item) => {
+    const s = featureSummary[item.id];
+    if (s?.price_min != null && s?.price_max != null) {
+      return s.price_min === s.price_max ? `$${s.price_min.toFixed(2)}` : `$${s.price_min.toFixed(2)}–$${s.price_max.toFixed(2)}`;
+    }
+    const price = Number(item.price);
+    if (item.price === undefined || item.price === null || item.price === "" || Number.isNaN(price) || price <= 0) return null;
+    return `$${price.toFixed(2)}`;
+  };
+
+  const getCountDisplay = useCallback(
+    (item) => {
+      const isAsset = (item?.type || "").toUpperCase() === "ASSET";
+      if (isAsset) {
+        const assetCount = assetUnitCounts[item.id];
+        if (typeof assetCount === "number") return assetCount;
+      }
+      return item.quantity ?? 0;
+    },
+    [assetUnitCounts]
+  );
+
+  const handleDeleteSelectedInv = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("inventory", "delete")) {
+      setError("You do not have permission to delete items");
+      return;
+    }
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected item${selectedIds.size !== 1 ? "s" : ""}?`))) return;
+
+    setMultiSaving(true);
     try {
-      const resp = await itemsAPI.create(itemData);
-      // Upsert initial inventory quantity
-      await inventoryAPI.update(resp.data.id, Number.isFinite(initialQuantity) ? initialQuantity : 0);
+      await Promise.all([...selectedIds].map((id) => inventoryAPI.delete(id)));
       await loadInventoryData();
-      closeModal();
+      clearSelectionInv();
       clearError();
     } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'Failed to save item';
+      const detail = err?.response?.data?.detail || err?.message || "Failed to delete selected items";
       setError(String(detail));
-      console.error('Item create error:', err?.response || err);
+    } finally {
+      setMultiSaving(false);
     }
   };
 
-  const getItemName = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item ? item.name : 'Unknown Item';
+  // ─── 8 DERIVED / FILTERED DATA ───────────────────────────────────────────────
+  // Filtered inventory based on search, type, and stock filters
+  const filteredInventory = useMemo(() => {
+    return inventory.filter((inv) => {
+      // Search filter (name or SKU) - inventory now has these fields directly
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesName = (inv.name || "").toLowerCase().includes(term);
+        const matchesSku = (inv.sku || "").toLowerCase().includes(term);
+        if (!matchesName && !matchesSku) return false;
+      }
+
+      // Type filter — item passes when it matches any selected type
+      if (typeFilter.length > 0) {
+        const itemType = (inv.type || "PRODUCT").toUpperCase();
+        if (!typeFilter.includes(itemType)) return false;
+      }
+
+      // Stock filter
+      if (stockFilter === "low" && !isLowStock(inv)) return false;
+      if (stockFilter === "ok" && isLowStock(inv)) return false;
+
+      return true;
+    });
+  }, [inventory, searchTerm, typeFilter, stockFilter, isLowStock]);
+
+  const toggleSelectInv = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const allVisibleSelectedInv = filteredInventory.length > 0 && filteredInventory.every((i) => selectedIds.has(i.id));
+  const handleSelectAllInv = () => {
+    if (allVisibleSelectedInv) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredInventory.map((i) => i.id)));
+    }
+  };
+  const clearSelectionInv = () => {
+    setSelectedIds(new Set());
   };
 
-  const getItemSku = (itemId) => {
-    const item = items.find(p => p.id === itemId);
-    return item ? item.sku : 'N/A';
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
   };
 
-  const isLowStock = (item) => item.quantity <= item.min_stock_level;
+  const handleAssetUnitsPerPageChange = (value) => {
+    const next = parseInt(value, 10);
+    if (!ASSET_UNITS_PAGE_SIZE_OPTIONS.includes(next)) return;
+    setAssetUnitsPerPage(next);
+    localStorage.setItem(ASSET_UNITS_PAGE_SIZE_KEY, String(next));
+  };
 
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredInventory];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "name") {
+          aVal = (a.name || "").toLowerCase();
+          bVal = (b.name || "").toLowerCase();
+        } else if (sortColumn === "type") {
+          aVal = (a.type || "").toLowerCase();
+          bVal = (b.type || "").toLowerCase();
+        } else if (sortColumn === "count") {
+          aVal = getCountDisplay(a);
+          bVal = getCountDisplay(b);
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredInventory, sortColumn, sortAsc, getCountDisplay]);
+
+  const handleMultiEditSave = async (updates) => {
+    setMultiSaving(true);
+    try {
+      const coerced = { ...updates };
+      if ("min_stock_level" in coerced) {
+        const parsedMinStock = parseInt(coerced.min_stock_level, 10);
+        if (Number.isNaN(parsedMinStock)) delete coerced.min_stock_level;
+        else coerced.min_stock_level = parsedMinStock;
+      }
+      for (const key of ["location", "category"]) {
+        if (coerced[key] === "__CLEAR__") coerced[key] = null;
+      }
+      await Promise.all([...selectedIds].map((id) => inventoryAPI.update(id, coerced)));
+      await loadInventoryData();
+      setShowMultiEdit(false);
+      clearSelectionInv();
+    } catch {
+      setError("Failed to update some items");
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  // Scroll to bottom when data loads (to show newest items near footer)
+  useEffect(() => {
+    if (scrollRef.current && sortedAndFiltered.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [sortedAndFiltered.length]);
+
+  // ─── 9 RENDER ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-2">
-          <PermissionGate page="inventory" permission="write">
-            <button
-              type="button"
-              onClick={handleCreateItem}
-              className="btn-primary inline-flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Item
-            </button>
-          </PermissionGate>
-          <PermissionGate page="inventory" permission="write">
-            <button
-              type="button"
-              onClick={handleOpenScanner}
-              className="btn-secondary inline-flex items-center"
-            >
-              <CameraIcon className="h-5 w-5 mr-2" />
-              Scan
-            </button>
-          </PermissionGate>
-        </div>
-      </div>
+    <PageLayout title="Inventory" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
+      <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
+        {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+        <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
+          {sortedAndFiltered.length > 0 ? (
+            <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
+              <colgroup>
+                <col className="app-col-select" />
+                <col className="app-col-flex" />
+                {pageSettings.showType !== false && <col className="app-col-action-80" />}
+                {pageSettings.showStock !== false && <col className="app-col-action-60" />}
+              </colgroup>
+              <tbody>
+                {sortedAndFiltered.map((inv, index) => (
+                  <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
+                    <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
+                      <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
+                    </td>
+                    <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} showPrice={pageSettings.showPrice !== false} showCost={pageSettings.showCost !== false} showCategory={pageSettings.showCategory !== false} />
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+                    {/* Type */}
+                    {pageSettings.showType !== false && (
+                      <td className="main-page-table-data">
+                        <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
+                      </td>
+                    )}
+
+                    {/* Count */}
+                    {pageSettings.showStock !== false && (
+                      <td className="main-page-table-data text-center">
+                        <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
+                      </td>
+                    )}
+                  </PageTableRow>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+          )}
         </div>
-      )}
 
-      {/* Low Stock Alert */}
-      {inventory.filter(isLowStock).length > 0 && (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-          <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-            <span className="font-medium">
-              {inventory.filter(isLowStock).length} item(s) are running low on stock!
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
-        <MobileTable
-          data={inventory}
-          columns={[
-            { key: 'item', title: 'Item', render: (_, item) => getItemName(item.item_id) },
-            { key: 'sku', title: 'SKU', render: (_, item) => getItemSku(item.item_id) },
-            { key: 'quantity', title: 'Stock' },
-            { key: 'min_stock_level', title: 'Min' },
-            { key: 'status', title: 'Status', render: (_, item) => (isLowStock(item) ? 'Low' : 'OK') },
-            { key: 'location', title: 'Location', render: (v) => v || '-' },
-          ]}
-          onEdit={(item) => handleUpdateInventory(item)}
-          editPermission={{ page: 'inventory', permission: 'write' }}
-          emptyMessage="No inventory items found"
-        />
-        {/* No primary add action on Inventory; updates are per-row */}
-      </div>
-
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Item
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      SKU
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Current Stock
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Min Level
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {inventory.map((item) => (
-                    <tr key={item.id} className={isLowStock(item) ? 'bg-yellow-50' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {getItemName(item.item_id)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getItemSku(item.item_id)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.min_stock_level}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          isLowStock(item)
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {isLowStock(item) ? 'Low Stock' : 'In Stock'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.location || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <PermissionGate page="inventory" permission="write">
-                          <button
-                            onClick={() => handleUpdateInventory(item)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {inventory.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No inventory items found. Add items to start tracking inventory.</p>
-                </div>
-              )}
+        {selectedIds.size > 0 && (
+          <div className="align-items-center border-top d-flex flex-shrink-0 px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="ui-flex-center-gap-2">
+              <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
+                {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+              </span>
+              <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
+                <PencilSquareIcon className="app-icon-14" />
+              </button>
+              <Gate_Permission page="inventory" permission="delete">
+                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected items" onClick={handleDeleteSelectedInv} disabled={multiSaving}>
+                  <TrashIcon className="app-icon-14" />
+                </button>
+              </Gate_Permission>
+              <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionInv}>
+                <XMarkIcon className="app-icon-14" />
+              </button>
             </div>
           </div>
-        </div>
+        )}
+        <PageTableHeader
+          columns={[
+            { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedInv} onToggle={handleSelectAllInv} title="Select all visible items" />, className: "app-col-select p-0 text-center" },
+            { label: "Item", className: "app-col-flex", sortKey: "name" },
+            ...(pageSettings.showType !== false ? [{ label: "Type", className: "app-col-action-80", sortKey: "type" }] : []),
+            ...(pageSettings.showStock !== false ? [{ label: "Count", className: "app-col-action-60", sortKey: "count" }] : []),
+          ]}
+          sortColumn={sortColumn}
+          sortAsc={sortAsc}
+          onSort={handleSort}
+        />
+
+        {/* Fixed bottom – headers + controls */}
+        <PageTableFooter
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name or SKU..."
+          beforeSearch={
+            <div className="align-items-center app-footer-toolbar d-flex">
+              <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
+              <Button_Toolbar icon={DocumentCurrencyDollarIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
+            </div>
+          }
+          addButton={
+            <Gate_Permission page="inventory" permission="write">
+              <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
+            </Gate_Permission>
+          }
+        >
+          <Gate_Permission page="inventory" permission="write">
+            <Button_Toolbar icon={PlusIcon} label="Bulk" onClick={handleOpenBulkImport} className="btn-app-secondary" />
+          </Gate_Permission>
+
+          {/* Type Filter */}
+          <Dropdown_Filter
+            icon={TagIcon}
+            label="Type"
+            title="Filter by type"
+            multiSelect
+            value={typeFilter}
+            onChange={setTypeFilter}
+            isOpen={isTypeFilterOpen}
+            setIsOpen={setIsTypeFilterOpen}
+            activeClass={getTypeFilterButtonClass()}
+            showHelp={isTrainingMode}
+            options={sortedTypeFilterOptions}
+          />
+
+          {/* Stock Filter */}
+          <Dropdown_Filter
+            icon={CircleStackIcon}
+            label="Stock"
+            title="Filter by stock"
+            value={stockFilter}
+            onChange={setStockFilter}
+            isOpen={isStockFilterOpen}
+            setIsOpen={setIsStockFilterOpen}
+            activeClass={getStockFilterButtonClass()}
+            showHelp={isTrainingMode}
+            options={sortedStockFilterOptions}
+          />
+
+          {/* Clear Filters Button */}
+          {(typeFilter.length > 0 || stockFilter !== "all") && (
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Clear"
+              onClick={() => {
+                setTypeFilter([]);
+                setStockFilter("all");
+              }}
+              className="btn-app-danger"
+            />
+          )}
+        </PageTableFooter>
       </div>
 
-      {/* Modal: Inventory Update */}
-      <Modal isOpen={isModalOpen && modalContent === 'inventory-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'inventory-form' && editingInventory && (
-          <InventoryUpdateForm
-            inventoryItem={editingInventory}
-            onSubmit={handleSubmitUpdate}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
+      <Modal_Inventory_AddItem
+        isOpen={showAddItemModal}
+        onClose={() => setShowAddItemModal(false)}
+        existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
+        onCreate={handleCreateInventory}
+        onCreateWithExtras={handleCreateInventoryWithExtras}
+      />
 
-      {/* Modal: Barcode Scanner */}
-      <Modal isOpen={isModalOpen && modalContent === 'barcode-scan'} onClose={closeModal} title="Scan Barcode">
-        {isModalOpen && modalContent === 'barcode-scan' && (
-          <BarcodeScanner
-            onDetected={(code) => handleDetectedBarcode(code)}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
+      {/* Modals remain unchanged */}
+      <Modal_Detail_Item
+        isOpen={isModalOpen && modalContent === "inventory-form"}
+        onClose={closeModal}
+        item={editingInventory}
+        itemType={editingInventory?.type || "product"}
+        mode="inventory"
+        onUpdateInventory={handleSubmitUpdate}
+        onDelete={null}
+        canDelete={false}
+        existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
+        assetUnitsPerPage={assetUnitsPerPage}
+      />
 
-      {/* Modal: Add Item (prefilled with scanned code) */}
-      <Modal isOpen={isModalOpen && modalContent === 'item-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'item-form' && (
-          <ItemForm
-            initialSku={scannedCode}
-            showInitialQuantity
-            onSubmitWithExtras={handleSubmitNewItem}
-            onSubmit={(data) => handleSubmitNewItem(data, { initialQuantity: 0 })}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-    </div>
+      <Modal_Bulk_Import_Items isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onImport={handleBulkImportItems} existingSkus={inventory.map((i) => i.sku).filter(Boolean)} />
+
+      <Suppliers_Panel isOpen={showSuppliersPanel} onClose={() => setShowSuppliersPanel(false)} />
+
+      <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
+
+      <Modal_Inventory_Settings
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        onSave={async () => {
+          await savePageSettings("inventory", pendingSettings);
+        }}
+        onOpenCategories={() => setShowCategoryManager(true)}
+        assetUnitsPerPage={assetUnitsPerPage}
+        onAssetUnitsPerPageChange={handleAssetUnitsPerPageChange}
+        assetUnitsPageSizeOptions={ASSET_UNITS_PAGE_SIZE_OPTIONS}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
+
+      <Modal_ManageLookup
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        title="Manage Categories"
+        entityLabel="category"
+        items={inventoryCategories}
+        onItemsChanged={loadInventoryCategories}
+        api={{
+          list: () => inventoryCategoriesAPI.getAll(),
+          create: (data) => inventoryCategoriesAPI.create("product", data.name),
+          update: async (id, data) => {
+            return api.put(`/isud/inventory_category/${id}`, { name: data.name });
+          },
+          delete: (id) => inventoryCategoriesAPI.delete(id),
+        }}
+      />
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Inventory Item${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={multiEditFields}
+        selectedItems={inventory.filter((i) => selectedIds.has(i.id))}
+        onSave={handleMultiEditSave}
+        saving={multiSaving}
+      />
+    </PageLayout>
   );
 }

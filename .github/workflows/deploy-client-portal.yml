@@ -1,0 +1,58 @@
+name: Deploy Client Portal
+
+on:
+  push:
+    branches:
+      - main
+      - Document-Management
+    paths:
+      - "client-portal/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-client-portal-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  AWS_REGION: us-east-1
+  CLIENT_PORTAL_BUCKET: businessmanager-client-portal-890749832422
+  CLIENT_PORTAL_CLOUDFRONT_DIST_ID: E15XOGU780XAU9
+  VITE_CLIENT_API_URL: ${{ vars.VITE_CLIENT_API_URL || 'https://api.vadpivi.com/api/client' }}
+
+jobs:
+  deploy-client-portal:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client-portal/package-lock.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies and build
+        working-directory: client-portal
+        run: |
+          npm ci
+          VITE_CLIENT_API_URL=${{ env.VITE_CLIENT_API_URL }} npm run build
+
+      - name: Deploy to S3
+        run: aws s3 sync client-portal/dist/ s3://${{ env.CLIENT_PORTAL_BUCKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLIENT_PORTAL_CLOUDFRONT_DIST_ID }} \
+            --paths "/*"

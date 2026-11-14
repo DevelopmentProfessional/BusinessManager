@@ -1,24 +1,124 @@
+# ============================================================
+# FILE: models.py
+#
+# PURPOSE:
+#   Defines every SQLModel table class (ORM), every Pydantic read/create/
+#   update schema, and all Python Enum types used across the BusinessManager
+#   backend. This file is the single source of truth for the database schema.
+#
+# FUNCTIONAL PARTS:
+#   [1]  Imports                     — SQLModel, SQLAlchemy, stdlib
+#   [2]  Enums                       — EntityType, ItemType, AttendanceStatus,
+#                                      MembershipTier, AppointmentType,
+#                                      RecurrenceFrequency, TaskPriority,
+#                                      UserRole, PermissionType
+#   [3]  Base Model                  — BaseModel (id, created_at, updated_at)
+#   [4]  User & Auth Models          — User, UserPermission, Role, RolePermission
+#   [5]  Client Models               — Client
+#   [6]  Inventory Models            — Inventory, InventoryImage, Supplier
+#   [7]  Service Models              — Service, ServiceResource, ServiceAsset,
+#                                      ServiceEmployee, ServiceLocation
+#   [8]  Schedule Models             — Schedule, ScheduleAttendee, ScheduleDocument
+#   [9]  Attendance Models           — Attendance
+#   [10] App Settings Model          — AppSettings
+#   [11] Document Models             — Document, DocumentBlob, DocumentCategory,
+#                                      DocumentAssignment
+#   [12] Task Models                 — TaskLink, Task
+#   [13] Leave & HR Models           — LeaveRequest, OnboardingRequest,
+#                                      OffboardingRequest, InsurancePlan, PaySlip
+#   [14] Sales Models                — SaleTransaction, SaleTransactionItem
+#   [15] Chat Models                 — ChatMessage
+#   [16] Document Template Models    — DocumentTemplate
+#   [17] Read / Create / Update Schemas — all Pydantic response/request models
+#                                         grouped by domain (Client, Inventory,
+#                                         Service, User, Schedule, Task, Payroll,
+#                                         Sales, Chat, Template, AppSettings,
+#                                         DatabaseConnection, Auth)
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-07-26 | GitHub Copilot | Added initiate_refunds permission type for manager-approved appointment refund actions
+#   2026-09-11 | GitHub Copilot | Added employee compensation settings and pay-slip calculation snapshots
+# ============================================================
+
+# ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, ForeignKey, LargeBinary, UniqueConstraint
 from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID, uuid4
 from enum import Enum
+from pydantic import field_validator
+import re
 import bcrypt
 
+
+_LUNCH_START_PATTERN = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+
+
+def _validate_lunch_start_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if not _LUNCH_START_PATTERN.fullmatch(normalized):
+        raise ValueError("lunch_start must be a valid HH:MM time.")
+    return normalized
+
+# ─── 2 ENUMS ───────────────────────────────────────────────────────────────────
 class EntityType(str, Enum):
     CLIENT = "client"
-    ITEM = "item"
+    INVENTORY = "inventory"  # Changed from ITEM
     EMPLOYEE = "employee"
     ASSET = "asset"
 
-# Item type classification (keeps legacy values for compatibility)
+
 class ItemType(str, Enum):
-    CONSUMABLE = "consumable"
-    ITEM = "item"
+    PRODUCT = "product"
+    RESOURCE = "resource"
+    ASSET = "asset"
+    LOCATION = "location"
+    ITEM = "item"  # Legacy value for backward compatibility
+    BUNDLE = "bundle"
+    MIX = "mix"
+
 
 class AttendanceStatus(str, Enum):
     CLOCK_IN = "clock_in"
     CLOCK_OUT = "clock_out"
+
+
+class MembershipTier(str, Enum):
+    NONE = "none"
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    PLATINUM = "platinum"
+
+
+class AppointmentType(str, Enum):
+    ONE_TIME = "one_time"
+    SERIES = "series"
+    MEETING = "meeting"
+    TASK = "task"
+
+
+class RecurrenceFrequency(str, Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+
+
+class TaskPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
 
 # User roles and permissions
 class UserRole(str, Enum):
@@ -31,24 +131,57 @@ class PermissionType(str, Enum):
     READ = "read"
     READ_ALL = "read_all"  # New: Read all records permission
     WRITE = "write"
+    WRITE_SELF_ONLY = "write_self_only"  # Schedule-specific: can write only own appointments
     WRITE_ALL = "write_all"  # Keeping for compatibility, but schedule will use VIEW_ALL
     DELETE = "delete"
     ADMIN = "admin"
     VIEW_ALL = "view_all"  # Schedule page uses this instead of WRITE_ALL
+    APPROVE_PAYMENTS = "approve_payments"  # Approve/mark payments for billable schedule events
+    INITIATE_REFUNDS = "initiate_refunds"  # Can initiate refund flow for already-paid schedule events
 
+# ─── 3 BASE MODEL ──────────────────────────────────────────────────────────────
 # Base model with common fields
 class BaseModel(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = Field(default=None)
 
+# ─── 3b COMPANY MODEL ───────────────────────────────────────────────────────────
+class Company(BaseModel, table=True):
+    """Registry of all companies that use this application."""
+    __tablename__ = "company"
+    company_id: str = Field(unique=True, index=True)  # User-facing code like "ACME"
+    name: str = Field(index=True)                      # Full company name
+    company_email: Optional[str] = Field(default=None)
+    company_phone: Optional[str] = Field(default=None)
+    company_address: Optional[str] = Field(default=None)
+    timezone: Optional[str] = Field(default=None)
+    logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
+    tax_rate: float = Field(default=0.0)
+    is_active: bool = Field(default=True)
+    registration_status: Optional[str] = Field(default="approved")  # pending | approved | denied
+    registration_notes: Optional[str] = Field(default=None)
+
+# ─── 4 USER & AUTH MODELS ──────────────────────────────────────────────────────
 # User model for authentication (consolidated user/employee)
+class Department(BaseModel, table=True):
+    """Company-scoped department lookup for grouping employees."""
+    __tablename__ = "department"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
 class User(BaseModel, table=True):
-    username: str = Field(unique=True, index=True)
-    email: Optional[str] = Field(default=None, unique=True, index=True)  # Made optional
+    __table_args__ = (
+        UniqueConstraint("company_id", "username", name="uq_user_company_username"),
+    )
+    username: str = Field(index=True)
+    email: Optional[str] = Field(default=None, index=True)  # Made optional; unique per company enforced at app level
     password_hash: str
     first_name: str
     last_name: str
+    color: Optional[str] = Field(default=None, index=True)
     phone: Optional[str] = Field(default=None)
     role: UserRole = Field(default=UserRole.EMPLOYEE)  # Default to EMPLOYEE
     hire_date: datetime = Field(default_factory=datetime.utcnow)
@@ -59,7 +192,52 @@ class User(BaseModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     dark_mode: bool = Field(default=False)  # User's dark mode preference
-    
+    training_mode: bool = Field(default=True)  # User's training/compact mode preference
+    training_mode_explicit: bool = Field(default=False)  # Whether the user chose the mode manually
+    button_text_size: str = Field(default="medium")
+    footer_align: str = Field(default="left")
+    ui_scale: int = Field(default=100)
+    db_environment: str = Field(default="production")  # User's preferred database environment
+    startup_page: str = Field(default="schedule")  # User's preferred home/landing page on login
+
+    # Hierarchy - who this user reports to
+    reports_to: Optional[UUID] = Field(default=None, foreign_key="user.id")
+
+    # Role assignment - links to Role model for inherited permissions
+    role_id: Optional[UUID] = Field(default=None, foreign_key="role.id")
+
+    # Managed status lookup (employee_status table)
+    status_id: Optional[UUID] = Field(default=None, foreign_key="employee_status.id")
+
+    # Details
+    iod_number: Optional[str] = Field(default=None)
+    supervisor: Optional[str] = Field(default=None)
+    location: Optional[str] = Field(default=None)
+    department_id: Optional[UUID] = Field(default=None, foreign_key="department.id")
+
+    # Signature (base64 PNG data URL)
+    signature_data: Optional[str] = Field(default=None)
+
+    # Profile picture (file path or URL)
+    profile_picture: Optional[str] = Field(default=None)
+
+    # Benefits / Compensation
+    salary: Optional[float] = Field(default=None)
+    hourly_rate: Optional[float] = Field(default=None)
+    employment_type: Optional[str] = Field(default=None)  # "salary" or "hourly"
+    pay_frequency: Optional[str] = Field(default=None)  # weekly, biweekly, monthly
+    insurance_plan: Optional[str] = Field(default=None)
+    vacation_days: Optional[int] = Field(default=None)
+    vacation_days_used: Optional[int] = Field(default=0)
+    sick_days: Optional[int] = Field(default=None)
+    sick_days_used: Optional[int] = Field(default=0)
+
+    # Lunch / break scheduling (HH:MM, e.g. "12:00")
+    lunch_start: Optional[str] = Field(default=None)
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
+
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     permissions: List["UserPermission"] = Relationship(back_populates="user")
     attendance_records: List["Attendance"] = Relationship(back_populates="user")
@@ -75,82 +253,216 @@ class User(BaseModel, table=True):
         """Verify a password against the stored hash"""
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
+    @field_validator("lunch_start", mode="before")
+    @classmethod
+    def validate_lunch_start(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_lunch_start_value(value)
+
 # User Permission model for granular access control
 class UserPermission(BaseModel, table=True):
     user_id: UUID = Field(foreign_key="user.id")
     page: str  # e.g., "clients", "inventory", "employees"
     permission: PermissionType
     granted: bool = Field(default=True)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     user: User = Relationship(back_populates="permissions")
 
+
+# Role model - defines a role with attached permissions
+class Role(BaseModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_role_company_name"),
+    )
+    name: str = Field(index=True)  # e.g., "Manager", "Receptionist"
+    description: Optional[str] = Field(default=None)
+    is_system: bool = Field(default=False)  # System roles cannot be deleted
+    company_id: Optional[str] = Field(default=None, index=True)
+
+    # Relationships
+    role_permissions: List["RolePermission"] = Relationship(back_populates="role")
+
+
+# RolePermission model - permissions attached to a role
+class RolePermission(BaseModel, table=True):
+    __tablename__ = "role_permission"
+    role_id: UUID = Field(foreign_key="role.id")
+    page: str  # e.g., "clients", "inventory", "employees"
+    permission: PermissionType
+    company_id: Optional[str] = Field(default=None, index=True)
+
+    # Relationships
+    role: Role = Relationship(back_populates="role_permissions")
+
+
+# ─── 5 CLIENT MODELS ───────────────────────────────────────────────────────────
+class Membership(BaseModel, table=True):
+    __tablename__ = "membership"
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_membership_company_name"),
+    )
+
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    price: float = Field(default=0.0, ge=0)
+    billing_frequency: str = Field(default="monthly")  # weekly, monthly, yearly, custom
+    lock_term_count: int = Field(default=0, ge=0)
+    lock_term_unit: str = Field(default="months")  # days, weeks, months, years
+    is_active: bool = Field(default=True)
+    payment_gateway_plan_id: Optional[str] = Field(default=None)
+    external_reference: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientMembership(BaseModel, table=True):
+    __tablename__ = "client_membership"
+    __table_args__ = (
+        UniqueConstraint("company_id", "client_id", "membership_id", name="uq_client_membership_company_pair"),
+    )
+
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    membership_id: UUID = Field(sa_column=Column(ForeignKey("membership.id", ondelete="CASCADE"), nullable=False, index=True))
+    start_date: Optional[datetime] = Field(default=None)
+    end_date: Optional[datetime] = Field(default=None)
+    status: str = Field(default="active")
+    billing_frequency_override: Optional[str] = Field(default=None)
+    price_override: Optional[float] = Field(default=None, ge=0)
+    lock_term_count_override: Optional[int] = Field(default=None, ge=0)
+    lock_term_unit_override: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
 # Client model
 class Client(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # Client names must be unique
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_client_company_name"),
+    )
+    name: str = Field(index=True)
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
-    
+
+    # Membership fields — stored as plain str to avoid PostgreSQL enum name/value mismatch
+    membership_tier: str = Field(default="none")
+    membership_since: Optional[datetime] = Field(default=None)
+    membership_expires: Optional[datetime] = Field(default=None)
+    membership_points: int = Field(default=0)
+    # Managed status lookup (client_status table)
+    status_id: Optional[UUID] = Field(default=None, foreign_key="client_status.id")
+    # Account/Auth fields (optional, for future multi-role support)
+    email_verified: bool = Field(default=False)
+    password_hash: Optional[str] = Field(default=None)  # For future self-service account features
+    reset_token: Optional[str] = Field(default=None)
+    reset_token_expires: Optional[datetime] = Field(default=None)
+    last_login: Optional[datetime] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="client")
 
-class ClientRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
 
-# Item model
-class Item(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # Item names must be unique
-    sku: str = Field(unique=True, index=True)
-    price: float = Field(ge=0)
+class ClientStatus(BaseModel, table=True):
+    """Company-scoped managed status lookup for clients."""
+    __tablename__ = "client_status"
+    name: str = Field(index=True)
     description: Optional[str] = Field(default=None)
-    # Store as string in DB to tolerate legacy values; routers coerce to ItemType for API
-    type: str = Field(default="item")
-    
-    # Relationships
-    inventory: Optional["Inventory"] = Relationship(back_populates="item")
+    company_id: Optional[str] = Field(default=None, index=True)
 
-# Item read model (exclude relationships for API responses)
-class ItemRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    sku: str
-    price: float
-    description: Optional[str] = None
-    type: ItemType = ItemType.ITEM
 
-# Inventory model
+# ─── 6 INVENTORY MODELS ────────────────────────────────────────────────────────
+# Inventory model (standalone - replaces Item model)
 class Inventory(BaseModel, table=True):
-    item_id: UUID = Field(foreign_key="item.id")
+    # Product/Item fields (merged from former Item model)
+    name: str = Field(index=True)
+    sku: Optional[str] = Field(default=None, index=True)
+    price: float = Field(ge=0, default=0)
+    description: Optional[str] = Field(default=None)
+    category: Optional[str] = Field(default=None)
+    type: str = Field(default="product")  # Use string to avoid PostgreSQL enum issues
+    image_url: Optional[str] = Field(default=None)  # Legacy field - kept for backward compatibility
+
+    # Inventory-specific fields
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
-    quantity: int = Field(ge=0)
+    quantity: int = Field(ge=0, default=0)
     min_stock_level: int = Field(ge=0, default=10)
+    # How many days it takes to receive a restock order from supplier
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = Field(default=None)
-    
+
+    # Service link - for resources/assets tied to specific services
+    service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
+    # Pricing mode for bundles/mixes: "fixed" (use price field) or "percentage" (% of components)
+    price_type: Optional[str] = Field(default="fixed")
+    price_percentage: Optional[float] = Field(default=None)
+    # Asset cost tracking (purchase/acquisition cost per unit, for future cost analysis)
+    cost: Optional[float] = Field(default=None)
+    # Cost behavior: one_time (purchase) or recurring (monthly rental/lease)
+    cost_type: Optional[str] = Field(default="one_time")
+    # Date tracking
+    date_of_purchase: Optional[datetime] = Field(default=None)
+    date_of_sale: Optional[datetime] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
-    item: Item = Relationship(back_populates="inventory")
     supplier: Optional["Supplier"] = Relationship(back_populates="inventory_items")
+    images: List["InventoryImage"] = Relationship(back_populates="inventory_item")
 
-class InventoryRead(SQLModel):
+
+class InventoryImage(BaseModel, table=True):
+    """Model for storing multiple images per inventory item"""
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    image_url: Optional[str] = Field(default=None)       # For external URL-based images
+    file_path: Optional[str] = Field(default=None)        # Legacy: disk path (no longer used for new uploads)
+    file_name: Optional[str] = Field(default=None)        # Original filename
+    mime_type: Optional[str] = Field(default=None)        # MIME type of uploaded file (e.g. image/jpeg)
+    image_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))  # Binary stored in DB
+    is_primary: bool = Field(default=False)
+    sort_order: int = Field(default=0)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+    # Relationships
+    inventory_item: Inventory = Relationship(back_populates="images")
+
+
+# ─── 6b INVENTORY CATEGORY MODEL ──────────────────────────────────────────────
+class InventoryCategory(BaseModel, table=True):
+    """Lookup table of available categories per item type, scoped to a company."""
+    __tablename__ = "inventory_category"
+    item_type: str = Field(index=True)   # e.g. "product", "resource", "asset"
+    name: str
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryCategoryRead(SQLModel):
     id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    item_id: UUID
-    supplier_id: Optional[UUID] = None
-    quantity: int
-    min_stock_level: int
-    location: Optional[str] = None
+    item_type: str
+    name: str
+    company_id: Optional[str] = None
+    created_at: Optional[datetime] = None
 
+    model_config = {"from_attributes": True}
+
+
+# ─── 6c ASSET UNIT MODEL ───────────────────────────────────────────────────────
+
+ASSET_UNIT_STATES = {"available", "in_use", "maintenance", "arriving_soon"}
+
+class AssetUnit(BaseModel, table=True):
+    """Tracks one individual physical unit of an ASSET inventory item."""
+    __tablename__ = "asset_unit"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    label: Optional[str] = Field(default=None)          # e.g. "Unit #3", "SN-9921"
+    location: Optional[str] = Field(default=None)
+    employee_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    state: str = Field(default="available", index=True)  # available | in_use | maintenance | arriving_soon
+    schedule_id: Optional[UUID] = Field(default=None)    # set when state=in_use and linked to appt
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 6b SUPPLIER MODEL ─────────────────────────────────────────────────────────
 # Supplier model
 class Supplier(BaseModel, table=True):
     name: str = Field(index=True)
@@ -158,69 +470,195 @@ class Supplier(BaseModel, table=True):
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     inventory_items: List[Inventory] = Relationship(back_populates="supplier")
 
-class SupplierRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    contact_person: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
 
+# ─── 6c DESCRIPTIVE FEATURES MODELS ────────────────────────────────────────────
+class DescriptiveFeature(BaseModel, table=True):
+    """Global reusable feature template (e.g. 'Size', 'Color')"""
+    __tablename__ = "descriptive_feature"
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_descriptive_feature_company_name"),
+    )
+    name: str  # No solo index — the composite unique constraint (company_id, name) covers lookups
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class FeatureOption(BaseModel, table=True):
+    """An option belonging to a descriptive feature (e.g. 'Small', 'Red')"""
+    __tablename__ = "feature_option"
+    feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
+    name: str = Field(index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryFeature(BaseModel, table=True):
+    """Links a descriptive feature to an inventory item; tracks which feature affects price."""
+    __tablename__ = "inventory_feature"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
+    affects_price: bool = Field(default=False)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryFeatureOptionData(BaseModel, table=True):
+    """Per-option quantity/price data for a feature on a specific inventory item."""
+    __tablename__ = "inventory_feature_option_data"
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    feature_id: UUID = Field(foreign_key="descriptive_feature.id", index=True)
+    option_id: UUID = Field(foreign_key="feature_option.id", index=True)
+    is_enabled: bool = Field(default=False)
+    quantity: int = Field(default=0, ge=0)
+    price: Optional[float] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryFeatureCombination(BaseModel, table=True):
+    """Stock tracked for a full option combination on a specific inventory item."""
+    __tablename__ = "inventory_feature_combination"
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), index=True, nullable=False))
+    combination_key: str = Field(index=True)
+    option_ids_json: str
+    quantity: int = Field(default=0, ge=0)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 7 SERVICE MODELS ──────────────────────────────────────────────────────────
 # Service model
 class Service(BaseModel, table=True):
-    name: str = Field(unique=True, index=True)  # Service names must be unique
+    name: str = Field(index=True)  # Service names must be unique per company
     description: Optional[str] = Field(default=None)
     category: Optional[str] = Field(default=None)
     price: float = Field(ge=0)
     duration_minutes: int = Field(ge=0, default=60)
-    
+    image_url: Optional[str] = Field(default=None)  # URL or path to service image
+    addons_json: Optional[str] = Field(default=None)  # JSON: service add-on definitions
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     schedules: List["Schedule"] = Relationship(back_populates="service")
 
-class ServiceRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: float
-    duration_minutes: int
 
+class ServiceCategory(BaseModel, table=True):
+    """Company-scoped managed category lookup for services (feeds the category dropdown)."""
+    __tablename__ = "service_category"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ServiceResource(BaseModel, table=True):
+    """Consumable inventory items (resources) used during a service (e.g. shampoo, conditioner)."""
+    __tablename__ = "service_resource"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    quantity: float = Field(default=1.0, ge=0)
+    consumption_rate_pct: Optional[float] = Field(default=None, ge=0, le=100)  # % of inventory item consumed per service
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ServiceAsset(BaseModel, table=True):
+    """Assets (equipment) reserved for the full duration of a service (e.g. hair dryer, sink)."""
+    __tablename__ = "service_asset"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    asset_duration_minutes: Optional[float] = Field(default=None, ge=0)  # How long this asset is used per batch for this service
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ServiceEmployee(BaseModel, table=True):
+    """Employees capable of performing a service."""
+    __tablename__ = "service_employee"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ServiceLocation(BaseModel, table=True):
+    """Locations (inventory items of type 'location') where a service is offered."""
+    __tablename__ = "service_location"
+    service_id: UUID = Field(foreign_key="service.id", index=True)
+    inventory_id: UUID = Field(foreign_key="inventory.id", index=True)
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ServiceRecipe(BaseModel, table=True):
+    """Production recipe for a manufactured service/product: batch size, batch duration,
+    and per-resource/asset consumption. One record per service (unique service_id)."""
+    __tablename__ = "service_recipe"
+    service_id: UUID = Field(foreign_key="service.id", index=True, unique=True)
+    is_produced: bool = Field(default=False)          # True = manufactured/produced; False = purchased/delivered
+    batch_size: int = Field(default=1, ge=1)           # Units produced per batch
+    batch_duration_minutes: Optional[float] = Field(default=None, ge=0)  # Time for one full batch
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 8 SCHEDULE MODELS ─────────────────────────────────────────────────────────
 # Employee model
 # Employee model removed - now using User model directly
 
-# Schedule model
+# Schedule model - matches actual database schema
 class Schedule(BaseModel, table=True):
-    client_id: UUID = Field(foreign_key="client.id")
-    service_id: UUID = Field(foreign_key="service.id")
-    employee_id: UUID = Field(foreign_key="user.id")  # Now references user directly
+    # Core fields that exist in database
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    service_id: Optional[UUID] = Field(foreign_key="service.id", default=None)
+    employee_id: UUID = Field(foreign_key="user.id")
     appointment_date: datetime
-    status: str = Field(default="scheduled")  # scheduled, completed, cancelled
+    status: str = Field(default="scheduled")
     notes: Optional[str] = Field(default=None)
-    
+    appointment_type: str = Field(default="one_time")
+    duration_minutes: int = Field(default=60)
+    service_addons_json: Optional[str] = Field(default=None)  # JSON: selected add-ons for this appointment
+    # Recurrence fields
+    recurrence_frequency: Optional[str] = Field(default=None)  # daily/weekly/biweekly/monthly
+    recurrence_end_date: Optional[datetime] = Field(default=None)
+    recurrence_count: Optional[int] = Field(default=None)
+    parent_schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)
+    is_recurring_master: bool = Field(default=False)
+    # Payment fields
+    is_paid: bool = Field(default=False)
+    send_reminder: bool = Field(default=False)
+    discount: float = Field(default=0.0, ge=0)  # flat discount amount
+    sale_transaction_id: Optional[UUID] = Field(default=None)  # no FK to avoid circular dependency
+    # Production task fields
+    task_type: str = Field(default="service")          # "service" | "production"
+    production_item_id: Optional[UUID] = Field(default=None)  # inventory item being produced (no FK to keep things simple)
+    production_quantity: int = Field(default=1)         # number of batches to run
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
-    client: Client = Relationship(back_populates="schedules")
-    service: Service = Relationship(back_populates="schedules")
+    client: Optional[Client] = Relationship(back_populates="schedules")
+    service: Optional[Service] = Relationship(back_populates="schedules")
     employee: "User" = Relationship(back_populates="schedules")
 
-class ScheduleRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    client_id: UUID
-    service_id: UUID
-    employee_id: UUID
-    appointment_date: datetime
-    status: str
-    notes: Optional[str] = None
 
+# Schedule Attendee model (for meetings with multiple participants)
+class ScheduleAttendee(BaseModel, table=True):
+    __tablename__ = "schedule_attendee"
+    schedule_id: UUID = Field(foreign_key="schedule.id")
+    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    attendance_status: str = Field(default="pending")
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# Schedule Document link model
+class ScheduleDocument(BaseModel, table=True):
+    __tablename__ = "schedule_document"
+    schedule_id: UUID = Field(foreign_key="schedule.id")
+    document_id: UUID = Field(foreign_key="document.id")
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 9 ATTENDANCE MODELS ───────────────────────────────────────────────────────
 # Asset model
 ## Asset model removed
 
@@ -232,61 +670,286 @@ class Attendance(BaseModel, table=True):
     clock_out: Optional[datetime] = Field(default=None)
     total_hours: Optional[float] = Field(ge=0, default=None)
     notes: Optional[str] = Field(default=None)
-    
+    company_id: Optional[str] = Field(default=None, index=True)
+
     # Relationships
     user: User = Relationship(back_populates="attendance_records")
 
-class AttendanceRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    user_id: UUID  # Now only references user
-    date: datetime
-    clock_in: Optional[datetime] = None
-    clock_out: Optional[datetime] = None
-    total_hours: Optional[float] = None
-    notes: Optional[str] = None
 
-# Document model
+# ─── 10 APP SETTINGS MODEL ─────────────────────────────────────────────────────
+# App Settings model (singleton pattern for global settings)
+class AppSettings(BaseModel, table=True):
+    __tablename__ = "app_settings"
+    start_of_day: str = Field(default="06:00")  # HH:MM format
+    end_of_day: str = Field(default="21:00")  # HH:MM format
+    attendance_check_in_required: bool = Field(default=False)
+    reminder_time_minutes: int = Field(default=30)
+    reminder_send_notification: bool = Field(default=True)
+    # Days of operation (True = business operates on this day)
+    monday_enabled: bool = Field(default=True)
+    tuesday_enabled: bool = Field(default=True)
+    wednesday_enabled: bool = Field(default=True)
+    thursday_enabled: bool = Field(default=True)
+    friday_enabled: bool = Field(default=True)
+    saturday_enabled: bool = Field(default=True)
+    sunday_enabled: bool = Field(default=True)
+    # Company info
+    company_name: Optional[str] = Field(default=None)
+    company_email: Optional[str] = Field(default=None)
+    company_phone: Optional[str] = Field(default=None)
+    company_address: Optional[str] = Field(default=None)
+    company_timezone: Optional[str] = Field(default=None)
+    # Tax
+    tax_rate: Optional[float] = Field(default=0.0)  # Percentage, e.g. 8.5 = 8.5%
+    # Client portal branding (added by migration)
+    portal_hero_title: Optional[str] = Field(default=None)
+    portal_hero_subtitle: Optional[str] = Field(default=None)
+    portal_hero_tagline: Optional[str] = Field(default=None)
+    portal_hero_bg_color: Optional[str] = Field(default=None)
+    portal_hero_text_color: Optional[str] = Field(default=None)
+    portal_hero_image_url: Optional[str] = Field(default=None)
+    portal_banner_text: Optional[str] = Field(default=None)
+    portal_banner_color: Optional[str] = Field(default=None)
+    portal_show_hero: bool = Field(default=True)
+    portal_show_banner: bool = Field(default=False)
+    portal_footer_text: Optional[str] = Field(default=None)
+    portal_primary_color: Optional[str] = Field(default=None)
+    portal_secondary_color: Optional[str] = Field(default=None)
+    # Stripe configuration (admin-managed, company scoped)
+    stripe_enabled: bool = Field(default=False)
+    stripe_mode: str = Field(default="test")
+    stripe_test_publishable_key: Optional[str] = Field(default=None)
+    stripe_test_secret_key: Optional[str] = Field(default=None)
+    stripe_test_webhook_secret: Optional[str] = Field(default=None)
+    stripe_live_publishable_key: Optional[str] = Field(default=None)
+    stripe_live_secret_key: Optional[str] = Field(default=None)
+    stripe_live_webhook_secret: Optional[str] = Field(default=None)
+    # Legacy active-key fields kept for backward compatibility.
+    stripe_publishable_key: Optional[str] = Field(default=None)
+    stripe_secret_key: Optional[str] = Field(default=None)
+    stripe_webhook_secret: Optional[str] = Field(default=None)
+    
+    # Company logo (added by migration)
+    logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 11 DOCUMENT MODELS ────────────────────────────────────────────────────────
+# Document model (table name and types aligned with PostgreSQL schema)
 class Document(BaseModel, table=True):
+    __tablename__ = "document"
     filename: str
     original_filename: str
     file_path: str
     file_size: int = Field(ge=0)
     content_type: str
-    entity_type: Optional[EntityType] = Field(default=None)
+    # Use str to match PG varchar/enum; API and DB both use string values
+    entity_type: Optional[str] = Field(default=None)
     entity_id: Optional[UUID] = Field(default=None)
     description: Optional[str] = Field(default=None)
     # e-sign fields
     is_signed: bool = Field(default=False)
     signed_by: Optional[str] = Field(default=None)
     signed_at: Optional[datetime] = Field(default=None)
+    signature_image: Optional[str] = Field(default=None)  # base64 PNG of the signature
+    signed_by_user_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
     # ownership / review / category
     owner_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     review_date: Optional[datetime] = Field(default=None)
     category_id: Optional[UUID] = Field(foreign_key="document_category.id", default=None)
+    # Managed status lookup (document_status table) — separate from the signed flag
+    status_id: Optional[UUID] = Field(default=None, foreign_key="document_status.id")
+    company_id: Optional[str] = Field(default=None, index=True)
 
-# Document read schema for API responses
+
+class DocumentBlob(SQLModel, table=True):
+    """Stores file binary data in the database so documents survive ephemeral filesystems."""
+    __tablename__ = "document_blob"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    document_id: UUID = Field(foreign_key="document.id", unique=True, index=True)
+    data: bytes = Field(sa_column=Column(LargeBinary, nullable=False))
+
+
+class DocumentCategory(BaseModel, table=True):
+    __tablename__ = "document_category"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentStatus(BaseModel, table=True):
+    """Company-scoped managed status lookup for documents."""
+    __tablename__ = "document_status"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class EmployeeStatus(BaseModel, table=True):
+    """Company-scoped managed status lookup for employees."""
+    __tablename__ = "employee_status"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
 class DocumentRead(SQLModel):
+    """Schema for reading document records (excludes relationship fields)."""
     id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
     filename: str
     original_filename: str
     file_path: str
     file_size: int
     content_type: str
-    # Use string for entity_type to be tolerant of legacy values
     entity_type: Optional[str] = None
     entity_id: Optional[UUID] = None
     description: Optional[str] = None
     is_signed: bool = False
     signed_by: Optional[str] = None
     signed_at: Optional[datetime] = None
+    signature_image: Optional[str] = None
+    signed_by_user_id: Optional[UUID] = None
     owner_id: Optional[UUID] = None
     review_date: Optional[datetime] = None
     category_id: Optional[UUID] = None
+    status_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
+    model_config = {"from_attributes": True}
+
+
+class DocumentAssignment(BaseModel, table=True):
+    """Junction table linking documents to employees, clients, or inventory items."""
+    __tablename__ = "document_assignment"
+    document_id: UUID = Field(foreign_key="document.id", index=True)
+    entity_type: str = Field(index=True)   # "employee", "client", "inventory"
+    entity_id: UUID = Field(index=True)
+    assigned_by: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentAssignmentRead(SQLModel):
+    """Schema for reading document assignment records."""
+    id: UUID
+    document_id: UUID
+    entity_type: str
+    entity_id: UUID
+    assigned_by: Optional[UUID] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── UNDO ACTION MODEL ────────────────────────────────────────────────────────
+class UserUndoAction(BaseModel, table=True):
+    """Stores up to 10 undoable database actions per user."""
+    __tablename__ = "user_undo_action"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    action_type: str = Field(index=True)  # "INSERT", "UPDATE", "DELETE"
+    table_name: str = Field(index=True)
+    record_id: str = Field(index=True)
+    entity_title: Optional[str] = Field(default=None)
+    before_state: Optional[str] = Field(default=None)  # JSON serialized snapshot of row
+
+
+class UserUndoActionRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    action_type: str
+    table_name: str
+    record_id: str
+    entity_title: Optional[str] = None
+    before_state: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentTag(BaseModel, table=True):
+    """Company-scoped tag lookup for documents."""
+    __tablename__ = "document_tag"
+    name: str = Field(index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentTagLink(BaseModel, table=True):
+    """Junction table linking a document to a tag."""
+    __tablename__ = "document_tag_link"
+    document_id: UUID = Field(foreign_key="document.id", index=True)
+    tag_id: UUID = Field(foreign_key="document_tag.id", index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentTagRead(SQLModel):
+    id: UUID
+    name: str
+    company_id: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
+class MembershipCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+    price: float = 0.0
+    billing_frequency: str = "monthly"
+    lock_term_count: int = 0
+    lock_term_unit: str = "months"
+    is_active: bool = True
+    payment_gateway_plan_id: Optional[str] = None
+    external_reference: Optional[str] = None
+
+
+class MembershipUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    billing_frequency: Optional[str] = None
+    lock_term_count: Optional[int] = None
+    lock_term_unit: Optional[str] = None
+    is_active: Optional[bool] = None
+    payment_gateway_plan_id: Optional[str] = None
+    external_reference: Optional[str] = None
+
+
+class MembershipRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    price: float = 0.0
+    billing_frequency: str = "monthly"
+    lock_term_count: int = 0
+    lock_term_unit: str = "months"
+    is_active: bool = True
+    payment_gateway_plan_id: Optional[str] = None
+    external_reference: Optional[str] = None
+    company_id: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ClientMembershipRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    membership_id: UUID
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    status: str = "active"
+    billing_frequency_override: Optional[str] = None
+    price_override: Optional[float] = None
+    lock_term_count_override: Optional[int] = None
+    lock_term_unit_override: Optional[str] = None
+    company_id: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 17 READ / CREATE / UPDATE SCHEMAS ─────────────────────────────────────────
+# ─── 17a CLIENT SCHEMAS ────────────────────────────────────────────────────────
 # Request/Response models for API
 class ClientCreate(SQLModel):
     name: str
@@ -294,6 +957,13 @@ class ClientCreate(SQLModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[MembershipTier] = MembershipTier.NONE
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: Optional[int] = 0
+    membership_ids: Optional[List[UUID]] = None
+    status_id: Optional[UUID] = None
+
 
 class ClientUpdate(SQLModel):
     name: Optional[str] = None
@@ -301,128 +971,351 @@ class ClientUpdate(SQLModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[MembershipTier] = None
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: Optional[int] = None
+    membership_ids: Optional[List[UUID]] = None
+    status_id: Optional[UUID] = None
 
-class ItemCreate(SQLModel):
+
+class ClientRead(SQLModel):
+    id: UUID
     name: str
-    sku: str
-    price: float
-    description: Optional[str] = None
-    # Accept either enum value/name as string or ItemType; router will normalize
-    type: Optional[Union[ItemType, str]] = "item"
-
-class ItemUpdate(SQLModel):
-    name: Optional[str] = None
-    sku: Optional[str] = None
-    price: Optional[float] = None
-    description: Optional[str] = None
-    # Accept either enum value/name as string or ItemType; router will normalize
-    type: Optional[Union[ItemType, str]] = None
-
-class ServiceCreate(SQLModel):
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: float
-    duration_minutes: int = 60
-
-class ServiceUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    price: Optional[float] = None
-    duration_minutes: Optional[int] = None
-
-# EmployeeCreate removed - now using UserCreate
-
-class ScheduleCreate(SQLModel):
-    # Accept strings or UUIDs; router will normalize
-    client_id: Union[UUID, str]
-    service_id: Union[UUID, str]
-    employee_id: Union[UUID, str]
-    # Accept strings or datetime; router will normalize
-    appointment_date: Union[datetime, str]
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
     notes: Optional[str] = None
+    membership_tier: Optional[str] = None
+    membership_since: Optional[datetime] = None
+    membership_expires: Optional[datetime] = None
+    membership_points: int = 0
+    membership_ids: List[UUID] = Field(default_factory=list)
+    membership_names: List[str] = Field(default_factory=list)
+    status_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
-class AttendanceCreate(SQLModel):
-    user_id: UUID  # Now references user directly
+    model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_orm_safe(cls, obj):
+        # Handle membership_tier which could be an enum or a string
+        tier = obj.membership_tier
+        if tier is not None:
+            tier = tier.value if hasattr(tier, 'value') else str(tier)
+
+        return cls(
+            id=obj.id,
+            name=obj.name,
+            email=obj.email,
+            phone=obj.phone,
+            address=obj.address,
+            notes=obj.notes,
+            membership_tier=tier,
+            membership_since=obj.membership_since,
+            membership_expires=obj.membership_expires,
+            membership_points=obj.membership_points or 0,
+            membership_ids=[],
+            membership_names=[],
+            status_id=getattr(obj, "status_id", None),
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
+        )
+
+
+# ─── 17b INVENTORY SCHEMAS ─────────────────────────────────────────────────────
+class InventoryCreate(SQLModel):
+    """Schema for creating inventory items (replaces ItemCreate)"""
+    name: str
+    sku: Optional[str] = None
+    price: float = 0
+    cost: Optional[float] = None
+    cost_type: Optional[str] = "one_time"
+    description: Optional[str] = None
+    category: Optional[str] = None
+    type: Optional[Union[ItemType, str]] = "product"
+    image_url: Optional[str] = None
+    quantity: int = 0
+    min_stock_level: int = 10
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
+    location: Optional[str] = None
+    supplier_id: Optional[UUID] = None
+    date_of_purchase: Optional[datetime] = None
+    date_of_sale: Optional[datetime] = None
+
+
+# ─── 17c SERVICE SCHEMAS ───────────────────────────────────────────────────────
+class ServiceRead(SQLModel):
+    """Schema for reading service records (excludes relationship fields)"""
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    price: float
+    duration_minutes: int
+    image_url: Optional[str] = None
+    addons_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceResourceRead(SQLModel):
+    """Schema for reading service resource links."""
+    id: UUID
+    service_id: UUID
+    inventory_id: UUID
+    quantity: float
+    consumption_rate_pct: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceAssetRead(SQLModel):
+    """Schema for reading service asset links."""
+    id: UUID
+    service_id: UUID
+    inventory_id: UUID
+    asset_duration_minutes: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceEmployeeRead(SQLModel):
+    """Schema for reading service employee capability links."""
+    id: UUID
+    service_id: UUID
+    user_id: UUID
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceLocationRead(SQLModel):
+    """Schema for reading service location links."""
+    id: UUID
+    service_id: UUID
+    inventory_id: UUID
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceRecipeRead(SQLModel):
+    """Schema for reading a service production recipe."""
+    id: UUID
+    service_id: UUID
+    is_produced: bool
+    batch_size: int
+    batch_duration_minutes: Optional[float] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 17d SUPPLIER SCHEMAS ──────────────────────────────────────────────────────
+class SupplierRead(SQLModel):
+    """Schema for reading supplier records (excludes relationship fields)"""
+    id: UUID
+    name: str
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 17e ATTENDANCE SCHEMAS ────────────────────────────────────────────────────
+class AttendanceRead(SQLModel):
+    """Schema for reading attendance records (excludes relationship fields)"""
+    id: UUID
+    user_id: UUID
     date: datetime
     clock_in: Optional[datetime] = None
     clock_out: Optional[datetime] = None
-
-# Document update schema
-class DocumentUpdate(SQLModel):
-    description: Optional[str] = None
-    owner_id: Optional[UUID] = None
-    review_date: Optional[datetime] = None
-    category_id: Optional[UUID] = None
-
-# Document Category model
-class DocumentCategory(BaseModel, table=True):
-    __tablename__ = "document_category"
-    name: str = Field(unique=True, index=True)
-    description: Optional[str] = Field(default=None)
-
-
-# Document Assignment model (many-to-many: document -> user)
-class DocumentAssignment(BaseModel, table=True):
-    __tablename__ = "document_assignment"
-    document_id: UUID = Field(foreign_key="document.id")
-    user_id: UUID = Field(foreign_key="user.id")
-
-
-# Document History model (versioned files)
-class DocumentHistory(BaseModel, table=True):
-    __tablename__ = "document_history"
-    document_id: UUID = Field(foreign_key="document.id")
-    version: int
-    file_path: str
-    file_size: int
-    content_type: str
-    note: Optional[str] = Field(default=None)
-
-class DocumentAssignmentRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    document_id: UUID
-    user_id: UUID
-
-class DocumentAssignmentCreate(SQLModel):
-    user_id: UUID
-
-# Read schemas
-class DocumentHistoryRead(SQLModel):
-    id: UUID
-    created_at: datetime
-    version: int
-    file_path: str
-    file_size: int
-    content_type: str
-    note: Optional[str] = None
-
-class DocumentCategoryRead(SQLModel):
-    id: UUID
-    created_at: datetime
+    total_hours: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 17b2 INVENTORY READ / IMAGE SCHEMAS ───────────────────────────────────────
+class InventoryRead(SQLModel):
+    """Schema for reading inventory items (includes images and supplier name)"""
+    id: UUID
+    name: str
+    sku: Optional[str] = None
+    price: float
+    description: Optional[str] = None
+    category: Optional[str] = None
+    type: str
+    image_url: Optional[str] = None  # Legacy field
+    supplier_id: Optional[UUID] = None
+    supplier_name: Optional[str] = None  # Joined from Supplier table
+    service_id: Optional[UUID] = None
+    quantity: int
+    min_stock_level: int
+    procurement_lead_days: Optional[int] = Field(default=None, ge=0)
+    location: Optional[str] = None
+    price_type: Optional[str] = "fixed"
+    price_percentage: Optional[float] = None
+    cost: Optional[float] = None
+    cost_type: Optional[str] = "one_time"
+    date_of_purchase: Optional[datetime] = None
+    date_of_sale: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    images: List["InventoryImageRead"] = []
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryImageCreate(SQLModel):
+    """Schema for creating inventory images"""
+    inventory_id: UUID
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: bool = False
+    sort_order: int = 0
+
+
+class InventoryImageRead(SQLModel):
+    """Schema for reading inventory images"""
+    id: UUID
+    inventory_id: UUID
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
+    has_file: bool = False  # True when image bytes are stored in DB (use /file endpoint to load)
+    is_primary: bool
+    sort_order: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryImageUpdate(SQLModel):
+    """Schema for updating inventory images"""
+    image_url: Optional[str] = None
+    file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    is_primary: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+
+# ─── 17b3 DESCRIPTIVE FEATURE READ SCHEMAS ──────────────────────────────────────
+class FeatureOptionRead(SQLModel):
+    id: UUID
+    feature_id: UUID
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class DescriptiveFeatureRead(SQLModel):
+    id: UUID
     name: str
     description: Optional[str] = None
+    options: List["FeatureOptionRead"] = []
+    model_config = {"from_attributes": True}
 
-class DocumentCategoryCreate(SQLModel):
+
+class InventoryFeatureOptionDataRead(SQLModel):
+    option_id: UUID
+    option_name: str
+    is_enabled: bool
+    quantity: int
+    price: Optional[float] = None
+    model_config = {"from_attributes": True}
+
+
+class InventoryFeatureRead(SQLModel):
+    feature_id: UUID
+    feature_name: str
+    feature_description: Optional[str] = None
+    affects_price: bool
+    options: List["InventoryFeatureOptionDataRead"] = []
+    model_config = {"from_attributes": True}
+
+
+class InventoryFeatureCombinationRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    combination_key: str
+    option_ids: List[UUID] = []
+    quantity: int
+    model_config = {"from_attributes": True}
+
+
+class InventoryFeatureCombinationWrite(SQLModel):
+    option_ids: List[UUID]
+    quantity: int = 0
+
+
+# ─── 17f USER SCHEMAS ──────────────────────────────────────────────────────────
+class DepartmentRead(SQLModel):
+    id: UUID
     name: str
     description: Optional[str] = None
+    company_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
 
-class DocumentCategoryUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
 
-# Authentication models
 class UserCreate(SQLModel):
     username: str
-    email: Optional[str] = None  # Made optional
+    email: Optional[str] = None
     password: str
     first_name: str
     last_name: str
+    color: Optional[str] = None
     phone: Optional[str] = None
     role: UserRole = UserRole.EMPLOYEE
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    status_id: Optional[UUID] = None  # Managed employee status lookup
+    startup_page: Optional[str] = "schedule"
+    iod_number: Optional[str] = None
+    supervisor: Optional[str] = None
+    location: Optional[str] = None
+    department_id: Optional[UUID] = None
+    employment_type: Optional[str] = None
+    salary: Optional[float] = None
+    hourly_rate: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    insurance_plan: Optional[str] = None
+    vacation_days: Optional[int] = None
+    vacation_days_used: Optional[int] = 0
+    sick_days: Optional[int] = None
+    sick_days_used: Optional[int] = 0
+    lunch_start: Optional[str] = None
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
+
+    @field_validator("lunch_start", mode="before")
+    @classmethod
+    def validate_lunch_start(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_lunch_start_value(value)
+
 
 class UserUpdate(SQLModel):
     username: Optional[str] = None
@@ -430,104 +1323,1813 @@ class UserUpdate(SQLModel):
     password: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    color: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
-    hire_date: Optional[datetime] = None
     is_active: Optional[bool] = None
     is_locked: Optional[bool] = None
     force_password_reset: Optional[bool] = None
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    status_id: Optional[UUID] = None  # Managed employee status lookup
+    dark_mode: Optional[bool] = None
+    training_mode: Optional[bool] = None
+    training_mode_explicit: Optional[bool] = None
+    button_text_size: Optional[str] = None
+    footer_align: Optional[str] = None
+    ui_scale: Optional[int] = Field(default=None, ge=90, le=150)
+    db_environment: Optional[str] = None  # User's preferred database environment
+    startup_page: Optional[str] = None  # User's preferred home/landing page on login
+    signature_data: Optional[str] = None
+    profile_picture: Optional[str] = None
+    iod_number: Optional[str] = None
+    supervisor: Optional[str] = None
+    location: Optional[str] = None
+    department_id: Optional[UUID] = None
+    employment_type: Optional[str] = None
+    salary: Optional[float] = None
+    hourly_rate: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    insurance_plan: Optional[str] = None
+    vacation_days: Optional[int] = None
+    vacation_days_used: Optional[int] = None
+    sick_days: Optional[int] = None
+    sick_days_used: Optional[int] = None
+    lunch_start: Optional[str] = None
+    lunch_duration_minutes: Optional[int] = Field(default=None, ge=0)
+
+    @field_validator("lunch_start", mode="before")
+    @classmethod
+    def validate_lunch_start(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_lunch_start_value(value)
+
 
 class UserRead(SQLModel):
     id: UUID
     username: str
-    email: Optional[str] = None  # Made optional
+    email: Optional[str] = None
     first_name: str
     last_name: str
+    color: Optional[str] = None
     phone: Optional[str] = None
     role: UserRole
-    hire_date: Optional[datetime] = None  # Made optional to handle admin user
+    hire_date: datetime
     is_active: bool
     is_locked: bool
     force_password_reset: bool
     last_login: Optional[datetime] = None
+    reports_to: Optional[UUID] = None
+    role_id: Optional[UUID] = None  # Assigned role for inherited permissions
+    status_id: Optional[UUID] = None  # Managed employee status lookup
+    dark_mode: bool = False
+    training_mode: bool = True
+    training_mode_explicit: bool = False
+    button_text_size: str = "medium"
+    footer_align: str = "left"
+    ui_scale: int = 100
+    db_environment: str = "production"  # User's preferred database environment
+    startup_page: str = "schedule"  # User's preferred home/landing page on login
+    signature_data: Optional[str] = None
+    profile_picture: Optional[str] = None
+    iod_number: Optional[str] = None
+    supervisor: Optional[str] = None
+    location: Optional[str] = None
+    department_id: Optional[UUID] = None
+    employment_type: Optional[str] = None
+    salary: Optional[float] = None
+    hourly_rate: Optional[float] = None
+    pay_frequency: Optional[str] = None
+    insurance_plan: Optional[str] = None
+    vacation_days: Optional[int] = None
+    vacation_days_used: Optional[int] = 0
+    sick_days: Optional[int] = None
+    sick_days_used: Optional[int] = 0
+    lunch_start: Optional[str] = None
+    lunch_duration_minutes: Optional[int] = None
+    company_id: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
-    # Employee permission fields (optional, only present if user has linked employee)
-    clients_read: Optional[bool] = None
-    clients_write: Optional[bool] = None
-    clients_delete: Optional[bool] = None
-    clients_admin: Optional[bool] = None
-    
-    inventory_read: Optional[bool] = None
-    inventory_write: Optional[bool] = None
-    inventory_delete: Optional[bool] = None
-    inventory_admin: Optional[bool] = None
-    
-    services_read: Optional[bool] = None
-    services_write: Optional[bool] = None
-    services_delete: Optional[bool] = None
-    services_admin: Optional[bool] = None
-    
-    employees_read: Optional[bool] = None
-    employees_write: Optional[bool] = None
-    employees_delete: Optional[bool] = None
-    employees_admin: Optional[bool] = None
-    
-    schedule_read: Optional[bool] = None
-    schedule_write: Optional[bool] = None
-    schedule_delete: Optional[bool] = None
-    schedule_admin: Optional[bool] = None
-    schedule_view_all: Optional[bool] = None
-    
-    attendance_read: Optional[bool] = None
-    attendance_write: Optional[bool] = None
-    attendance_delete: Optional[bool] = None
-    attendance_admin: Optional[bool] = None
-    
-    documents_read: Optional[bool] = None
-    documents_write: Optional[bool] = None
-    documents_delete: Optional[bool] = None
-    documents_admin: Optional[bool] = None
-    
-    admin_read: Optional[bool] = None
-    admin_write: Optional[bool] = None
-    admin_delete: Optional[bool] = None
-    admin_admin: Optional[bool] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 17g USER PERMISSION SCHEMAS ───────────────────────────────────────────────
+class UserPermissionCreate(SQLModel):
+    user_id: Optional[UUID] = None
+    page: str
+    permission: str
+    granted: bool = True
+
+
+class UserPermissionUpdate(SQLModel):
+    page: Optional[str] = None
+    permission: Optional[str] = None
+    granted: Optional[bool] = None
+
+
+class UserPermissionRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    page: str
+    permission: PermissionType
+    granted: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 17h ROLE SCHEMAS ──────────────────────────────────────────────────────────
+# Role request/response models
+class RoleCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+
+
+class RoleUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class RolePermissionCreate(SQLModel):
+    page: str
+    permission: str
+
+
+class RolePermissionRead(SQLModel):
+    id: UUID
+    role_id: UUID
+    page: str
+    permission: PermissionType
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RoleRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    is_system: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    role_permissions: List[RolePermissionRead] = []
+
+    model_config = {"from_attributes": True}
+
+
+# Schedule request/response models
+class ScheduleCreate(SQLModel):
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: UUID
+    appointment_date: datetime
+    status: str = "scheduled"
+    notes: Optional[str] = None
+    appointment_type: str = "one_time"
+    duration_minutes: int = 60
+    service_addons_json: Optional[str] = None
+    recurrence_frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_count: Optional[int] = None
+    parent_schedule_id: Optional[UUID] = None
+    is_recurring_master: bool = False
+    is_paid: bool = False
+    send_reminder: bool = False
+    discount: float = 0.0
+    sale_transaction_id: Optional[UUID] = None
+
+
+class ScheduleUpdate(SQLModel):
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    appointment_date: Optional[datetime] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    appointment_type: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    service_addons_json: Optional[str] = None
+    recurrence_frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_count: Optional[int] = None
+    parent_schedule_id: Optional[UUID] = None
+    is_recurring_master: Optional[bool] = None
+    is_paid: Optional[bool] = None
+    send_reminder: Optional[bool] = None
+    discount: Optional[float] = None
+    sale_transaction_id: Optional[UUID] = None
+
+
+class ScheduleRead(SQLModel):
+    """Schema for reading schedule records (excludes relationship fields)"""
+    id: UUID
+    client_id: Optional[UUID] = None
+    service_id: Optional[UUID] = None
+    employee_id: UUID
+    appointment_date: datetime
+    status: str
+    notes: Optional[str] = None
+    appointment_type: str = "one_time"
+    duration_minutes: int = 60
+    service_addons_json: Optional[str] = None
+    recurrence_frequency: Optional[str] = None
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_count: Optional[int] = None
+    parent_schedule_id: Optional[UUID] = None
+    is_recurring_master: bool = False
+    is_paid: bool = False
+    send_reminder: bool = False
+    discount: float = 0.0
+    sale_transaction_id: Optional[UUID] = None
+    task_type: str = "service"
+    production_item_id: Optional[UUID] = None
+    production_quantity: int = 1
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleAttendeeRead(SQLModel):
+    """Schema for reading schedule attendee records"""
+    id: UUID
+    schedule_id: UUID
+    user_id: Optional[UUID] = None
+    client_id: Optional[UUID] = None
+    attendance_status: str = "pending"
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleAttendeeCreate(SQLModel):
+    user_id: Optional[UUID] = None
+    client_id: Optional[UUID] = None
+    attendance_status: str = "pending"
+
+
+class ScheduleDocumentLink(SQLModel):
+    document_id: UUID
+
+
+class CompanyRead(SQLModel):
+    id: UUID
+    company_id: str
+    name: str
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
+    timezone: Optional[str] = None
+    tax_rate: float = 0.0
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class CompanyCreate(SQLModel):
+    company_id: str
+    name: str
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
+    timezone: Optional[str] = None
+    tax_rate: float = 0.0
+    is_active: bool = True
+
 
 class LoginRequest(SQLModel):
     username: str
     password: str
     remember_me: bool = False
+    company_id: str = ""  # Company identifier - required for multi-tenant login
+
 
 class LoginResponse(SQLModel):
     access_token: str
-    token_type: str = "bearer"
     user: UserRead
     permissions: List[str]
+
 
 class PasswordResetRequest(SQLModel):
     username: str
     new_password: str
 
+
 class PasswordChangeRequest(SQLModel):
     current_password: str
     new_password: str
 
-class UserPermissionCreate(SQLModel):
-    # Optional: allow specifying the target user in the request body as well as in the URL
-    user_id: Optional[Union[UUID, str]] = None
-    page: str
-    permission: PermissionType
-    granted: bool = True
 
-class UserPermissionUpdate(SQLModel):
-    permission: Optional[PermissionType] = None
-    granted: Optional[bool] = None
+# App Settings request/response models
+class AppSettingsCreate(SQLModel):
+    start_of_day: str = "06:00"
+    end_of_day: str = "21:00"
+    attendance_check_in_required: bool = False
+    reminder_time_minutes: int = 30
+    reminder_send_notification: bool = True
+    monday_enabled: bool = True
+    tuesday_enabled: bool = True
+    wednesday_enabled: bool = True
+    thursday_enabled: bool = True
+    friday_enabled: bool = True
+    saturday_enabled: bool = True
+    sunday_enabled: bool = True
+    stripe_enabled: bool = False
+    stripe_mode: str = "test"
+    stripe_test_publishable_key: Optional[str] = None
+    stripe_test_secret_key: Optional[str] = None
+    stripe_test_webhook_secret: Optional[str] = None
+    stripe_live_publishable_key: Optional[str] = None
+    stripe_live_secret_key: Optional[str] = None
+    stripe_live_webhook_secret: Optional[str] = None
+    stripe_publishable_key: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
 
-class UserPermissionRead(SQLModel):
+
+class AppSettingsUpdate(SQLModel):
+    start_of_day: Optional[str] = None
+    end_of_day: Optional[str] = None
+    attendance_check_in_required: Optional[bool] = None
+    reminder_time_minutes: Optional[int] = None
+    reminder_send_notification: Optional[bool] = None
+    monday_enabled: Optional[bool] = None
+    tuesday_enabled: Optional[bool] = None
+    wednesday_enabled: Optional[bool] = None
+    thursday_enabled: Optional[bool] = None
+    friday_enabled: Optional[bool] = None
+    saturday_enabled: Optional[bool] = None
+    sunday_enabled: Optional[bool] = None
+    company_name: Optional[str] = None
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
+    company_timezone: Optional[str] = None
+    tax_rate: Optional[float] = None
+    # Client portal branding
+    portal_hero_title: Optional[str] = None
+    portal_hero_subtitle: Optional[str] = None
+    portal_hero_tagline: Optional[str] = None
+    portal_hero_bg_color: Optional[str] = None
+    portal_hero_text_color: Optional[str] = None
+    portal_hero_image_url: Optional[str] = None
+    portal_banner_text: Optional[str] = None
+    portal_banner_color: Optional[str] = None
+    portal_show_hero: Optional[bool] = None
+    portal_show_banner: Optional[bool] = None
+    portal_footer_text: Optional[str] = None
+    portal_primary_color: Optional[str] = None
+    portal_secondary_color: Optional[str] = None
+    stripe_enabled: Optional[bool] = None
+    stripe_mode: Optional[str] = None
+    stripe_test_publishable_key: Optional[str] = None
+    stripe_test_secret_key: Optional[str] = None
+    stripe_test_webhook_secret: Optional[str] = None
+    stripe_live_publishable_key: Optional[str] = None
+    stripe_live_secret_key: Optional[str] = None
+    stripe_live_webhook_secret: Optional[str] = None
+    stripe_publishable_key: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
+
+
+class AppSettingsRead(SQLModel):
     id: UUID
-    page: str
-    permission: PermissionType
-    granted: bool
+    start_of_day: str
+    end_of_day: str
+    attendance_check_in_required: bool
+    reminder_time_minutes: int = 30
+    reminder_send_notification: bool = True
+    monday_enabled: bool
+    tuesday_enabled: bool
+    wednesday_enabled: bool
+    thursday_enabled: bool
+    friday_enabled: bool
+    saturday_enabled: bool
+    sunday_enabled: bool
+    company_name: Optional[str] = None
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
+    company_timezone: Optional[str] = None
+    tax_rate: Optional[float] = None
+    # Client portal branding
+    portal_hero_title: Optional[str] = None
+    portal_hero_subtitle: Optional[str] = None
+    portal_hero_tagline: Optional[str] = None
+    portal_hero_bg_color: Optional[str] = None
+    portal_hero_text_color: Optional[str] = None
+    portal_hero_image_url: Optional[str] = None
+    portal_banner_text: Optional[str] = None
+    portal_banner_color: Optional[str] = None
+    portal_show_hero: bool = True
+    portal_show_banner: bool = False
+    portal_footer_text: Optional[str] = None
+    portal_primary_color: Optional[str] = None
+    portal_secondary_color: Optional[str] = None
+    stripe_enabled: bool = False
+    stripe_mode: str = "test"
+    stripe_test_publishable_key: Optional[str] = None
+    stripe_test_secret_key: Optional[str] = None
+    stripe_test_webhook_secret: Optional[str] = None
+    stripe_live_publishable_key: Optional[str] = None
+    stripe_live_secret_key: Optional[str] = None
+    stripe_live_webhook_secret: Optional[str] = None
+    stripe_publishable_key: Optional[str] = None
+    stripe_secret_key: Optional[str] = None
+    stripe_webhook_secret: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Database Connection model for storing multiple database configurations
+class DatabaseConnection(BaseModel, table=True):
+    name: str = Field(index=True)  # e.g., "Development", "Test", "Production"
+    environment: str = Field(index=True)  # e.g., "development", "test", "production"
+    host: str
+    port: int = Field(default=5432)
+    database_name: str
+    username: str
+    password: str  # Should be encrypted in production
+    ssl_mode: str = Field(default="require")  # For Render: require, prefer, disable
+    is_active: bool = Field(default=True)
+    visible_to_users: bool = Field(default=False)  # Toggle for user visibility
+    description: Optional[str] = Field(default=None)
+    
+    # Additional Render-specific fields
+    external_url: Optional[str] = Field(default=None)  # Render external database URL
+    internal_url: Optional[str] = Field(default=None)  # Render internal database URL
+    
+    # Connection pool settings
+    pool_size: int = Field(default=10)
+    max_overflow: int = Field(default=20)
+
+
+class DatabaseConnectionCreate(SQLModel):
+    name: str
+    environment: str
+    host: str
+    port: int = 5432
+    database_name: str
+    username: str
+    password: str
+    ssl_mode: str = "require"
+    is_active: bool = True
+    visible_to_users: bool = False
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: int = 10
+    max_overflow: int = 20
+
+
+class DatabaseConnectionUpdate(SQLModel):
+    name: Optional[str] = None
+    environment: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    database_name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    ssl_mode: Optional[str] = None
+    is_active: Optional[bool] = None
+    visible_to_users: Optional[bool] = None
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: Optional[int] = None
+    max_overflow: Optional[int] = None
+
+
+class DatabaseConnectionRead(SQLModel):
+    id: UUID
+    name: str
+    environment: str
+    host: str
+    port: int
+    database_name: str
+    username: str
+    password: str  # In production, consider masking this
+    ssl_mode: str
+    is_active: bool
+    visible_to_users: bool
+    description: Optional[str] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    pool_size: int
+    max_overflow: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# TaskLink model for linking tasks together (many-to-many)
+class TaskLink(BaseModel, table=True):
+    __tablename__ = "task_link"
+    source_task_id: UUID = Field(foreign_key="task.id")
+    target_task_id: UUID = Field(foreign_key="task.id")
+    link_type: Optional[str] = Field(default="related")  # related, blocks, blocked_by, depends_on, etc.
+    company_id: Optional[str] = Field(default=None, index=True)
+
+    # Relationships
+    source_task: Optional["Task"] = Relationship(
+        back_populates="linked_tasks",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.source_task_id]"}
+    )
+    target_task: Optional["Task"] = Relationship(
+        back_populates="reverse_linked_tasks",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.target_task_id]"}
+    )
+
+# Task model
+class Task(BaseModel, table=True):
+    title: str = Field(index=True)  # Task title (not unique, allowing multiple tasks with same title)
+    description: Optional[str] = Field(default=None)
+    status: str = Field(default="pending")  # pending, in_progress, completed, cancelled
+    priority: Optional[str] = Field(default="medium")  # low, medium, high
+    due_date: Optional[datetime] = Field(default=None)
+    assigned_to_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+    # Relationships
+    assigned_to: Optional["User"] = Relationship()
+    linked_tasks: List["TaskLink"] = Relationship(
+        back_populates="source_task",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.source_task_id]"}
+    )
+    reverse_linked_tasks: List["TaskLink"] = Relationship(
+        back_populates="target_task",
+        sa_relationship_kwargs={"foreign_keys": "[TaskLink.target_task_id]"}
+    )
+
+class TaskRead(SQLModel):
+    id: UUID
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    title: str
+    description: Optional[str] = None
+    status: str
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assigned_to_id: Optional[UUID] = None
+    linked_task_titles: Optional[List[str]] = None  # Titles of linked tasks
+
+class TaskCreate(SQLModel):
+    title: str
+    description: Optional[str] = None
+    status: Optional[str] = "pending"
+    priority: Optional[str] = "medium"
+    due_date: Optional[datetime] = None
+    assigned_to_id: Optional[UUID] = None
+    linked_task_titles: Optional[List[str]] = None  # List of task titles to link to
+
+class TaskUpdate(SQLModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assigned_to_id: Optional[UUID] = None
+    linked_task_titles: Optional[List[str]] = None  # List of task titles to link to
+
+class TaskLinkRead(SQLModel):
+    id: UUID
+    created_at: datetime
+    source_task_id: UUID
+    target_task_id: UUID
+    source_task_title: Optional[str] = None
+    target_task_title: Optional[str] = None
+    link_type: Optional[str] = None
+
+
+# Leave request model
+class LeaveRequest(BaseModel, table=True):
+    __tablename__ = "leave_request"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    supervisor_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    leave_type: str  # "vacation" or "sick"
+    start_date: str  # ISO date string YYYY-MM-DD
+    end_date: str    # ISO date string YYYY-MM-DD
+    days_requested: Optional[float] = Field(default=None)
+    status: str = Field(default="pending")  # pending, approved, denied
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class LeaveRequestRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    supervisor_id: Optional[UUID] = None
+    leave_type: str
+    start_date: str
+    end_date: str
+    days_requested: Optional[float] = None
+    status: str = "pending"
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class OnboardingRequest(BaseModel, table=True):
+    __tablename__ = "onboarding_request"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    supervisor_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    request_date: Optional[str] = Field(default=None)
+    status: str = Field(default="pending")
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class OnboardingRequestRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    supervisor_id: Optional[UUID] = None
+    request_date: Optional[str] = None
+    status: str = "pending"
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class OffboardingRequest(BaseModel, table=True):
+    __tablename__ = "offboarding_request"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    supervisor_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
+    request_date: Optional[str] = Field(default=None)
+    status: str = Field(default="pending")
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class OffboardingRequestRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    supervisor_id: Optional[UUID] = None
+    request_date: Optional[str] = None
+    status: str = "pending"
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Insurance plan reference table
+class InsurancePlan(BaseModel, table=True):
+    __tablename__ = "insurance_plan"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    is_active: bool = Field(default=True)
+    monthly_deduction: Optional[float] = Field(default=None)
+    document_id: Optional[UUID] = Field(default=None, foreign_key="document.id")
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InsurancePlanRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    is_active: bool = True
+    monthly_deduction: Optional[float] = None
+    document_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Pay slip model
+class PaySlip(BaseModel, table=True):
+    __tablename__ = "pay_slip"
+    employee_id: UUID = Field(foreign_key="user.id", index=True)
+    pay_period_start: datetime
+    pay_period_end: datetime
+    gross_amount: float
+    insurance_deduction: float = Field(default=0.0)
+    other_deductions: float = Field(default=0.0)
+    net_amount: float
+    employment_type: str = Field(default="salary")   # "salary" or "hourly"
+    hours_worked: Optional[float] = Field(default=None)
+    hourly_rate_snapshot: Optional[float] = Field(default=None)
+    salary_snapshot: Optional[float] = Field(default=None)
+    service_revenue: float = Field(default=0.0)
+    base_pay_snapshot: Optional[float] = Field(default=None)
+    compensation_percentage_snapshot: Optional[float] = Field(default=None)
+    base_pay_included_snapshot: Optional[bool] = Field(default=None)
+    pay_frequency: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    status: str = Field(default="paid")
+    insurance_plan_name: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class PaySlipCreate(SQLModel):
+    pay_period_start: datetime
+    pay_period_end: datetime
+    gross_amount: Optional[float] = None        # used for salary override
+    other_deductions: float = 0.0
+    employment_type: Optional[str] = None       # overrides employee.employment_type
+    hours_worked: Optional[float] = None        # required for hourly
+    hourly_rate_snapshot: Optional[float] = None  # overrides employee.hourly_rate
+    notes: Optional[str] = None
+
+
+class PaySlipRead(SQLModel):
+    id: UUID
+    employee_id: UUID
+    pay_period_start: datetime
+    pay_period_end: datetime
+    gross_amount: float
+    insurance_deduction: float
+    other_deductions: float
+    net_amount: float
+    employment_type: str
+    hours_worked: Optional[float] = None
+    hourly_rate_snapshot: Optional[float] = None
+    salary_snapshot: Optional[float] = None
+    service_revenue: float = 0.0
+    base_pay_snapshot: Optional[float] = None
+    compensation_percentage_snapshot: Optional[float] = None
+    base_pay_included_snapshot: Optional[bool] = None
+    pay_frequency: Optional[str] = None
+    notes: Optional[str] = None
+    status: str
+    insurance_plan_name: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Pay Schedule (company-level payroll configuration) ────────────────────────
+
+class PaySchedule(BaseModel, table=True):
+    __tablename__ = "pay_schedule"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    company_id: str = Field(index=True)
+
+    # "weekly", "biweekly", "monthly"
+    frequency: str = Field(default="monthly")
+
+    # Weekly / biweekly — comma-separated short names e.g. "mon,tue,wed,thu,fri"
+    work_days: Optional[str] = Field(default=None)
+    # Payday weekday for weekly/biweekly: "mon"–"sun"
+    payday_weekday: Optional[str] = Field(default=None)
+
+    # Monthly payday options
+    monthly_payday_type: Optional[str] = Field(default=None)   # "date" | "weekday"
+    monthly_payday_date: Optional[int] = Field(default=None)   # 1–31
+    monthly_payday_week: Optional[int] = Field(default=None)   # 1,2,3,4 or -1 (last)
+    monthly_payday_weekday: Optional[str] = Field(default=None)  # "mon"–"sun"
+
+    # "arrears" = pay after work done | "advance" = pay before work starts
+    pay_timing: str = Field(default="arrears")
+
+    # ISO date string — anchor date for cycle alignment (weekly/biweekly)
+    cycle_anchor_date: Optional[str] = Field(default=None)
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PayScheduleCreate(SQLModel):
+    frequency: str = "monthly"
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str = "arrears"
+    cycle_anchor_date: Optional[str] = None
+
+
+class PayScheduleRead(SQLModel):
+    id: UUID
+    company_id: str
+    frequency: str
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str
+    cycle_anchor_date: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class EmployeePaySchedule(BaseModel, table=True):
+    __tablename__ = "employee_pay_schedule"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    company_id: str = Field(index=True)
+    employee_id: UUID = Field(index=True)
+
+    frequency: str = Field(default="monthly")
+    work_days: Optional[str] = Field(default=None)
+    payday_weekday: Optional[str] = Field(default=None)
+
+    monthly_payday_type: Optional[str] = Field(default=None)
+    monthly_payday_date: Optional[int] = Field(default=None)
+    monthly_payday_week: Optional[int] = Field(default=None)
+    monthly_payday_weekday: Optional[str] = Field(default=None)
+
+    pay_timing: str = Field(default="arrears")
+    cycle_anchor_date: Optional[str] = Field(default=None)
+    base_pay: float = Field(default=0.0, ge=0)
+    compensation_percentage: float = Field(default=0.0, ge=0, le=100)
+    base_pay_included: bool = Field(default=True)
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class EmployeePayScheduleCreate(SQLModel):
+    frequency: str = "monthly"
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str = "arrears"
+    cycle_anchor_date: Optional[str] = None
+    base_pay: float = Field(default=0.0, ge=0)
+    compensation_percentage: float = Field(default=0.0, ge=0, le=100)
+    base_pay_included: bool = True
+
+
+class EmployeePayScheduleRead(SQLModel):
+    id: UUID
+    company_id: str
+    employee_id: UUID
+    frequency: str
+    work_days: Optional[str] = None
+    payday_weekday: Optional[str] = None
+    monthly_payday_type: Optional[str] = None
+    monthly_payday_date: Optional[int] = None
+    monthly_payday_week: Optional[int] = None
+    monthly_payday_weekday: Optional[str] = None
+    pay_timing: str
+    cycle_anchor_date: Optional[str] = None
+    base_pay: float = 0.0
+    compensation_percentage: float = 0.0
+    base_pay_included: bool = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Sale transaction models
+class SaleTransaction(BaseModel, table=True):
+    __tablename__ = "sale_transaction"
+    client_id: Optional[UUID] = Field(foreign_key="client.id", default=None)
+    employee_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    subtotal: float = Field(default=0)
+    discount_amount: float = Field(default=0)  # discount applied to transaction
+    tax_amount: float = Field(default=0)
+    total: float = Field(default=0)
+    payment_method: str = Field(default="cash")  # "card" or "cash"
+    stripe_payment_intent_id: Optional[str] = Field(default=None)
+    stripe_checkout_session_id: Optional[str] = Field(default=None)
+    stripe_charge_id: Optional[str] = Field(default=None)
+    paid_at: Optional[datetime] = Field(default=None)
+    inventory_consumed_at: Optional[datetime] = Field(default=None)
+    receipt_emailed_at: Optional[datetime] = Field(default=None)
+    schedule_id: Optional[UUID] = Field(foreign_key="schedule.id", default=None)  # linked appointment
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class SaleTransactionItem(BaseModel, table=True):
+    __tablename__ = "sale_transaction_item"
+    sale_transaction_id: UUID = Field(foreign_key="sale_transaction.id", index=True)
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str  # "product" or "service"
+    item_name: str   # snapshot of name at time of sale
+    unit_price: float = Field(default=0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0)
+    mix_selections: Optional[str] = Field(default=None)  # JSON: [{product_id, product_name, quantity}]
+    options_json: Optional[str] = Field(default=None)  # JSON: selected descriptive feature options
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class SaleTransactionRead(SQLModel):
+    id: UUID
+    client_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    subtotal: float
+    discount_amount: float = 0
+    tax_amount: float
+    total: float
+    payment_method: str
+    stripe_payment_intent_id: Optional[str] = None
+    stripe_checkout_session_id: Optional[str] = None
+    stripe_charge_id: Optional[str] = None
+    paid_at: Optional[datetime] = None
+    inventory_consumed_at: Optional[datetime] = None
+    receipt_emailed_at: Optional[datetime] = None
+    schedule_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Chat models
+class ChatMessage(BaseModel, table=True):
+    __tablename__ = "chat_message"
+    sender_id: UUID = Field(foreign_key="user.id", index=True)
+    receiver_id: UUID = Field(foreign_key="user.id", index=True)
+    content: Optional[str] = Field(default=None)
+    message_type: str = Field(default="text")  # "text" or "document"
+    document_id: Optional[UUID] = Field(default=None, foreign_key="document.id")
+    is_read: bool = Field(default=False)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ChatMessageCreate(SQLModel):
+    content: Optional[str] = None
+    message_type: str = "text"
+    document_id: Optional[UUID] = None
+
+
+class ChatMessageRead(SQLModel):
+    id: UUID
+    sender_id: UUID
+    receiver_id: UUID
+    content: Optional[str] = None
+    message_type: str
+    document_id: Optional[UUID] = None
+    is_read: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SaleTransactionCreate(SQLModel):
+    client_id: Optional[UUID] = None
+    employee_id: Optional[UUID] = None
+    subtotal: float = 0
+    discount_amount: float = 0
+    tax_amount: float = 0
+    total: float = 0
+    payment_method: str = "cash"
+    schedule_id: Optional[UUID] = None
+
+
+class SaleTransactionItemRead(SQLModel):
+    id: UUID
+    sale_transaction_id: UUID
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    mix_selections: Optional[str] = None
+    options_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SaleTransactionItemCreate(SQLModel):
+    sale_transaction_id: UUID
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float = 0
+    quantity: int = 1
+    line_total: float = 0
+    mix_selections: Optional[str] = None
+    options_json: Optional[str] = None
+
+
+# Client persistent cart models
+class ClientCartItem(BaseModel, table=True):
+    __tablename__ = "client_cart_item"
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    cart_key: str = Field(index=True)   # e.g. "service-{uuid}" or "product-{uuid}"
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str                       # "product" or "service"
+    item_name: str
+    unit_price: float = Field(default=0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0)
+    options_json: Optional[str] = Field(default=None)  # JSON-encoded selectedOptions
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientCartItemRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    cart_key: str
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    options_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+    # Discount fields (optional, populated when discount is applicable)
+    unit_price_original: Optional[float] = None
+    unit_price_discounted: Optional[float] = None
+    unit_discount_amount: Optional[float] = None
+    line_total_before_discount: Optional[float] = None
+    line_discount_amount: Optional[float] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ClientCartItemUpsert(SQLModel):
+    cart_key: str
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float = 0
+    quantity: int = 1
+    line_total: float = 0
+    options_json: Optional[str] = None
+
+
+# ─── 18 CLIENT PORTAL ORDERS ──────────────────────────────────────────────────
+class ClientOrder(BaseModel, table=True):
+    """Orders placed through the client portal (products + services)."""
+    __tablename__ = "client_order"
+    
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    employee_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
+    status: str = Field(default="payment_pending")  # payment_pending | ordered | processing | ready_for_pickup | out_for_delivery | delivered | picked_up | cancelled | refunded
+    subtotal: float = Field(default=0.0)
+    tax_amount: float = Field(default=0.0)
+    total: float = Field(default=0.0)
+    payment_method: Optional[str] = Field(default=None)
+    stripe_payment_intent_id: Optional[str] = Field(default=None)
+    stripe_charge_id: Optional[str] = Field(default=None)
+    paid_at: Optional[datetime] = Field(default=None)
+    fulfilled_at: Optional[datetime] = Field(default=None)
+    inventory_deducted_at: Optional[datetime] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientOrderItem(BaseModel, table=True):
+    """Line items within a ClientOrder (products or bookings)."""
+    __tablename__ = "client_order_item"
+    
+    order_id: UUID = Field(foreign_key="client_order.id", index=True)
+    item_id: Optional[UUID] = Field(default=None)
+    item_type: str = Field(default="product")  # product | service
+    item_name: str
+    unit_price: float = Field(default=0.0)
+    quantity: int = Field(default=1)
+    line_total: float = Field(default=0.0)
+    booking_id: Optional[UUID] = Field(default=None)
+    options_json: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ClientOrderRead(SQLModel):
+    id: UUID
+    client_id: UUID
+    employee_id: Optional[UUID] = None
+    status: str
+    subtotal: float
+    tax_amount: float
+    total: float
+    payment_method: Optional[str] = None
+    stripe_payment_intent_id: Optional[str] = None
+    stripe_charge_id: Optional[str] = None
+    paid_at: Optional[datetime] = None
+    fulfilled_at: Optional[datetime] = None
+    inventory_deducted_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+
+class ClientOrderItemRead(SQLModel):
+    id: UUID
+    order_id: UUID
+    item_id: Optional[UUID] = None
+    item_type: str
+    item_name: str
+    unit_price: float
+    quantity: int
+    line_total: float
+    booking_id: Optional[UUID] = None
+    options_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+    # Discount fields (optional, populated when discount was applied)
+    unit_price_original: Optional[float] = None
+    unit_price_discounted: Optional[float] = None
+    unit_discount_amount: Optional[float] = None
+    line_total_before_discount: Optional[float] = None
+    line_discount_amount: Optional[float] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    
+    model_config = {"from_attributes": True}
+
+
+# ─── 19 PRODUCT PRODUCTION MODELS ─────────────────────────────────────────────
+
+class ProductResource(BaseModel, table=True):
+    """Resources (consumables) used when producing a batch of a product."""
+    __tablename__ = "product_resource"
+    inventory_id: UUID = Field(index=True)           # the PRODUCT being made (no FK — inventory self-ref is complex)
+    resource_id: UUID = Field(index=True)            # the RESOURCE inventory item consumed per batch
+    quantity_per_batch: float = Field(default=1.0, ge=0)  # how many units of this resource consumed per batch
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProductAsset(BaseModel, table=True):
+    """Asset (equipment) used when producing a batch of a product."""
+    __tablename__ = "product_asset"
+    inventory_id: UUID = Field(index=True)           # the PRODUCT being made
+    asset_id: UUID = Field(index=True)               # the ASSET inventory item used
+    batch_size: int = Field(default=1, ge=1)         # units produced per one asset run
+    duration_minutes: Optional[float] = Field(default=None, ge=0)  # time per batch
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProductLocation(BaseModel, table=True):
+    """Location where a product is manufactured."""
+    __tablename__ = "product_location"
+    inventory_id: UUID = Field(index=True)           # the PRODUCT being made
+    location_id: UUID = Field(index=True)            # the LOCATION inventory item
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProductResourceRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    resource_id: UUID
+    quantity_per_batch: float
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class ProductAssetRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    asset_id: UUID
+    batch_size: int
+    duration_minutes: Optional[float] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class ProductLocationRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    location_id: UUID
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class BundleComponent(BaseModel, table=True):
+    """A component product or service within a bundle item."""
+    __tablename__ = "bundle_component"
+    bundle_id: UUID = Field(index=True)        # the BUNDLE inventory item
+    component_id: UUID = Field(index=True)     # component inventory item (product or service)
+    quantity: float = Field(default=1.0, ge=0) # how many per 1 bundle unit sold
+    notes: Optional[str] = Field(default=None)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class BundleComponentRead(SQLModel):
+    id: UUID
+    bundle_id: UUID
+    component_id: UUID
+    quantity: float
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class BundleComponentCreate(SQLModel):
+    bundle_id: UUID
+    component_id: UUID
+    quantity: float = 1.0
+    notes: Optional[str] = None
+
+
+class BundleComponentUpdate(SQLModel):
+    quantity: Optional[float] = None
+    notes: Optional[str] = None
+
+
+class MixConfig(BaseModel, table=True):
+    """Configuration for a mix inventory item (one per mix item)."""
+    __tablename__ = "mix_config"
+    inventory_id: UUID = Field(index=True)          # the MIX inventory item
+    total_quantity: int = Field(default=1, ge=1)    # total products client must pick
+    has_max_per_product: bool = Field(default=False)
+    max_per_product: Optional[int] = Field(default=None)  # global cap per product in mix
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class MixComponent(BaseModel, table=True):
+    """A product available for selection within a mix."""
+    __tablename__ = "mix_component"
+    mix_id: UUID = Field(index=True)               # inventory_id of the MIX item
+    component_id: UUID = Field(index=True)         # product inventory item
+    max_quantity: Optional[int] = Field(default=None)  # per-product override (overrides global)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class MixConfigRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    total_quantity: int
+    has_max_per_product: bool
+    max_per_product: Optional[int] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class MixConfigCreate(SQLModel):
+    inventory_id: UUID
+    total_quantity: int = 1
+    has_max_per_product: bool = False
+    max_per_product: Optional[int] = None
+
+
+class MixConfigUpdate(SQLModel):
+    total_quantity: Optional[int] = None
+    has_max_per_product: Optional[bool] = None
+    max_per_product: Optional[int] = None
+
+
+class MixComponentRead(SQLModel):
+    id: UUID
+    mix_id: UUID
+    component_id: UUID
+    max_quantity: Optional[int] = None
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class MixComponentCreate(SQLModel):
+    mix_id: UUID
+    component_id: UUID
+    max_quantity: Optional[int] = None
+
+
+class MixComponentUpdate(SQLModel):
+    max_quantity: Optional[int] = None
+
+
+class DiscountRule(BaseModel, table=True):
+    """A scheduled discount rule applied to all or selected inventory items."""
+    __tablename__ = "discount_rule"
+    name: str = Field(index=True)
+    applies_to: str = Field(default="all")           # "all" or "selected"
+    item_ids: Optional[str] = Field(default=None)    # JSON: ["uuid1", "uuid2", ...]
+    discount_type: str = Field(default="percentage") # "percentage" or "fixed"
+    discount_value: float = Field(default=0.0, ge=0) # % value or fixed amount
+    # Date window
+    start_date: Optional[datetime] = Field(default=None)
+    end_date: Optional[datetime] = Field(default=None)
+    # Recurring schedule
+    is_recurring: bool = Field(default=False)
+    recur_frequency: Optional[str] = Field(default=None)  # "daily" | "weekly" | "monthly"
+    recur_days: Optional[str] = Field(default=None)        # JSON: ["Mon","Tue"] for weekly
+    recur_count: Optional[int] = Field(default=None)       # max repetitions (null = indefinite)
+    times_per_day: Optional[int] = Field(default=None)     # how many times per day it applies
+    day_start_time: Optional[str] = Field(default=None)    # "HH:MM"
+    day_end_time: Optional[str] = Field(default=None)      # "HH:MM"
+    is_active: bool = Field(default=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DiscountRuleRead(SQLModel):
+    id: UUID
+    name: str
+    applies_to: str
+    item_ids: Optional[str] = None
+    discount_type: str
+    discount_value: float
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_recurring: bool
+    recur_frequency: Optional[str] = None
+    recur_days: Optional[str] = None
+    recur_count: Optional[int] = None
+    times_per_day: Optional[int] = None
+    day_start_time: Optional[str] = None
+    day_end_time: Optional[str] = None
+    is_active: bool
+    created_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+# ─── AssetUnit Schemas ───────────────────────────────────────────────────────
+
+class AssetUnitRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    label: Optional[str] = None
+    location: Optional[str] = None
+    employee_id: Optional[UUID] = None
+    state: str
+    schedule_id: Optional[UUID] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class AssetUnitCreate(SQLModel):
+    label: Optional[str] = None
+    location: Optional[str] = None
+    employee_id: Optional[UUID] = None
+    state: str = "available"
+    notes: Optional[str] = None
+
+
+class AssetUnitUpdate(SQLModel):
+    label: Optional[str] = None
+    location: Optional[str] = None
+    employee_id: Optional[UUID] = None
+    state: Optional[str] = None
+    schedule_id: Optional[UUID] = None
+    notes: Optional[str] = None
+
+
+# Document Template model
+class DocumentTemplate(BaseModel, table=True):
+    __tablename__ = "document_template"
+    name: str = Field(index=True)
+    description: Optional[str] = Field(default=None)
+    template_type: str = Field(default="custom")  # email|invoice|receipt|memo|quote|custom
+    content: str = Field(default="")              # HTML with {{var}} placeholders
+    is_standard: bool = Field(default=False)      # standard = cannot delete
+    is_active: bool = Field(default=True)
+    accessible_pages: Optional[str] = Field(default='[]')  # JSON string: '["clients"]'
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class DocumentTemplateCreate(SQLModel):
+    name: str
+    description: Optional[str] = None
+    template_type: str = "custom"
+    content: str = ""
+    is_standard: bool = False
+    is_active: bool = True
+    accessible_pages: Optional[str] = '[]'
+
+
+class DocumentTemplateUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    template_type: Optional[str] = None
+    content: Optional[str] = None
+    is_standard: Optional[bool] = None
+    is_active: Optional[bool] = None
+    accessible_pages: Optional[str] = None
+
+
+class DocumentTemplateRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str] = None
+    template_type: str
+    content: str
+    is_standard: bool
+    is_active: bool
+    accessible_pages: Optional[str] = '[]'
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ─── 12 AUDIT LOGGING ──────────────────────────────────────────────────────────
+class AuditLog(BaseModel, table=True):
+    """Comprehensive audit trail for compliance and security"""
+    __tablename__ = "audit_log"
+    
+    user_id: Optional[UUID] = Field(foreign_key="user.id", default=None, index=True)
+    username: Optional[str] = Field(default=None, index=True)
+    action: str = Field(index=True)  # "create", "update", "delete", "approve", "reject", "view", "download"
+    entity_type: str = Field(index=True)  # "document", "inventory", "order", "schedule", etc.
+    entity_id: Optional[UUID] = Field(default=None, index=True)
+    entity_name: Optional[str] = Field(default=None)
+    
+    # Before/after values
+    changes_json: Optional[str] = Field(default=None)  # JSON: {"field": {"old": X, "new": Y}, ...}
+    
+    # Request context
+    ip_address: Optional[str] = Field(default=None)
+    user_agent: Optional[str] = Field(default=None)
+    
+    # Status
+    status: str = Field(default="success")  # "success" or "failure"
+    error_message: Optional[str] = Field(default=None)
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 13 WORKFLOW & APPROVALS ───────────────────────────────────────────────────
+class WorkflowTemplate(BaseModel, table=True):
+    """Reusable workflow definitions (e.g., 'Expense Approval', 'Invoice Approval')"""
+    __tablename__ = "workflow_template"
+    
+    name: str = Field(index=True)
+    description: Optional[str] = None
+    document_type: str  # "document", "expense", "invoice", "leave_request", "purchase_order"
+    company_id: str = Field(index=True)
+    is_active: bool = Field(default=True)
+    
+    # Workflow structure (JSON, stores all stage configs)
+    stages_json: str = Field(default='{"stages": []}')
+    
+    created_by: Optional[UUID] = Field(foreign_key="user.id")
+
+
+class DocumentWorkflowInstance(BaseModel, table=True):
+    """Instance of a workflow for a specific document"""
+    __tablename__ = "document_workflow_instance"
+    
+    document_id: UUID = Field(foreign_key="document.id", index=True, unique=True)
+    workflow_template_id: UUID = Field(foreign_key="workflow_template.id")
+    company_id: str = Field(index=True)
+    
+    # Current state
+    current_stage_id: Optional[str] = None
+    current_approver_id: Optional[UUID] = Field(foreign_key="user.id")
+    
+    # Status
+    status: str = Field(default="in_progress")  # "in_progress", "approved", "rejected"
+    completed_at: Optional[datetime] = None
+    
+    # Rejection tracking
+    rejection_reason: Optional[str] = None
+    rejection_count: int = Field(default=0)
+
+
+class WorkflowApprovalStep(BaseModel, table=True):
+    """Record of each approval action taken"""
+    __tablename__ = "workflow_approval_step"
+    
+    workflow_instance_id: UUID = Field(foreign_key="document_workflow_instance.id", index=True)
+    stage_id: str
+    stage_name: str
+    
+    assigned_to_user_id: UUID = Field(foreign_key="user.id", index=True)
+    assigned_by: Optional[UUID] = Field(foreign_key="user.id")
+    assigned_at: datetime = Field(default_factory=datetime.utcnow)
+    due_at: Optional[datetime] = None
+    
+    # Action taken
+    action: str = Field(default="pending")  # "pending", "approved", "rejected", "reassigned"
+    action_by_user_id: Optional[UUID] = Field(foreign_key="user.id")
+    action_at: Optional[datetime] = None
+    action_reason: Optional[str] = None
+    
+    # Signature details
+    signature_image: Optional[str] = None  # base64 PNG
+
+
+class PendingOrder(BaseModel, table=True):
+    """Track orders pending review/revision"""
+    __tablename__ = "pending_order"
+    
+    order_id: Optional[UUID] = Field(default=None)  # Can be schedule_id or sale_transaction_id
+    order_type: str  # "booking" (from client portal) or "transaction"
+    client_id: Optional[UUID] = Field(foreign_key="client.id", index=True)
+    user_id: Optional[UUID] = Field(foreign_key="user.id")  # Employee who needs to review
+    
+    status: str = Field(default="pending", index=True)  # "pending", "reviewed", "approved", "rejected"
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── 14 FINANCIAL MODULES ──────────────────────────────────────────────────────
+class GeneralLedgerAccount(BaseModel, table=True):
+    """Chart of Accounts"""
+    __tablename__ = "general_ledger_account"
+    
+    account_code: str = Field(index=True)  # e.g., "1000", "2000"
+    account_name: str
+    account_type: str  # "asset", "liability", "equity", "revenue", "expense"
+    description: Optional[str] = None
+    
+    is_active: bool = Field(default=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class GeneralLedgerEntry(BaseModel, table=True):
+    """Individual GL transactions"""
+    __tablename__ = "general_ledger_entry"
+    
+    account_id: UUID = Field(foreign_key="general_ledger_account.id")
+    transaction_date: datetime = Field(index=True)
+    
+    debit: float = Field(default=0.0, ge=0)
+    credit: float = Field(default=0.0, ge=0)
+    
+    description: str
+    reference_id: Optional[UUID] = None  # Link to sales transaction, invoice, etc.
+    reference_type: Optional[str] = None  # "sales", "invoice", "expense", etc.
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class AccountsReceivable(BaseModel, table=True):
+    """Invoice aging and payment tracking"""
+    __tablename__ = "accounts_receivable"
+    
+    invoice_number: str = Field(index=True)
+    client_id: UUID = Field(foreign_key="client.id", index=True)
+    invoice_date: datetime
+    due_date: datetime = Field(index=True)
+    
+    amount: float
+    amount_paid: float = Field(default=0.0)
+    amount_remaining: float
+    
+    status: str = Field(default="outstanding")  # "outstanding", "paid", "overdue", "written_off"
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class AccountsPayable(BaseModel, table=True):
+    """Vendor invoice aging and payment tracking"""
+    __tablename__ = "accounts_payable"
+    
+    invoice_number: str = Field(index=True)
+    supplier_id: UUID = Field(foreign_key="supplier.id", index=True)
+    invoice_date: datetime
+    due_date: datetime = Field(index=True)
+    
+    amount: float
+    amount_paid: float = Field(default=0.0)
+    amount_remaining: float
+    
+    status: str = Field(default="outstanding")  # "outstanding", "paid", "overdue", "paid_early"
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProcurementOrder(BaseModel, table=True):
+    """Purchase orders to suppliers"""
+    __tablename__ = "procurement_order"
+    
+    po_number: str = Field(index=True, unique=True)
+    supplier_id: UUID = Field(foreign_key="supplier.id", index=True)
+    
+    order_date: datetime = Field(index=True)
+    expected_delivery_date: Optional[datetime] = None
+    actual_delivery_date: Optional[datetime] = None
+    
+    total_amount: float = Field(default=0.0)
+    import_tax: Optional[float] = Field(default=0.0)
+    shipping_cost: Optional[float] = Field(default=0.0)
+    status: str = Field(default="draft")  # "draft", "sent", "confirmed", "received", "invoiced", "closed"
+    
+    created_by: Optional[UUID] = Field(foreign_key="user.id")
+    notes: Optional[str] = None
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ProcurementOrderLine(BaseModel, table=True):
+    """Line items on a purchase order"""
+    __tablename__ = "procurement_order_line"
+    
+    po_id: UUID = Field(foreign_key="procurement_order.id", index=True)
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False))
+    
+    quantity_ordered: int
+    quantity_received: int = Field(default=0)
+    unit_price: float
+    line_total: float
+    
+    notes: Optional[str] = None
+
+
+class InventoryCost(BaseModel, table=True):
+    """Track inventory valuation and cost"""
+    __tablename__ = "inventory_cost"
+    
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), unique=True, nullable=False))
+    
+    standard_cost: Optional[float] = None  # Standard/expected cost
+    actual_cost: Optional[float] = None  # Weighted average cost
+    acquisition_cost: Optional[float] = None  # Most recent purchase cost
+    
+    reorder_quantity: int = Field(default=0)
+    reorder_point: int = Field(default=0)
+    lead_time_days: int = Field(default=0)
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class ScheduleSettings(BaseModel, table=True):
+    """Per-user schedule/booking settings"""
+    __tablename__ = "schedule_settings"
+    
+    user_id: UUID = Field(foreign_key="user.id", unique=True, index=True)
+    auto_accept_client_bookings: bool = Field(default=False)  # Auto-accept from client portal
+    auto_accept_pending_hours: Optional[int] = Field(default=None)  # Auto-accept if within N hours
+    
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── READ SCHEMAS FOR NEW MODELS ──────────────────────────────────────────────
+
+class AuditLogRead(SQLModel):
+    id: UUID
+    user_id: Optional[UUID]
+    username: Optional[str]
+    action: str
+    entity_type: str
+    entity_id: Optional[UUID]
+    entity_name: Optional[str]
+    changes_json: Optional[str]
+    ip_address: Optional[str]
+    status: str
+    error_message: Optional[str]
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class WorkflowTemplateRead(SQLModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    document_type: str
+    company_id: str
+    is_active: bool
+    stages_json: str
+    created_by: Optional[UUID]
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class WorkflowApprovalStepRead(SQLModel):
+    id: UUID
+    workflow_instance_id: UUID
+    stage_id: str
+    stage_name: str
+    assigned_to_user_id: UUID
+    assigned_at: datetime
+    due_at: Optional[datetime]
+    action: str
+    action_at: Optional[datetime]
+    action_reason: Optional[str]
+    
+    model_config = {"from_attributes": True}
+
+
+class DocumentWorkflowInstanceRead(SQLModel):
+    id: UUID
+    document_id: UUID
+    workflow_template_id: UUID
+    company_id: str
+    current_stage_id: Optional[str]
+    status: str
+    completed_at: Optional[datetime]
+    rejection_reason: Optional[str]
+    rejection_count: int
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class ProcurementOrderRead(SQLModel):
+    id: UUID
+    po_number: str
+    supplier_id: UUID
+    order_date: datetime
+    expected_delivery_date: Optional[datetime]
+    total_amount: float
+    import_tax: Optional[float] = 0.0
+    shipping_cost: Optional[float] = 0.0
+    status: str
+    notes: Optional[str]
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class InventoryCostRead(SQLModel):
+    id: UUID
+    inventory_id: UUID
+    standard_cost: Optional[float]
+    actual_cost: Optional[float]
+    acquisition_cost: Optional[float]
+    reorder_quantity: int
+    reorder_point: int
+    lead_time_days: int
+    created_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class PendingOrderRead(SQLModel):
+    id: UUID
+    order_id: Optional[UUID]
+    order_type: str
+    client_id: Optional[UUID]
+    user_id: Optional[UUID]
+    status: str
+    notes: Optional[str]
+    company_id: Optional[str]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleSettingsRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    auto_accept_client_bookings: bool
+    auto_accept_pending_hours: Optional[int]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    company_id: Optional[str]
+    
+    model_config = {"from_attributes": True}
+
+
+# ── Saved Report Filters ──────────────────────────────────────────────────────
+# Allows users to save and quickly recall report filter configurations
+
+class SavedReportFilter(BaseModel, table=True):
+    __tablename__ = "saved_report_filter"
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+    name: str = Field(index=True)  # User-defined name for this filter set
+    report_id: str = Field(index=True)  # e.g., "appointments", "revenue", etc.
+    # Filter configuration stored as JSON
+    date_range: Optional[str] = Field(default=None)  # e.g., "last30days"
+    group_by: Optional[str] = Field(default=None)  # e.g., "month", "week"
+    chart_type: Optional[str] = Field(default=None)  # e.g., "line", "bar"
+    status_filter: Optional[str] = Field(default=None)  # e.g., "all", "completed"
+    employee_id: Optional[str] = Field(default=None)  # "all" or specific UUID
+    service_id: Optional[str] = Field(default=None)  # "all" or specific UUID
+    event_type: Optional[str] = Field(default=None)  # For events report: "meeting", "call", etc.
+    # Future extensibility: additional filters as JSON string
+    additional_filters_json: Optional[str] = Field(default=None)
+
+
+class SavedReportFilterRead(SQLModel):
+    id: UUID
+    user_id: UUID
+    company_id: Optional[str] = None
+    name: str
+    report_id: str
+    date_range: Optional[str] = None
+    group_by: Optional[str] = None
+    chart_type: Optional[str] = None
+    status_filter: Optional[str] = None
+    employee_id: Optional[str] = None
+    service_id: Optional[str] = None
+    event_type: Optional[str] = None
+    additional_filters_json: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+
+class SavedReportFilterCreate(SQLModel):
+    name: str
+    report_id: str
+    date_range: Optional[str] = None
+    group_by: Optional[str] = None
+    chart_type: Optional[str] = None
+    status_filter: Optional[str] = None
+    employee_id: Optional[str] = None
+    service_id: Optional[str] = None
+    event_type: Optional[str] = None
+    additional_filters_json: Optional[str] = None

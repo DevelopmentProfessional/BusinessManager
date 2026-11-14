@@ -1,0 +1,320 @@
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import useStore from "../../services/useStore";
+import useViewMode from "../../services/useViewMode";
+import { applyButtonDimensions } from "../../constants/buttonTextSize";
+import { chatAPI, isudAPI } from "../../services/api";
+import Badge_PendingOrder from "./badges/Badge_PendingOrder";
+import Modal from "./modals/Modal";
+
+// All navigation items (shown in bottom-right expandable menu on mobile)
+// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Sales, Schedule, Settings
+const allNavigation = [
+  { name: "Profile", href: "/profile", icon: UserCircleIcon },
+  { name: "Reports", href: "/reports", icon: ChartBarIcon, permission: "reports:read" },
+  { name: "Inventory", href: "/inventory", icon: ArchiveBoxIcon, permission: "inventory:read" },
+  { name: "Clients", href: "/clients", icon: UserGroupIcon, permission: "clients:read" },
+  { name: "Employees", href: "/employees", icon: UsersIcon, permission: "employees:read" },
+  { name: "Documents", href: "/documents", icon: DocumentIcon, permission: "documents:read" },
+  { name: "Services", href: "/services", icon: SparklesIcon, permission: "services:read" },
+  { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "sales:read" },
+  { name: "Schedule", href: "/schedule", icon: CalendarDaysIcon, permission: "schedule:read" },
+];
+
+function classNames(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+/** Bottom-right +Nav toggle and expanded menu share this layer (above page footers at 1050). */
+const APP_NAV_Z_INDEX = 1100;
+
+export default function Layout({ children }) {
+  const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [undoLoading, setUndoLoading] = useState(false);
+  const [undoResult, setUndoResult] = useState(null);
+  const unreadRequestInFlightRef = useRef(false);
+  const location = useLocation();
+  const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
+  const { isTrainingMode, buttonTextSize, uiScale } = useViewMode();
+
+  // Restore any pending undo notification after page refresh
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem("app_undo_popup");
+      if (pending) {
+        sessionStorage.removeItem("app_undo_popup");
+        const parsed = JSON.parse(pending);
+        if (parsed && parsed.message) {
+          setUndoResult(parsed);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const handleUndo = async () => {
+    if (undoLoading) return;
+    setUndoLoading(true);
+    setExpandedMenuOpen(false);
+    try {
+      const res = await isudAPI.undo();
+      const data = res?.data || {};
+      if (data.success) {
+        try {
+          sessionStorage.setItem(
+            "app_undo_popup",
+            JSON.stringify({
+              success: true,
+              message: data.message || "Action undone successfully",
+            })
+          );
+        } catch {
+          // ignore
+        }
+        window.location.reload();
+        return;
+      }
+
+      setUndoResult({
+        success: false,
+        message: data.message || "Can no longer undo",
+      });
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || "Failed to undo action";
+      setUndoResult({
+        success: false,
+        message: String(msg),
+      });
+    } finally {
+      setUndoLoading(false);
+    }
+  };
+
+  const employeeUnreadTotal = Object.values(unreadCounts).reduce((total, count) => {
+    const numericCount = Number(count) || 0;
+    return total + numericCount;
+  }, 0);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("training-mode", isTrainingMode);
+  }, [isTrainingMode]);
+
+  useEffect(() => {
+    applyButtonDimensions(buttonTextSize, isTrainingMode);
+  }, [buttonTextSize, isTrainingMode]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.style.setProperty("--app-ui-scale", String(uiScale / 100));
+    return () => {
+      document.documentElement.style.removeProperty("--app-ui-scale");
+    };
+  }, [uiScale]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const update = () => {
+      document.documentElement.style.setProperty("--vvp-height", `${window.visualViewport.height}px`);
+    };
+    window.visualViewport.addEventListener("resize", update);
+    update();
+    return () => {
+      window.visualViewport.removeEventListener("resize", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [setOnline]);
+
+  useEffect(() => {
+    if (!hasPageAccess("employees")) return;
+    if (location.pathname !== "/employees") return;
+
+    let cancelled = false;
+
+    const loadUnreadCounts = async () => {
+      if (unreadRequestInFlightRef.current) return;
+      unreadRequestInFlightRef.current = true;
+      try {
+        const res = await chatAPI.getUnreadCounts();
+        const data = res?.data ?? res;
+        if (!cancelled && data && typeof data === "object") {
+          setUnreadCounts(data);
+        }
+      } catch {
+        if (!cancelled) setUnreadCounts({});
+      } finally {
+        unreadRequestInFlightRef.current = false;
+      }
+    };
+
+    loadUnreadCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, hasPageAccess]);
+
+  // Filter navigation items based on user permissions - show if user has ANY permission for the page
+  const filteredNavigation = allNavigation.filter((item) => {
+    if (!item.permission) return true; // Dashboard and Profile don't need specific permissions
+
+    const [page, permission] = item.permission.split(":");
+
+    return hasPermission(page, permission);
+  });
+
+  return (
+    <div className="app-shell bg-body d-flex flex-column">
+      {/* Offline banner */}
+      {!isOnline && (
+        <div className="align-items-center d-flex end-0 gap-2 justify-content-center position-absolute px-1 py-0 start-0 text-sm top-0" style={{ zIndex: 2000, backgroundColor: "#f59e0b", color: "#1c1917" }}>
+          <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>You are offline — changes cannot be saved.</span>
+        </div>
+      )}
+
+      {/* Main content - min-h-0 so children can use overflow without making page scroll */}
+      <main className="app-shell-main d-flex flex-column flex-grow-1 min-h-0 overflow-hidden" style={!isOnline ? { paddingTop: "2rem" } : undefined}>
+        {children}
+      </main>
+
+      {/* Navigation menu overlay */}
+      {expandedMenuOpen && (
+        <div className="h-100 position-absolute start-0 top-0 w-100" style={{ zIndex: APP_NAV_Z_INDEX }}>
+          {/* Backdrop */}
+          <div className="bg-dark bg-opacity-25 h-100 position-absolute start-0 top-0 w-100" onClick={() => setExpandedMenuOpen(false)} />
+
+          {/* Menu positioned bottom-right */}
+          <div className="app-nav-bottom-menu-panel position-absolute ps-0 rounded-3 d-flex gap-2 align-items-end" style={{ minWidth: "1rem" }}>
+            {/* Left side: Global options */}
+            <div className="app-nav-bottom-global-menu d-flex flex-column gap-2 align-items-center">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={undoLoading}
+                className={classNames(
+                  "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
+                  isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
+                )}
+                style={{
+                  backgroundColor: "var(--bs-tertiary-bg)",
+                  color: "var(--bs-body-color)",
+                  borderColor: "var(--bs-border-color)",
+                }}
+                title="Undo previous action"
+                aria-label="Undo"
+              >
+                <ArrowUturnLeftIcon className="app-icon flex-shrink-0" />
+                {isTrainingMode && <span>Undo</span>}
+              </button>
+            </div>
+
+            {/* Right side: Navigation items */}
+            <div className="app-nav-bottom-menu d-flex flex-column gap-2">
+              {filteredNavigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                const showEmployeeBadge = item.name === "Employees" && employeeUnreadTotal > 0;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setExpandedMenuOpen(false)}
+                    className={classNames(isActive ? "btn btn-primary" : "btn btn-outline-secondary", "d-flex align-items-center text-decoration-none position-relative", isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0")}
+                    style={{
+                      backgroundColor: isActive ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
+                      color: isActive ? "var(--bs-white)" : "var(--bs-body-color)",
+                      borderColor: isActive ? "var(--bs-primary)" : "var(--bs-border-color)",
+                    }}
+                    title={item.name}
+                  >
+                    <item.icon className="app-icon flex-shrink-0" />
+                    {isTrainingMode && <span>{item.name}</span>}
+                    {showEmployeeBadge && (
+                      <span className="badge bg-danger position-absolute rounded-pill" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
+                        {employeeUnreadTotal > 9 ? "9+" : employeeUnreadTotal}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation toggle — unique bottom-right button */}
+      <button
+        type="button"
+        onClick={() => setExpandedMenuOpen(!expandedMenuOpen)}
+        title={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={expandedMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+        className={classNames(
+          expandedMenuOpen ? "btn btn-primary" : "btn btn-outline-secondary",
+          "btn-app-nav app-nav-bottom-toggle position-fixed shadow-lg d-flex align-items-center justify-content-center p-0"
+        )}
+        style={{
+          position: "fixed",
+          bottom: "calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem))",
+          right: "calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem))",
+          left: "auto",
+          zIndex: APP_NAV_Z_INDEX,
+          width: "var(--app-btn-nav-width, 2.25rem)",
+          height: "var(--app-btn-height, 2rem)",
+          minWidth: "var(--app-btn-nav-width, 2.25rem)",
+          maxWidth: "var(--app-btn-nav-width, 2.25rem)",
+          borderRadius: "50%",
+          aspectRatio: "1 / 1",
+          backgroundColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-tertiary-bg)",
+          color: expandedMenuOpen ? "var(--bs-white)" : "var(--bs-body-color)",
+          borderColor: expandedMenuOpen ? "var(--bs-primary)" : "var(--bs-border-color)",
+        }}
+      >
+        {expandedMenuOpen ? <XMarkIcon className="app-icon flex-shrink-0" /> : <Bars3Icon className="app-icon flex-shrink-0" />}
+        <Badge_PendingOrder clientId={user?.client_id} />
+      </button>
+
+      {/* Undo Result Modal Popup */}
+      {undoResult && (
+        <Modal
+          isOpen={Boolean(undoResult)}
+          onClose={() => setUndoResult(null)}
+          title="Undo"
+          centered
+        >
+          <div className="p-3 d-flex flex-column align-items-center text-center gap-2">
+            {undoResult.success ? (
+              <CheckCircleIcon className="text-success" style={{ width: 40, height: 40 }} />
+            ) : (
+              <ExclamationTriangleIcon className="text-warning" style={{ width: 40, height: 40 }} />
+            )}
+            <div className="fw-semibold" style={{ fontSize: "1rem" }}>
+              {undoResult.message}
+            </div>
+          </div>
+          <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex justify-content-start">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setUndoResult(null)}
+              autoFocus
+            >
+              OK
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}

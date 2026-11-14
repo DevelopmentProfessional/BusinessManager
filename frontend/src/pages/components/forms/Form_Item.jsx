@@ -1,0 +1,932 @@
+/*
+ * ============================================================
+ * FILE: Form_Item.jsx
+ *
+ * PURPOSE:
+ *   Create/edit form for a single inventory item. Supports multiple
+ *   item types (Product, Resource, Asset, Location), allows photo
+ *   capture via camera or URL, barcode scanning for SKU entry, and
+ *   optional initial quantity/stock level fields for new items.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] State              — form fields, scanner/camera/image mode,
+ *                            pending photo, available locations and services
+ *   [2] Effects            — populate form on edit, load locations and
+ *                            services, clean up object URL on unmount
+ *   [3] Handlers           — handleChange, handleBarcodeDetected,
+ *                            handlePhotoCapture, handleSubmit
+ *   [4] Derived Values     — type flags (isAsset, isLocation, isResource),
+ *                            isLowStock, getTypeIcon
+ *   [5] Render: Header     — title ("Add Item" / "Edit")
+ *   [6] Render: Image Area — preview, camera/URL toggle panel
+ *   [7] Render: Stock Fields — quantity, min stock level, price (or
+ *                              "no stock tracking" notice for assets/locations)
+ *   [8] Render: Core Fields — name, type, SKU with optional barcode button,
+ *                             location dropdown, linked service, description
+ *   [9] Render: Footer     — Cancel and Save/Create action buttons
+ *  [10] Render: Modals     — Widget_Camera overlay, barcode Scanner_Barcode modal
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Converted type select to custom dropdown with per-option help popovers
+ *   2026-05-19 | GitHub Copilot | Added cost type/date fields and bundle/mix subtotal summaries
+ *   2026-07-24 | GitHub Copilot | Removed type dropdown caret icon and added word-safe trigger label truncation
+ *   2026-09-11 | GitHub Copilot | Removed unused locals and fixed photo URL cleanup dependencies
+ * ============================================================
+ */
+
+import React, { useEffect, useRef, useState } from "react";
+import Modal from "../modals/Modal";
+import { XMarkIcon, CheckIcon, SparklesIcon, CubeIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ArrowUpTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
+import Scanner_Barcode from "../widgets/Scanner_Barcode";
+import Widget_Camera from "../widgets/Widget_Camera";
+import Modal_BulkImport from "../modals/Modal_ImportBulk";
+import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import FormControl from "../fields/FormControl";
+import cacheService from "../../../services/cacheService";
+import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../../services/api";
+import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
+import { sortItemsAlphabetically } from "../../../utils/displaySort";
+
+// ─── 1 STATE ───────────────────────────────────────────────────────────────────
+export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
+  const [formData, setFormData] = useState({
+    name: initialName || "",
+    sku: initialSku || "",
+    price: 0,
+    cost: "",
+    description: "",
+    type: "PRODUCT",
+    image_url: "",
+    location: "",
+    service_id: "",
+    supplier_id: "",
+    quantity: 0,
+    min_stock_level: 10,
+    category: "",
+    cost_type: "one_time",
+    date_of_purchase: "",
+    date_of_sale: "",
+  });
+  const [itemCategories, setItemCategories] = useState([]);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
+  const [availableLocations, setAvailableLocations] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
+  const [availableSuppliers, setAvailableSuppliers] = useState([]);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+
+  // Bundle / Mix state (local — saved after item creation)
+  const [allProducts, setAllProducts] = useState([]);
+  const [productSearch, setProductSearch] = useState("");
+  // Bundle
+  const [bundleComponents, setBundleComponents] = useState([]); // [{id, name, price, quantity}]
+  const [bundlePriceType, setBundlePriceType] = useState("fixed");
+  const [bundlePricePercentage, setBundlePricePercentage] = useState(100);
+  const [bundleNewProductId, setBundleNewProductId] = useState("");
+  const [bundleNewQty, setBundleNewQty] = useState(1);
+  // Mix
+  const [mixTotalQty, setMixTotalQty] = useState(10);
+  const [mixHasMax, setMixHasMax] = useState(false);
+  const [mixMaxPerProduct, setMixMaxPerProduct] = useState("");
+  const [mixComponents, setMixComponents] = useState([]); // [{id, name, price, max_quantity}]
+  const [mixNewProductId, setMixNewProductId] = useState("");
+  const [mixNewMax, setMixNewMax] = useState("");
+
+  const typeOptions = [
+    { value: "PRODUCT", label: "Product", description: "Items sold to customers. Tracks inventory and stock levels." },
+    { value: "BUNDLE", label: "Bundle", description: "Pre-defined set of products sold together at a fixed or percentage price." },
+    { value: "MIX", label: "Mix", description: "Client picks a fixed total quantity from a list of products." },
+    { value: "RESOURCE", label: "Resource", description: "Consumable materials used in services. Links to specific service offerings." },
+    { value: "ASSET", label: "Asset", description: "Reusable equipment or tools. No stock tracking, managed by location/service." },
+    { value: "LOCATION", label: "Location", description: "Physical place within your business (room, station, area). No stock tracking." },
+    { value: "ITEM", label: "Item", description: "Generic item type. Use when other categories don't apply." },
+  ];
+
+  // ─── 2 EFFECTS ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (item) {
+      setFormData({
+        name: item.name || "",
+        sku: item.sku || initialSku || "",
+        price: item.price || 0,
+        cost: item.cost ?? "",
+        description: item.description || "",
+        type: typeof item.type === "string" ? (["PRODUCT", "BUNDLE", "MIX", "RESOURCE", "ASSET", "LOCATION", "ITEM"].includes(item.type.toUpperCase()) ? item.type.toUpperCase() : "PRODUCT") : "PRODUCT",
+        image_url: item.image_url || "",
+        location: item.location || "",
+        service_id: item.service_id || "",
+        supplier_id: item.supplier_id || "",
+        quantity: item.quantity || 0,
+        min_stock_level: item.min_stock_level || 10,
+        category: item.category || "",
+        cost_type: item.cost_type || "one_time",
+        date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
+        date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        name: initialName || prev.name,
+        sku: initialSku || prev.sku,
+      }));
+    }
+  }, [item, initialSku, initialName]);
+
+  useEffect(() => {
+    const loadAvailableLocations = async () => {
+      try {
+        const [inventoryRes, distinctRes] = await Promise.all([inventoryAPI.getAll(), inventoryAPI.getLocations()]);
+        const inventoryRows = inventoryRes?.data ?? inventoryRes ?? [];
+        const rawDistinct = distinctRes?.data;
+        const distinctRows = Array.isArray(rawDistinct) ? rawDistinct : Array.isArray(rawDistinct?.locations) ? rawDistinct.locations : [];
+
+        const all = new Set(cacheService.getLocations());
+
+        distinctRows.forEach((loc) => {
+          const value = String(loc || "").trim();
+          if (value) all.add(value);
+        });
+
+        if (Array.isArray(inventoryRows)) {
+          inventoryRows.forEach((row) => {
+            const rowLocation = String(row?.location || "").trim();
+            if (rowLocation) all.add(rowLocation);
+            if (String(row?.type || "").toUpperCase() === "LOCATION") {
+              const locationName = String(row?.name || "").trim();
+              if (locationName) all.add(locationName);
+            }
+          });
+        }
+
+        setAvailableLocations([...all].sort((a, b) => a.localeCompare(b)));
+      } catch {
+        setAvailableLocations(cacheService.getLocations());
+      }
+    };
+
+    loadAvailableLocations();
+
+    servicesAPI
+      .getAll()
+      .then((res) => {
+        const data = res?.data ?? res;
+        if (Array.isArray(data)) setAvailableServices(sortItemsAlphabetically(data, ["name", "category"]));
+      })
+      .catch(() => {});
+    suppliersAPI
+      .getAll()
+      .then((res) => {
+        const data = res?.data ?? res;
+        if (Array.isArray(data)) setAvailableSuppliers(sortItemsAlphabetically(data, ["name", "email"]));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Clean up object URL on unmount
+  useEffect(() => {
+    const currentPendingPhotoUrl = pendingPhotoUrl;
+    return () => {
+      if (currentPendingPhotoUrl) URL.revokeObjectURL(currentPendingPhotoUrl);
+    };
+  }, [pendingPhotoUrl]);
+
+  // Load categories
+  useEffect(() => {
+    let cancelled = false;
+    inventoryCategoriesAPI
+      .getAll()
+      .then((res) => {
+        if (!cancelled) setItemCategories(sortItemsAlphabetically(Array.isArray(res?.data) ? res.data : [], ["name"]));
+      })
+      .catch(() => {
+        if (!cancelled) setItemCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load products when type changes to BUNDLE or MIX
+  useEffect(() => {
+    const upper = (formData.type || "").toUpperCase();
+    if (upper === "BUNDLE" || upper === "MIX") {
+      inventoryAPI
+        .getAll()
+        .then((res) => {
+          const items = res?.data ?? res ?? [];
+          setAllProducts(Array.isArray(items) ? items.filter((i) => (i.type || "").toUpperCase() === "PRODUCT") : []);
+        })
+        .catch(() => {});
+    } else {
+      // Reset when leaving bundle/mix
+      setBundleComponents([]);
+      setBundlePriceType("fixed");
+      setBundlePricePercentage(100);
+      setMixComponents([]);
+      setMixTotalQty(10);
+      setMixHasMax(false);
+      setMixMaxPerProduct("");
+      setProductSearch("");
+    }
+  }, [formData.type]);
+
+  // ─── 3 HANDLERS ──────────────────────────────────────────────────────────────
+  const fileInputRef = useRef(null);
+
+  const handlePhotoCapture = (blob) => {
+    setIsCameraOpen(false);
+    setAddImageMode(null);
+    if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+    setPendingPhoto(blob);
+    setPendingPhotoUrl(URL.createObjectURL(blob));
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+    setPendingPhoto(file);
+    setPendingPhotoUrl(URL.createObjectURL(file));
+    setAddImageMode(null);
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = "";
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "number" ? parseFloat(value) || 0 : value,
+    }));
+  };
+
+  const handleBarcodeDetected = (code) => {
+    const scanned = String(code || "").trim();
+    setScanError("");
+    if (existingSkus.includes(scanned)) {
+      setScanError(`Item with SKU "${scanned}" already exists.`);
+      return;
+    }
+    setFormData((prev) => ({ ...prev, sku: scanned }));
+    setIsScannerOpen(false);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const name = (formData.name || "").trim();
+    const sku = (formData.sku || "").trim();
+    if (!name) {
+      alert("Name is required.");
+      return;
+    }
+    const price = parseFloat(formData.price) || 0;
+    if (price < 0) {
+      alert("Please enter a valid non-negative price.");
+      return;
+    }
+    const cost = formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null;
+    const type = typeof formData.type === "string" ? formData.type.toUpperCase() : "PRODUCT";
+    const description = (formData.description || "").trim();
+    const image_url = addImageMode === "url" || !pendingPhotoUrl ? (formData.image_url || "").trim() : "";
+    const location = (formData.location || "").trim();
+    const minStockLevel = parseInt(formData.min_stock_level) || 10;
+    const qty = parseInt(formData.quantity) || 0;
+    const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
+    const payload = {
+      name,
+      sku,
+      price,
+      cost: cost ?? undefined,
+      description: description || undefined,
+      type,
+      image_url: image_url || undefined,
+      location: location && location !== "[NEW]" ? location : undefined,
+      service_id: formData.service_id || undefined,
+      supplier_id: formData.supplier_id || undefined,
+      category: formData.category || undefined,
+      cost_type: formData.cost_type || "one_time",
+      quantity: safeQty,
+      min_stock_level: minStockLevel,
+      date_of_purchase: formData.date_of_purchase || undefined,
+      date_of_sale: formData.date_of_sale || undefined,
+    };
+
+    // Include bundle/mix pricing in payload
+    if (type === "BUNDLE") {
+      payload.price_type = bundlePriceType;
+      payload.price_percentage = bundlePriceType === "percentage" ? parseFloat(bundlePricePercentage) || 100 : null;
+    }
+
+    try {
+      if (onSubmitWithExtras) {
+        const extras = { initialQuantity: safeQty, pendingPhoto: pendingPhoto || null };
+        if (type === "BUNDLE") {
+          extras.bundleComponents = bundleComponents;
+        }
+        if (type === "MIX") {
+          extras.mixConfig = {
+            total_quantity: parseInt(mixTotalQty) || 10,
+            max_per_product: mixHasMax && mixMaxPerProduct !== "" ? parseInt(mixMaxPerProduct) || null : null,
+          };
+          extras.mixComponents = mixComponents;
+        }
+        onSubmitWithExtras(payload, extras);
+      } else {
+        onSubmit(payload);
+      }
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      throw error;
+    }
+  };
+
+  // ─── 4 DERIVED VALUES ────────────────────────────────────────────────────────
+  const upperType = (formData.type || "PRODUCT").toUpperCase();
+  const isAsset = upperType === "ASSET";
+  const isLocation = upperType === "LOCATION";
+  const isResource = upperType === "RESOURCE";
+  const isLowStock = formData.quantity <= formData.min_stock_level;
+  const bundleSummary = bundleComponents.reduce(
+    (acc, comp) => {
+      const qty = parseFloat(comp.quantity) || 0;
+      const price = parseFloat(comp.price) || 0;
+      const cost = parseFloat(comp.cost ?? comp.price) || 0;
+      acc.quantityTotal += qty;
+      acc.priceSubtotal += price * qty;
+      acc.costSubtotal += cost * qty;
+      return acc;
+    },
+    { quantityTotal: 0, priceSubtotal: 0, costSubtotal: 0 }
+  );
+  const mixSummary = mixComponents.reduce(
+    (acc, comp) => {
+      const price = parseFloat(comp.price) || 0;
+      const cost = parseFloat(comp.cost ?? comp.price) || 0;
+      acc.itemCount += 1;
+      acc.priceSubtotal += price;
+      acc.costSubtotal += cost;
+      return acc;
+    },
+    { itemCount: 0, priceSubtotal: 0, costSubtotal: 0 }
+  );
+
+  const getTypeIcon = () => {
+    if (upperType === "SERVICE") return <SparklesIcon className="h-16 w-16" />;
+    if (isAsset) return <WrenchScrewdriverIcon className="h-16 w-16" />;
+    if (isLocation) return <BuildingOfficeIcon className="h-16 w-16" />;
+    if (isResource) return <CubeIcon className="h-16 w-16" />;
+    return <CubeIcon className="h-16 w-16" />;
+  };
+
+  // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="ui-page-shell">
+      {/* Header */}
+      <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+        <h6 className="app-modal-title ui-heading-strong">{item ? "Edit" : "Add Item"}</h6>
+        {!item && onBulkImport && (
+          <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm dark:text-gray-400 p-1 text-gray-500" style={{ lineHeight: 1 }}>
+            <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
+          </button>
+        )}
+      </div>
+
+      {isBulkImportOpen && (
+        <Modal_BulkImport
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          entityLabel="Items"
+          allowPhotoUpload
+          itemTypes={[
+            { value: "PRODUCT", label: "Product" },
+            { value: "RESOURCE", label: "Resource" },
+            { value: "ASSET", label: "Asset" },
+            { value: "LOCATION", label: "Location" },
+            { value: "ITEM", label: "Item" },
+            { value: "BUNDLE", label: "Bundle" },
+            { value: "MIX", label: "Mix" },
+          ]}
+          defaultItemType="PRODUCT"
+          onImport={async (rows) => {
+            await onBulkImport(rows);
+            setIsBulkImportOpen(false);
+          }}
+        />
+      )}
+
+      {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
+      {/* Container_Scrollable Content Area */}
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
+        <form id="item-form" onSubmit={handleSubmit} className="inventory-edit-form">
+          {/* Top Section: Image placeholder (left) + Stock fields (right) */}
+          <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>
+            {/* Image area - layout matches Edit Item */}
+            <div className="flex-shrink-0" style={{ width: "45%" }}>
+              {/* Preview */}
+              <div className="ui-pos-rel" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", width: "100%", aspectRatio: "1" }}>
+                {pendingPhotoUrl ? (
+                  <img src={pendingPhotoUrl} alt="Captured" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : formData.image_url ? (
+                  <img
+                    src={formData.image_url}
+                    alt={formData.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
+                ) : null}
+                <div
+                  style={{
+                    display: pendingPhotoUrl || formData.image_url ? "none" : "flex",
+                    width: "100%",
+                    height: "100%",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#adb5bd",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                  }}
+                >
+                  {getTypeIcon()}
+                </div>
+              </div>
+
+              {/* Add photo button strip */}
+              <div className="align-items-center d-flex gap-1 mt-1">
+                {addImageMode === null && (
+                  <button type="button" onClick={() => setAddImageMode("camera")} className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center" title="Add photo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
+                      <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Camera/URL panel */}
+              {addImageMode !== null && (
+                <div className="bg-light border dark:bg-gray-800 dark:border-gray-700 mt-1 p-0 rounded">
+                  <div className="align-items-center d-flex gap-2 mb-2">
+                    <div className="btn-group btn-group-sm">
+                      <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                        Camera
+                      </button>
+                      <button type="button" className={`btn ${addImageMode === "upload" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("upload")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                        Upload
+                      </button>
+                      <button type="button" className={`btn ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                        URL
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddImageMode(null);
+                      }}
+                      className="btn btn-link btn-sm ms-auto p-0"
+                      style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {addImageMode === "camera" && (
+                    <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
+                        <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
+                      </svg>
+                      {pendingPhotoUrl ? "Retake" : "Cam"}
+                    </button>
+                  )}
+                  {addImageMode === "upload" && (
+                    <div>
+                      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+                          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />
+                        </svg>
+                        {pendingPhotoUrl ? "Replace Photo" : "Choose from Device"}
+                      </button>
+                    </div>
+                  )}
+                  {addImageMode === "url" && (
+                    <div className="d-flex gap-1">
+                      <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
+                      <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">
+                        OK
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Stock fields stacked on the right */}
+            <div className="d-flex flex-column flex-grow-1 gap-1">
+              {!isLocation && !isAsset ? (
+                <>
+                  <div>
+                    <div className={`text-center w-50 py-1 rounded fw-medium small ${isLowStock ? "bg-danger bg-opacity-10 text-danger" : "bg-success bg-opacity-10 text-success"}`}>{isLowStock ? "Low Stock" : "In Stock"}</div>
+                  </div>
+                  <div className="d-flex gap-2 mb-1">
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control ui-control-sm" placeholder="Min Count" min="0" />
+                      <label htmlFor="min_stock_level">Min Count</label>
+                    </div>
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control ui-control-sm" placeholder="Current Count" min="0" />
+                      <label htmlFor="quantity">Current Count</label>
+                    </div>
+                  </div>
+
+                  <div className="d-flex gap-2 mb-1">
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                      <label htmlFor="cost">Cost</label>
+                    </div>
+                    <div className="flex-grow-1 form-floating">
+                      <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
+                      <label htmlFor="price">Price</label>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="d-flex flex-column gap-2">
+                  <div className="align-items-center d-flex gap-2 text-success">
+                    <CheckCircleSolid className="ui-icon-5" />
+                    <div>
+                      <div className="fw-medium">Status: OK</div>
+                      <div className="ui-small-muted">{isLocation ? "Locations do not track stock" : "To add more units, scroll down to Asset Units and select Add Unit"}</div>
+                    </div>
+                  </div>
+                  {isLocation && (
+                    <div className="mb-2">
+                      <div className="form-floating">
+                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <label htmlFor="cost">Cost</label>
+                      </div>
+                    </div>
+                  )}
+                  {isAsset && (
+                    <>
+                      <div className="d-flex gap-2 mb-1">
+                        <div className="flex-grow-1 form-floating">
+                          <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                          <label htmlFor="cost">Cost (purchase / acquisition)</label>
+                        </div>
+                        <div className="flex-grow-1 form-floating">
+                          <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
+                          <label htmlFor="price">Price (rental / resale)</label>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ─── 8 RENDER: CORE FIELDS ───────────────────────────────────────────── */}
+          {/* Full-width form fields below */}
+          <div className="d-flex gap-2 mb-2">
+            <div className="flex-grow-1 form-floating mb-0">
+              <FormControl type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
+              <label htmlFor="name">Name *</label>
+            </div>
+            {!isLocation && (
+              <div className="flex-grow-1 form-floating mb-0 position-relative">
+                <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
+                <label htmlFor="sku">Serial Number</label>
+                {showScanner && (
+                  <button type="button" onClick={() => setIsScannerOpen(true)} className="align-items-center btn btn-link btn-sm d-flex justify-content-center m-0 p-0 position-absolute top-50 translate-middle-y" style={{ right: "0.25rem" }} title="Scan Barcode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
+                      <path d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {scanError && <div className="alert alert-danger mb-2 py-1 small">{scanError}</div>}
+
+          <div className="d-flex gap-2 mb-2">
+            <div className="flex-grow-1 mb-0">
+              <Dropdown_Custom
+                id="type"
+                name="type"
+                floatingLabel="Type"
+                className="ui-control-sm"
+                value={formData.type}
+                onChange={handleChange}
+                options={typeOptions}
+                closeOnSelect
+              />
+            </div>
+
+            {/* Category picker — hidden for LOCATION type */}
+            {!isLocation && (
+              <div className="flex-grow-1 mb-0">
+                <Dropdown_Custom
+                  id="category"
+                  name="category"
+                  floatingLabel="Category"
+                  className="ui-control-sm"
+                  value={formData.category}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "— None —" }, ...itemCategories.map((cat) => ({ value: cat.name, label: cat.name }))]}
+                  placeholder="Select category"
+                  closeOnSelect
+                />
+              </div>
+            )}
+          </div>
+
+          {!isLocation && (
+            <div className="align-items-start d-flex gap-2 mb-2">
+              <div className="flex-grow-1 mb-0">
+                <Dropdown_Custom
+                  id="location"
+                  name="location"
+                  floatingLabel="Location"
+                  className="ui-control-sm"
+                  value={formData.location}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "Select location" }, ...availableLocations.map((location) => ({ value: location, label: location }))]}
+                  placeholder="Select location"
+                  closeOnSelect
+                />
+              </div>
+
+              <div className="flex-grow-1 mb-0">
+                <Dropdown_Custom
+                  id="supplier_id"
+                  name="supplier_id"
+                  floatingLabel="Supplier"
+                  className="ui-control-sm"
+                  value={formData.supplier_id}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "No supplier" }, ...availableSuppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))]}
+                  placeholder="Select supplier"
+                  closeOnSelect
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Linked Service - only for RESOURCE or ASSET types */}
+          {(formData.type === "RESOURCE" || formData.type === "ASSET") && (
+            <div className="ui-form-floating-mb2">
+              <Dropdown_Custom
+                id="service_id"
+                name="service_id"
+                floatingLabel="Linked Service"
+                className="ui-control-sm"
+                value={formData.service_id}
+                onChange={handleChange}
+                options={[{ value: "", label: "No linked service" }, ...availableServices.map((service) => ({ value: service.id, label: service.name }))]}
+                placeholder="Linked Services"
+                closeOnSelect
+              />
+            </div>
+          )}
+
+          <hr className="my-2" />
+
+          {/* Date of Purchase / Date of Sale */}
+          <div className="d-flex gap-2 mb-2">
+            <div className="flex-grow-1">
+              <Dropdown_Custom
+                id="cost_type"
+                name="cost_type"
+                floatingLabel="Cost Type"
+                className="ui-control-sm"
+                value={formData.cost_type}
+                onChange={handleChange}
+                options={[
+                  { value: "one_time", label: "One-Time Purchase" },
+                  { value: "recurring", label: "Recurring Rental" },
+                ]}
+                placeholder="Cost type"
+                closeOnSelect
+              />
+            </div>
+            <div className="flex-grow-1 form-floating">
+              <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
+              <label htmlFor="date_of_purchase">Date of Purchase</label>
+            </div>
+            <div className="flex-grow-1 form-floating">
+              <input type="date" id="date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
+              <label htmlFor="date_of_sale">Date of Sale</label>
+            </div>
+          </div>
+
+          <div className="form-floating ui-form-floating-mb2">
+            <textarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
+            <label htmlFor="description">Description</label>
+          </div>
+
+          {/* ─── BUNDLE COMPONENTS INLINE ─── */}
+          {upperType === "BUNDLE" && (
+            <div className="border border-orange-300 dark:border-orange-800/60 bg-orange-50/50 dark:bg-orange-950/20 mt-3 p-2 rounded-3 text-gray-900 dark:text-gray-100">
+              <div className="fw-semibold mb-2 text-orange-700 dark:text-orange-400" style={{ fontSize: "0.85rem" }}>
+                Bundle Components
+              </div>
+
+              {/* Price type */}
+              <div className="align-items-center d-flex gap-2 mb-2">
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  style={{ width: 260 }}
+                  value={bundlePriceType}
+                  onChange={(e) => setBundlePriceType(e.target.value)}
+                  options={[
+                    { value: "fixed", label: "Fixed price (use Price above)" },
+                    { value: "percentage", label: "% of component total" },
+                  ]}
+                  placeholder="Pricing"
+                  closeOnSelect
+                />
+                {bundlePriceType === "percentage" && (
+                  <div className="ui-flex-center-gap-1">
+                    <input type="number" min="1" max="500" className="form-control ui-control-sm" style={{ width: 70 }} value={bundlePricePercentage} onChange={(e) => setBundlePricePercentage(e.target.value)} />
+                    <span className="ui-small-muted">%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Added components */}
+              {bundleComponents.length > 0 && (
+                <div className="mb-2">
+                  {bundleComponents.map((comp) => (
+                    <div key={comp.id} className="align-items-center bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-900/50 d-flex gap-2 mb-1 p-1 rounded text-gray-900 dark:text-gray-100">
+                      <span className="flex-grow-1 small">{comp.name}</span>
+                      <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
+                      <span className="ui-small-muted">${(comp.price ?? 0).toFixed(2)} sell</span>
+                      <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={comp.quantity} onChange={(e) => setBundleComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c)))} />
+                      <span className="fw-semibold ui-text-sm">${((parseFloat(comp.price) || 0) * (parseFloat(comp.quantity) || 0)).toFixed(2)}</span>
+                      <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setBundleComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <div className="align-items-center bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-900/50 d-flex justify-content-between mt-1 p-1 rounded text-gray-900 dark:text-gray-100">
+                    <span className="fw-semibold ui-text-sm">Totals</span>
+                    <span className="small">Qty: {bundleSummary.quantityTotal.toFixed(2)}</span>
+                    <span className="small">Cost: ${bundleSummary.costSubtotal.toFixed(2)}</span>
+                    <span className="small">Price: ${bundleSummary.priceSubtotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Add component row */}
+              <div className="ui-flex-center-gap-2">
+                <FormControl type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  style={{ maxWidth: 220 }}
+                  value={bundleNewProductId}
+                  onChange={(e) => setBundleNewProductId(e.target.value)}
+                  options={[{ value: "", label: "Select…" }, ...allProducts.filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))).map((p) => ({ value: p.id, label: p.name }))]}
+                  placeholder="Select product"
+                  closeOnSelect
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-warning flex-shrink-0"
+                  onClick={() => {
+                    const prod = allProducts.find((p) => p.id === bundleNewProductId);
+                    if (!prod) return;
+                    setBundleComponents((prev) => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, cost: prod.cost || 0, quantity: parseFloat(bundleNewQty) || 1 }]);
+                    setBundleNewProductId("");
+                    setBundleNewQty(1);
+                    setProductSearch("");
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MIX CONFIG INLINE ─── */}
+          {upperType === "MIX" && (
+            <div className="border border-pink-300 dark:border-pink-800/60 bg-pink-50/50 dark:bg-pink-950/20 mt-3 p-2 rounded-3 text-gray-900 dark:text-gray-100">
+              <div className="fw-semibold mb-2 text-pink-700 dark:text-pink-400" style={{ fontSize: "0.85rem" }}>
+                Mix Setup
+              </div>
+
+              {/* Total quantity + max per product */}
+              <div className="align-items-center d-flex flex-wrap gap-3 mb-2">
+                <div className="ui-flex-center-gap-2">
+                  <label className="mb-0 ui-small-muted">Total qty:</label>
+                  <FormControl type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
+                </div>
+                <div className="ui-flex-center-gap-2">
+                  <input type="checkbox" id="mix-has-max-inline" checked={mixHasMax} onChange={(e) => setMixHasMax(e.target.checked)} />
+                  <label htmlFor="mix-has-max-inline" className="mb-0 ui-small-muted" style={{ cursor: "pointer" }}>
+                    Max per product
+                  </label>
+                  {mixHasMax && <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixMaxPerProduct} onChange={(e) => setMixMaxPerProduct(e.target.value)} placeholder="Max" />}
+                </div>
+              </div>
+
+              {/* Added mix products */}
+              {mixComponents.length > 0 && (
+                <div className="mb-2">
+                  {mixComponents.map((comp) => (
+                    <div key={comp.id} className="align-items-center bg-white dark:bg-gray-800 border border-pink-200 dark:border-pink-900/50 d-flex gap-2 mb-1 p-1 rounded text-gray-900 dark:text-gray-100">
+                      <span className="flex-grow-1 small">{comp.name}</span>
+                      <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
+                      <span className="ui-small-muted">${comp.price?.toFixed(2)}</span>
+                      <input
+                        type="number"
+                        min="1"
+                        className="form-control ui-control-sm"
+                        style={{ width: 60 }}
+                        value={comp.max_quantity || ""}
+                        placeholder="Max"
+                        onChange={(e) => setMixComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, max_quantity: e.target.value !== "" ? parseInt(e.target.value) : null } : c)))}
+                      />
+                      <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setMixComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <div className="align-items-center bg-white dark:bg-gray-800 border border-pink-200 dark:border-pink-900/50 d-flex justify-content-between mt-1 p-1 rounded text-gray-900 dark:text-gray-100">
+                    <span className="fw-semibold ui-text-sm">Totals</span>
+                    <span className="small">Items: {mixSummary.itemCount}</span>
+                    <span className="small">Cost: ${mixSummary.costSubtotal.toFixed(2)}</span>
+                    <span className="small">Price: ${mixSummary.priceSubtotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Add product row */}
+              <div className="ui-flex-center-gap-2">
+                <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  style={{ maxWidth: 220 }}
+                  value={mixNewProductId}
+                  onChange={(e) => setMixNewProductId(e.target.value)}
+                  options={[{ value: "", label: "Select…" }, ...allProducts.filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))).map((p) => ({ value: p.id, label: p.name }))]}
+                  placeholder="Select product"
+                  closeOnSelect
+                />
+                <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
+                <button
+                  type="button"
+                  className="align-items-center btn btn-sm d-flex flex-shrink-0 gap-2"
+                  style={{ background: "#ec4899", color: "#fff", border: "none" }}
+                  onClick={() => {
+                    const prod = allProducts.find((p) => p.id === mixNewProductId);
+                    if (!prod) return;
+                    setMixComponents((prev) => [...prev, { id: prod.id, name: prod.name, price: prod.price || 0, cost: prod.cost || 0, max_quantity: mixNewMax !== "" ? parseInt(mixNewMax) : null }]);
+                    setMixNewProductId("");
+                    setMixNewMax("");
+                    setProductSearch("");
+                  }}
+                >
+                  <PlusIcon className="ui-icon-4" />
+                  <span>Add</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+
+      {/* ─── 9 RENDER: FOOTER ───────────────────────────────────────────────────── */}
+      {/* Fixed Footer with Action Buttons */}
+      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
+        <Footer_Actions
+          start={<Button_Toolbar icon={CheckIcon} label={item ? "Save" : "Add"} type="submit" form="item-form" className="btn-outline-secondary" title={item ? "Save changes" : "Create item"} />}
+          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+        />
+      </div>
+
+      {/* ─── 10 RENDER: MODALS ──────────────────────────────────────────────────── */}
+      {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onCancel={() => setIsCameraOpen(false)} />}
+
+      {/* Barcode Scanner Modal */}
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true} contentGravity="top">
+        <Scanner_Barcode onDetected={handleBarcodeDetected} onCancel={() => setIsScannerOpen(false)} />
+      </Modal>
+    </div>
+  );
+}

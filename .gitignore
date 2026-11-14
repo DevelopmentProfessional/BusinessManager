@@ -1,3 +1,8 @@
+# Local launcher scripts (machine-specific, not for version control)
+launch.ps1
+start-client.ps1
+start-server.ps1
+
 # Node / Frontend
 node_modules/
 dist/
@@ -46,6 +51,11 @@ Thumbs.db
 *.sqlite3
 *.db
 *.bak
+backend/db_environment.json
+
+# Uploaded files (keep directory but ignore contents)
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Coverage / reports
 coverage.xml
@@ -59,6 +69,7 @@ TestSection/
 AI Session Logs.txt
 ToDoFunctions.txt
 *test_*.py
+!backend/tests/test_*.py
 *debug_*.py
 *check_*.py
 migrate_user_table.py
@@ -67,3 +78,6 @@ simple_migration.py
 # Root-level test folders (ensure not deployed nor committed by default)
 /test/
 /tests/
+/regressiontest/# SSL certificates and keys (local development only)
+ssl/*.pem
+*.pem

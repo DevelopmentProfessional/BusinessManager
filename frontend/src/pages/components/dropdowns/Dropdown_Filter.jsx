@@ -1,0 +1,198 @@
+// FILE: Dropdown_Filter.jsx
+// Reusable filter dropdown with per-option help popovers.
+// Replaces repeated inline filter + help-popover pattern in Clients, Employees, Documents.
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import compactButtonLabel from "../../../utils/compactButtonLabel";
+import { TagIcon } from "@heroicons/react/24/outline";
+import { sortOptionsByLabel } from "../../../utils/displaySort";
+
+function getDropdownPortalHost() {
+  if (typeof document === "undefined" || !document.body) return null;
+  let host = document.getElementById("app-dropdown-portal-host");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "app-dropdown-portal-host";
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+export default function Dropdown_Filter({
+  // options: [{ value, label, description }]
+  options,
+  value,
+  onChange,
+  icon: Icon = TagIcon,
+  label,
+  isOpen,
+  setIsOpen,
+  // When true, `value` is an array of selected option values (empty array = no filter).
+  // Clicking the default "all" option clears the selection; other options toggle and keep the menu open.
+  multiSelect = false,
+  // CSS class applied to trigger button when a non-default value is active
+  activeClass = "bg-primary-600 hover:bg-primary-700 text-white",
+  // CSS class applied when value equals options[0].value (the "all" option)
+  inactiveClass = "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600",
+  // Whether to show the ? help popover buttons
+  showHelp = true,
+  // Extra style on the dropdown panel
+  dropdownStyle,
+}) {
+  const [helpKey, setHelpKey] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+  const [portalTarget, setPortalTarget] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
+
+  useEffect(() => {
+    setPortalTarget(getDropdownPortalHost());
+  }, []);
+  const sortedOptions = sortOptionsByLabel(options);
+  const filteredOptions = searchTerm.trim()
+    ? sortedOptions.filter((option) =>
+        String(option?.label || "")
+          .toLowerCase()
+          .includes(searchTerm.trim().toLowerCase())
+      )
+    : sortedOptions;
+  const defaultValue = sortedOptions[0]?.value;
+  const selectedValues = multiSelect ? (Array.isArray(value) ? value : []) : null;
+  const isActive = multiSelect ? selectedValues.length > 0 : value !== defaultValue;
+
+  useEffect(() => {
+    if (!isOpen || !dropdownRef.current) {
+      setMenuPosition(null);
+      return undefined;
+    }
+
+    const updateMenuPosition = () => {
+      const triggerRect = dropdownRef.current.getBoundingClientRect();
+      const estimatedMenuHeight = 260;
+      const shouldOpenUpward = triggerRect.top >= estimatedMenuHeight;
+      setMenuPosition({
+        left: triggerRect.left,
+        top: shouldOpenUpward ? undefined : triggerRect.bottom + 8,
+        bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + 8 : undefined,
+        width: triggerRect.width,
+        maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - 8 : window.innerHeight - triggerRect.bottom - 8),
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [isOpen]);
+
+  const handleSelect = (option) => {
+    if (multiSelect) {
+      if (option.value === defaultValue) {
+        onChange([]);
+        setIsOpen(false);
+        setHelpKey(null);
+        return;
+      }
+      onChange(selectedValues.includes(option.value) ? selectedValues.filter((v) => v !== option.value) : [...selectedValues, option.value]);
+      return;
+    }
+    onChange(option.value);
+    setIsOpen(false);
+    setHelpKey(null);
+  };
+
+  const handleToggle = () => {
+    const next = !isOpen;
+    setIsOpen(next);
+    if (!next) {
+      setHelpKey(null);
+      setSearchTerm("");
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} className="ui-pos-rel">
+      <Button_Toolbar icon={Icon} label={compactButtonLabel(label)} title={label} onClick={handleToggle} className={`border-0 shadow-lg transition-all ${isActive ? activeClass : inactiveClass}`} data-active={isActive} />
+
+      {isOpen && menuPosition && portalTarget &&
+        createPortal(
+        <div
+          className="app-dropdown-portal-menu app-dropdown--min app-menu-panel bg-white dark:bg-gray-800 p-0 position-fixed shadow-lg"
+          style={{
+            ...dropdownStyle,
+            left: `${menuPosition.left}px`,
+            top: menuPosition.top === undefined ? "auto" : `${menuPosition.top}px`,
+            bottom: menuPosition.bottom === undefined ? "auto" : `${menuPosition.bottom}px`,
+            width: `${menuPosition.width}px`,
+            minWidth: `${menuPosition.width}px`,
+            maxHeight: `${menuPosition.maxHeight}px`,
+          }}
+        >
+          <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-0 py-0">
+            <input type="search" className="form-control ui-control-sm" placeholder={`Search ${String(label || "filter").toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+
+          <div className="overflow-auto" style={{ maxHeight: "16rem" }}>
+            {filteredOptions.map((option, index) => {
+              const isLast = index === filteredOptions.length - 1;
+              const isSelected = multiSelect ? (option.value === defaultValue ? selectedValues.length === 0 : selectedValues.includes(option.value)) : value === option.value;
+              const isHelpOpen = helpKey === option.value;
+
+              return (
+                <div key={option.value} className={`d-flex align-items-center gap-1 ${isLast ? "" : "mb-1"}`}>
+                  <button
+                    onClick={() => handleSelect(option)}
+                    className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
+                  >
+                    {option.label}
+                    {multiSelect && isSelected && option.value !== defaultValue && <span className="ms-1">✓</span>}
+                  </button>
+
+                  {showHelp && option.description && (
+                    <div className="flex-shrink-0 position-relative">
+                      <button
+                        type="button"
+                        aria-label={`${option.label} help`}
+                        className="align-items-center app-label--bold app-menu-action btn btn-sm d-flex dark:text-gray-300 justify-content-center text-gray-600"
+                        onMouseEnter={() => setHelpKey(option.value)}
+                        onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setHelpKey((prev) => (prev === option.value ? null : option.value));
+                        }}
+                      >
+                        ?
+                      </button>
+
+                      {isHelpOpen && (
+                        <div
+                          className="app-menu-panel app-help-popover bg-white bottom-100 dark:bg-gray-800 text-start"
+                          onMouseEnter={() => setHelpKey(option.value)}
+                          onMouseLeave={() => setHelpKey((prev) => (prev === option.value ? null : prev))}
+                        >
+                          <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
+                          <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
+                        </div>
+                      )}
+                    </div>,
+                    portalTarget
+                  )}
+                </div>
+              );
+            })}
+
+            {filteredOptions.length === 0 && <div className="app-menu-empty dark:text-gray-400 px-1 py-0 text-gray-500">No matching options</div>}
+          </div>
+        </div>
+        ,
+        portalTarget
+      )}
+    </div>
+  );
+}

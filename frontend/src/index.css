@@ -2,48 +2,3985 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Bootstrap overrides and custom styles */
+/* Dynamic Branding Color System */
+:root {
+  /* Primary Color Palette (Default: Blue #3B82F6) */
+  --color-primary-50: 239 246 255;
+  --color-primary-100: 219 234 254;
+  --color-primary-200: 191 219 254;
+  --color-primary-300: 147 197 253;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-primary-800: 30 64 175;
+  --color-primary-900: 30 58 138;
+  --color-primary-950: 23 37 84;
+
+  /* Secondary Color Palette (Default: Emerald #10B981) */
+  --color-secondary-50: 236 253 245;
+  --color-secondary-100: 209 250 229;
+  --color-secondary-200: 167 243 208;
+  --color-secondary-300: 110 231 183;
+  --color-secondary-400: 52 211 153;
+  --color-secondary-500: 16 185 129;
+  --color-secondary-600: 5 150 105;
+  --color-secondary-700: 4 120 87;
+  --color-secondary-800: 6 95 70;
+  --color-secondary-900: 6 78 59;
+  --color-secondary-950: 2 44 34;
+
+  /* Accent Color Palette (Default: Purple #8B5CF6) */
+  --color-accent-50: 250 245 255;
+  --color-accent-100: 243 232 255;
+  --color-accent-200: 233 213 255;
+  --color-accent-300: 216 180 254;
+  --color-accent-400: 192 132 252;
+  --color-accent-500: 139 92 246;
+  --color-accent-600: 124 58 237;
+  --color-accent-700: 109 40 217;
+  --color-accent-800: 91 33 182;
+  --color-accent-900: 76 29 149;
+  --color-accent-950: 46 16 101;
+
+  /* Base color references for components */
+  --color-primary: rgb(var(--color-primary-500));
+  --color-secondary: rgb(var(--color-secondary-500));
+  --color-accent: rgb(var(--color-accent-500));
+
+  /* Mobile keyboard offset (rem) used to keep search inputs visible */
+  --keyboard-offset: 0rem;
+
+  /* App-wide active color (synced from Profile calendar color) */
+  --app-active-color: #3b82f6;
+  --app-active-color-hover: #2563eb;
+  --app-active-color-rgb: 59, 130, 246;
+  --app-ui-scale: 1;
+
+  /* Bootstrap primary bridge so existing btn/active variants follow app active color */
+  --bs-primary: var(--app-active-color);
+  --bs-primary-rgb: var(--app-active-color-rgb);
+
+  /* Button dimensions — set at runtime from Profile TextSize + training/compact (see buttonTextSize.js) */
+  --app-btn-height: 2rem;
+  --app-btn-width: 4rem;
+  --app-btn-nav-width: 2.25rem;
+  --app-icon-size: 1rem;
+  --app-icon-size-active: 1.25rem;
+  --app-btn-icon-size: var(--app-icon-size);
+  --app-btn-icon-size-active: var(--app-icon-size-active);
+  --app-btn-label-font-size: 0.75rem;
+  --app-btn-border-radius: 9999px;
+  --app-btn-circle-border-radius: 50%;
+
+  /* Page Layout */
+  --app-page-padding-x: 0.5rem;
+  --app-page-padding-y: 0.5rem;
+  --app-page-header-height: 3rem;
+  --app-page-header-padding-x: 0.5rem;
+  --app-page-header-padding-y: 0.5rem;
+
+  /* Tables, Rows, Headers & Columns */
+  --app-table-header-height: 2.25rem;
+  --app-table-row-height: 2.25rem;
+  --app-table-select-col-width: 2rem;
+  --app-table-action-col-width: 2rem;
+  --app-table-cell-padding-x: 0.25rem;
+  --app-table-cell-padding-y: 0.25rem;
+
+  /* Select Icons */
+  --app-select-icon-size: 1.5rem;
+  --app-select-icon-inner-size: 1.125rem;
+
+  /* Search Boxes */
+  --app-input-height: 2rem;
+  --app-input-font-size: 0.75rem;
+  --app-search-input-padding-x: 0.75rem;
+
+  /* Floating Labels */
+  --app-floating-label-font-size: 1rem;
+  --app-floating-label-background: transparent;
+
+  /* Dropups & Dropdowns */
+  --app-dropdown-min-width: 11rem;
+  --app-dropdown-border-radius: 0.75rem;
+  --app-dropdown-item-height: 2rem;
+  --app-dropdown-item-padding-x: 0.75rem;
+  --app-dropup-z-index: 900;
+  --app-inner-dropdown-z-index: 1300;
+  --app-inner-popover-z-index: 1400;
+  --app-dropdown-font-size: var(--app-text-size-small, 0.75rem);
+
+  /* Table Footers & Navigation Reserves */
+  --app-footer-btn-gap: 0.25rem;
+  --app-footer-padding-x: 0.125rem;
+  --app-footer-padding-y: 0.125rem;
+  --app-nav-bottom-right-inset: 0.5rem;
+  --app-standard-footer-height: calc(var(--app-btn-height) + (var(--app-footer-padding-y) * 2));
+  /* Width + gap reserved for bottom-right nav (matches left inset) */
+  --app-footer-nav-reserve: calc(var(--app-btn-nav-width) + var(--app-footer-padding-x));
+
+  /* Modals */
+  --app-modal-border-radius: 0.75rem;
+  --app-modal-header-height: 3rem;
+  --app-modal-padding: 1rem;
+  --app-modal-z-index: 1100;
+  --app-modal-content-z-index: 1200;
+  --app-modal-nested-step: 100;
+
+  /* Cards */
+  --app-card-border-radius: 0.5rem;
+  --app-card-padding: 0.75rem;
+  --app-card-header-padding: 0.5rem 0.75rem;
+
+  /* Panels */
+  --app-panel-border-radius: 0.75rem;
+  --app-panel-header-height: 2.75rem;
+  --app-panel-padding: 0.75rem;
+
+  /* Accordions */
+  --app-accordion-border-radius: 9999px;
+  --app-accordion-header-height: var(--app-btn-height);
+  --app-accordion-body-border-radius: 1rem;
+
+  /* Charts */
+  --app-chart-min-height: 17.5rem;
+  --app-chart-container-border-radius: 0.5rem;
+
+  /* Badges & Tags */
+  --app-badge-font-size: 0.75rem;
+  --app-badge-padding-x: 0rem;
+  --app-badge-padding-y: 0.15rem;
+
+  /* Standardized Font Size Scale (.125, .25, .5, .75, 1, 1.25 rem) */
+  --app-text-size-tiny: 0.5rem;
+  --app-text-size-small: 0.75rem;
+  --app-text-size-medium: 1rem;
+  --app-text-size-large: 1.25rem;
+}
+
+/* Global shadow reset (requested app-wide) */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+/* Visible focus indicator for keyboard navigation overriding Bootstrap's outline: 0 */
+:focus-visible {
+  outline: 0.125rem solid var(--app-active-color, #3b82f6) !important;
+  outline-offset: 0.125rem !important;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+.app-shell {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* 100vh fallback first for browsers that don't support dvh */
+  height: 100vh;
+  /* JS-measured visual viewport height takes over when keyboard is open */
+  height: var(--vvp-height, 100dvh);
+  overflow: hidden;
+  zoom: var(--app-ui-scale, 1);
+}
+
+/* ==========================================================================
+   GLOBAL SCROLLBAR SUPPRESSION
+   Hides scrollbars globally across all elements (full pages, tables, description
+   textareas, modals, dropdowns, and nested containers) across all browsers
+   (Chrome, Safari, Edge, Firefox) while preserving smooth scrolling functionality.
+   ========================================================================== */
+html,
+body,
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE / Edge legacy */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome / Safari / Edge / Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Explicit element rules to ensure full coverage */
+textarea,
+table,
+.table-responsive,
+.no-scrollbar,
+.app-page-scroll-surface,
+.component-body,
+.component-body-inner,
+.template-editor-body,
+.template-editor-toolbar-shell,
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto,
+.app-scroll-y {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overscroll-behavior: contain;
+}
+
+textarea::-webkit-scrollbar,
+table::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+.app-page-scroll-surface::-webkit-scrollbar,
+.component-body::-webkit-scrollbar,
+.component-body-inner::-webkit-scrollbar,
+.template-editor-body::-webkit-scrollbar,
+.template-editor-toolbar-shell::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+.app-scroll-y::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ==========================================================================
+   PREDEFINED COMPONENT STYLES
+   Foundational styles derived from runtime tokens for standard UI elements.
+   ========================================================================== */
+
+/* ─── 1. BUTTONS ─── */
+.app-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: var(--app-btn-border-radius) !important;
+  padding: 0 0.75rem !important;
+  gap: 0.25rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  border: 0.0625rem solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.app-btn--circle {
+  width: var(--app-btn-height) !important;
+  min-width: var(--app-btn-height) !important;
+  max-width: var(--app-btn-height) !important;
+  border-radius: var(--app-btn-circle-border-radius) !important;
+  padding: 0 !important;
+}
+
+.app-btn--pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  border-radius: var(--app-btn-border-radius) !important;
+}
+
+.app-btn--primary {
+  background-color: var(--app-active-color, var(--bs-primary)) !important;
+  color: #fff !important;
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+}
+
+.app-btn--secondary {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+.app-btn--danger {
+  background-color: #ef4444 !important;
+  color: #fff !important;
+  border-color: #dc2626 !important;
+}
+
+.app-btn--cancel {
+  background-color: transparent !important;
+  color: var(--bs-secondary-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+/* ─── 2. DROPUPS & DROPDOWNS ─── */
+.app-dropdown,
+.app-dropup {
+  position: relative;
+  display: inline-flex;
+}
+
+.app-dropdown.is-open,
+.app-dropup.is-open,
+.app-dropdown-root.is-open {
+  z-index: var(--app-dropup-z-index, 900) !important;
+}
+
+.app-dropdown-root {
+  position: relative;
+  width: 100%;
+}
+
+.app-menu-panel {
+  min-width: var(--app-dropdown-min-width);
+  background: var(--bs-body-bg);
+  border: 0.0625rem solid var(--bs-border-color);
+  border-radius: var(--app-dropdown-border-radius);
+  padding: 0.25rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
+  z-index: var(--app-dropup-z-index) !important;
+}
+
+.app-dropdown-portal-menu {
+  z-index: var(--app-inner-dropdown-z-index, 1300) !important;
+}
+
+/* ─── Question Mark (?) Help Popovers ───
+   Anchored near the button on tablet/desktop, centered on viewport on mobile */
+.app-help-popover {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-55%);
+  margin-bottom: 0.5rem;
+  width: 260px;
+  max-width: calc(100vw - 1rem);
+  z-index: 1200 !important;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  padding: 0.5rem !important;
+}
+
+/* Inner controls must stack above the modal content that owns them. */
+.app-modal-layer .app-dropdown-root.is-open,
+.app-modal-layer .app-dropdown.is-open,
+.app-modal-layer .app-dropup.is-open {
+  z-index: var(--app-inner-dropdown-z-index) !important;
+}
+
+.app-modal-layer .app-menu-panel {
+  z-index: var(--app-inner-dropdown-z-index) !important;
+}
+
+.app-modal-layer .app-help-popover {
+  z-index: var(--app-inner-popover-z-index) !important;
+}
+
+@media (max-width: 48rem) {
+  .app-help-popover {
+    position: fixed !important;
+    top: 50% !important;
+    bottom: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(18rem, calc(100vw - 2rem)) !important;
+    max-width: calc(100vw - 2rem) !important;
+    z-index: 9999 !important;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35) !important;
+    pointer-events: auto !important;
+  }
+}
+
+.app-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: var(--app-dropdown-item-height) !important;
+  padding: 0.25rem var(--app-dropdown-item-padding-x) !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  border-radius: 0.375rem !important;
+  color: var(--bs-body-color) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.app-menu-item:hover,
+.app-menu-item:focus {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.app-menu-item[data-active="true"],
+.app-menu-item--active {
+  background-color: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.12) !important;
+  color: var(--app-active-color, var(--bs-primary)) !important;
+  font-weight: 600;
+}
+
+.app-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-menu-empty {
+  padding: 0.5rem var(--app-dropdown-item-padding-x);
+  font-size: var(--app-btn-label-font-size);
+  color: var(--bs-secondary-color);
+  text-align: center;
+}
+
+/* ─── 3. SEARCH BOXES ─── */
+.app-search-box {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.app-search-input {
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+  border-radius: var(--app-btn-border-radius) !important;
+  padding-left: var(--app-search-input-padding-x) !important;
+  padding-right: var(--app-search-input-padding-x) !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  color: var(--bs-body-color) !important;
+  box-sizing: border-box;
+}
+
+.app-search-input:focus {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  outline: none;
+}
+
+.app-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+/* ─── 4. SELECT ICONS ─── */
+.app-select-col {
+  width: var(--app-table-select-col-width) !important;
+  min-width: var(--app-table-select-col-width) !important;
+  max-width: var(--app-table-select-col-width) !important;
+  text-align: center !important;
+  padding: 0 !important;
+}
+
+.app-select-icon {
+  width: var(--app-select-icon-size) !important;
+  height: var(--app-select-icon-size) !important;
+  border-radius: 9999px !important;
+  border: 0.0625rem solid var(--bs-border-color);
+  background: transparent;
+  color: var(--bs-secondary-color);
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer;
+  line-height: 1 !important;
+  transition: all 0.15s ease;
+}
+
+.app-select-icon svg {
+  width: var(--app-select-icon-inner-size) !important;
+  height: var(--app-select-icon-inner-size) !important;
+}
+
+.app-select-icon--active,
+.app-select-icon[aria-pressed="true"] {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  background: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.16) !important;
+  color: var(--app-active-color, var(--bs-primary)) !important;
+}
+
+.app-select-icon-cell {
+  width: var(--app-table-select-col-width) !important;
+  min-width: var(--app-table-select-col-width) !important;
+  max-width: var(--app-table-select-col-width) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0 !important;
+}
+
+/* ─── 5. TABLES ─── */
+.app-table-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.app-table-scrollable {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bs-body-bg);
+}
+
+.app-table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  vertical-align: middle;
+}
+
+.app-main-page-table {
+  table-layout: fixed;
+}
+
+.app-main-page-table td,
+.app-main-page-table th {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.app-main-page-table .main-page-table-data,
+.app-main-page-table .app-table-th:not(.app-col-select) {
+  padding-left: var(--app-table-cell-padding-x) !important;
+  padding-right: var(--app-table-cell-padding-x) !important;
+}
+
+/* ─── 6. TABLE HEADERS ─── */
+.app-table-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bs-tertiary-bg);
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  min-height: var(--app-table-header-height);
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.app-table-th {
+  font-size: var(--app-btn-label-font-size);
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  padding: var(--app-table-cell-padding-y) var(--app-table-cell-padding-x);
+  vertical-align: middle;
+  text-align: left !important;
+}
+
+.app-table-th--sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-table-th--sortable:hover {
+  color: var(--bs-body-color);
+}
+
+/* ─── 7. TABLE ROWS ─── */
+.app-table-row {
+  height: var(--app-table-row-height);
+  min-height: var(--app-table-row-height);
+  vertical-align: middle;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.app-table-row:hover {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.app-table-row--selected {
+  background-color: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08) !important;
+}
+
+/* ─── 8. TABLE COLUMNS & DATA CELLS ─── */
+.app-table-col {
+  vertical-align: middle;
+}
+
+.app-table-cell {
+  padding: var(--app-table-cell-padding-y) var(--app-table-cell-padding-x);
+  vertical-align: middle;
+  font-size: var(--app-btn-label-font-size);
+  color: var(--bs-body-color);
+}
+
+.app-table-cell--select {
+  width: var(--app-table-select-col-width);
+  min-width: var(--app-table-select-col-width);
+  max-width: var(--app-table-select-col-width);
+  text-align: center;
+  padding: 0;
+}
+
+.app-table-cell--actions {
+  width: var(--app-table-action-col-width);
+  min-width: var(--app-table-action-col-width);
+  max-width: var(--app-table-action-col-width);
+  text-align: center;
+  padding: 0;
+}
+
+.app-table-cell--primary {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-table-cell--numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── 9. TABLE FOOTERS ─── */
+.app-table-footer {
+  width: 100%;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--bs-body-bg);
+  border-top: 0.0625rem solid var(--bs-border-color);
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
+}
+
+/* ─── 10. PAGE LAYOUT ─── */
+.app-page-layout {
+  display: flex;
+  flex-direction: column;
+  height: var(--vvp-height, 100dvh);
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bs-body-bg);
+}
+
+.app-page-header {
+  height: var(--app-page-header-height);
+  min-height: var(--app-page-header-height);
+  padding: var(--app-page-header-padding-y) var(--app-page-header-padding-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   GLOBAL PAGE HEADER TITLE STYLE
+   Consistent header text style across all main pages.
+   ========================================================================== */
+.app-page-title {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: var(--bs-body-color) !important;
+  letter-spacing: -0.015em;
+  display: flex;
+  align-items: center;
+}
+
+.dark .app-page-title {
+  color: var(--bs-body-color) !important;
+}
+
+.app-page-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--app-page-padding-y) var(--app-page-padding-x);
+}
+
+.app-page-footer {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.app-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ─── 11. CHARTS ─── */
+.app-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: var(--app-chart-min-height);
+  background: var(--bs-body-bg);
+  border: 0.0625rem solid var(--bs-border-color);
+  border-radius: var(--app-chart-container-border-radius);
+  padding: 0.75rem;
+  position: relative;
+}
+
+.app-chart-container {
+  flex-grow: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.app-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.app-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  text-align: left;
+}
+
+.app-chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-chart-kpi-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.app-chart-kpi-card {
+  flex: 1 1 6rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--bs-body-bg);
+  border: 0.0625rem solid var(--bs-border-color);
+  text-align: center;
+}
+
+/* ─── 12. MODALS ─── */
+.app-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--app-modal-z-index);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(0.125rem);
+}
+
+.app-modal-dialog,
+.app-modal-sheet {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1;
+  width: 100% !important;
+  background: var(--bs-body-bg) !important;
+  border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.app-modal-dialog--fullscreen {
+  max-width: 100% !important;
+  max-height: 90vh !important;
+  border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+}
+
+/* ─── 13. MODAL HEADER (Always stationary at the top, separate from body scroll) ─── */
+.app-modal-header,
+.component-header,
+.ui-modal-header,
+.ui-page-shell > div:first-child:has(.app-modal-title),
+.ui-page-shell > div:first-child:has(.ui-heading-strong) {
+  height: var(--app-modal-header-height, 3rem) !important;
+  min-height: var(--app-modal-header-height, 3rem) !important;
+  padding: 0 var(--app-modal-padding, 1rem) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 0.0625rem solid var(--bs-border-color) !important;
+  background: var(--bs-body-bg) !important;
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+}
+
+/* ==========================================================================
+   GLOBAL MODAL HEADER TITLE STYLE
+   Consistent header text style across all modals and modal components.
+   ========================================================================== */
+.app-modal-title,
+.modal-title,
+.component-header-left {
+  margin: 0 !important;
+  font-size: var(--app-text-size-medium, 1rem) !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  color: var(--bs-body-color) !important;
+  display: flex;
+  align-items: center;
+}
+
+.dark .app-modal-title,
+.dark .modal-title,
+.dark .component-header-left {
+  color: var(--bs-body-color) !important;
+}
+
+.app-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--bs-secondary-color);
+  padding: 0.25rem;
+}
+
+/* ─── 14. MODAL BODY (Only scrollable area, smooth touch & hidden scrollbars) ─── */
+.app-modal-body,
+.app-modal-content,
+.component-body,
+.component-body-inner {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.app-modal-body::-webkit-scrollbar,
+.app-modal-content::-webkit-scrollbar,
+.component-body::-webkit-scrollbar,
+.component-body-inner::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.app-modal-body input,
+.app-modal-body textarea,
+.app-modal-body select,
+.app-modal-content input,
+.app-modal-content textarea,
+.app-modal-content select,
+.component-body input,
+.component-body textarea,
+.component-body select {
+  touch-action: auto;
+}
+
+/* ─── 15. MODAL FOOTER (Always stationary at bottom, touching interface) ─── */
+.app-modal-footer,
+.modal-footer,
+.component-footer,
+.ui-modal-footer,
+.ui-page-shell > .app-form-footer,
+.ui-page-shell > .ui-form-footer-shell,
+.ui-page-shell > div:last-child:has(.btn) {
+  min-height: var(--app-standard-footer-height) !important;
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  background: var(--bs-body-bg) !important;
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+}
+
+/* Modals sit flush at the bottom of the viewport with no gap */
+.app-modal-sheet,
+.app-modal-dialog {
+  bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Modal footers: flush at bottom, no right-hand nav reserve needed */
+.app-modal .app-modal-footer,
+.app-modal .modal-footer,
+.app-modal .component-footer,
+.app-modal .app-form-footer,
+.app-modal .app-standard-footer,
+.app-modal-sheet .app-modal-footer,
+.app-modal-sheet .modal-footer,
+.app-modal-sheet .component-footer,
+.app-modal-sheet .app-form-footer,
+.app-modal-sheet .app-standard-footer {
+  padding-left: var(--app-footer-padding-x) !important;
+  padding-right: var(--app-footer-padding-x) !important;
+  padding-top: var(--app-footer-padding-y) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
+  margin-bottom: 0 !important;
+  bottom: 0 !important;
+  border-bottom: none !important;
+}
+
+.app-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--app-footer-btn-gap);
+}
+
+/* ─── 15. PANELS ─── */
+.app-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bs-body-bg);
+  border: 0.0625rem solid var(--bs-border-color);
+  border-radius: var(--app-panel-border-radius);
+  overflow: hidden;
+}
+
+.app-panel-header {
+  height: var(--app-panel-header-height);
+  min-height: var(--app-panel-header-height);
+  padding: 0 var(--app-panel-padding);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+.app-panel-body {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--app-panel-padding);
+}
+
+.app-panel-footer {
+  min-height: var(--app-standard-footer-height);
+  padding: var(--app-footer-padding-y) var(--app-footer-padding-x);
+  display: flex;
+  align-items: center;
+  border-top: 0.0625rem solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+  flex-shrink: 0;
+}
+
+/* ─── 16. CARDS ─── */
+.app-card {
+  background: var(--bs-body-bg);
+  border: 0.0625rem solid var(--bs-border-color);
+  border-radius: var(--app-card-border-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-card-header {
+  padding: var(--app-card-header-padding);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.app-card-body {
+  padding: var(--app-card-padding);
+  flex-grow: 1;
+}
+
+/* Ensure cards without headers have adequate top padding so content is not clipped by corner radius */
+.card:not(:has(.card-header)),
+.app-card:not(:has(.app-card-header)) {
+  padding-top: var(--app-card-padding, 0.75rem);
+}
+
+.card-body,
+.app-card-body {
+  padding-top: var(--app-card-padding, 0.75rem);
+}
+
+.app-card-footer {
+  padding: var(--app-card-header-padding);
+  display: flex;
+  align-items: center;
+  border-top: 0.0625rem solid var(--bs-border-color);
+}
+
+/* ─── 17. ACCORDIONS ─── */
+.app-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.app-accordion-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+}
+
+.app-accordion-header {
+  height: var(--app-accordion-header-height) !important;
+  min-height: var(--app-accordion-header-height) !important;
+  max-height: var(--app-accordion-header-height) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: var(--app-accordion-border-radius) !important;
+  padding-left: max(0.875rem, calc(var(--app-accordion-header-height) * 0.45)) !important;
+  padding-right: max(0.875rem, calc(var(--app-accordion-header-height) * 0.45)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 2 !important;
+  transition: all 0.15s ease;
+}
+
+.app-accordion-header:hover {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.app-accordion-header[data-active="true"] {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  background-color: var(--bs-body-bg) !important;
+  background-image: linear-gradient(rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08), rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08)) !important;
+}
+
+.app-accordion-body {
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-radius: var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) 0 0 !important;
+  margin-bottom: calc(var(--app-accordion-header-height) * -0.5) !important;
+  padding-top: 0.75rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  padding-bottom: calc(var(--app-accordion-header-height) * 0.5 + 0.5rem) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  background-color: var(--bs-body-bg) !important;
+  box-sizing: border-box !important;
+  overflow-y: auto;
+}
+
+.app-accordion-footer {
+  padding: 0.5rem;
+  border-top: 0.0625rem solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+/* ─── 18. BADGES & PILL TAGS ─── */
+.app-badge,
+.app-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--app-badge-font-size);
+  padding: var(--app-badge-padding-y) var(--app-badge-padding-x);
+  border-radius: 9999px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.app-badge--pill {
+  border-radius: 9999px;
+}
+
+.app-badge--primary {
+  background-color: rgba(var(--app-active-color-rgb, 59, 130, 246), 0.15);
+  color: var(--app-active-color, var(--bs-primary));
+}
+
+.app-badge--success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.app-badge--warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.app-badge--danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ─── 19. FORM CONTROLS & INPUTS ─── */
+.app-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.app-form-label {
+  font-size: var(--app-btn-label-font-size);
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+}
+
+.app-form-control,
+.app-form-select {
+  height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+  border-radius: 0.375rem;
+  border: 0.0625rem solid var(--bs-border-color);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+}
+
+/* ─── 20. TOOLBARS & ACTION GROUPS ─── */
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--app-footer-btn-gap);
+  flex-wrap: wrap;
+}
+
+.app-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-toolbar-spacer {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* ─── 21. STATUS TRACKERS & STEPPERS ─── */
+.app-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0;
+}
+
+.app-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+  flex: 1 1 0;
+}
+
+/* ─── 22. FLOATING OVERLAYS & NAV TOGGLES ─── */
+.app-floating-nav {
+  position: fixed;
+  bottom: calc(var(--app-footer-padding-y) + env(safe-area-inset-bottom, 0rem));
+  right: calc(var(--app-footer-padding-x) + env(safe-area-inset-right, 0rem));
+  z-index: 1060;
+}
+
+/* Reusable grouped utilities to reduce repeated JSX className token blocks */
+.ui-flex-center-gap-1 {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ui-flex-center-gap-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui-icon-4 {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ui-icon-5 {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.ui-small-muted {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+}
+
+.ui-component-shell,
+.ui-page-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Ensure modal headers stay fixed at top when scrolling */
+.app-modal-header,
+.component-header,
+.ui-modal-header,
+.ui-page-shell > .app-modal-header,
+.ui-page-shell > .border-bottom,
+.ui-page-shell > div:first-child:has(.app-modal-title),
+.ui-page-shell > div:first-child:has(.ui-heading-strong) {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background: var(--bs-body-bg) !important;
+}
+
+/* Ensure inner scrollable content inside shells scrolls smoothly */
+.ui-component-shell > .component-body,
+.ui-component-shell > .component-body-inner,
+.ui-page-shell > .component-body,
+.ui-page-shell > form,
+.ui-page-shell > div.overflow-auto,
+.ui-page-shell > div[class*="overflow-auto"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.ui-component-shell > .component-body::-webkit-scrollbar,
+.ui-component-shell > .component-body-inner::-webkit-scrollbar,
+.ui-page-shell > .component-body::-webkit-scrollbar,
+.ui-page-shell > form::-webkit-scrollbar,
+.ui-page-shell > div.overflow-auto::-webkit-scrollbar,
+.ui-page-shell > div[class*="overflow-auto"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Ensure modal footers stay fixed at bottom when scrolling */
+.app-modal-footer,
+.modal-footer,
+.component-footer,
+.ui-modal-footer,
+.ui-page-shell > .app-modal-footer,
+.ui-page-shell > .app-form-footer,
+.ui-page-shell > .ui-form-footer-shell,
+.ui-page-shell > div:last-child:has(.btn) {
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 30 !important;
+  background: var(--bs-body-bg) !important;
+}
+
+.dark .ui-page-shell {
+  background-color: rgb(17 24 39);
+}
+
+.ui-row-between-p2 {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+}
+
+.ui-card-border {
+  border: 0.0625rem solid rgb(229 231 235);
+  border-radius: 0.5rem;
+}
+
+.dark .ui-card-border {
+  border-color: rgb(55 65 81);
+}
+
+.ui-heading-strong {
+  margin-bottom: 0 !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  color: var(--bs-body-color) !important;
+}
+
+.dark .ui-heading-strong {
+  color: var(--bs-body-color) !important;
+}
+
+.ui-label-strong-sm {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(55 65 81);
+}
+
+.dark .ui-label-strong-sm {
+  color: rgb(209 213 219);
+}
+
+.ui-muted-xs {
+  font-size: 0.75rem;
+  color: rgb(107 114 128);
+}
+
+.dark .ui-muted-xs {
+  color: rgb(156 163 175);
+}
+
+.ui-form-footer-shell {
+  flex-shrink: 0;
+  border-top: 0.0625rem solid rgb(229 231 235);
+  background-color: #ffffff;
+}
+
+.dark .ui-form-footer-shell {
+  border-color: rgb(55 65 81);
+  background-color: rgb(17 24 39);
+}
+
+.ui-flex-items-gap-1 {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ui-flex-items-gap-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui-form-label-xs {
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.ui-form-label-sm {
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.ui-control-sm {
+  box-sizing: border-box;
+  min-height: var(--app-input-height);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--app-input-font-size) !important;
+  line-height: 1.2;
+  border-radius: var(--bs-border-radius-sm);
+}
+
+.form-control.ui-control-sm,
+.form-select.ui-control-sm {
+  height: var(--app-input-height);
+  min-height: var(--app-input-height);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--app-input-font-size) !important;
+  line-height: 1.2;
+}
+
+.ui-dropdown-trigger {
+  box-sizing: border-box;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  line-height: 1.2;
+}
+
+/* Dropdown_Custom owns the bordered trigger; sizing classes belong on that trigger, not its wrapper. */
+.app-dropdown-root.ui-control-sm,
+.app-dropdown-root.form-select,
+.app-dropdown-root.form-select-sm {
+  min-height: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.ui-dropdown-trigger:focus,
+.ui-dropdown-trigger:focus-visible {
+  outline: 0.125rem solid var(--app-active-color) !important;
+  outline-offset: 0.125rem;
+  box-shadow: none !important;
+}
+
+.ui-text-sm {
+  font-size: 0.75rem;
+}
+
+.ui-text-muted {
+  color: var(--bs-secondary-color);
+}
+
+.ui-pos-rel {
+  position: relative;
+}
+
+.ui-btn-outline-secondary-sm {
+  color: var(--bs-secondary);
+  border: 0.0625rem solid var(--bs-secondary);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  border-radius: var(--bs-border-radius-sm);
+}
+
+.ui-btn-outline-secondary-sm:hover,
+.ui-btn-outline-secondary-sm:focus-visible,
+.ui-btn-outline-secondary-sm:active {
+  color: #fff;
+  background-color: var(--bs-secondary);
+  border-color: var(--bs-secondary);
+}
+
+.ui-btn-circle-outline-secondary {
+  color: var(--bs-secondary);
+  border: 0.0625rem solid var(--bs-secondary);
+}
+
+.ui-btn-circle-outline-secondary:hover,
+.ui-btn-circle-outline-secondary:focus-visible,
+.ui-btn-circle-outline-secondary:active {
+  color: #fff;
+  background-color: var(--bs-secondary);
+  border-color: var(--bs-secondary);
+}
+
+.ui-form-floating-mb2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Global description textarea styling */
+.ui-description-textarea {
+  border: 0;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge legacy */
+  overscroll-behavior: contain;
+  height: 9rem;
+  min-height: 9rem;
+}
+
+.form-floating > .ui-description-textarea {
+  height: 10.5rem;
+  min-height: 10.5rem;
+}
+
+.ui-description-textarea::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Opera */
+}
+
+/* Container whose corners hug pill-shaped controls sitting flush against its border */
+.ui-pill-container {
+  border-radius: calc(var(--app-input-height) / 2 + 0.0625rem) !important;
+}
+
+/* Narrow numeric input paired with a flexible dropdown in the same row */
+.ui-number-narrow {
+  flex: 0 0 6rem;
+  width: 6rem;
+  min-width: 0;
+}
+
+.ui-row-g2 {
+  --bs-gutter-x: 0.5rem;
+  --bs-gutter-y: 0.5rem;
+}
+
+.ui-text-end {
+  text-align: end;
+}
+
+/* Bulk import grid: hide scrollbars while preserving mobile and desktop scroll */
+.bulk-import-grid-scroll {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
+  overscroll-behavior: contain;
+}
+
+.bulk-import-grid-scroll table,
+.bulk-import-grid-scroll th,
+.bulk-import-grid-scroll td,
+.bulk-import-grid-scroll input {
+  touch-action: pan-x pan-y !important;
+}
+
+.component-body-inner--flush {
+  padding: 0;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.bulk-import-grid-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.app-shell-main {
+  padding-top: env(safe-area-inset-top);
+}
+
+.app-page-loader {
+  min-height: 12.5rem;
+}
+
+.app-page-loader__logo {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  animation: app-page-loader-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes app-page-loader-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.app-page-header,
+.app-table-header {
+  z-index: 5;
+}
+
+.app-table-footer {
+  z-index: 10;
+}
+
+.app-modal-layer {
+  z-index: 1100;
+}
+
+.app-error-boundary {
+  min-height: 60vh;
+}
+
+.app-error-boundary__icon {
+  font-size: 1.25rem;
+}
+
+.app-error-boundary__message {
+  max-width: 30rem;
+}
+
+.app-error-boundary__details {
+  max-width: 35rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── TABLE ROW ──────────────────────────────────────────── */
+.app-table-row {
+  height: 3.5rem;
+  cursor: pointer;
+}
+
+/* Main-page data table row — use on <tr> inside PageTableRow */
+.main-page-table-row {
+  height: var(--app-table-row-height, 2.25rem);
+  cursor: pointer;
+  vertical-align: middle;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+}
+
+/* Main-page data table cell — use on <td> inside main page tables */
+.main-page-table-data {
+  padding-left: var(--app-table-cell-padding-x, 0rem);
+  padding-right: var(--app-table-cell-padding-x, 0.5rem);
+  vertical-align: middle;
+  text-align: left !important;
+}
+
+.app-main-page-table .app-select-icon-cell,
+.app-main-page-table .app-table-th.app-col-select {
+  text-align: center !important;
+}
+
+/* Remove border from all footer navigation bars */
+.app-footer-search,
+.schedule-footer,
+.profile-footer-nav {
+  border-top: none !important;
+  border: none !important;
+}
+
+/* Footer toolbar rows — uniform gap, flex-wrap */
+.app-footer-toolbar,
+.app-footer-search .search-hide-on-focus.d-flex,
+.app-footer-search .d-flex.align-items-center.flex-wrap,
+.schedule-footer > .d-flex,
+.schedule-footer > .app-footer-toolbar,
+.profile-footer-wrap-row,
+.profile-footer-nav .d-flex.align-items-center.flex-wrap,
+footer[aria-label="Actions"] {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: var(--app-footer-btn-gap) !important;
+  row-gap: var(--app-footer-btn-gap) !important;
+}
+
+/* Restore Bootstrap responsive hide/show (display:flex !important above overrides d-none / d-lg-*) */
+@media (min-width: 62rem) {
+  .d-lg-none.app-footer-toolbar,
+  .d-lg-none.profile-footer-wrap-row {
+    display: none !important;
+  }
+}
+@media (max-width: 61.9988rem) {
+  .d-none.d-lg-flex.app-footer-toolbar,
+  .d-none.d-lg-flex.profile-footer-wrap-row {
+    display: none !important;
+  }
+}
+
+/* Page footers — toolbar buttons with icons only are exact circles */
+.app-footer-search .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.schedule-footer .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.profile-footer-nav .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.app-footer-search .btn.app-action-btn.rounded-pill,
+.schedule-footer .btn.app-action-btn.rounded-pill,
+.profile-footer-nav .btn.app-action-btn.rounded-pill,
+footer[aria-label="Actions"] .btn.app-action-btn.rounded-pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  overflow: visible;
+}
+
+.app-footer-search .btn.app-action-btn .text-nowrap,
+.schedule-footer .btn.app-action-btn .text-nowrap,
+.profile-footer-nav .btn.app-action-btn .text-nowrap,
+footer[aria-label="Actions"] .btn.app-action-btn .text-nowrap {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ========================================
+   GLOBAL BUTTON STYLES
+   All action buttons — dimensions from :root (TextSize + training/compact)
+   ======================================== */
+.btn.app-action-btn {
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.125rem !important;
+  box-shadow: none !important;
+  --bs-btn-focus-box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.125rem !important;
+}
+
+.btn.app-action-btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.btn.app-action-btn.btn-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle),
+.btn.app-action-btn--icon-only:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+}
+
+.btn.app-action-btn.rounded-pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: none !important;
+}
+
+/* Bottom-right navigation menu toggle (Layout.jsx) — same height as footer buttons */
+.btn.btn-app-nav {
+  width: var(--app-btn-nav-width) !important;
+  min-width: var(--app-btn-nav-width) !important;
+  max-width: var(--app-btn-nav-width) !important;
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+}
+
+body.training-mode .btn.btn-app-nav.rounded-pill {
+  width: auto !important;
+  max-width: none !important;
+  min-width: var(--app-btn-nav-width) !important;
+}
+
+/* Tabs, icon-only closes, list rows — not toolbar-sized controls */
+.btn-unstyled,
+button.btn-unstyled,
+.btn-close,
+.btn-tab {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: revert !important;
+}
+
+button,
+.btn,
+[role="button"] {
+  box-shadow: none !important;
+}
+
+/* Compact mode: any icon-bearing action button should render as an exact 1:1 circle */
+body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon):not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.app-compact-exempt) {
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Hide common text wrappers while preserving direct icon nodes and badges. */
+body:not(.training-mode) .btn.app-action-btn:has(svg, img, i.bi, .app-icon):not(.app-compact-exempt) > :not(svg):not(img):not(i.bi):not(.app-icon):not(:has(svg)):not(:has(img)):not(:has(i.bi)):not(:has(.app-icon)):not(.badge):not(.visually-hidden) {
+  display: none !important;
+}
+
+button:focus,
+button:focus-visible,
+button:active,
+.btn:focus,
+.btn:focus-visible,
+.btn:active,
+.btn.active,
+[role="button"]:focus,
+[role="button"]:focus-visible,
+[role="button"]:active {
+  box-shadow: none !important;
+}
+
+/* ========================================
+   GLOBAL FORM INPUT STYLES
+   All inputs and dropdowns application-wide
+   ======================================== */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+.form-control:not(textarea),
+.form-select,
+button[role="combobox"],
+div[role="combobox"] {
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+}
+
+.app-search-input {
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Keep Bootstrap floating labels readable; compact global input sizing makes these overlap. */
+.form-floating > .form-control,
+.form-floating > .form-select {
+  height: calc(3.5rem + 0.125rem) !important;
+  min-height: calc(3.5rem + 0.125rem) !important;
+  padding-top: 1.625rem !important;
+  padding-bottom: 0.625rem !important;
+  font-size: 1rem !important;
+}
+
+/* Footer chrome — bottom inset matches .app-nav-bottom-toggle (same --app-footer-padding-y) */
+.app-footer-shell {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.app-footer-padding,
+.app-form-footer,
+.app-standard-footer,
+.schedule-footer,
+.sales-history-footer .app-footer-toolbar,
+.modal-footer.app-footer-reserve,
+footer[aria-label="Actions"].app-footer-reserve {
+  padding-left: var(--app-footer-padding-x) !important;
+  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
+  padding-top: var(--app-footer-padding-y) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
+}
+
+/* Profile page footer — use standard footer padding for smooth page transitions */
+.profile-footer-nav,
+.profile-footer-nav .app-footer-padding-row,
+.profile-footer-nav .app-footer-padding {
+  padding-bottom: var(--app-footer-padding-y) !important;
+}
+
+.profile-footer-nav .profile-footer-btn {
+  height: var(--app-btn-nav-width) !important;
+  min-height: var(--app-btn-nav-width) !important;
+  max-height: var(--app-btn-nav-width) !important;
+}
+
+/* Modals/forms without nav reserve — keep symmetric horizontal inset only */
+.app-form-footer:not(.app-footer-reserve) {
+  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
+}
+
+/* Global footer contract: every app footer sticks to the bottom */
+.app-footer-shell,
+.app-standard-footer,
+.app-form-footer,
+.app-modal-footer,
+.schedule-footer,
+.profile-footer-nav,
+footer[aria-label="Actions"] {
+  position: sticky !important;
+  bottom: 0 !important;
+  inset-inline: 0;
+  width: 100%;
+  flex: 0 0 auto;
+  z-index: 40;
+}
+
+/* Stacked footer rows — uniform vertical gap; toolbars share button height */
+.app-footer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-footer-btn-gap);
+  width: 100%;
+  padding-bottom:.5rem;
+}
+
+.app-footer-stack > .app-footer-toolbar,
+.app-footer-stack > .search-hide-on-focus.app-footer-toolbar,
+.app-footer-stack > .app-footer-search-row,
+.app-footer-stack > .position-relative,
+.profile-footer-nav .app-footer-stack > div {
+  margin-bottom: 0 !important;
+  min-height: var(--app-btn-height);
+  align-items: center !important;
+}
+
+/* Search row is the bottom anchor — height follows input only (padding is on .app-footer-padding) */
+.app-footer-stack > .app-footer-search-row {
+  min-height: 0 !important;
+}
+
+.app-footer-stack > .app-footer-search-row:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+@media (max-width: 64rem) {
+  .app-footer-search > .app-footer-padding,
+  .schedule-footer,
+  .profile-footer-nav,
+  .app-form-footer,
+  .app-standard-footer {
+    padding-bottom: env(safe-area-inset-bottom, 0rem) !important;
+  }
+}
+
+/* Main page footer internals sit flush while the outer footer keeps its edge padding. */
+.app-table-footer .app-footer-padding,
+.app-table-footer .app-footer-stack {
+  padding-bottom: 0 !important;
+}
+
+/* ─── App icons — scale with Profile → Text size (buttonTextSize.js → --app-icon-size) ───
+   Add class "app-icon" to any SVG/Heroicon, or rely on auto rules inside action buttons. */
+.app-icon,
+.app-btn-icon,
+.btn:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.animate-spin):not(.app-icon--fixed):not(.app-icon--lg),
+button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.animate-spin):not(.app-icon--fixed):not(.app-icon--lg),
+[role="button"]:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.animate-spin):not(.app-icon--fixed):not(.app-icon--lg) {
+  width: var(--app-icon-size) !important;
+  height: var(--app-icon-size) !important;
+  flex-shrink: 0;
+  transition:
+    width 0.15s ease,
+    height 0.15s ease;
+}
+
+/* Decorative / hero icons — opt out of button auto-scale */
+.app-icon--lg {
+  width: calc(var(--app-icon-size) * 2.5) !important;
+  height: calc(var(--app-icon-size) * 2.5) !important;
+}
+
+.app-icon--fixed {
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Footer nav/filter buttons — slightly larger icon when active/selected */
+.app-footer-search .btn svg,
+.profile-footer-nav .btn svg,
+.schedule-footer .btn svg,
+.modal-footer .btn svg,
+[class*="footer"] .btn svg {
+  transition:
+    width 0.15s ease,
+    height 0.15s ease;
+}
+
+.app-footer-search .btn.rounded-circle[data-active="true"],
+.schedule-footer .btn.rounded-circle[data-active="true"],
+.profile-footer-nav .btn.rounded-circle[data-active="true"] {
+  padding: 0 !important;
+}
+
+.app-footer-search .btn.rounded-circle[data-active="true"] svg,
+.profile-footer-nav .btn.rounded-circle[data-active="true"] svg,
+.schedule-footer .btn.rounded-circle[data-active="true"] svg,
+.modal-footer .btn.rounded-circle[data-active="true"] svg,
+[class*="footer"] .btn.rounded-circle[data-active="true"] svg,
+.app-footer-search .btn.rounded-pill[data-active="true"] svg,
+.profile-footer-nav .btn.rounded-pill[data-active="true"] svg,
+.schedule-footer .btn.rounded-pill[data-active="true"] svg,
+.modal-footer .btn.rounded-pill[data-active="true"] svg,
+[class*="footer"] .btn.rounded-pill[data-active="true"] svg,
+.app-footer-search .btn.rounded-circle[data-active="true"] .app-icon,
+.profile-footer-nav .btn.rounded-circle[data-active="true"] .app-icon,
+.schedule-footer .btn.rounded-circle[data-active="true"] .app-icon,
+.modal-footer .btn.rounded-circle[data-active="true"] .app-icon,
+[class*="footer"] .btn.rounded-circle[data-active="true"] .app-icon,
+.app-footer-search .btn.rounded-pill[data-active="true"] .app-icon,
+.profile-footer-nav .btn.rounded-pill[data-active="true"] .app-icon,
+.schedule-footer .btn.rounded-pill[data-active="true"] .app-icon,
+.modal-footer .btn.rounded-pill[data-active="true"] .app-icon,
+[class*="footer"] .btn.rounded-pill[data-active="true"] .app-icon {
+  width: var(--app-icon-size-active) !important;
+  height: var(--app-icon-size-active) !important;
+}
+
+/* Profile → Wage accordion: history scrolls; filters pinned to bottom of panel */
+.profile-wage-history__filters {
+  box-shadow: 0 -0.125rem 0.5rem rgba(0, 0, 0, 0.06);
+}
+
+/* Profile page accordion headers — rounded pills at the ends, sizing scales with buttons */
+.profile-accordion-header {
+  height: var(--app-btn-height) !important;
+  min-height: var(--app-btn-height) !important;
+  max-height: var(--app-btn-height) !important;
+  font-size: var(--app-btn-label-font-size) !important;
+  border-radius: 9999px !important;
+  padding-left: max(0.875rem, calc(var(--app-btn-height) * 0.45)) !important;
+  padding-right: max(0.875rem, calc(var(--app-btn-height) * 0.45)) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 2 !important;
+  transition:
+    height 0.15s ease,
+    min-height 0.15s ease,
+    max-height 0.15s ease,
+    font-size 0.15s ease,
+    padding 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.profile-accordion-header:hover {
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.profile-accordion-header[data-active="true"] {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  background-color: var(--bs-body-bg) !important;
+  background-image: linear-gradient(rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08), rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08)) !important;
+}
+
+.profile-accordion-header[data-active="true"] svg,
+.profile-accordion-header[data-active="true"] .app-icon {
+  width: var(--app-icon-size-active) !important;
+  height: var(--app-icon-size-active) !important;
+}
+
+.profile-accordion-header span,
+.profile-accordion-header div {
+  font-size: inherit;
+}
+
+/* Profile page accordion body — bordered container extending down to middle of pill header */
+.profile-accordion-body {
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-top: 0.0625rem solid var(--bs-border-color) !important;
+  border-radius: 1rem 1rem 0 0 !important;
+  margin-bottom: calc(var(--app-btn-height) * -0.5) !important;
+  padding-top: 0.75rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.5rem) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  background-color: var(--bs-body-bg) !important;
+  box-sizing: border-box !important;
+}
+
+.profile-wage-history.profile-accordion-body {
+  padding-bottom: 0 !important;
+}
+
+.profile-wage-history.profile-accordion-body .profile-wage-history__filters {
+  padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.25rem) !important;
+}
+
+body.training-mode .btn.rounded-pill svg + span,
+body.training-mode .btn.rounded-pill .text-nowrap {
+  font-size: var(--app-btn-label-font-size) !important;
+}
+
+.searchable-select-overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--app-dropup-z-index);
+}
+
+.searchable-select-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.searchable-select-panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 0.0625rem solid rgba(148, 163, 184, 0.35);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0.75rem 1.875rem rgba(15, 23, 42, 0.16);
+  -webkit-backdrop-filter: blur(0.875rem);
+  backdrop-filter: blur(0.875rem);
+}
+
+[data-bs-theme="dark"] .searchable-select-panel {
+  background: rgba(31, 41, 55, 0.96);
+  border-color: rgba(100, 116, 139, 0.4);
+  box-shadow: 0 1.25rem 2.8125rem rgba(2, 6, 23, 0.45);
+}
+
+.searchable-select-panel-header {
+  padding: 0.5rem;
+  border-top: 0.0625rem solid rgba(148, 163, 184, 0.2);
+}
+
+.searchable-select-panel-footer {
+  flex-shrink: 0;
+}
+
+.searchable-select-input-shell {
+  position: relative;
+}
+
+.searchable-select-input {
+  min-height: 2.75rem;
+  padding-right: 2.25rem !important;
+  font-size: 1rem;
+}
+
+.searchable-select-input-icon {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+[data-bs-theme="dark"] .searchable-select-input-icon {
+  color: #cbd5e1;
+}
+
+.searchable-select-options {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0.35rem;
+}
+
+.searchable-select-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.searchable-select-option:hover,
+.searchable-select-option.is-highlighted {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.searchable-select-option.is-selected {
+  background: rgba(37, 99, 235, 0.16);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .searchable-select-option.is-selected {
+  color: #93c5fd;
+}
+
+.searchable-select-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.searchable-select-option-label {
+  line-height: 1.15rem;
+}
+
+.searchable-select-empty-state {
+  padding: 0.85rem;
+  text-align: center;
+  color: #64748b;
+}
+
+[data-bs-theme="dark"] .searchable-select-empty-state {
+  color: #cbd5e1;
+}
+
+/* Icon-only / circular buttons: ALWAYS an exact 1:1 circle */
+.btn.rounded-circle:not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.rounded-pill),
+.btn.app-action-btn--icon-only:not(.btn-app-nav):not(.app-nav-bottom-toggle) {
+  width: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+}
+
+/* Legacy icon button classes */
+button.rounded-lg.w-12.h-12,
+button.rounded-full.fixed {
+  width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
+}
+
+/* ========================================
+   TRAINING MODE BUTTON STYLES
+   Buttons with labels in training mode
+   ======================================== */
+body.training-mode .btn.rounded-pill {
+  width: auto !important;
+  max-width: none !important;
+  min-width: var(--app-btn-width) !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.btn.rounded-circle {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Bottom-right nav menu (Layout) — same alignment rules as toolbar buttons */
+body.training-mode .app-nav-bottom-menu .btn.rounded-pill,
+body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.app-nav-bottom-menu a.btn.rounded-circle {
+  justify-content: center !important;
+}
+
+/* Bottom-right nav toggle — same bottom/right inset as page footers */
+.btn.btn-app-nav,
+.app-nav-bottom-toggle {
+  position: fixed !important;
+  bottom: calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem)) !important;
+  right: calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem)) !important;
+  left: auto !important;
+  z-index: 1050 !important;
+}
+
+body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
+  justify-content: center !important;
+  text-align: center !important;
+  width: var(--app-btn-nav-width) !important;
+  min-width: var(--app-btn-nav-width) !important;
+  max-width: var(--app-btn-nav-width) !important;
+  padding: 0 !important;
+}
+
+body.training-mode .app-nav-bottom-toggle.rounded-pill {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* Icon-only controls stay centered even when training mode styles rounded pills. */
+.btn.app-action-btn--icon-only,
+.app-nav-bottom-toggle.app-action-btn--icon-only {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* The bottom-right toggle is always an icon-only control in every view mode. */
+.btn.app-nav-bottom-toggle.app-action-btn--icon-only {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: var(--app-btn-nav-width) !important;
+  min-width: var(--app-btn-nav-width) !important;
+  max-width: var(--app-btn-nav-width) !important;
+  height: var(--app-btn-nav-width) !important;
+  min-height: var(--app-btn-nav-width) !important;
+  max-height: var(--app-btn-nav-width) !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  border-radius: 50% !important;
+}
+
+.app-nav-bottom-menu-panel {
+  right: calc(var(--app-nav-bottom-right-inset) + env(safe-area-inset-right, 0rem));
+  bottom: calc(var(--app-footer-padding-y) + var(--app-btn-nav-width) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0rem));
+}
+
+.app-nav-bottom-menu,
+.app-nav-bottom-global-menu {
+  align-items: stretch;
+  padding: var(--app-footer-padding-y) 0;
+}
+
+.app-nav-bottom-menu .btn,
+.app-nav-bottom-menu a.btn,
+.app-nav-bottom-global-menu .btn {
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+}
+
+body.training-mode .app-footer-search .btn.rounded-pill,
+body.training-mode .schedule-footer .btn.rounded-pill,
+body.training-mode .profile-footer-nav .btn.rounded-pill,
+body.training-mode footer[aria-label="Actions"] .btn.rounded-pill {
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+body.training-mode .app-footer-search .btn:not(.rounded-circle),
+body.training-mode .schedule-footer .btn:not(.rounded-circle),
+body.training-mode .profile-footer-nav .btn:not(.rounded-circle),
+body.training-mode footer[aria-label="Actions"] .btn:not(.rounded-circle) {
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+}
+
+body.training-mode .app-footer-search .btn svg + span,
+body.training-mode .schedule-footer .btn svg + span,
+body.training-mode .profile-footer-nav .btn svg + span,
+body.training-mode .modal-footer .btn svg + span,
+body.training-mode footer[aria-label="Actions"] .btn svg + span,
+body.training-mode .flex-shrink-0.border-top .btn svg + span,
+body.training-mode .flex-shrink-0.border-t .btn svg + span,
+body.training-mode [class*="footer"] .btn svg + span {
+  margin-left: 0 !important;
+}
+
+body.training-mode .btn.settings-accordion-btn {
+  margin: 0 !important;
+}
+
+.app-footer-search .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.schedule-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.modal-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+.flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+[class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
+  padding: 0 !important;
+  width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
+  min-width: var(--app-btn-width) !important;
+}
+
+body.training-mode .app-footer-search .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .schedule-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .profile-footer-nav .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .modal-footer .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode footer[aria-label="Actions"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .flex-shrink-0.border-top .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode .flex-shrink-0.border-t .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]),
+body.training-mode [class*="footer"] .btn.rounded-circle:not(.btn-circle):not(.btn-cancel-circle):not(.ui-btn-circle-outline-secondary):not([title*="Cancel" i]):not([aria-label*="Cancel" i]):not([title*="Close" i]):not([aria-label*="Close" i]) {
+  width: var(--app-btn-width) !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: var(--app-btn-width) !important;
+  height: var(--app-btn-height) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Circle buttons (settings + cancel): always icon-only circle; size DOES NOT follow compact / training-mode toggle */
+.btn-circle,
+.btn-cancel-circle,
+.ui-btn-circle-outline-secondary,
+.btn[title*="Cancel" i],
+.btn[aria-label*="Cancel" i],
+.btn[title*="Close" i],
+.btn[aria-label*="Close" i],
+.btn.app-action-btn.btn-circle,
+.btn.app-action-btn.btn-cancel-circle,
+body.training-mode .btn-circle,
+body.training-mode .btn-cancel-circle,
+body.training-mode [class*="footer"] .btn.btn-circle,
+body.training-mode [class*="footer"] .btn.btn-cancel-circle,
+body.training-mode [class*="footer"] .btn[title*="Cancel" i],
+body.training-mode [class*="footer"] .btn[aria-label*="Cancel" i],
+body.training-mode [class*="footer"] .btn[title*="Close" i],
+body.training-mode [class*="footer"] .btn[aria-label*="Close" i] {
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  min-height: var(--app-btn-height, 2rem) !important;
+  max-height: var(--app-btn-height, 2rem) !important;
+  flex: 0 0 var(--app-btn-height, 2rem) !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.btn-circle svg,
+.btn-cancel-circle svg,
+.ui-btn-circle-outline-secondary svg,
+.btn[title*="Cancel" i] svg,
+.btn[aria-label*="Cancel" i] svg,
+.btn[title*="Close" i] svg,
+.btn[aria-label*="Close" i] svg {
+  width: var(--app-icon-size, 1rem) !important;
+  height: var(--app-icon-size, 1rem) !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-circle span,
+.btn-cancel-circle span,
+.ui-btn-circle-outline-secondary span,
+.btn[title*="Cancel" i] span,
+.btn[aria-label*="Cancel" i] span,
+.btn[title*="Close" i] span,
+.btn[aria-label*="Close" i] span {
+  display: none !important;
+}
+
+.profile-footer-nav .btn.profile-footer-btn {
+  height: var(--app-btn-nav-width) !important;
+  min-height: var(--app-btn-nav-width) !important;
+  max-height: var(--app-btn-nav-width) !important;
+}
+
+/* Profile footer General gear — icon-only; center gear in pill/circle (after training pill rules) */
+body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-pill,
+.profile-footer-nav .btn.profile-footer-general-btn.rounded-pill,
+.profile-footer-nav .btn.profile-footer-general-btn.rounded-circle {
+  justify-content: center !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  gap: 0 !important;
+}
+
+/* Sales History modal — scrollable filter footer on small screens */
+.sales-history-footer {
+  max-height: min(55dvh, 28rem);
+  overflow-y: auto;
+}
+
+.sales-history-footer .app-footer-padding {
+  padding-right: var(--app-footer-padding-x) !important;
+}
+
+/* App filter checkbox groups (Sales catalog, history, etc.) */
+.app-filter-checkgroup,
+.sales-filter-checkgroup {
+  align-items: center;
+}
+
+.app-filter-check,
+.sales-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app-filter-check .form-check-input,
+.sales-filter-check .form-check-input {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.sales-history-filter-panel {
+  width: 100%;
+}
+
+.sales-history-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+@media (min-width: 36rem) {
+  .sales-history-filter-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 62rem) {
+  .sales-history-filter-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+/* Modal/form footer — Save/Add left, Cancel/Close center, optional actions right */
+.app-footer-actions__start,
+.app-footer-actions__end {
+  min-width: var(--app-btn-width, 4rem);
+}
+
+.app-footer-actions__spacer {
+  display: inline-block;
+  min-width: var(--app-btn-width, 4rem);
+}
+
+/* Keep table/search footer anchored to bottom across mobile layouts. */
+@media (max-width: 64rem) {
+  .app-footer-search {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+  }
+
+  /* Hide non-search rows when keyboard is open */
+  html.search-focus .search-hide-on-focus {
+    display: none !important;
+  }
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: rgb(31 41 55) !important;
+  color: rgb(243 244 246) !important;
+}
+
+[data-bs-theme="dark"] .table.bg-light {
+  --bs-table-bg: rgb(31 41 55) !important;
+  --bs-table-color: rgb(243 244 246) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: rgb(243 244 246) !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: var(--bs-body-bg) !important;
+}
+
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+.form-control:not(textarea),
+.form-select {
+  border-radius: 9999px !important;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  font-size: var(--app-input-font-size) !important;
+}
+
+/* Floating label adjustments for pill-shaped inputs */
+.form-floating > .form-control:not(textarea),
+.form-floating > .form-select,
+.form-floating > .app-dropdown-floating-trigger {
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.15rem !important;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  border-radius: 9999px !important;
+}
+
+.form-floating > .app-dropdown-floating-trigger,
+.app-dropdown-root.form-floating > .ui-dropdown-trigger {
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  text-align: left !important;
+}
+
+.form-floating > label,
+.form-floating > .app-floating-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  height: auto !important;
+  width: auto !important;
+  padding-left: 1.25rem !important;
+  padding-right: 0.35rem !important;
+  padding-top: 0.35rem;
+  font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
+  line-height: 1.1;
+  background-color: var(--app-floating-label-background, transparent);
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.form-floating > .app-floating-label,
+.app-dropdown-root.form-floating > .app-floating-label {
+  font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
+}
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label,
+.form-floating.has-value > label,
+.form-floating.is-open > label,
+.form-floating.has-value > .app-floating-label,
+.form-floating.is-open > .app-floating-label {
+  transform: scale(0.85) translateY(-1rem) !important;
+  opacity: 0.85;
+}
+
+/* Action icons inside form inputs (scanner, clear, date indicators) */
+.form-floating > .btn.position-absolute,
+.form-floating > button.position-absolute,
+.form-floating .app-input-icon-btn {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  right: 0.25rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--bs-secondary-color) !important;
+}
+
+.form-floating input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-right: 0.25rem !important;
+  padding: 0 !important;
+  cursor: pointer;
+}
+
+/* Inventory edit form: tighter field padding and non-truncated floating labels. */
+.inventory-edit-form .form-floating {
+  overflow: visible;
+}
+
+.inventory-edit-form .form-floating > .form-control:not(textarea),
+.inventory-edit-form .form-floating > .form-select,
+.inventory-edit-form .form-floating > .app-dropdown-floating-trigger {
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+}
+
+.inventory-edit-form .form-floating > label,
+.inventory-edit-form .form-floating > .app-floating-label {
+  padding-left: 1.25rem !important;
+  padding-right: 0;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+textarea,
+textarea.form-control {
+  border-radius: 0.75rem !important;
+}
+
+.pill-textarea {
+  border-radius: 9999px !important;
+}
+
+.btn:not(.rounded-circle) {
+  border-radius: 9999px !important;
+}
+
+/* Bootstrap overrides and theme-aware base styles */
 @layer base {
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-gray-600;
   }
-  
-  /* Ensure Bootstrap dark mode works properly */
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+
   [data-bs-theme="dark"] {
     color-scheme: dark;
   }
-  
+
+  [data-bs-theme="dark"] body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
   [data-bs-theme="light"] {
     color-scheme: light;
   }
 }
 
 @layer components {
-  /* Custom utility classes that work with both Tailwind and Bootstrap */
+  /* Theme-aware utility classes using branded colors */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    background-color: var(--app-active-color);
+    border-color: var(--app-active-color);
+    color: #fff;
+    @apply font-medium rounded-full transition-colors;
   }
-  
+
+  .btn-primary:hover,
+  .btn-primary:focus,
+  .btn-primary:active,
+  .btn-check:checked + .btn-primary {
+    background-color: var(--app-active-color-hover);
+    border-color: var(--app-active-color-hover);
+    color: #fff;
+  }
+
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-full transition-colors;
   }
-  
+
+  /* Success button using secondary branded color */
+  .btn-success {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-medium rounded-full transition-colors;
+  }
+
+  /* Accent button using accent branded color */
+  .btn-accent {
+    @apply bg-accent-600 hover:bg-accent-700 text-white font-medium rounded-full transition-colors;
+  }
+
+  /* Branded focus rings */
+  .focus-ring-primary {
+    @apply focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .focus-ring-secondary {
+    @apply focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2;
+  }
+
+  .focus-ring-accent {
+    @apply focus:ring-2 focus:ring-accent-500 focus:ring-offset-2;
+  }
+
+  /* Branded badges */
+  .badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
+  }
+
+  .badge-secondary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800 dark:bg-secondary-900 dark:text-secondary-200;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-100 text-accent-800 dark:bg-accent-900 dark:text-accent-200;
+  }
+
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
-  
+
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700;
   }
-  
-  /* Dark mode specific overrides */
-  [data-bs-theme="dark"] .card {
-    @apply bg-gray-800 border-gray-700;
+
+  /* Theme-aware text */
+  .text-body-emphasis {
+    @apply text-gray-900 dark:text-gray-100;
   }
-  
-  [data-bs-theme="dark"] .input-field {
-    @apply bg-gray-800 border-gray-600 text-gray-100;
+
+  /* Responsive square image container */
+  .square-image-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%; /* Creates a 1:1 aspect ratio */
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 0.5rem;
+  }
+
+  .square-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Crops the image to fill container while maintaining aspect ratio */
+    object-position: center; /* Centers the image within the container */
+    display: block;
+    transition: transform 0.3s ease; /* Smooth scaling on hover */
+  }
+
+  .square-image:hover {
+    transform: scale(1.05); /* Subtle zoom effect on hover */
+  }
+
+  .square-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0.5;
+  }
+
+  /* Fixed size square containers for specific use cases */
+  .square-sm {
+    width: 5rem;
+    height: 5rem;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.375rem;
+  }
+
+  .square-md {
+    width: 7.5rem;
+    height: 7.5rem;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+  }
+
+  .square-lg {
+    width: 12.5rem;
+    height: 12.5rem;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.625rem;
+  }
+
+  .square-xl {
+    width: 18.75rem;
+    height: 18.75rem;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.75rem;
+  }
+
+  /* Responsive variations for different screen sizes */
+  @media (max-width: 36rem) {
+    .square-image-container {
+      border-radius: 0.375rem;
+    }
+
+    .square-image:hover {
+      transform: scale(1.02); /* Less aggressive zoom on mobile */
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .square-image-container {
+      border-radius: 0.625rem;
+    }
+  }
+
+  @media (min-width: 62rem) {
+    .square-image-container {
+      border-radius: 0.75rem;
+    }
+  }
+
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .square-image {
+      transition: none;
+    }
+
+    .square-image:hover {
+      transform: none;
+    }
+  }
+
+  .text-muted {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  /* Theme-aware table styles (for Tailwind tables) */
+  [data-bs-theme="dark"] .divide-gray-200 > * + * {
+    border-color: theme("colors.gray.700");
+  }
+
+  /*
+   * Scrollable container: use on the element that should scroll instead of the page.
+   * Parent must be flex with a defined height (or flex-1 min-h-0).
+   * Use on table wrappers, list wrappers, etc. so the component scrolls internally.
+   */
+  .overflow-scroll-container {
+    @apply min-h-0 flex-1 overflow-auto;
+  }
+
+  /* Same but for flex column children that should take remaining space and scroll */
+  .overflow-scroll-container-y {
+    @apply min-h-0 flex-1 overflow-y-auto overflow-x-auto;
+  }
+
+  /*
+   * Scroll content gravity helpers:
+   * - top: for forms/input-heavy content
+   * - bottom: for data lists that should sit near footer controls
+   */
+  .overflow-scroll-content {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .overflow-scroll-content--bottom {
+    justify-content: flex-end;
+  }
+
+  /* DOCX Preview container styles - FULLY RESPONSIVE */
+  .docx-preview-container {
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .docx-preview-container {
+      background-color: #1f2937;
+    }
+  }
+
+  /* Root docx wrapper */
+  .docx-preview-container .docx {
+    @apply text-gray-900;
+    font-family: "Calibri", "Arial", sans-serif;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Section element (main document container) */
+  .docx-preview-container section {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* Article element (content wrapper) */
+  .docx-preview-container article {
+    width: 100% !important;
+    height: auto !important;
+    padding: 0.5rem !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* All paragraphs and text blocks */
+  .docx-preview-container p {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* All divs inside docx-preview */
+  .docx-preview-container div {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+  }
+
+  /* Headings */
+  .docx-preview-container h1,
+  .docx-preview-container h2,
+  .docx-preview-container h3,
+  .docx-preview-container h4,
+  .docx-preview-container h5,
+  .docx-preview-container h6 {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.75rem 0 0.5rem 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Lists */
+  .docx-preview-container ul,
+  .docx-preview-container ol {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0 1.5rem !important;
+  }
+
+  .docx-preview-container li {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Tables - fully responsive */
+  .docx-preview-container table {
+    @apply border-collapse border border-gray-300;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    table-layout: auto !important;
+  }
+
+  .docx-preview-container table td,
+  .docx-preview-container table th {
+    @apply border border-gray-300 p-2;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  /* Images - responsive */
+  .docx-preview-container img {
+    max-width: 100% !important;
+    height: auto !important;
+    width: auto !important;
+    display: block !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  /* Spans and inline elements */
+  .docx-preview-container span {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Blockquotes */
+  .docx-preview-container blockquote {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.75rem 1rem !important;
+    border-left: 0.1875rem solid #d1d5db !important;
+  }
+
+  /* Code blocks */
+  .docx-preview-container pre {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    box-sizing: border-box !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.75rem !important;
+  }
+
+  .docx-preview-container code {
+    width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* Horizontal rules */
+  .docx-preview-container hr {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 1rem 0 !important;
+    border: none !important;
+    border-top: 0.0625rem solid #d1d5db !important;
+  }
+
+  /* Ensure all elements respect 100% width */
+  .docx-preview-container > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 
+/* App-wide active state bridge (menus, navs, list selections, pagination, toggles) */
+.btn.active,
+.btn.show,
+.nav-pills .nav-link.active,
+.nav-tabs .nav-link.active,
+.dropdown-item.active,
+.list-group-item.active,
+.page-link.active,
+.active > .page-link,
+.form-check-input:checked {
+  background-color: var(--app-active-color) !important;
+  border-color: var(--app-active-color) !important;
+}
 
+.page-link.active,
+.active > .page-link,
+.dropdown-item.active,
+.list-group-item.active,
+.nav-pills .nav-link.active,
+.btn.active,
+.btn.show {
+  color: #fff !important;
+}
+
+/* ========================================
+   BUTTON DESIGN SYSTEM
+   Utility classes for consistent button styling across the app.
+   Use these on Button_Toolbar className prop and standalone <button> elements.
+   ======================================== */
+@layer components {
+  /* Primary action — uses the app's secondary brand colour */
+  .btn-app-primary {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white border-0 shadow-lg transition-colors;
+  }
+
+  /* Destructive action */
+  .btn-app-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg transition-colors;
+  }
+
+  /* Neutral / secondary action (filter buttons, secondary actions) */
+  .btn-app-secondary {
+    @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-0 transition-colors;
+  }
+
+  /* Cancel / close action (modal dismiss buttons) */
+  .btn-app-cancel {
+    @apply bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700 border-0 transition-colors;
+  }
+}
+
+/* ========================================
+   BADGE DESIGN SYSTEM
+   app-badge base + color modifier classes.
+   Use: <span className="app-badge app-badge--blue">Label</span>
+   ======================================== */
+@layer components {
+  .app-badge {
+    @apply inline-flex items-center text-xs font-medium px-2 py-0.5 rounded;
+  }
+  .app-badge--pill {
+    @apply rounded-full;
+  }
+  .app-badge--blue {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300;
+  }
+  .app-badge--green {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300;
+  }
+  .app-badge--red {
+    @apply bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300;
+  }
+  .app-badge--gray {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300;
+  }
+  .app-badge--purple {
+    @apply bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300;
+  }
+  .app-badge--gold {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300;
+  }
+  .app-badge--orange {
+    @apply bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300;
+  }
+  .app-badge--teal {
+    @apply bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300;
+  }
+  .app-badge--pink {
+    @apply bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300;
+  }
+}
+
+/* ========================================
+   CARD DESIGN SYSTEM
+   app-card base + elevation modifier.
+   ======================================== */
+@layer components {
+  .app-card {
+    @apply rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800;
+  }
+  .app-card--elevated {
+    @apply shadow-md;
+  }
+}
+
+/* ========================================
+   LAYOUT UTILITIES
+   Common flex combos extracted from repeated Bootstrap+Tailwind chains.
+   ======================================== */
+@layer components {
+  .app-row {
+    @apply flex items-center;
+  }
+  .app-row--between {
+    @apply justify-between;
+  }
+  .app-row--gap-2 {
+    @apply gap-2;
+  }
+  .app-col {
+    @apply flex flex-col;
+  }
+  .app-scroll-y {
+    @apply overflow-y-auto flex-1 min-h-0;
+  }
+}
+
+/* ========================================
+   INLINE STYLE EXTRACTIONS
+   CSS classes replacing common style={{}} patterns in JSX.
+   ======================================== */
+.text-wrap-word {
+  word-break: break-word;
+}
+
+.text-xxs {
+  font-size: 0.5rem;
+}
+
+/* Standardized text size scale (.125, .25, .5, .75, 1, 1.25 rem) */
+.text-size-tiny,
+.app-text-tiny {
+  font-size: 0.5rem !important;
+}
+
+.text-size-small,
+.app-text-small {
+  font-size: var(--app-text-size-small, 0.75rem) !important;
+}
+
+.text-size-small th,
+.text-size-small td,
+.app-text-small th,
+.app-text-small td {
+  font-size: var(--app-text-size-small, 0.75rem) !important;
+}
+
+.text-size-medium,
+.app-text-medium {
+  font-size: 1rem !important;
+}
+
+.text-size-large,
+.app-text-large {
+  font-size: 1.25rem !important;
+}
+
+.app-progress-bar {
+  height: 0.25rem;
+}
+
+.app-textarea--sm {
+  height: 5rem;
+  resize: none;
+}
+
+.app-page-scroll-surface {
+  background: var(--bs-body-bg);
+}
+
+.app-col-select {
+  width: var(--app-table-select-col-width);
+}
+
+.app-main-page-table .app-table-th.app-col-action-header {
+  text-align: center !important;
+}
+
+.app-col-flex {
+  width: auto;
+}
+
+.app-col-action-56 {
+  width: 3.5rem;
+}
+
+.app-col-action-60 {
+  width: 3.75rem;
+}
+
+.app-col-action-70 {
+  width: 4.375rem;
+}
+
+.app-col-action-80 {
+  width: 5rem;
+}
+
+.app-col-action-54 {
+  width: 3.375rem;
+}
+
+.app-col-action-90 {
+  width: 5.625rem;
+}
+
+.app-col-action-120 {
+  width: 7.5rem;
+}
+
+.app-clickable-row,
+.app-clickable-card {
+  cursor: pointer;
+}
+
+.app-clickable-card {
+  transition: background 0.2s;
+}
+
+.app-icon-14 {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.app-icon-18 {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.app-icon-40 {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.app-sort-indicator {
+  font-size: 0.75rem;
+  transition: opacity 0.15s;
+}
+
+.app-dropdown--min {
+  min-width: 12.5rem;
+}
+
+.app-menu-panel {
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-radius: 0.5rem;
+  background-clip: padding-box;
+  z-index:900;
+}
+
+.app-menu-trigger,
+.ui-dropdown-trigger,
+.ui-dropdown-trigger *,
+.app-dropdown-floating-trigger,
+.app-dropdown-floating-trigger *,
+.app-dropdown-root .ui-dropdown-trigger,
+.app-dropdown-root .ui-dropdown-trigger *,
+.app-dropdown-root .app-dropdown-floating-trigger,
+.app-dropdown-root .app-dropdown-floating-trigger *,
+.app-dropdown-root .app-word-safe-label,
+.app-dropdown-root input,
+.app-dropdown-root button,
+.form-floating > .app-dropdown-floating-trigger,
+.form-floating > .app-dropdown-floating-trigger * {
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+  text-align: left !important;
+}
+
+.app-menu-item,
+.app-menu-item button,
+.app-menu-item label,
+.app-menu-item input,
+.app-menu-item span,
+.app-menu-empty,
+.app-menu-search,
+.app-menu-action,
+.app-menu-summary {
+  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
+}
+
+.app-menu-item,
+.app-menu-item button,
+.app-menu-action,
+.app-menu-search input {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-menu-item:focus,
+.app-menu-item:focus-visible,
+.app-menu-action:focus,
+.app-menu-action:focus-visible,
+.app-menu-search input:focus,
+.app-menu-search input:focus-visible {
+  outline: 0.125rem solid var(--app-active-color) !important;
+  outline-offset: -0.125rem;
+  box-shadow: none !important;
+}
+
+.app-menu-panel .small,
+.app-menu-panel .text-sm,
+.app-menu-panel .text-xs {
+  font-size: inherit !important;
+}
+
+.app-icon--sm {
+  width: calc(var(--app-icon-size) * 0.9) !important;
+  height: calc(var(--app-icon-size) * 0.9) !important;
+}
+
+.app-chevron {
+  transition: transform 0.2s ease;
+}
+
+.app-chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown / dropup caret removal across native and bootstrap-style controls */
+.dropdown-toggle::after {
+  display: none !important;
+}
+
+.form-select,
+select.form-select {
+  background-image: none !important;
+  padding-right: 0.75rem !important;
+}
+
+/* Shared trigger text behavior for dropdown/dropup buttons */
+.app-word-safe-label {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.app-label--bold {
+  line-height: 1;
+  font-weight: 700;
+}
+
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Reports — full-screen chart mode (footer controls only) */
+.reports-page--full .reports-page__chart-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reports-page--full #report-export-section {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.reports-selector-dropup,
+.reports-selector-dropup * {
+  text-align: left !important;
+}
+
+/* Reports period navigation — floating toolbar just above footer */
+.reports-nav-floating {
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 35 !important;
+  background-color: var(--bs-body-bg) !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.18) !important;
+  padding: 0.25rem 0.625rem !important;
+  width: max-content !important;
+  max-width: calc(100vw - 2rem) !important;
+  backdrop-filter: blur(0.5rem);
+  transition: bottom 0.2s ease;
+}
+
+.reports-page__chart-area {
+  padding-bottom: 5.5rem !important;
+}
+
+.reports-nav-floating .btn.rounded-circle {
+  border-radius: 50% !important;
+  width: var(--app-btn-height, 2rem) !important;
+  height: var(--app-btn-height, 2rem) !important;
+  min-width: var(--app-btn-height, 2rem) !important;
+  max-width: var(--app-btn-height, 2rem) !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Bulk import / procurement — always circular icon buttons (ignore training/compact) */
+.btn.btn-bulk-circle {
+  width: var(--app-btn-height, 2.5rem) !important;
+  height: var(--app-btn-height, 2.5rem) !important;
+  min-width: var(--app-btn-height, 2.5rem) !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   COMPONENT SHELL LAYOUT
+   Unified flex structure for Modal, Panel, Form, Widget, and Page components.
+   Header: title-left | empty-center | settings-right
+   Body:   scrollable inner area
+   Footer: action-left | cancel-circle-center | empty-right
+   ======================================== */
+
+.component {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.component-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+.component-header-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  line-height: 1.25 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--bs-body-color) !important;
+  display: flex;
+  align-items: center;
+}
+
+.dark .component-header-left {
+  color: var(--bs-body-color) !important;
+}
+
+.component-header-center {
+  flex: 0 0 auto;
+}
+
+.component-header-right {
+  flex: 0 0 auto;
+}
+
+.component-header--bottom {
+  border-bottom: 0;
+  border-top: 0.0625rem solid var(--bs-border-color);
+}
+
+/* ── Body ── */
+.component-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bs-body-bg);
+}
+
+.component-body-inner {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  padding: 0.75rem 0.5rem;
+}
+
+/* Edge-to-edge variant — no padding on body */
+.component-body-inner--flush {
+  padding: 0;
+}
+
+/* ── Footer ── */
+.component-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 0.5rem;
+  padding-left: var(--app-footer-padding-x) !important;
+  padding-right: var(--app-footer-padding-x) !important;
+  padding-top: var(--app-footer-padding-y) !important;
+  padding-bottom: var(--app-footer-padding-y) !important;
+  min-height: var(--app-standard-footer-height);
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  border-top: 0.0625rem solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+.component-footer-left {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.component-footer-center {
+  flex: 0 0 auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+}
+
+.component-footer-right {
+  flex: 0 0 auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+}
+
+/* Modal and form footers float all buttons to the left:
+   Sequence: Add Save Edit Cancel Close [Other buttons] */
+.app-modal-footer,
+.modal-footer,
+.app-form-footer,
+.app-footer-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+}
+
+.app-footer-actions__start,
+.app-footer-actions__center,
+.app-footer-actions__end {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex: 0 0 auto !important;
+  gap: var(--app-footer-btn-gap, 0.25rem) !important;
+}
+
+.app-footer-actions__spacer {
+  display: none !important;
+}
+
+/* Modal/panel sticky footer contract: standard height + anchored bottom */
+.app-form-footer,
+.app-modal-footer,
+.component .app-standard-footer {
+  min-height: var(--app-standard-footer-height);
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+}
+
+/* ── Circle buttons (settings + cancel) ──
+   Always icon-only circle; size DOES NOT follow compact / training-mode toggle. */
+.btn-circle,
+.btn-cancel-circle,
+.ui-btn-circle-outline-secondary,
+.btn[title*="Cancel" i],
+.btn[aria-label*="Cancel" i],
+.btn[title*="Close" i],
+.btn[aria-label*="Close" i] {
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  max-width: 2rem !important;
+  min-height: 2rem !important;
+  max-height: 2rem !important;
+  flex: 0 0 2rem !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-circle svg,
+.btn-cancel-circle svg,
+.ui-btn-circle-outline-secondary svg,
+.btn[title*="Cancel" i] svg,
+.btn[aria-label*="Cancel" i] svg,
+.btn[title*="Close" i] svg,
+.btn[aria-label*="Close" i] svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  flex-shrink: 0;
+}
+
+.bulk-import-add-row-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 10rem;
+}
+
+.bulk-import-add-row-wrap .form-control {
+  width: 4.5rem;
+  padding-right: 0.25rem;
+}
+
+.bulk-import-add-row-wrap .bulk-import-add-overlay {
+  position: absolute;
+  left: 20%;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+.bulk-import-top-actions {
+  align-items: center;
+  border-bottom: 0.0625rem solid var(--bs-border-color);
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+}
+
+.bulk-import-top-actions-group {
+  align-items: center;
+  column-gap: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 0.5rem;
+}
+
+.template-editor-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.template-editor-content-shell {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap .tiptap-editor {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.template-editor-richtext-wrap .tiptap-editor .tiptap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding: 1rem !important;
+}
+
+.template-editor-toolbar-shell {
+  min-width: 0;
+  max-width: 100%;
+  width: 100% !important;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  display: flex !important;
+  justify-content: flex-start !important;
+}
+
+.template-editor-meta-row {
+  min-width: 0;
+  max-width: 100%;
+  width: 100% !important;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
+  display: flex !important;
+  justify-content: flex-start !important;
+}
+
+.template-editor-toolbar-shell .editor-toolbar {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Floating through-layer image for templates (independent overlay layer, zero text displacement) */
+.image-through-container,
+.image-resizable-root.image-through-layer {
+  display: inline-block !important;
+  position: relative !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+}
+
+.image-through-inner {
+  user-select: none;
+  touch-action: none;
+}
+
+.template-editor-toolbar-shell .editor-toolbar-row {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.template-editor-toolbar-shell .editor-toolbar-row > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.template-editor-meta-group {
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+}
+
+.template-editor-meta-controls {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.template-editor-meta-controls .form-control {
+  min-width: 0 !important;
+  max-width: min(16.25rem, 100%) !important;
+}
+
+@media (max-width: 40rem) {
+  .template-editor-toolbar-shell {
+    max-height: 8rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .template-editor-meta-controls {
+    width: 100%;
+  }
+
+  .template-editor-meta-controls .app-dropdown-root {
+    flex: 1 1 7.5rem;
+  }
+}
+
+/* ─── Page Controls Modal Action Group ─── */
+.page-controls-actions-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.page-controls-actions-group .btn {
+  flex-shrink: 0;
+  width: auto !important;
+}

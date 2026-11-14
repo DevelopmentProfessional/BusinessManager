@@ -1,0 +1,14 @@
+{
+  "commands": [
+    "set -e",
+    "echo HOST=$(hostname)",
+    "echo NGINX_ACTIVE=$(sudo systemctl is-active nginx || true)",
+    "echo STAFF_ACTIVE=$(sudo systemctl is-active staff-api || true)",
+    "echo CLIENT_ACTIVE=$(sudo systemctl is-active client-api || true)",
+    "echo NGINX_CONF_HASH=$(sha256sum /etc/nginx/conf.d/businessmanager.conf | awk '{print $1}')",
+    "echo CORS_LINES=$(grep -n 'Access-Control-Allow-Origin' /etc/nginx/conf.d/businessmanager.conf | wc -l)",
+    "curl -sS -o /tmp/health.out -D /tmp/health.hdr http://127.0.0.1:8000/health || true",
+    "echo LOCAL_HEALTH_STATUS=$(head -n 1 /tmp/health.hdr | tr -d '\\r')",
+    "echo LOCAL_HEALTH_BODY=$(cat /tmp/health.out | tr -d '\\n')"
+  ]
+}

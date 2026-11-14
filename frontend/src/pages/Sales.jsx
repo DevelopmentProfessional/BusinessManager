@@ -1,0 +1,2072 @@
+/*
+ * ============================================================
+ * FILE: Sales.jsx
+ *
+ * PURPOSE:
+ *   Point-of-sale (POS) page that lets staff browse services and inventory
+ *   products, manage a shopping cart, assign a client to a transaction, and
+ *   process payment through checkout. Completed sales are persisted to the
+ *   database and cached in localStorage for history review.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  ItemCard Component        — Reusable card UI for a single service or product with cart controls
+ *   [2]  Sales Component (export)  — Main POS page shell with permission guard
+ *   [3]  State Declarations        — POS state, cart, client, product/service, history, and modal flags
+ *   [4]  Lifecycle / useEffect     — Initial data load, navigation pre-selection, and cart persistence
+ *   [5]  Data Loading              — loadServices, loadProducts, loadClients, loadTransactionHistory
+ *   [6]  Cart Handlers             — addToCart, removeFromCart, updateCartQuantity, increment/decrement
+ *   [7]  Computed / Derived Values — cartTotal, cartItemCount, filtered lists, isInCart, filteredHistory
+ *   [8]  Checkout Handler          — handleCheckout, processPayment (saves to DB + localStorage)
+ *   [9]  Render / Return           — Sticky header, item grid, fixed footer, and all modal outlets
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-05-19 | GitHub Copilot | Added unified filter dropdown with client search and services/products/subscriptions filters; added checkout-time subscription start assignment
+ *   2026-07-26 | GitHub Copilot | Added schedule-driven auto-open checkout handoff for appointment payment flow
+ *   2026-07-31 | GitHub Copilot | Added partial checkout item support and schedule context display payload for checkout modal
+ *   2026-07-31 | GitHub Copilot | Added checkout return-target routing so closing checkout returns to opener page
+ *   2026-08-01 | GitHub Copilot | Added service add-on inventory auto-consumption during successful checkout finalization
+ *   2026-09-11 | GitHub Copilot | Returned completed schedule payment state after cash and external checkout flows
+ *   2026-09-11 | GitHub Copilot | Removed unused imports and added scoped effect dependency suppressions for stable POS flow
+ *   2026-09-11 | GitHub Copilot | Moved checkout handoff effects below callback initialization to prevent payment-route TDZ crashes
+ *   2026-09-11 | GitHub Copilot | Reused schedule purchase transactions and skipped duplicate checkout side effects
+ * ============================================================
+ */
+
+// ─── 1  IMPORTS ────────────────────────────────────────────────────────────
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useFetchOnce from "../services/useFetchOnce";
+import { useLocation, useNavigate } from "react-router-dom";
+import usePagePermission from "../services/usePagePermission";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import useStore from "../services/useStore";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
+import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
+import { templatesAPI } from "../services/api";
+import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
+import Modal_Checkout_Sales from "./components/modals/Modal_SalesCheckout";
+import Modal_Cart_Sales from "./components/modals/Modal_SalesCart";
+import Modal_History_Sales from "./components/modals/Modal_SalesHistory";
+import Modal_Feature_Select_Sales from "./components/modals/Modal_SalesFeatureSelect";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import { getDisplayImageUrl } from "./components/utils/Utils_Image";
+import useViewMode from "../services/useViewMode";
+import { sortItemsAlphabetically } from "../utils/displaySort";
+
+// ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
+// Unified Product/Service Card Component
+const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart, cardViewMode = "full" }) => {
+  const isService = itemType === "service";
+  const imageUrl = getDisplayImageUrl(item);
+  const hasImage = !!imageUrl;
+  const isCompact = cardViewMode === "compact" || (cardViewMode === "mixed" && !hasImage);
+
+  const handleIncrement = (e) => {
+    e.stopPropagation();
+    onIncrement(item, itemType);
+  };
+
+  const handleDecrement = (e) => {
+    e.stopPropagation();
+    onDecrement(item, itemType);
+  };
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+    onAddToCart(item, itemType, 1);
+  };
+
+  if (isCompact) {
+    return (
+      <div
+        onClick={() => onSelect(item, itemType)}
+        className={`group relative flex flex-col justify-between bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 overflow-hidden hover:shadow-md cursor-pointer p-2 h-24 ${
+          inCart ? "border-secondary-500 ring-2 ring-secondary-200 dark:ring-secondary-800" : "border-gray-200 dark:border-gray-700 hover:border-primary-400"
+        }`}
+      >
+        {/* Background gradient or subtle tint */}
+        <div className={`absolute inset-0 pointer-events-none ${hasImage ? "" : "bg-gradient-to-br"} ${isService ? "from-primary-50 to-primary-100 dark:from-primary-950/40 dark:to-primary-900/30" : "from-secondary-50 to-secondary-100 dark:from-secondary-950/40 dark:to-secondary-900/30"}`}>
+          {hasImage && (
+            <img
+              src={imageUrl}
+              alt={item.name}
+              className="h-full object-center object-cover opacity-20 dark:opacity-15 w-full"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
+          )}
+        </div>
+
+        {/* Item Header: Name & Type Icon */}
+        <div className="relative z-10 flex items-start justify-between gap-1 w-full min-w-0">
+          <h3 className="font-semibold line-clamp-2 m-0 text-xs text-gray-900 dark:text-gray-100 leading-tight">
+            {item.name}
+          </h3>
+          <div className="flex-shrink-0 opacity-70">
+            {isService ? <SparklesIcon className="h-3.5 w-3.5 text-primary-500" /> : <CubeIcon className="h-3.5 w-3.5 text-secondary-500" />}
+          </div>
+        </div>
+
+        {/* Item Footer: Price & Cart controls */}
+        <div className="relative z-10 flex items-center justify-between gap-1 w-full mt-auto">
+          <span className="font-bold text-xs text-primary-700 dark:text-primary-300">
+            {!isService && item.price_min != null && item.price_max != null ? (item.price_min === item.price_max ? `$${item.price_min.toFixed(2)}` : `$${item.price_min.toFixed(2)}–$${item.price_max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}
+          </span>
+
+          <div>
+            {inCart ? (
+              <div className="bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700">
+                <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-5 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Remove">
+                  <MinusIcon className="h-3 w-3" />
+                </button>
+                <span className="dark:text-white font-bold text-center text-gray-900 text-xs w-5">{cartQuantity}</span>
+                <button onClick={handleIncrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-5 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Add more">
+                  <PlusIcon className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleAddToCart} className="bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-1.5 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700 text-gray-700 text-xs transition-colors">
+                <ShoppingCartIcon className="h-3 w-3" />
+                Add
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => onSelect(item, itemType)}
+      className={`group relative flex flex-col bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 overflow-hidden hover:shadow-lg cursor-pointer h-48 ${
+        inCart ? "border-secondary-500 ring-2 ring-secondary-200 dark:ring-secondary-800" : "border-gray-200 dark:border-gray-700 hover:border-primary-400"
+      }`}
+    >
+      {/* Full Card Background Image */}
+      <div className={`absolute inset-0 ${hasImage ? "" : "bg-gradient-to-br"} ${isService ? "from-primary-100 to-primary-200 dark:from-primary-900 dark:to-primary-800" : "from-secondary-100 to-secondary-200 dark:from-secondary-900 dark:to-secondary-800"}`}>
+        {hasImage ? (
+          <div className="h-full w-full">
+            <img
+              src={imageUrl}
+              alt={item.name}
+              className="h-full object-center object-cover w-full"
+              onError={(e) => {
+                e.target.style.display = "none";
+                // Show fallback when image fails
+                const fallback = e.target.parentElement.nextElementSibling;
+                if (fallback) fallback.style.display = "flex";
+              }}
+            />
+          </div>
+        ) : null}
+        {/* Fallback icon - always present but conditionally visible */}
+        <div className={`absolute inset-0 items-center justify-center ${hasImage ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="dark:text-primary-500/50 h-16 text-primary-400/50 w-16" /> : <CubeIcon className="dark:text-secondary-500/50 h-16 text-secondary-400/50 w-16" />}</div>
+      </div>
+
+      {/* Gradient Overlay for text readability */}
+      <div className="absolute bg-gradient-to-t from-black/80 inset-0 to-transparent via-black/20" />
+
+      {/* Item Name - Top Left */}
+      <div className="absolute left-1 top-1" style={{ maxWidth: "85%" }}>
+        <div className={`inline-block px-1 rounded-lg backdrop-blur-sm ${isService ? "bg-primary-600/90" : "bg-secondary-600/90"}`}>
+          <h3 className="font-semibold line-clamp-2 m-0 text-sm text-white">{item.name}</h3>
+        </div>
+      </div>
+
+      {/* Content Footer - Overlays bottom of image with badge-style backgrounds */}
+      <div className="absolute bottom-0 left-0 p-1 right-0 text-left">
+        <div className="flex gap-2 items-center justify-between">
+          {/* Price Badge */}
+          <span className={`inline-block px-0 py-0.5 rounded-lg text-sm font-bold text-white backdrop-blur-sm ${isService ? "bg-primary-700/90" : "bg-secondary-700/90"}`}>
+            {!isService && item.price_min != null && item.price_max != null ? (item.price_min === item.price_max ? `$${item.price_min.toFixed(2)}` : `$${item.price_min.toFixed(2)}–$${item.price_max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}
+          </span>
+
+          {/* Cart Controls - Bottom Right */}
+          <div>
+            {inCart ? (
+              <div className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow-lg">
+                <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-6 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
+                  <MinusIcon className="h-3.5 w-3.5" />
+                </button>
+                <span className="dark:text-white font-bold text-center text-gray-900 text-sm w-6">{cartQuantity}</span>
+                <button onClick={handleIncrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-6 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
+                  <PlusIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleAddToCart} className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-0 py-1 rounded-full shadow-lg text-gray-700 text-xs transition-colors">
+                <ShoppingCartIcon className="h-3.5 w-3.5" />
+                Add
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Hover Overlay */}
+      <div className="absolute bg-white/0 group-hover:bg-white/10 inset-0 pointer-events-none transition-colors" />
+    </div>
+  );
+};
+
+// ─── 2b  MIX SELECTION MODAL ────────────────────────────────────────────────
+function MixSelectionModal({ mix, onConfirm, onClose }) {
+  const [config, setConfig] = useState(null);
+  const [components, setComponents] = useState([]);
+  const [allInventory, setAllInventory] = useState([]);
+  const [selections, setSelections] = useState({}); // { product_id: qty }
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [cfgRes, compRes, invRes] = await Promise.all([mixAPI.getConfig(mix.id), mixAPI.getComponents(mix.id), inventoryAPI.getAll()]);
+        const cfgList = Array.isArray(cfgRes?.data) ? cfgRes.data : [];
+        setConfig(cfgList[0] || null);
+        setComponents(Array.isArray(compRes?.data) ? compRes.data : []);
+        setAllInventory(Array.isArray(invRes?.data) ? invRes.data : []);
+      } catch {
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [mix.id]);
+
+  const invMap = Object.fromEntries(allInventory.map((i) => [i.id, i]));
+  const totalQty = config?.total_quantity || 1;
+  const globalMax = config?.has_max_per_product ? config.max_per_product || Infinity : Infinity;
+  const totalSelected = Object.values(selections).reduce((a, b) => a + b, 0);
+  const remaining = totalQty - totalSelected;
+
+  const getMaxForComp = (comp) => {
+    const perProductMax = comp.max_quantity != null ? comp.max_quantity : globalMax;
+    const stock = invMap[comp.component_id]?.quantity ?? 999;
+    return Math.min(perProductMax, stock);
+  };
+
+  const adjust = (compId, delta) => {
+    setSelections((prev) => {
+      const cur = prev[compId] || 0;
+      const comp = components.find((c) => c.component_id === compId);
+      const maxAllowed = getMaxForComp(comp);
+      let next = cur + delta;
+      next = Math.max(0, next);
+      next = Math.min(next, maxAllowed);
+      // Can't exceed total quota
+      if (delta > 0 && totalSelected >= totalQty) return prev;
+      const updated = { ...prev };
+      if (next === 0) delete updated[compId];
+      else updated[compId] = next;
+      return updated;
+    });
+  };
+
+  const computedPrice = () => {
+    if (mix.price_type === "percentage" && mix.price_percentage) {
+      const base = Object.entries(selections).reduce((sum, [pid, qty]) => {
+        return sum + (invMap[pid]?.price || 0) * qty;
+      }, 0);
+      return base * (mix.price_percentage / 100);
+    }
+    return mix.price || 0;
+  };
+
+  const handleConfirm = () => {
+    if (remaining !== 0) return;
+    const mixSelections = Object.entries(selections).map(([pid, qty]) => ({
+      product_id: pid,
+      product_name: invMap[pid]?.name || pid,
+      quantity: qty,
+    }));
+    onConfirm(mix, "mix", 1, computedPrice(), mixSelections);
+  };
+
+  const s = {
+    row: { display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f3e8ff", fontSize: "0.85rem" },
+    btn: (color) => ({ width: 26, height: 26, borderRadius: "50%", border: `1px solid ${color}`, background: "none", color, cursor: "pointer", fontWeight: 700, fontSize: 16, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }),
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "var(--bs-body-bg)", borderRadius: 12, width: "100%", maxWidth: 460, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        {/* Header */}
+        <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "1rem" }}>{mix.name}</div>
+              <div style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: 2 }}>
+                Pick any <strong>{totalQty}</strong> product{totalQty !== 1 ? "s" : ""}
+                {config?.has_max_per_product && config?.max_per_product && ` · max ${config.max_per_product} per type`}
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="btn btn-unstyled text-muted" style={{ fontSize: 20 }}>
+              ×
+            </button>
+          </div>
+          {/* Progress bar */}
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#6b7280", marginBottom: 3 }}>
+              <span>{totalSelected} selected</span>
+              <span style={{ color: remaining === 0 ? "#22c55e" : "#f97316", fontWeight: 600 }}>{remaining === 0 ? "✓ Ready" : `${remaining} remaining`}</span>
+            </div>
+            <div style={{ height: 6, background: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(100, (totalSelected / totalQty) * 100)}%`, background: remaining === 0 ? "#22c55e" : "#ec4899", borderRadius: 3, transition: "width 0.2s" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Product list */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px" }}>
+          {loading && <div style={{ color: "#6b7280", fontSize: "0.85rem", padding: "12px 0" }}>Loading products…</div>}
+          {!loading && components.length === 0 && <div style={{ color: "#9ca3af", fontSize: "0.85rem", padding: "12px 0" }}>No products configured for this mix.</div>}
+          {components.map((comp) => {
+            const product = invMap[comp.component_id];
+            if (!product) return null;
+            const selected = selections[comp.component_id] || 0;
+            const maxAllowed = getMaxForComp(comp);
+            const canAdd = remaining > 0 && selected < maxAllowed;
+            return (
+              <div key={comp.id} style={s.row}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{product.name}</div>
+                  <div style={{ fontSize: "0.73rem", color: "#6b7280" }}>
+                    ${product.price?.toFixed(2)} · stock: {product.quantity}
+                    {comp.max_quantity != null ? ` · max ${comp.max_quantity}` : config?.has_max_per_product && config?.max_per_product ? ` · max ${config.max_per_product}` : ""}
+                  </div>
+                </div>
+                <button type="button" onClick={() => adjust(comp.component_id, -1)} disabled={selected === 0} className="btn btn-outline-secondary p-0 rounded-circle" style={{ opacity: selected === 0 ? 0.3 : 1 }}>
+                  −
+                </button>
+                <span style={{ width: 24, textAlign: "center", fontWeight: 700 }}>{selected}</span>
+                <button type="button" onClick={() => adjust(comp.component_id, 1)} disabled={!canAdd} className="btn btn-outline-secondary p-0 rounded-circle" style={{ opacity: canAdd ? 1 : 0.3 }}>
+                  +
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "12px 16px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+            Price: <strong>${computedPrice().toFixed(2)}</strong>
+            {mix.price_type === "percentage" && <span style={{ fontSize: "0.72rem", marginLeft: 4 }}>({mix.price_percentage}% of selections)</span>}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={onClose} className="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="button" onClick={handleConfirm} disabled={remaining !== 0} className="btn btn-primary" style={{ opacity: remaining === 0 ? 1 : 0.6 }}>
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 3  SALES PAGE COMPONENT ───────────────────────────────────────────────
+export default function Sales() {
+  const { services, setServices, loading, setLoading, error, setError, clearError, openAddClientModal, user } = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { footerAlign } = useViewMode();
+  const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
+
+  usePagePermission("sales");
+
+  // ─── 4  STATE / REF DECLARATIONS ─────────────────────────────────────────
+  // POS State
+  const [showServices, setShowServices] = useState(true);
+  const [showProducts, setShowProducts] = useState(true);
+  const [showSubscriptions, setShowSubscriptions] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cart, setCart] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clients, setClientsLocal] = useState([]);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
+  const [memberships, setMemberships] = useState([]);
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [showClientPanel, setShowClientPanel] = useState(false);
+  const [clientPanelSearch, setClientPanelSearch] = useState("");
+  const [showClientPanelDropdown, setShowClientPanelDropdown] = useState(false);
+
+  // Product Detail Modal State
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItemType, setSelectedItemType] = useState(null);
+  const [showProductModal, setShowProductModal] = useState(false);
+
+  // Feature Selection Modal State
+  const [featureModalItem, setFeatureModalItem] = useState(null);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
+  // Mix Selection Modal State
+  const [mixModalItem, setMixModalItem] = useState(null);
+  // Discount Rules State
+  const [discountRules, setDiscountRules] = useState([]);
+  // Sales History State
+  const [salesHistory, setSalesHistory] = useState([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
+  const [appSettings, setAppSettings] = useState(null);
+  const [showSalesFilterDropdown, setShowSalesFilterDropdown] = useState(false);
+  const [filterClientSearch, setFilterClientSearch] = useState("");
+  const [successNotice, setSuccessNotice] = useState("");
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // Invoice template modal
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  // Receipt settings — persisted in localStorage
+  const [receiptSettings, setReceiptSettings] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("sales_receipt_settings") || "null") || { templateId: null, templateName: "", action: "select" };
+    } catch {
+      return { templateId: null, templateName: "", action: "select" };
+    }
+  });
+  // Card view mode: 'full' | 'compact' | 'mixed' — persisted in localStorage
+  const [cardViewMode, setCardViewMode] = useState(() => {
+    try {
+      return localStorage.getItem("sales_card_view") || "full";
+    } catch {
+      return "full";
+    }
+  });
+  const [rcptTemplates, setRcptTemplates] = useState([]);
+  const [historyFilters, setHistoryFilters] = useState({
+    showServices: true,
+    showProducts: true,
+    showSubscriptions: true,
+    minPrice: "",
+    maxPrice: "",
+    startDate: "",
+    endDate: "",
+    clientQuery: "",
+    employeeQuery: "",
+    saleSource: "all",
+    status: "",
+  });
+  const stripeReturnHandledRef = useRef(false);
+  const routeHandoffProcessedRef = useRef(null);
+  const [checkoutContext, setCheckoutContext] = useState(null);
+  const [checkoutReturnTarget, setCheckoutReturnTarget] = useState(null);
+
+  const closeCheckoutModal = useCallback((returnState = null) => {
+    setShowCheckout(false);
+
+    if (checkoutReturnTarget?.pathname) {
+      const targetPath = `${checkoutReturnTarget.pathname}${checkoutReturnTarget.search || ""}${checkoutReturnTarget.hash || ""}`;
+      const nextState = returnState ? { ...(checkoutReturnTarget.state || {}), ...returnState } : checkoutReturnTarget.state;
+      const navOptions = nextState ? { state: nextState } : undefined;
+      setCheckoutReturnTarget(null);
+      navigate(targetPath || "/", navOptions);
+      return;
+    }
+
+    setCheckoutReturnTarget(null);
+  }, [checkoutReturnTarget, navigate]);
+
+  // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
+  useFetchOnce(() => {
+    loadServices();
+    loadProducts();
+    loadMemberships();
+    settingsAPI
+      .getSettings()
+      .then((res) => setAppSettings(res.data))
+      .catch(() => {});
+    discountRulesAPI
+      .getAll()
+      .then((res) => setDiscountRules(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => {});
+  });
+
+  // ─── 6  DATA LOADING FUNCTIONS ───────────────────────────────────────────
+  const loadTransactionHistory = useCallback(async () => {
+    try {
+      const [salesRes, portalRes] = await Promise.all([saleTransactionsAPI.getAll(), clientOrdersAPI.getAll()]);
+      const txData = salesRes?.data ?? salesRes;
+      const portalData = portalRes?.data ?? portalRes;
+      const clientMap = {};
+      clients.forEach((c) => {
+        clientMap[c.id] = c;
+      });
+
+      const salesRecords = Array.isArray(txData)
+        ? txData.map((tx) => ({
+            id: String(tx.id),
+            source: "pos",
+            date: tx.created_at || new Date().toISOString(),
+            client: tx.client_id && clientMap[tx.client_id] ? { name: clientMap[tx.client_id].name, email: clientMap[tx.client_id].email } : null,
+            clientName: tx.client_id && clientMap[tx.client_id] ? clientMap[tx.client_id].name : "Walk-in",
+            employeeName: user?.full_name || user?.username || "",
+            items: [],
+            subtotal: tx.subtotal || 0,
+            tax: tx.tax_amount || 0,
+            total: tx.total || 0,
+            paymentMethod: tx.payment_method || "cash",
+            status: "completed",
+          }))
+        : [];
+
+      const portalRecords = Array.isArray(portalData)
+        ? portalData.map((order) => ({
+            id: String(order.id),
+            source: "portal",
+            date: order.created_at || new Date().toISOString(),
+            client: order.client_id && clientMap[order.client_id] ? { name: clientMap[order.client_id].name, email: clientMap[order.client_id].email } : order.client_name ? { name: order.client_name } : null,
+            clientName: order.client_name || clientMap[order.client_id]?.name || "Portal client",
+            employeeName: order.employee_name || "",
+            items: [],
+            subtotal: order.subtotal || 0,
+            tax: order.tax_amount || 0,
+            total: order.total || 0,
+            paymentMethod: order.payment_method || "card",
+            status: order.status || "payment_pending",
+          }))
+        : [];
+
+      const combinedHistory = [...salesRecords, ...portalRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+      setSalesHistory(combinedHistory);
+    } catch (err) {
+      console.error("Failed to load transaction history from DB:", err);
+    }
+  }, [clients, user?.full_name, user?.username]);
+
+  const [linkedScheduleId, setLinkedScheduleId] = useState(null);
+  const [linkedScheduleServiceId, setLinkedScheduleServiceId] = useState(null);
+  const [autoOpenCheckoutRequested, setAutoOpenCheckoutRequested] = useState(false);
+
+  // On mount: restore walk-in cart from localStorage (only when not navigating with a pre-selected client)
+  useEffect(() => {
+    if (location.state?.preSelectedClient) return;
+    try {
+      const saved = localStorage.getItem("walk_in_cart");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setCart(parsed);
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!autoOpenCheckoutRequested) return;
+    if (cart.length === 0) return;
+    setShowCheckout(true);
+    setAutoOpenCheckoutRequested(false);
+  }, [autoOpenCheckoutRequested, cart.length]);
+
+  // Walk-in cart persisted to localStorage (no client selected)
+  useEffect(() => {
+    if (!selectedClient?.id) {
+      try {
+        localStorage.setItem("walk_in_cart", JSON.stringify(cart));
+      } catch {}
+    }
+  }, [cart, selectedClient?.id]);
+
+  useEffect(() => {
+    if (stripeReturnHandledRef.current) return;
+
+    const params = new URLSearchParams(location.search || "");
+    const paymentState = String(params.get("payment") || "").toLowerCase();
+    const saleId = params.get("sale_id");
+    if (!paymentState || !saleId) return;
+
+    stripeReturnHandledRef.current = true;
+
+    const clearStripeQueryParams = () => {
+      try {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete("payment");
+        currentUrl.searchParams.delete("sale_id");
+        currentUrl.searchParams.delete("session_id");
+        window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+      } catch {}
+    };
+
+    if (paymentState === "cancelled") {
+      setSuccessNotice("");
+      setError("Payment was cancelled. You can retry checkout.");
+      clearStripeQueryParams();
+      return;
+    }
+
+    if (paymentState !== "success") {
+      clearStripeQueryParams();
+      return;
+    }
+
+    const finalizeStripeSaleReturn = async () => {
+      const pendingRaw = localStorage.getItem("pending_stripe_sale");
+      let pending = null;
+      if (pendingRaw) {
+        try {
+          pending = JSON.parse(pendingRaw);
+        } catch {
+          pending = null;
+        }
+      }
+
+      const saleIdMatches = pending && String(pending.saleId || "") === String(saleId);
+      const checkoutItemCartKeys = Array.isArray(pending?.checkoutItemCartKeys) ? pending.checkoutItemCartKeys.filter(Boolean) : [];
+      const checkoutHadRemainingItems = Boolean(pending?.checkoutHadRemainingItems);
+
+      try {
+        if (saleIdMatches && pending?.selectedClientId && Array.isArray(pending.soldSubscriptions) && pending.soldSubscriptions.length > 0) {
+          await applySubscriptionsForSale(pending.selectedClientId, pending.soldSubscriptions);
+        }
+
+        if (saleIdMatches && pending?.selectedClientId) {
+          if (checkoutItemCartKeys.length > 0) {
+            await Promise.all(checkoutItemCartKeys.map((cartKey) => clientCartAPI.removeItem(pending.selectedClientId, cartKey).catch(() => {})));
+            if (!checkoutHadRemainingItems) {
+              await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+            }
+          } else {
+            await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+          }
+        }
+
+        let linkedScheduleMarkedPaid = false;
+        if (saleIdMatches && pending?.linkedScheduleId) {
+          try {
+            await scheduleAPI.update(pending.linkedScheduleId, {
+              is_paid: true,
+              sale_transaction_id: saleId,
+            });
+            linkedScheduleMarkedPaid = true;
+          } catch (error) {
+            console.warn("Could not mark schedule as paid after checkout return:", error);
+          }
+        }
+
+        await loadTransactionHistory();
+        if (saleIdMatches && checkoutItemCartKeys.length > 0) {
+          setCart((prev) => prev.filter((item) => !checkoutItemCartKeys.includes(item.cartKey)));
+        } else {
+          setCart([]);
+        }
+
+        if (saleIdMatches && checkoutHadRemainingItems && pending?.selectedClientId) {
+          const matchedClient = clients.find((client) => String(client.id) === String(pending.selectedClientId));
+          if (matchedClient) {
+            setSelectedClient(matchedClient);
+          } else {
+            setSelectedClient((prev) =>
+              prev && String(prev.id) === String(pending.selectedClientId)
+                ? prev
+                : {
+                    id: pending.selectedClientId,
+                    name: pending.selectedClientName || "Client",
+                    email: pending.selectedClientEmail || "",
+                  }
+            );
+          }
+        } else {
+          setSelectedClient(null);
+          setCheckoutContext(null);
+        }
+        const schedulePaymentState =
+          linkedScheduleMarkedPaid && pending?.linkedScheduleId
+            ? {
+                schedulePaymentCompleted: {
+                  appointmentId: pending.linkedScheduleId,
+                  saleTransactionId: saleId,
+                },
+              }
+            : null;
+        if (pending?.checkoutReturnTarget?.pathname) {
+          const returnTarget = pending.checkoutReturnTarget;
+          const targetPath = `${returnTarget.pathname}${returnTarget.search || ""}${returnTarget.hash || ""}`;
+          setShowCheckout(false);
+          navigate(targetPath, {
+            state: { ...(returnTarget.state || {}), ...(schedulePaymentState || {}) },
+          });
+        } else {
+          closeCheckoutModal(schedulePaymentState);
+        }
+        setLinkedScheduleId(null);
+        setLinkedScheduleServiceId(null);
+        clearError();
+        setSuccessNotice("Payment confirmed. Receipt email was sent to the client when an email address is on file.");
+      } finally {
+        localStorage.removeItem("pending_stripe_sale");
+        clearStripeQueryParams();
+      }
+    };
+
+    finalizeStripeSaleReturn();
+  }, [clearError, clients, closeCheckoutModal, loadTransactionHistory, location.search, navigate, setError]);
+
+  // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
+  const mapCartItemToDb = (item) => ({
+    cart_key: item.cartKey,
+    item_id: item.id || null,
+    item_type: item.itemType,
+    item_name: item.name,
+    unit_price: item.price,
+    quantity: item.quantity,
+    line_total: item.price * item.quantity,
+    // For mix items, persist selections in options_json so cart survives page refresh
+    options_json: item.itemType === "mix" && item.mixSelections?.length > 0 ? JSON.stringify(item.mixSelections) : item.selectedOptions?.length > 0 ? JSON.stringify(item.selectedOptions) : null,
+  });
+
+  const mapDbItemToCart = useCallback((dbItem) => {
+    let parsedOptions = [];
+    let mixSelections = undefined;
+    if (dbItem.options_json) {
+      try {
+        const parsed = JSON.parse(dbItem.options_json);
+        if (dbItem.item_type === "mix") {
+          mixSelections = parsed;
+        } else {
+          parsedOptions = parsed;
+        }
+      } catch {}
+    }
+    return {
+      cartKey: dbItem.cart_key,
+      id: dbItem.item_id,
+      itemType: dbItem.item_type,
+      name: dbItem.item_name,
+      price: dbItem.unit_price,
+      quantity: dbItem.quantity,
+      selectedOptions: parsedOptions,
+      ...(mixSelections !== undefined ? { mixSelections } : {}),
+    };
+  }, []);
+
+  const syncItemToDb = useCallback((item, clientId) => {
+    if (!clientId) return;
+    clientCartAPI.upsertItem(clientId, mapCartItemToDb(item)).catch(() => {});
+  }, []);
+
+  const removeItemFromDb = (cartKey, clientId) => {
+    if (!clientId) return;
+    clientCartAPI.removeItem(clientId, cartKey).catch(() => {});
+  };
+
+  const loadClients = useCallback(async () => {
+    if (clientsLoaded) return; // Already loaded, skip
+    try {
+      const response = await clientsAPI.getAll();
+      const data = response?.data ?? response;
+      if (Array.isArray(data)) {
+        setClientsLocal(data);
+        setClientsLoaded(true);
+      }
+    } catch (err) {
+      console.error("Failed to load clients for POS:", err);
+    }
+  }, [clientsLoaded]);
+
+  const getNextScheduledService = useCallback(async (clientId) => {
+    if (!clientId) return null;
+    try {
+      const res = await clientsAPI.getSchedules(clientId);
+      const schedules = Array.isArray(res?.data) ? res.data : [];
+      const now = new Date();
+      const next = schedules
+        .filter((s) => {
+          const date = new Date(s.appointment_date);
+          const status = String(s.status || "").toLowerCase();
+          return !Number.isNaN(date.getTime()) && date >= now && status !== "cancelled";
+        })
+        .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))[0];
+      if (!next?.service_id) return null;
+      const localService = services.find((svc) => String(svc.id) === String(next.service_id));
+      if (localService) return localService;
+      const svcRes = await servicesAPI.getById(next.service_id);
+      return svcRes?.data ?? svcRes ?? null;
+    } catch {
+      return null;
+    }
+  }, [services]);
+
+  // Select a client, load their saved cart, merge any walk-in items, and include their next scheduled service
+  const handleSelectClient = useCallback(async (client, options = {}) => {
+    // Capture walk-in items before switching — from in-memory state (if no client was selected)
+    // or from localStorage (when navigating to this page fresh with a pre-selected client)
+    let walkInItems = selectedClient == null ? [...cart] : [];
+    if (walkInItems.length === 0) {
+      try {
+        const walkInSaved = localStorage.getItem("walk_in_cart");
+        if (walkInSaved) {
+          const parsed = JSON.parse(walkInSaved);
+          if (Array.isArray(parsed)) walkInItems = parsed;
+        }
+      } catch {}
+    }
+
+    setSelectedClient(client);
+
+    let nextCart = [];
+
+    if (Array.isArray(options.preloadCart) && options.preloadCart.length > 0) {
+      nextCart = options.preloadCart;
+    }
+
+    try {
+      if (nextCart.length === 0) {
+        // Load persistent cart from DB (source of truth)
+        const res = await clientCartAPI.getItems(client.id);
+        const dbItems = Array.isArray(res?.data) ? res.data : [];
+        if (dbItems.length > 0) {
+          nextCart = dbItems.map(mapDbItemToCart);
+        } else {
+          // Fallback: migrate from localStorage once if DB is empty
+          const saved = localStorage.getItem(`client_cart_${client.id}`);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              nextCart = parsed;
+              // Migrate to DB
+              parsed.forEach((item) => syncItemToDb(item, client.id));
+              localStorage.removeItem(`client_cart_${client.id}`);
+            }
+          }
+        }
+      }
+    } catch {}
+
+    // Merge walk-in items into client cart — add any not already present
+    walkInItems.forEach((item) => {
+      if (!nextCart.some((ci) => ci.cartKey === item.cartKey)) {
+        nextCart = [...nextCart, item];
+      }
+    });
+
+    // Clear walk-in cart now that items have been transferred
+    if (walkInItems.length > 0) {
+      try {
+        localStorage.removeItem("walk_in_cart");
+      } catch {}
+    }
+
+    const scheduledService = await getNextScheduledService(client.id);
+    if (scheduledService) {
+      const scheduledCartKey = `service-${scheduledService.id}`;
+      const alreadyInCart = nextCart.some((item) => item.cartKey === scheduledCartKey || (item.itemType === "service" && String(item.id) === String(scheduledService.id)));
+      if (!alreadyInCart) {
+        nextCart = [
+          ...nextCart,
+          {
+            ...scheduledService,
+            cartKey: scheduledCartKey,
+            itemType: "service",
+            quantity: 1,
+            price: scheduledService.price,
+            selectedOptions: [],
+          },
+        ];
+      }
+    }
+
+    setCart(nextCart);
+  }, [cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]);
+
+  useEffect(() => {
+    if (showCartModal) loadClients();
+  }, [showCartModal, loadClients]);
+
+  // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages.
+  // Guard by route-state identity so callback dependency updates do not replay one-time handoff logic.
+  useEffect(() => {
+    if (location.state && routeHandoffProcessedRef.current === location.state) return;
+    routeHandoffProcessedRef.current = location.state || null;
+
+    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
+    if (scheduleId) setLinkedScheduleId(scheduleId);
+    if (preloadServiceId) setLinkedScheduleServiceId(preloadServiceId);
+    if (checkoutReturnTo?.pathname) setCheckoutReturnTarget(checkoutReturnTo);
+    setCheckoutContext(stateCheckoutContext || null);
+    if (openCheckout) setAutoOpenCheckoutRequested(true);
+    if (preSelectedClient) handleSelectClient(preSelectedClient, { preloadCart });
+
+    if (preloadServiceId) {
+      const addServiceWhenReady = () => {
+        const service = services.find((candidate) => String(candidate.id) === String(preloadServiceId));
+        if (!service) return;
+        const preloadCartKey = `service-${service.id}`;
+        setCart((currentCart) => {
+          if (currentCart.some((item) => item.cartKey === preloadCartKey || (item.id === service.id && item.itemType === "service"))) return currentCart;
+          return [...currentCart, { ...service, cartKey: preloadCartKey, itemType: "service", quantity: 1 }];
+        });
+      };
+
+      if (services.length > 0) {
+        addServiceWhenReady();
+      } else {
+        const interval = setInterval(() => {
+          if (services.length > 0) {
+            addServiceWhenReady();
+            clearInterval(interval);
+          }
+        }, 300);
+        return () => clearInterval(interval);
+      }
+    }
+  }, [handleSelectClient, location.state, services]);
+
+  const loadProducts = async () => {
+    try {
+      const [response, summaryRes] = await Promise.all([inventoryAPI.getAll(), featuresAPI.getInventorySummary().catch(() => ({ data: {} }))]);
+      const data = response?.data ?? response;
+      const summary = summaryRes?.data ?? summaryRes ?? {};
+      if (Array.isArray(data)) {
+        const productItems = data
+          .filter((item) => (item.type || "").toUpperCase() === "PRODUCT")
+          .map((item) => ({
+            ...item,
+            ...(summary[item.id] || {}),
+          }));
+        setProducts(productItems);
+      }
+    } catch (err) {
+      console.error("Failed to load products for POS:", err);
+    }
+  };
+
+  const loadMemberships = async () => {
+    try {
+      const response = await membershipsAPI.getAll();
+      const data = response?.data ?? response;
+      if (Array.isArray(data)) {
+        setMemberships(data.filter((m) => m.is_active !== false));
+      }
+    } catch (err) {
+      console.error("Failed to load memberships for POS:", err);
+      setMemberships([]);
+    }
+  };
+
+  // ─── 7  CART HANDLERS ─────────────────────────────────────────────────────
+  // Open product detail modal
+  const handleSelectItem = (item, itemType) => {
+    setSelectedItem(item);
+    setSelectedItemType(itemType);
+    setShowProductModal(true);
+  };
+
+  // POS Functions
+  // Use cartKey to distinguish services from products (avoids ID collisions)
+  const addToCart = (item, itemType = "service", quantity = 1, overridePrice = null, selectedOptions = null) => {
+    const cartKey = `${itemType}-${item.id}`;
+    const existing = cart.find((c) => c.cartKey === cartKey);
+    const price = overridePrice != null ? overridePrice : item.price;
+    let updatedItem;
+    if (existing) {
+      updatedItem = { ...existing, quantity, price, ...(selectedOptions ? { selectedOptions } : {}) };
+      setCart(cart.map((c) => (c.cartKey === cartKey ? updatedItem : c)));
+    } else {
+      updatedItem = { ...item, cartKey, itemType, quantity, price, selectedOptions: selectedOptions ?? [] };
+      setCart([...cart, updatedItem]);
+    }
+    syncItemToDb(updatedItem, selectedClient?.id);
+  };
+
+  // Route add-to-cart through feature check for products, or mix selection modal for mixes
+  const addToCartWithFeatureCheck = async (item, itemType, quantity = 1) => {
+    if (itemType === "mix") {
+      setMixModalItem(item);
+    } else if (itemType === "bundle") {
+      // Resolve price: percentage of component prices, or fixed
+      let price = item.price || 0;
+      if (item.price_type === "percentage" && item.price_percentage) {
+        try {
+          const [compRes, invRes] = await Promise.all([bundleAPI.getComponents(item.id), inventoryAPI.getAll()]);
+          const comps = Array.isArray(compRes?.data) ? compRes.data : [];
+          const invMap = Object.fromEntries((Array.isArray(invRes?.data) ? invRes.data : []).map((i) => [i.id, i]));
+          const base = comps.reduce((sum, c) => sum + (invMap[c.component_id]?.price || 0) * c.quantity, 0);
+          price = base * (item.price_percentage / 100);
+        } catch {
+          /* fall back to item.price */
+        }
+      }
+      addToCart(item, itemType, quantity, price);
+    } else if (itemType === "product" && item.feature_names?.length > 0) {
+      setFeatureModalItem(item);
+      setShowFeatureModal(true);
+    } else {
+      addToCart(item, itemType, quantity);
+    }
+  };
+
+  // Get quantity of item in cart
+  const getCartQuantity = (itemId, itemType) => {
+    const cartKey = `${itemType}-${itemId}`;
+    const item = cart.find((c) => c.cartKey === cartKey);
+    return item?.quantity || 0;
+  };
+
+  const removeFromCart = (cartKey) => {
+    setCart(cart.filter((item) => item.cartKey !== cartKey));
+    removeItemFromDb(cartKey, selectedClient?.id);
+  };
+
+  const updateCartQuantity = (cartKey, quantity) => {
+    if (quantity <= 0) {
+      removeFromCart(cartKey);
+    } else {
+      const updated = cart.map((item) => (item.cartKey === cartKey ? { ...item, quantity } : item));
+      setCart(updated);
+      const updatedItem = updated.find((i) => i.cartKey === cartKey);
+      if (updatedItem) syncItemToDb(updatedItem, selectedClient?.id);
+    }
+  };
+
+  // Increment item quantity in cart (or trigger feature check if not yet in cart)
+  const incrementCartItem = (item, itemType) => {
+    const cartKey = `${itemType}-${item.id}`;
+    const existing = cart.find((c) => c.cartKey === cartKey);
+    if (existing) {
+      updateCartQuantity(cartKey, existing.quantity + 1);
+    } else {
+      addToCartWithFeatureCheck(item, itemType, 1);
+    }
+  };
+
+  // Decrement item quantity in cart (removes if qty becomes 0)
+  const decrementCartItem = (item, itemType) => {
+    const cartKey = `${itemType}-${item.id}`;
+    const existing = cart.find((c) => c.cartKey === cartKey);
+    if (existing) {
+      updateCartQuantity(cartKey, existing.quantity - 1);
+    }
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const taxRatePercent = Number.isFinite(Number(appSettings?.tax_rate)) ? Number(appSettings.tax_rate) : 0;
+
+  const calculateDiscountForItems = (items) => {
+    const targetItems = Array.isArray(items) ? items : [];
+    const itemsSubtotal = targetItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    if (itemsSubtotal <= 0) return 0;
+
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const currentClock = now.toTimeString().slice(0, 5);
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const currentDay = dayNames[now.getDay()];
+    let total = 0;
+    for (const rule of discountRules) {
+      if (!rule.is_active) continue;
+      if (rule.start_date && today < rule.start_date.slice(0, 10)) continue;
+      if (rule.end_date && today > rule.end_date.slice(0, 10)) continue;
+      if (rule.is_recurring && rule.recur_days) {
+        let days = [];
+        try {
+          days = typeof rule.recur_days === "string" ? JSON.parse(rule.recur_days) : rule.recur_days;
+        } catch {
+          days = [];
+        }
+        if (days.length > 0 && !days.includes(currentDay)) continue;
+      }
+      if (rule.day_start_time && currentClock < rule.day_start_time) continue;
+      if (rule.day_end_time && currentClock > rule.day_end_time) continue;
+      let base = itemsSubtotal;
+      if (rule.applies_to !== "all") {
+        let ids = [];
+        try {
+          ids = typeof rule.item_ids === "string" ? JSON.parse(rule.item_ids) : rule.item_ids || [];
+        } catch {
+          ids = [];
+        }
+        base = targetItems.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.price * i.quantity, 0);
+      }
+      const amt = rule.discount_type === "percentage" ? base * (rule.discount_value / 100) : Math.min(rule.discount_value, base);
+      total += amt;
+    }
+    return Math.min(total, itemsSubtotal);
+  };
+
+  // Calculate applicable discount from active rules
+  const cartDiscount = calculateDiscountForItems(cart);
+
+  const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+
+  const parseServiceAddonsForConsumption = (value) => {
+    if (!value) return [];
+    try {
+      const parsed = typeof value === "string" ? JSON.parse(value) : value;
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((addon) => ({
+          linked_inventory_id: addon?.linked_inventory_id || null,
+          consume_inventory: Boolean(addon?.consume_inventory),
+          consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+          quantity: Math.max(0, Number(addon?.quantity || 0)),
+        }))
+        .filter((addon) => addon.linked_inventory_id && addon.consume_inventory && addon.consume_quantity_per_unit > 0 && addon.quantity > 0);
+    } catch {
+      return [];
+    }
+  };
+
+  // Calculate invoice totals with discount applied (used for display AND preview)
+  const subtotalAfterDiscount = roundCurrency(cartTotal - cartDiscount);
+  const invoiceTaxAmount = roundCurrency(subtotalAfterDiscount * (taxRatePercent / 100));
+  const invoiceTotal = roundCurrency(subtotalAfterDiscount + invoiceTaxAmount);
+
+  const salesFilterActive = !!selectedClient || !showServices || !showProducts || !showSubscriptions;
+
+  const filteredFilterClients = useMemo(() => {
+    const q = filterClientSearch.trim().toLowerCase();
+    if (!q) return clients.slice(0, 8);
+    return clients
+      .filter((c) => {
+        const name = String(c.name || "").toLowerCase();
+        const email = String(c.email || "").toLowerCase();
+        return name.includes(q) || email.includes(q);
+      })
+      .slice(0, 8);
+  }, [clients, filterClientSearch]);
+
+  const addSubscriptionToCart = (subscription) => {
+    const cartKey = `subscription-${subscription.id}`;
+    const existing = cart.find((c) => c.cartKey === cartKey);
+    const startDate = subscriptionStartDate || new Date().toISOString().slice(0, 10);
+    const nextItem = {
+      ...subscription,
+      cartKey,
+      itemType: "subscription",
+      quantity: 1,
+      price: Number(subscription.price || 0),
+      subscriptionStartDate: startDate,
+      selectedOptions: [],
+    };
+
+    if (existing) {
+      setCart(cart.map((c) => (c.cartKey === cartKey ? nextItem : c)));
+    } else {
+      setCart([...cart, nextItem]);
+    }
+  };
+
+  const applySubscriptionsForSale = async (clientId, soldSubscriptionItems) => {
+    if (!clientId || soldSubscriptionItems.length === 0) return;
+
+    const existingRes = await clientMembershipsAPI.getAll();
+    const existingRows = Array.isArray(existingRes?.data) ? existingRes.data : [];
+    const currentClientRows = existingRows.filter((row) => String(row.client_id) === String(clientId));
+
+    for (const item of soldSubscriptionItems) {
+      const existing = currentClientRows.find((row) => String(row.membership_id) === String(item.id));
+
+      // FIX 1: Parse date string as UTC date (at midnight UTC), not local timezone
+      let startDateValue;
+      if (item.subscriptionStartDate) {
+        // Parse YYYY-MM-DD as UTC date at midnight to avoid timezone offset issues
+        const [year, month, day] = item.subscriptionStartDate.split("-").map(Number);
+        startDateValue = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      } else {
+        startDateValue = new Date();
+      }
+
+      // FIX 2: Calculate end_date based on lock_term_count and lock_term_unit from the membership
+      let endDateValue = null;
+      if (item.lock_term_count && item.lock_term_count > 0 && item.lock_term_unit) {
+        endDateValue = new Date(startDateValue);
+        const unit = String(item.lock_term_unit).toLowerCase();
+        const count = Number(item.lock_term_count);
+
+        if (unit === "days") {
+          endDateValue.setUTCDate(endDateValue.getUTCDate() + count);
+        } else if (unit === "weeks") {
+          endDateValue.setUTCDate(endDateValue.getUTCDate() + count * 7);
+        } else if (unit === "months") {
+          endDateValue.setUTCMonth(endDateValue.getUTCMonth() + count);
+        } else if (unit === "years") {
+          endDateValue.setUTCFullYear(endDateValue.getUTCFullYear() + count);
+        }
+      }
+
+      const payload = {
+        client_id: clientId,
+        membership_id: item.id,
+        start_date: startDateValue.toISOString(),
+        end_date: endDateValue ? endDateValue.toISOString() : null,
+        status: "active",
+      };
+
+      if (existing?.id) {
+        await clientMembershipsAPI.update(existing.id, payload);
+      } else {
+        await clientMembershipsAPI.create(payload);
+      }
+    }
+  };
+
+  // ─── 8  CHECKOUT / PAYMENT HANDLERS ──────────────────────────────────────
+  const handleCheckout = () => {
+    if (cart.length === 0) {
+      setError("Cart is empty");
+      return;
+    }
+
+    const hasSubscriptions = cart.some((item) => item.itemType === "subscription");
+    if (hasSubscriptions && !selectedClient?.id) {
+      setError("Select a client before checking out subscriptions.");
+      return;
+    }
+
+    setShowCheckout(true);
+  };
+
+  const processPayment = async (paymentMethod, checkoutItemsArg = null) => {
+    const checkoutItems = Array.isArray(checkoutItemsArg) && checkoutItemsArg.length > 0 ? checkoutItemsArg : cart;
+    if (checkoutItems.length === 0) return { completed: false };
+    const includesLinkedScheduleService = linkedScheduleId && linkedScheduleServiceId ? checkoutItems.some((item) => item.itemType === "service" && String(item.id) === String(linkedScheduleServiceId)) : false;
+    const completedScheduleId = includesLinkedScheduleService ? linkedScheduleId : null;
+
+    const checkoutSubtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const checkoutDiscount = calculateDiscountForItems(checkoutItems);
+    const checkoutSubtotalAfterDiscount = roundCurrency(checkoutSubtotal - checkoutDiscount);
+    const checkoutTaxAmount = roundCurrency(checkoutSubtotalAfterDiscount * (taxRatePercent / 100));
+    const checkoutTotal = roundCurrency(checkoutSubtotalAfterDiscount + checkoutTaxAmount);
+
+    const provisionalSaleId = `local-${Date.now()}`;
+    let paymentResult = { completed: false };
+
+    // Build local sale record for immediate UI update
+    const sale = {
+      id: provisionalSaleId,
+      date: new Date().toISOString(),
+      client: selectedClient ? { name: selectedClient.name, email: selectedClient.email } : null,
+      items: checkoutItems.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity, itemType: item.itemType })),
+      subtotal: checkoutSubtotal,
+      discount_amount: checkoutDiscount,
+      tax: checkoutTaxAmount,
+      total: checkoutTotal,
+      paymentMethod,
+    };
+    setSalesHistory((prev) => [sale, ...prev].slice(0, 50));
+
+    // Persist to database
+    let persistedSuccessfully = false;
+    try {
+      const txData = {
+        client_id: selectedClient?.id || null,
+        employee_id: user?.id || null,
+        subtotal: checkoutSubtotal,
+        discount_amount: checkoutDiscount,
+        tax_amount: checkoutTaxAmount,
+        total: checkoutTotal,
+        payment_method: paymentMethod,
+        schedule_id: includesLinkedScheduleService ? linkedScheduleId : null,
+      };
+      const txResponse = await saleTransactionsAPI.create(txData);
+      const txId = txResponse?.data?.id || txResponse?.id;
+      const reusedExisting = Boolean(txResponse?.data?.reused_existing || txResponse?.reused_existing);
+      if (txId) {
+        if (!reusedExisting) {
+          await Promise.all(
+            checkoutItems.map((item) =>
+              saleTransactionsAPI.createItem({
+                sale_transaction_id: txId,
+                item_id: item.id || null,
+                item_type: item.itemType || "product",
+                item_name: item.name,
+                unit_price: item.price,
+                quantity: item.quantity,
+                line_total: item.price * item.quantity,
+                ...(item.itemType === "mix" && item.mixSelections ? { mix_selections: JSON.stringify(item.mixSelections) } : {}),
+                ...(item.selectedOptions?.length > 0 ? { options_json: JSON.stringify(item.selectedOptions) } : {}),
+              })
+            )
+          );
+        }
+
+        const soldSubscriptions = checkoutItems.filter((item) => item.itemType === "subscription");
+
+        const checkoutUrl = txResponse?.data?.checkout_url || txResponse?.checkout_url || null;
+        if (checkoutUrl && String(paymentMethod || "").toLowerCase() !== "cash") {
+          try {
+            const checkoutItemCartKeys = checkoutItems.map((item) => item.cartKey).filter(Boolean);
+            const checkoutHadRemainingItems = cart.some((item) => !checkoutItemCartKeys.includes(item.cartKey));
+            const pendingSaleContext = {
+              saleId: txId,
+              selectedClientId: selectedClient?.id || null,
+              selectedClientName: selectedClient?.name || "",
+              selectedClientEmail: selectedClient?.email || "",
+              linkedScheduleId: includesLinkedScheduleService ? linkedScheduleId : null,
+              checkoutReturnTarget,
+              checkoutItemCartKeys,
+              checkoutHadRemainingItems,
+              soldSubscriptions: soldSubscriptions.map((sub) => ({
+                id: sub.id,
+                subscriptionStartDate: sub.subscriptionStartDate || null,
+                lock_term_count: sub.lock_term_count,
+                lock_term_unit: sub.lock_term_unit,
+              })),
+              createdAt: new Date().toISOString(),
+            };
+            localStorage.setItem("pending_stripe_sale", JSON.stringify(pendingSaleContext));
+          } catch {}
+          paymentResult = { checkout_url: checkoutUrl, sale_id: txId, txResponse };
+          return paymentResult;
+        }
+
+        if (!reusedExisting && selectedClient?.id && soldSubscriptions.length > 0) {
+          await applySubscriptionsForSale(selectedClient.id, soldSubscriptions);
+        }
+
+        // ── Inventory deduction ──────────────────────────────────────────
+        // Plain products: deducted by the backend insert hook automatically.
+        // Feature-option products: call deduct-stock so option quantities and
+        //   the recalculated inventory.quantity are updated correctly.
+        const featureDeductions = [];
+        const addonInventoryDeductions = new Map();
+        const allSoldMap = {}; // used only for immediate local UI update
+
+        if (!reusedExisting) checkoutItems.forEach((item) => {
+          if (item.itemType === "product" && item.id) {
+            allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
+            if (item.selectedOptions?.length > 0) {
+              featureDeductions.push({
+                inventory_id: item.id,
+                option_ids: item.selectedOptions.map((opt) => opt.optionId),
+                quantity: item.quantity,
+              });
+            }
+            return;
+          }
+
+          if (item.itemType === "service") {
+            const serviceUnits = Math.max(0, Number(item.quantity || 0));
+            const addons = parseServiceAddonsForConsumption(item.selectedOptions);
+            addons.forEach((addon) => {
+              const current = addonInventoryDeductions.get(addon.linked_inventory_id) || 0;
+              const consumeAmount = addon.consume_quantity_per_unit * addon.quantity * serviceUnits;
+              addonInventoryDeductions.set(addon.linked_inventory_id, current + consumeAmount);
+            });
+          }
+        });
+
+        if (featureDeductions.length > 0) {
+          await inventoryFeaturesAPI.deductStock(featureDeductions);
+        }
+
+        if (addonInventoryDeductions.size > 0) {
+          const deductionEntries = Array.from(addonInventoryDeductions.entries());
+          await Promise.all(
+            deductionEntries.map(async ([inventoryId, deductionQty]) => {
+              const qtyToConsume = Math.max(0, Number(deductionQty || 0));
+              if (!qtyToConsume) return;
+              const invRes = await inventoryAPI.getById(inventoryId);
+              const inv = invRes?.data ?? invRes;
+              const currentQty = Math.max(0, Number(inv?.quantity || 0));
+              await inventoryAPI.update(inventoryId, {
+                quantity: Math.max(0, currentQty - qtyToConsume),
+              });
+            })
+          );
+        }
+
+        // Update local product quantities for immediate UI feedback
+        if (Object.keys(allSoldMap).length > 0) {
+          setProducts((prev) => prev.map((p) => (allSoldMap[p.id] != null ? { ...p, quantity: Math.max(0, (p.quantity ?? 0) - allSoldMap[p.id]) } : p)));
+        }
+        // Mark linked schedule as paid
+        if (includesLinkedScheduleService && linkedScheduleId && txId) {
+          try {
+            await scheduleAPI.update(linkedScheduleId, {
+              is_paid: true,
+              sale_transaction_id: txId,
+            });
+          } catch (err) {
+            console.warn("Could not mark schedule as paid:", err);
+          }
+          setLinkedScheduleId(null);
+          setLinkedScheduleServiceId(null);
+          setCheckoutContext(null);
+        }
+        persistedSuccessfully = true;
+        paymentResult = { completed: true, sale_id: txId, txResponse, reused_existing: reusedExisting };
+      }
+    } catch (err) {
+      console.error("Failed to persist sale transaction:", err);
+      setSalesHistory((previous) => previous.filter((entry) => entry.id !== provisionalSaleId));
+      setError(getDetailedApiErrorMessage(err, "Failed to process payment"));
+      return { completed: false, error: err };
+    }
+
+    if (persistedSuccessfully) {
+      try {
+        await loadTransactionHistory();
+        setSalesHistory((prev) => prev.filter((entry) => entry.id !== provisionalSaleId));
+      } catch {
+        // Fall back to the provisional local entry if history refresh fails.
+      }
+    }
+
+    // Remove only checked out items; keep remaining cart items for later payment.
+    const checkoutKeys = new Set(checkoutItems.map((item, index) => item.cartKey || `${item.itemType || "item"}-${item.id || "idx"}-${index}`));
+    const remainingCart = cart.filter((item, index) => {
+      const key = item.cartKey || `${item.itemType || "item"}-${item.id || "idx"}-${index}`;
+      return !checkoutKeys.has(key);
+    });
+
+    if (selectedClient?.id) {
+      checkoutItems.forEach((item) => {
+        if (item.cartKey) removeItemFromDb(item.cartKey, selectedClient.id);
+      });
+      if (remainingCart.length === 0) {
+        clientCartAPI.clearCart(selectedClient.id).catch(() => {});
+      }
+    }
+
+    setCart(remainingCart);
+    if (remainingCart.length === 0) {
+      setSelectedClient(null);
+      setCheckoutContext(null);
+    }
+    closeCheckoutModal(
+      paymentResult.completed && completedScheduleId
+        ? {
+            schedulePaymentCompleted: {
+              appointmentId: completedScheduleId,
+              saleTransactionId: paymentResult.sale_id || null,
+            },
+          }
+        : null
+    );
+    clearError();
+    if (String(paymentMethod || "").toLowerCase() === "cash") {
+      setSuccessNotice(paymentResult.reused_existing ? "Existing appointment payment updated." : "Payment confirmed.");
+    }
+
+    return paymentResult.completed || paymentResult.checkout_url ? paymentResult : { completed: persistedSuccessfully };
+  };
+
+  // ─── 9  SERVICE LOAD FUNCTION ─────────────────────────────────────────────
+  const loadServices = async () => {
+    setLoading(true);
+    try {
+      const response = await servicesAPI.getAll();
+      // Handle both direct data and response.data formats
+      const servicesData = response?.data ?? response;
+      if (Array.isArray(servicesData)) {
+        setServices(servicesData);
+        clearError();
+      } else {
+        console.error("Invalid services data format:", servicesData);
+        setError("Invalid data format received from server");
+        setServices([]);
+      }
+    } catch (err) {
+      setError(getDetailedApiErrorMessage(err, "Failed to load services"));
+      console.error("Error loading services:", err);
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── 10  DERIVED / COMPUTED VALUES ───────────────────────────────────────
+  // Filter items based on search and category
+  const filteredServices = useMemo(
+    () =>
+      services
+        .filter((s) => s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || s.description?.toLowerCase().includes(searchQuery.toLowerCase()) || s.category?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [services, searchQuery]
+  );
+
+  const filteredProducts = useMemo(
+    () =>
+      products
+        .filter((p) => p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [products, searchQuery]
+  );
+
+  const filteredSubscriptions = useMemo(
+    () => memberships.filter((m) => m.name?.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })),
+    [memberships, searchQuery]
+  );
+
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    const list = !q
+      ? clients
+      : clients.filter((c) => {
+          const name = String(c.name || "").toLowerCase();
+          const email = String(c.email || "").toLowerCase();
+          const phone = String(c.phone || "").toLowerCase();
+          return name.includes(q) || email.includes(q) || phone.includes(q);
+        });
+    return [...list].sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" })).slice(0, 12);
+  }, [clients, clientSearch]);
+
+  // Check if item is in cart
+  const isInCart = (itemId, itemType) => {
+    return cart.some((c) => c.cartKey === `${itemType}-${itemId}`);
+  };
+
+  const filteredHistory = salesHistory.filter((sale) => {
+    const minPrice = historyFilters.minPrice ? Number(historyFilters.minPrice) : null;
+    const maxPrice = historyFilters.maxPrice ? Number(historyFilters.maxPrice) : null;
+    const startDate = historyFilters.startDate ? new Date(`${historyFilters.startDate}T00:00:00`) : null;
+    const endDate = historyFilters.endDate ? new Date(`${historyFilters.endDate}T23:59:59`) : null;
+    const saleDate = new Date(sale.date);
+    const clientQuery = historyFilters.clientQuery.trim().toLowerCase();
+    const employeeQuery = historyFilters.employeeQuery.trim().toLowerCase();
+
+    if (Number.isFinite(minPrice) && sale.total < minPrice) return false;
+    if (Number.isFinite(maxPrice) && sale.total > maxPrice) return false;
+    if (startDate && saleDate < startDate) return false;
+    if (endDate && saleDate > endDate) return false;
+    if (historyFilters.saleSource !== "all" && sale.source !== historyFilters.saleSource) return false;
+    if (historyFilters.status && String(sale.status || "") !== historyFilters.status) return false;
+    if (
+      clientQuery &&
+      !String(sale.clientName || sale.client?.name || "")
+        .toLowerCase()
+        .includes(clientQuery)
+    )
+      return false;
+    if (
+      employeeQuery &&
+      !String(sale.employeeName || "")
+        .toLowerCase()
+        .includes(employeeQuery)
+    )
+      return false;
+
+    if (!sale.items || sale.items.length === 0) return true;
+    const { showServices, showProducts, showSubscriptions } = historyFilters;
+    if (!showServices && !showProducts && !showSubscriptions) return false;
+    if (showServices && showProducts && showSubscriptions) return true;
+
+    const hasService = sale.items?.some((item) => item.itemType === "service" || item.item_type === "service");
+    const hasProduct = sale.items?.some((item) => item.itemType === "product" || item.item_type === "product");
+    const hasSubscription = sale.items?.some((item) => item.itemType === "subscription" || item.item_type === "subscription");
+    if (showServices && hasService) return true;
+    if (showProducts && hasProduct) return true;
+    if (showSubscriptions && hasSubscription) return true;
+    return false;
+  });
+
+  // ─── 11  RENDER / RETURN ──────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 flex flex-col h-full min-h-0 overflow-hidden">
+      {/* Sticky Header */}
+      <div className="bg-gray-50 dark:bg-gray-900 flex-shrink-0 sticky top-0 z-10">
+        <div className="flex items-center justify-between pb-1">
+          <div>
+            <h1 className="app-page-title">Sales</h1>
+            {selectedClient && (
+              <div className="flex gap-1.5 items-center mt-0.5">
+                <span className="bg-green-400 h-2 rounded-full w-2" />
+                <span className="dark:text-green-400 font-medium text-green-600 text-xs">{selectedClient.name}</span>
+              </div>
+            )}
+          </div>
+          <div className="ui-flex-center-gap-2">
+            <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
+              <Cog6ToothIcon style={{ width: 18, height: 18 }} />
+            </button>
+          </div>
+        </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300 flex items-center justify-between mb-2 px-1 py-0 rounded-xl text-red-700 text-sm">
+            <span>{error}</span>
+            <button onClick={clearError} className="hover:text-red-700 ml-2 text-red-500">
+              <XMarkIcon className="ui-icon-4" />
+            </button>
+          </div>
+        )}
+        {successNotice && (
+          <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300 flex items-center justify-between mb-2 px-1 py-0 rounded-xl text-emerald-700 text-sm">
+            <span>{successNotice}</span>
+            <button onClick={() => setSuccessNotice("")} className="hover:text-emerald-700 ml-2 text-emerald-500">
+              <XMarkIcon className="ui-icon-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Main Body - Items Grid */}
+      <div className="flex-1 min-h-0 overflow-y-auto pb-1">
+        {/* Services Section */}
+        {showServices && filteredServices.length > 0 && (
+          <div className="mb-6">
+            {showProducts && (
+              <div className="flex gap-2 items-center mb-3">
+                <div className="flex font-bold gap-1.5 items-center px-1 py-1 rounded-full text-xs tracking-wider uppercase" style={{ background: "linear-gradient(135deg, #4f46e510, #7c3aed10)", color: "#4f46e5", border: "1px solid #4f46e530" }}>
+                  <SparklesIcon className="h-3.5 w-3.5" />
+                  Services
+                </div>
+                <span className="text-gray-400 text-xs">{filteredServices.length} available</span>
+              </div>
+            )}
+            <div className="gap-2 grid grid-cols-2 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">
+              {filteredServices.map((service) => (
+                <ItemCard
+                  key={`service-${service.id}`}
+                  item={service}
+                  itemType="service"
+                  cardViewMode={cardViewMode}
+                  onSelect={handleSelectItem}
+                  inCart={isInCart(service.id, "service")}
+                  cartQuantity={getCartQuantity(service.id, "service")}
+                  onIncrement={incrementCartItem}
+                  onDecrement={decrementCartItem}
+                  onAddToCart={addToCartWithFeatureCheck}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Products Section */}
+        {showProducts && filteredProducts.length > 0 && (
+          <div className="mb-6">
+            {showServices && (
+              <div className="flex gap-2 items-center mb-3">
+                <div className="flex font-bold gap-1.5 items-center px-1 py-1 rounded-full text-xs tracking-wider uppercase" style={{ background: "linear-gradient(135deg, #0ea5e910, #06b6d410)", color: "#0ea5e9", border: "1px solid #0ea5e930" }}>
+                  <CubeIcon className="h-3.5 w-3.5" />
+                  Products
+                </div>
+                <span className="text-gray-400 text-xs">{filteredProducts.length} available</span>
+              </div>
+            )}
+            <div className="gap-2 grid grid-cols-2 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">
+              {filteredProducts.map((product) => {
+                const pType = (product.type || "product").toLowerCase();
+                return (
+                  <ItemCard
+                    key={`${pType}-${product.id}`}
+                    item={product}
+                    itemType={pType}
+                    cardViewMode={cardViewMode}
+                    onSelect={handleSelectItem}
+                    inCart={isInCart(product.id, pType)}
+                    cartQuantity={getCartQuantity(product.id, pType)}
+                    onIncrement={incrementCartItem}
+                    onDecrement={decrementCartItem}
+                    onAddToCart={addToCartWithFeatureCheck}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Subscriptions Section */}
+        {showSubscriptions && filteredSubscriptions.length > 0 && (
+          <div className="mb-6">
+            {(showServices || showProducts) && (
+              <div className="flex gap-2 items-center mb-3">
+                <div className="flex font-bold gap-1.5 items-center px-1 py-1 rounded-full text-xs tracking-wider uppercase" style={{ background: "linear-gradient(135deg, #16a34a10, #22c55e10)", color: "#15803d", border: "1px solid #16a34a30" }}>
+                  <UserIcon className="h-3.5 w-3.5" />
+                  Subs
+                </div>
+                <span className="text-gray-400 text-xs">{filteredSubscriptions.length} available</span>
+              </div>
+            )}
+            <div className="gap-2 grid grid-cols-2 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-3 xl:grid-cols-6">
+              {filteredSubscriptions.map((subscription) => (
+                <ItemCard
+                  key={`subscription-${subscription.id}`}
+                  item={subscription}
+                  itemType="subscription"
+                  cardViewMode={cardViewMode}
+                  onSelect={() => addSubscriptionToCart(subscription)}
+                  inCart={isInCart(subscription.id, "subscription")}
+                  cartQuantity={getCartQuantity(subscription.id, "subscription")}
+                  onIncrement={() => addSubscriptionToCart(subscription)}
+                  onDecrement={() => removeFromCart(`subscription-${subscription.id}`)}
+                  onAddToCart={() => addSubscriptionToCart(subscription)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {filteredServices.length === 0 && filteredProducts.length === 0 && filteredSubscriptions.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-1 text-center">
+            <div className="bg-gray-100 dark:bg-gray-800 flex h-16 items-center justify-center mb-4 rounded-full w-16">
+              <MagnifyingGlassIcon className="h-8 text-gray-400 w-8" />
+            </div>
+            <h3 className="dark:text-white font-medium mb-1 text-gray-900 text-lg">No items found</h3>
+            <p className="dark:text-gray-400 text-gray-500">Try adjusting your search or filter</p>
+          </div>
+        )}
+      </div>
+
+      {/* Fixed Footer - Search, Toggles, Cart */}
+      <footer className="app-footer-search app-footer-shell bg-white border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 shadow-sm" style={{ zIndex: 10 }}>
+        <div className="app-footer-padding app-standard-footer">
+          <div className="app-footer-stack">
+            {/* Client Selection Panel - shown when account icon is active */}
+            {showClientPanel && (
+              <div className="relative">
+                {selectedClient ? (
+                  <div className="bg-primary-50 border border-primary-200 dark:bg-primary-900/30 dark:border-primary-700 flex items-center justify-between px-1 py-0 rounded-xl">
+                    <div className="flex gap-1 items-center min-w-0">
+                      <UserCircleIcon className="flex-shrink-0 h-5 text-primary-600 w-5" />
+                      <div className="min-w-0">
+                        <p className="dark:text-white font-medium text-gray-900 text-sm truncate">{selectedClient.name}</p>
+                        {selectedClient.email && <p className="dark:text-gray-400 text-gray-500 text-xs truncate">{selectedClient.email}</p>}
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedClient(null)} className="dark:hover:bg-primary-800 flex-shrink-0 hover:bg-primary-100 ml-2 p-1 rounded-lg transition-colors" title="Remove client">
+                      <XMarkIcon className="h-4 text-gray-500 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-1">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        placeholder="Search clients..."
+                        value={clientPanelSearch}
+                        onChange={(e) => {
+                          setClientPanelSearch(e.target.value);
+                          setShowClientPanelDropdown(true);
+                        }}
+                        onFocus={() => {
+                          loadClients();
+                          setShowClientPanelDropdown(true);
+                        }}
+                        className="app-search-input bg-gray-50 border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:border-transparent focus:ring-2 focus:ring-primary-500 placeholder-gray-400 px-1 rounded-xl text-gray-900 w-full"
+                        autoFocus
+                      />
+                      {showClientPanelDropdown && clientPanelSearch && (
+                        <div className="absolute app-menu-panel bg-white border border-gray-200 bottom-full dark:bg-gray-800 dark:border-gray-700 left-0 max-h-40 mb-1 overflow-y-auto right-0 rounded-xl shadow-lg z-50">
+                          {clients
+                            .filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase()))
+                            .slice(0, 6)
+                            .map((c) => (
+                              <button
+                                key={c.id}
+                                onClick={() => {
+                                  handleSelectClient(c);
+                                  setClientPanelSearch("");
+                                  setShowClientPanelDropdown(false);
+                                  setShowClientPanel(false);
+                                }}
+                                className="app-menu-item dark:hover:bg-gray-700 dark:text-white hover:bg-gray-50 px-1 py-2.5 text-gray-900 text-left w-full"
+                              >
+                                <p className="font-medium">{c.name}</p>
+                                {c.email && <p className="dark:text-gray-400 text-gray-500">{c.email}</p>}
+                              </button>
+                            ))}
+                          {clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
+                            <button
+                              onClick={() =>
+                                openAddClientModal((newClient) => {
+                                  handleSelectClient(newClient);
+                                  setClientsLocal((prev) => [...prev, newClient]);
+                                  setClientPanelSearch("");
+                                  setShowClientPanelDropdown(false);
+                                  setShowClientPanel(false);
+                                })
+                              }
+                              className="app-menu-item dark:hover:bg-gray-700 dark:text-primary-400 flex gap-2 hover:bg-gray-50 items-center px-1 py-2.5 text-left text-primary-600 w-full"
+                            >
+                              <PlusIcon className="ui-icon-4" />
+                              New
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openAddClientModal((newClient) => {
+                          handleSelectClient(newClient);
+                          setClientsLocal((prev) => [...prev, newClient]);
+                          setClientPanelSearch("");
+                          setShowClientPanelDropdown(false);
+                          setShowClientPanel(false);
+                        })
+                      }
+                      className="bg-primary-600 flex flex-shrink-0 hover:bg-primary-700 items-center justify-center rounded-full text-white transition-colors"
+                      title="Add new client"
+                    >
+                      <PlusIcon className="ui-icon-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Controls Row 1 - Past + Filter (+ Invoice when relevant) */}
+            <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
+              {/* Sales History Button */}
+              <Button_Toolbar
+                icon={ArrowTrendingUpIcon}
+                label="Past"
+                title="Sales history"
+                onClick={() => {
+                  setShowHistoryModal(true);
+                  loadTransactionHistory();
+                }}
+                className="btn-outline-secondary"
+              />
+
+              {/* Unified Sales Filter Button */}
+              <div className="ui-pos-rel">
+                <Button_Toolbar
+                  icon={FunnelIcon}
+                  label="Filter"
+                  onClick={() => {
+                    setShowSalesFilterDropdown((prev) => !prev);
+                    loadClients();
+                  }}
+                  className={salesFilterActive ? "btn-primary" : "btn-outline-secondary"}
+                  data-active={salesFilterActive}
+                />
+
+                {showSalesFilterDropdown && (
+                  <div className="app-card app-menu-panel bottom-100 mb-2 p-0 position-absolute start-0 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
+                    <div className="align-items-center d-flex justify-content-between mb-2">
+                      <div className="app-menu-summary fw-semibold text-muted">Sales Filter</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowServices(true);
+                          setShowProducts(true);
+                          setShowSubscriptions(true);
+                          setSelectedClient(null);
+                          setFilterClientSearch("");
+                        }}
+                        className="app-menu-action btn btn-outline-secondary btn-sm"
+                      >
+                        Clear
+                      </button>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="app-menu-summary d-block mb-1 text-muted">Client</label>
+                      <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
+                      {filterClientSearch && (
+                        <div className="app-card app-menu-panel mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
+                          {filteredFilterClients.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => {
+                                handleSelectClient(c);
+                                setFilterClientSearch("");
+                              }}
+                              className="app-menu-item bg-transparent border-0 dark:hover:bg-gray-700 hover:bg-gray-50 px-0 py-1 text-start w-100"
+                            >
+                              <div className="fw-semibold">{c.name}</div>
+                              {c.email && <div className="text-muted">{c.email}</div>}
+                            </button>
+                          ))}
+                          {filteredFilterClients.length === 0 && <div className="app-menu-empty px-0 py-1 text-muted">No matching clients</div>}
+                        </div>
+                      )}
+                    </div>
+
+                    <Filter_CatalogCheckboxes
+                      className="mb-2"
+                      value={{ showServices, showProducts, showSubscriptions }}
+                      onChange={(key, checked) => {
+                        if (key === "showServices") setShowServices(checked);
+                        else if (key === "showProducts") setShowProducts(checked);
+                        else setShowSubscriptions(checked);
+                      }}
+                    />
+
+                    <div>
+                      <label className="app-menu-summary d-block mb-1 text-muted">Subscription start date</label>
+                      <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control ui-control-sm" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
+              {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => setShowInvoiceModal(true)} className="btn-outline-secondary" title="Generate invoice for current cart" />}
+            </div>
+
+            {/* Search Row — Cart button + search input */}
+            <div className="align-items-center app-footer-search-row d-flex gap-1 w-100">
+              <Button_Toolbar
+                icon={ShoppingCartIcon}
+                label="Cart"
+                onClick={() => setShowCartModal(true)}
+                className="btn btn-secondary flex-shrink-0"
+                style={{ position: "relative" }}
+                badge={cartItemCount > 0 ? <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{cartItemCount}</span> : null}
+              />
+              <input type="text" placeholder="Search products and services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="app-search-input form-control rounded-pill w-100" />
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Cart Modal */}
+      <Modal_Cart_Sales
+        isOpen={showCartModal}
+        onClose={() => setShowCartModal(false)}
+        cart={cart}
+        selectedClient={selectedClient}
+        setSelectedClient={setSelectedClient}
+        clientSearch={clientSearch}
+        setClientSearch={setClientSearch}
+        showClientDropdown={showClientDropdown}
+        setShowClientDropdown={setShowClientDropdown}
+        filteredClients={filteredClients}
+        cartItemCount={cartItemCount}
+        cartTotal={cartTotal}
+        taxRate={taxRatePercent}
+        discountAmount={cartDiscount}
+        loadClients={loadClients}
+        openAddClientModal={openAddClientModal}
+        handleSelectClient={handleSelectClient}
+        setClientsLocal={setClientsLocal}
+        updateCartQuantity={updateCartQuantity}
+        removeFromCart={removeFromCart}
+        setCart={setCart}
+        handleCheckout={handleCheckout}
+      />
+
+      <style>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
+
+      {/* Item Detail Modal - Sales Mode */}
+      <Modal_Detail_Item isOpen={showProductModal} onClose={() => setShowProductModal(false)} item={selectedItem} itemType={selectedItemType} mode="sales" onAddToCart={addToCartWithFeatureCheck} cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0} />
+
+      {/* Checkout Modal */}
+      <Modal_Checkout_Sales
+        isOpen={showCheckout}
+        onClose={() => closeCheckoutModal()}
+        cart={cart}
+        discountAmount={cartDiscount}
+        selectedClient={selectedClient}
+        checkoutContext={checkoutContext}
+        onProcessPayment={processPayment}
+        getDiscountForItems={calculateDiscountForItems}
+        taxRate={appSettings?.tax_rate ?? 0}
+        currentUser={user}
+        appSettings={appSettings}
+        receiptSettings={receiptSettings}
+      />
+
+      {/* Feature Selection Modal — opens when a product with features is added to cart */}
+      <Modal_Feature_Select_Sales
+        isOpen={showFeatureModal}
+        onClose={() => {
+          setShowFeatureModal(false);
+          setFeatureModalItem(null);
+        }}
+        item={featureModalItem}
+        onConfirm={(item, selectedOptions, qty, resolvedPrice) => {
+          addToCart(item, "product", qty, resolvedPrice, selectedOptions);
+          setShowFeatureModal(false);
+          setFeatureModalItem(null);
+        }}
+      />
+
+      {/* Sales History */}
+      <Modal_History_Sales isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} filteredHistory={filteredHistory} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onPortalOrderUpdated={loadTransactionHistory} />
+
+      {/* Pre-checkout Invoice Generator */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 z-50">
+          <Modal_TemplateUse
+            page="sales"
+            entity={{
+              id: `DRAFT-${Date.now()}`,
+              created_at: new Date().toISOString(),
+              subtotal: cartTotal,
+              tax_amount: invoiceTaxAmount,
+              total: invoiceTotal,
+              payment_method: "pending",
+            }}
+            client={selectedClient}
+            items={cart.map((i) => ({
+              item_name: i.name,
+              item_type: i.itemType,
+              quantity: i.quantity,
+              unit_price: i.price,
+              line_total: i.price * i.quantity,
+            }))}
+            currentUser={user}
+            settings={appSettings}
+            filterType="invoice"
+            onClose={() => setShowInvoiceModal(false)}
+          />
+        </div>
+      )}
+
+      {/* Mix Selection Modal */}
+      {mixModalItem && (
+        <MixSelectionModal
+          mix={mixModalItem}
+          onClose={() => setMixModalItem(null)}
+          onConfirm={(item, itemType, quantity, price, mixSelections) => {
+            addToCart({ ...item, mixSelections }, itemType, quantity, price);
+            setMixModalItem(null);
+          }}
+        />
+      )}
+
+      <Modal_Sales_Settings
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        onOpen={() => {
+          templatesAPI
+            .getAll("receipt")
+            .then((res) => {
+              const all = Array.isArray(res?.data) ? res.data : [];
+              setRcptTemplates(
+                sortItemsAlphabetically(
+                  all.filter((t) => t.template_type === "receipt" || t.type === "receipt"),
+                  ["name", "template_type"]
+                )
+              );
+            })
+            .catch(() => {});
+        }}
+        cardViewMode={cardViewMode}
+        setCardViewMode={setCardViewMode}
+        receiptSettings={receiptSettings}
+        setReceiptSettings={setReceiptSettings}
+        rcptTemplates={rcptTemplates}
+      />
+    </div>
+  );
+}

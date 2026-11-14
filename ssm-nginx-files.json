@@ -1,0 +1,11 @@
+{
+  "commands": [
+    "set -e",
+    "echo --- CONF FILES ---",
+    "ls -l /etc/nginx/conf.d/",
+    "echo --- RETURN 444 OCCURRENCES ---",
+    "grep -R --line-number 'return 444' /etc/nginx/conf.d || true",
+    "echo --- SERVER_NAME UNDERSCORE ---",
+    "grep -R --line-number 'server_name _' /etc/nginx/conf.d || true"
+  ]
+}

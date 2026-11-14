@@ -1,160 +1,368 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
-import Login from './pages/Login';
-import Clients from './pages/Clients';
-import Inventory from './pages/Inventory';
-import Services from './pages/Services';
-import Suppliers from './pages/Suppliers';
-import Employees from './pages/Employees';
-import Schedule from './pages/Schedule';
-import Attendance from './pages/Attendance';
-import Documents from './pages/Documents';
-import DocumentEditor from './pages/DocumentEditor';
-import Profile from './pages/Profile';
-import useStore from './store/useStore';
-import useDarkMode from './store/useDarkMode';
+﻿import React, { useEffect, Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import Layout from "./pages/components/Layout";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import useStore from "./services/useStore";
+import api, { preloadStoreData } from "./services/api";
+import useDarkMode from "./services/useDarkMode";
+import useViewMode from "./services/useViewMode";
+import useTableSettings from "./services/useTableSettings";
+import { applyButtonDimensions } from "./constants/buttonTextSize";
+import useBranding from "./services/useBranding";
+import { initializeActiveColorTheme } from "./services/activeColorTheme";
+import Modal_Client from "./pages/components/modals/Modal_Client";
+import Modal_Service from "./pages/components/modals/Modal_Service";
+import Modal_Item from "./pages/components/modals/Modal_Item";
+import Manager_MobileAddressBar from "./pages/components/layout/Manager_MobileAddressBar";
+import Prompt_InstallApp from "./pages/components/layout/Prompt_InstallApp";
+import PageErrorBoundary from "./pages/components/layout/ErrorBoundary";
+import Dropup_SearchOverlay from "./pages/components/dropdowns/Dropup_SearchOverlay";
 
+// Lazy load pages - only load when navigating to them
+const Clients = lazy(() => import("./pages/Clients"));
+const Inventory = lazy(() => import("./pages/Inventory"));
+const Services = lazy(() => import("./pages/Services"));
+const Sales = lazy(() => import("./pages/Sales"));
+const Employees = lazy(() => import("./pages/Employees"));
+const Schedule = lazy(() => import("./pages/Schedule"));
+const Documents = lazy(() => import("./pages/Documents"));
+const Editor_Document = lazy(() => import("./pages/Editor_Document"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Reports = lazy(() => import("./pages/Reports"));
+const ComponentShowcase = lazy(() => import("./pages/ComponentShowcase"));
 
+// Loading fallback component
+const PageLoader = () => (
+  <div className="app-page-loader d-flex justify-content-center align-items-center">
+    <img className="app-page-loader__logo" src="/app-icon-192.png" alt="Loading" />
+  </div>
+);
+
+// Component to clear errors on navigation
+const ClearErrorOnNavigate = () => {
+  const location = useLocation();
+  const { clearError } = useStore();
+
+  useEffect(() => {
+    clearError();
+  }, [location.pathname, clearError]);
+
+  return null;
+};
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredPermission = null }) => {
-  const { isAuthenticated, hasPermission, user } = useStore();
-  
+  const { isAuthenticated, hasPermission, authReady } = useStore();
+
+  // Wait for initializeUserData to finish before making routing decisions.
+  // On iOS, the JS engine can render this component before the useEffect in App
+  // has restored the auth state from storage, causing false permission failures.
+  if (!authReady) {
+    return <PageLoader />;
+  }
+
   // Check if user is authenticated
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
-  
+
   // Check if user has required permission
   if (requiredPermission) {
-    const [page, permission] = requiredPermission.split(':');
+    const [page, permission] = requiredPermission.split(":");
     if (!hasPermission(page, permission)) {
       return <Navigate to="/profile" replace />;
     }
   }
-  
+
   return children;
 };
 
 function App() {
-  const { setUser, setToken, setPermissions, loadPersistedFilters } = useStore();
-  const { initializeDarkMode } = useDarkMode();
+  const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
+  const { initializeDarkMode, setDarkMode } = useDarkMode();
+  const { isTrainingMode, buttonTextSize, setTrainingMode, setButtonTextSize, setFooterAlign, setUiScale } = useViewMode();
+  useBranding();
+
+  const startupPage = user?.startup_page || "schedule";
 
   // Initialize user data from localStorage/sessionStorage on app startup
   useEffect(() => {
-    const initializeUserData = () => {
+    const initializeUserData = async () => {
       try {
         // Try to get token and user data from storage
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
-        const permissionsData = localStorage.getItem('permissions') || sessionStorage.getItem('permissions');
-        
-        if (token && userData) {
-          const user = JSON.parse(userData);
-          const permissions = permissionsData ? JSON.parse(permissionsData) : [];
-          
-          // Set the data in the store
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+        const permissionsData = localStorage.getItem("permissions") || sessionStorage.getItem("permissions");
+
+        if (token) {
+          let restoredUser = null;
+          let permissions = [];
+          if (userData) {
+            try {
+              restoredUser = JSON.parse(userData);
+            } catch {
+              restoredUser = null;
+            }
+          }
+
+          if (permissionsData) {
+            try {
+              permissions = JSON.parse(permissionsData);
+            } catch {
+              permissions = [];
+            }
+          }
+
           setToken(token);
-          setUser(user);
-          setPermissions(permissions);
+
+          // Always refresh the authenticated user from the API so server-backed
+          // profile preferences win over stale local cache entries.
+          try {
+            const [meResponse, permissionsResponse] = await Promise.all([api.get("/auth/me"), api.get("/auth/me/permissions").catch(() => null)]);
+            const apiUser = meResponse?.data ?? null;
+            const fetchedPermissions = permissionsResponse?.data?.permissions;
+            if (Array.isArray(fetchedPermissions)) {
+              permissions = fetchedPermissions;
+            }
+
+            if (apiUser) {
+              restoredUser = restoredUser ? { ...restoredUser, ...apiUser } : apiUser;
+            }
+
+            if (restoredUser) {
+              if (localStorage.getItem("token")) {
+                localStorage.setItem("user", JSON.stringify(restoredUser));
+                localStorage.setItem("permissions", JSON.stringify(permissions));
+              }
+              if (sessionStorage.getItem("token")) {
+                sessionStorage.setItem("user", JSON.stringify(restoredUser));
+                sessionStorage.setItem("permissions", JSON.stringify(permissions));
+              }
+            }
+          } catch (error) {
+            console.error("Error restoring session from API:", error);
+          }
+
+          if (restoredUser) {
+            setUser(restoredUser);
+            setPermissions(permissions);
+          }
+
+          // If permissions are missing (e.g. sessionStorage was cleared by iOS after the app
+          // was backgrounded/killed), silently re-fetch them from the server so all
+          // permission-gated pages work correctly without forcing a new login.
+          if (restoredUser && permissions.length === 0 && restoredUser.role !== "admin") {
+            refetchPermissions();
+          }
+
+          // Preload major tables into store so pages feel instant on first visit
+          preloadStoreData({ setClients, setServices, setEmployees, setInventory, setAppointments });
         }
-        
+
         // Load persisted filters
         loadPersistedFilters();
       } catch (error) {
-        console.error('Error initializing user data:', error);
+        console.error("Error initializing user data:", error);
+      } finally {
+        // Signal that auth initialization is complete so ProtectedRoute can make
+        // routing decisions — prevents premature redirects on iOS cold-start.
+        setAuthReady();
       }
     };
-    
+
     initializeUserData();
-  }, [setUser, setToken, setPermissions, loadPersistedFilters]);
+  }, [setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments]);
 
   // Initialize dark mode on app startup
   useEffect(() => {
     initializeDarkMode();
   }, [initializeDarkMode]);
 
+  // Sync training mode and dark mode from database when user loads
+  useEffect(() => {
+    if (!user) return;
+    setTrainingMode(user.training_mode_explicit ? user.training_mode !== false : true);
+  }, [user, setTrainingMode]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.button_text_size) setButtonTextSize(user.button_text_size);
+    if (user.footer_align) setFooterAlign(user.footer_align);
+    if (Number.isFinite(Number(user.ui_scale))) setUiScale(user.ui_scale);
+    useTableSettings.getState().loadFromUser(user);
+  }, [user, setButtonTextSize, setFooterAlign, setUiScale]);
+
+  useEffect(() => {
+    if (user?.dark_mode !== undefined) {
+      setDarkMode(user.dark_mode);
+    }
+  }, [user?.dark_mode, setDarkMode]);
+
+  useEffect(() => {
+    initializeActiveColorTheme(user?.color);
+  }, [user?.color]);
+
+  useEffect(() => {
+    applyButtonDimensions(buttonTextSize, isTrainingMode);
+  }, [buttonTextSize, isTrainingMode]);
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Layout>
-              <Navigate to="/profile" replace />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/clients" element={
-          <ProtectedRoute requiredPermission="clients:read">
-            <Layout>
-              <Clients />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/services" element={
-          <ProtectedRoute requiredPermission="services:read">
-            <Layout>
-              <Services />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/suppliers" element={
-          <ProtectedRoute requiredPermission="suppliers:read">
-            <Layout>
-              <Suppliers />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/employees" element={
-          <ProtectedRoute requiredPermission="employees:read">
-            <Layout>
-              <Employees />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/schedule" element={
-          <ProtectedRoute requiredPermission="schedule:read">
-            <Layout>
-              <Schedule />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/inventory" element={
-          <ProtectedRoute requiredPermission="inventory:read">
-            <Layout>
-              <Inventory />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/attendance" element={
-          <ProtectedRoute requiredPermission="attendance:read">
-            <Layout>
-              <Attendance />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/documents" element={
-          <ProtectedRoute requiredPermission="documents:read">
-            <Layout>
-              <Documents />
-            </Layout>
-          </ProtectedRoute>
-        } />
-        <Route path="/documents/:documentId/edit" element={
-          <ProtectedRoute requiredPermission="documents:write">
-            <DocumentEditor />
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Layout>
-              <Profile />
-            </Layout>
-          </ProtectedRoute>
-        } />
-      </Routes>
+      <ClearErrorOnNavigate />
+      <Manager_MobileAddressBar />
+      <Prompt_InstallApp />
+      <Dropup_SearchOverlay />
+      <Modal_Service />
+      <Modal_Item />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PageErrorBoundary>
+                    <Navigate to={`/${startupPage}`} replace />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoute requiredPermission="clients:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Clients />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales"
+            element={
+              <ProtectedRoute requiredPermission="sales:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Sales />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/services"
+            element={
+              <ProtectedRoute requiredPermission="services:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Services />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employees"
+            element={
+              <ProtectedRoute requiredPermission="employees:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Employees />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <ProtectedRoute requiredPermission="schedule:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Schedule />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute requiredPermission="inventory:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Inventory />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute requiredPermission="documents:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Documents />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents/:documentId/edit"
+            element={
+              <ProtectedRoute requiredPermission="documents:write">
+                <Suspense fallback={<PageLoader />}>
+                  <PageErrorBoundary>
+                    <Editor_Document />
+                  </PageErrorBoundary>
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute requiredPermission="reports:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Reports />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PageErrorBoundary>
+                    <Profile />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/components"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ComponentShowcase />
+              </Suspense>
+            }
+          />
+          {/* Catch-all route for any unmatched paths */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+      <Modal_Client />
     </Router>
   );
 }

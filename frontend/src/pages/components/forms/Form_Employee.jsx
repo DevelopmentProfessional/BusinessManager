@@ -1,0 +1,1855 @@
+/*
+ * ============================================================
+ * FILE: Form_Employee.jsx
+ *
+ * PURPOSE:
+ *   Multi-tab create/edit form for an employee record. Covers personal
+ *   details and credentials, compensation and leave benefits, an
+ *   e-signature capture/upload panel, page-level permissions management,
+ *   and a read-only performance summary (schedules, attendance, reviews).
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants          — PAGES and PERMISSION_TYPES lookup arrays
+ *   [2] State              — tab, roles, insurance plans, employees list,
+ *                            permissions, signature, and form field state
+ *   [3] Effects            — load roles, insurance plans, employees list,
+ *                            populate form on edit, fetch permissions and
+ *                            signature when switching tabs
+ *   [4] Derived Data       — managerOptions (filtered supervisor list),
+ *                            directReports
+ *   [5] Handlers: Core     — handleInputChange, handleSubmit
+ *   [6] Handlers: Signature — handleSignatureUpload, handleSaveSignature
+ *   [7] Handlers: Permissions — fetchUserPermissions, handleCreatePermission,
+ *                               handleTogglePermission, handleDeletePermission
+ *   [8] Render: Header     — title and close button
+ *   [9] Render: Tab Panes  — Details, Benefits, Signature, Permissions,
+ *                            Performance
+ *  [10] Render: Footer     — tab navigation, context-sensitive controls,
+ *                            Cancel / Save action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Claude  | Converted role select to custom dropdown with per-option help popovers
+ *   2026-07-24 | GitHub Copilot | Removed custom dropdown caret icons and added word-safe trigger label truncation
+ *   2026-07-26 | GitHub Copilot | Added initiate_refunds to direct user permission type options
+ *   2026-08-04 | GitHub Copilot | Made salary input frequency-aware and convert to annualized value on submit
+ *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to direct user assignment options
+ *   2026-09-11 | GitHub Copilot | Removed unused props/locals and fixed missing effect dependencies
+ *   2026-09-11 | GitHub Copilot | Added base pay and service compensation settings
+ * ============================================================
+ */
+
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
+import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../../services/api";
+import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
+import api from "../../../services/api";
+import { showConfirm } from "../../../services/showConfirm";
+import Widget_Signature from "../widgets/Widget_Signature";
+import Modal_Pay_Employee from "../modals/Modal_EmployeePay";
+import Modal from "../modals/Modal";
+import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import FormControl from "../fields/FormControl";
+import Table from "../tables/Table";
+import useStore from "../../../services/useStore";
+import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
+import { sortItemsAlphabetically } from "../../../utils/displaySort";
+
+// ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
+const PAGE_OPTION_GROUPS = [
+  {
+    label: "Employee Settings",
+    options: [
+      { value: "requests", label: "Requests" },
+      { value: "insurance", label: "Insurance" },
+      { value: "wages", label: "Wages" },
+      { value: "benefits", label: "Benefits" },
+      { value: "payroll", label: "Payroll" },
+    ],
+  },
+  {
+    label: "Core Pages",
+    options: [
+      { value: "clients", label: "Clients" },
+      { value: "inventory", label: "Inventory" },
+      { value: "sales", label: "Sales" },
+      { value: "services", label: "Services" },
+      { value: "employees", label: "Employees" },
+      { value: "schedule", label: "Schedule" },
+      { value: "documents", label: "Documents" },
+      { value: "templates", label: "Templates" },
+      { value: "tasks", label: "Tasks" },
+      { value: "reports", label: "Reports" },
+      { value: "leave", label: "Leave" },
+      { value: "admin", label: "Admin" },
+    ],
+  },
+];
+const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "approve_payments", "initiate_refunds", "admin"];
+
+const PERMISSION_DESCRIPTIONS = {
+  read: "View records and details on this page.",
+  read_all: "View all records across the entire company.",
+  view_all: "View all schedule appointments across all employees.",
+  write: "Create and edit records on this page.",
+  write_all: "Create and edit schedule appointments for any employee.",
+  write_self_only: "Create and edit schedule appointments only for yourself.",
+  delete: "Delete records from this page.",
+  approve_payments: "Approve wage and compensation payout records.",
+  initiate_refunds: "Initiate client payment refunds and reversals.",
+  admin: "Full administrative control and configuration for this page.",
+};
+
+const PAY_SCHEDULE_DAYS = [
+  { key: "mon", label: "Mon", full: "Monday" },
+  { key: "tue", label: "Tue", full: "Tuesday" },
+  { key: "wed", label: "Wed", full: "Wednesday" },
+  { key: "thu", label: "Thu", full: "Thursday" },
+  { key: "fri", label: "Fri", full: "Friday" },
+  { key: "sat", label: "Sat", full: "Saturday" },
+  { key: "sun", label: "Sun", full: "Sunday" },
+];
+
+const PAY_SCHEDULE_WEEK_OPTS = [
+  { value: 1, label: "1st" },
+  { value: 2, label: "2nd" },
+  { value: 3, label: "3rd" },
+  { value: 4, label: "4th" },
+  { value: -1, label: "Last" },
+];
+
+function parsePayScheduleWorkDays(str) {
+  if (!str) return ["mon", "tue", "wed", "thu", "fri"];
+  return str
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function serializePayScheduleWorkDays(arr) {
+  return arr.join(",");
+}
+
+const SALARY_PERIODS_PER_YEAR = {
+  daily: 260,
+  weekly: 52,
+  biweekly: 26,
+  monthly: 12,
+  annually: 1,
+  one_time: 1,
+};
+
+function normalizeFrequency(value) {
+  return String(value || "").toLowerCase();
+}
+
+function annualSalaryToFrequencyAmount(annualSalary, payFrequency) {
+  const annual = Number(annualSalary);
+  if (!Number.isFinite(annual)) return null;
+  const periods = SALARY_PERIODS_PER_YEAR[normalizeFrequency(payFrequency)] || 1;
+  return annual / periods;
+}
+
+function frequencyAmountToAnnualSalary(amount, payFrequency) {
+  const parsed = Number(amount);
+  if (!Number.isFinite(parsed)) return null;
+  const periods = SALARY_PERIODS_PER_YEAR[normalizeFrequency(payFrequency)] || 1;
+  return parsed * periods;
+}
+
+function formatCompInputAmount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "";
+  const rounded = Math.round(num * 100) / 100;
+  return String(rounded);
+}
+
+function getSalaryFieldMeta(payFrequency) {
+  const freq = normalizeFrequency(payFrequency);
+  if (freq === "weekly") return { label: "Weekly Pay Amount", placeholder: "e.g. 1000.00" };
+  if (freq === "biweekly") return { label: "Bi-weekly Pay Amount", placeholder: "e.g. 2000.00" };
+  if (freq === "monthly") return { label: "Monthly Pay Amount", placeholder: "e.g. 4333.33" };
+  if (freq === "daily") return { label: "Daily Pay Amount", placeholder: "e.g. 200.00" };
+  if (freq === "annually") return { label: "Annual Salary", placeholder: "e.g. 52000.00" };
+  if (freq === "one_time") return { label: "One-time Contract Amount", placeholder: "e.g. 5000.00" };
+  return { label: "Salary Amount", placeholder: "0.00" };
+}
+
+// ─── 2 STATE ───────────────────────────────────────────────────────────────────
+export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
+  const [activeTab, setActiveTab] = useState("details");
+  const [roles, setRoles] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [employeeStatuses, setEmployeeStatuses] = useState([]);
+  const [employeesList, setEmployeesList] = useState(employeesProp);
+  const [insurancePlans, setInsurancePlans] = useState([]);
+  const [showCompensationHelp, setShowCompensationHelp] = useState(false);
+
+  const roleOptions = [
+    { value: "EMPLOYEE", label: "Employee", description: "Standard employee with basic access. Can view their own profile and schedule." },
+    { value: "MANAGER", label: "Manager", description: "Supervisory role with team management access. Can view and manage direct reports." },
+    { value: "ADMIN", label: "Admin", description: "Full administrative access. Can manage all users, settings, and system configuration." },
+    { value: "VIEWER", label: "Viewer", description: "Read-only access. Can view data but cannot make changes or create records." },
+  ];
+
+  const employmentTypeOptions = [
+    { value: "salary", label: "Salary", description: "Fixed compensation based on selected pay frequency. Employee receives consistent pay regardless of hours worked." },
+    { value: "hourly", label: "Hourly", description: "Paid by the hour worked. Compensation varies based on actual hours logged." },
+  ];
+
+  const payFrequencyOptions = [
+    { value: "daily", label: "Daily", description: "Paid every working day. Common for temporary or gig workers." },
+    { value: "weekly", label: "Weekly", description: "Paid once per week, typically on a specific weekday." },
+    { value: "biweekly", label: "Bi-weekly", description: "Paid every two weeks. Results in 26 pay periods per year." },
+    { value: "monthly", label: "Monthly", description: "Paid once per month, typically on a specific date. 12 pay periods per year." },
+    { value: "annually", label: "Annually", description: "Paid once per year. Often used for bonuses or contractor final payments." },
+    { value: "one_time", label: "One-time (Contract)", description: "Single payment for completed project or contract work. No recurring schedule." },
+  ];
+
+  // Permissions state
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [newPermission, setNewPermission] = useState({ page: "", permission: "" });
+  const [permError, setPermError] = useState("");
+  const [permSuccess, setPermSuccess] = useState("");
+
+  // Signature state
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [savedSignature, setSavedSignature] = useState(null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  const [signatureMessage, setSignatureMessage] = useState("");
+  const signatureFileRef = useRef(null);
+
+  // Department state
+  const [departments, setDepartments] = useState([]);
+  const [showNewDept, setShowNewDept] = useState(false);
+  const [newDeptName, setNewDeptName] = useState("");
+  const [newDeptDesc, setNewDeptDesc] = useState("");
+  const [deptCreating, setDeptCreating] = useState(false);
+
+  // Payments state
+  const [paySlips, setPaySlips] = useState([]);
+  const [paySlipsLoading, setPaySlipsLoading] = useState(false);
+  const [selectedSlip, setSelectedSlip] = useState(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+
+  const [employeePaySchedule, setEmployeePaySchedule] = useState(null);
+  const [employeePayScheduleLoading, setEmployeePayScheduleLoading] = useState(false);
+  const [employeePayScheduleSaving, setEmployeePayScheduleSaving] = useState(false);
+  const [employeePayScheduleError, setEmployeePayScheduleError] = useState("");
+  const [employeePayScheduleSuccess, setEmployeePayScheduleSuccess] = useState("");
+
+  const { hasPermission } = useStore();
+
+  const [formData, setFormData] = useState({
+    // Details
+    username: "",
+    password: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    role: "EMPLOYEE",
+    hire_date: new Date().toISOString().split("T")[0],
+    is_active: true,
+    reports_to: "",
+    supervisor: "",
+    role_id: "",
+    status_id: "",
+    iod_number: "",
+    location: "",
+    department_id: "",
+    // Benefits
+    employment_type: "",
+    salary: "",
+    hourly_rate: "",
+    pay_frequency: "",
+    insurance_plan: "",
+    vacation_days: "",
+    vacation_days_used: "",
+    sick_days: "",
+    sick_days_used: "",
+  });
+
+  const salaryFieldMeta = getSalaryFieldMeta(formData.pay_frequency);
+
+  // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
+  // Load available roles
+  useEffect(() => {
+    const loadRoles = async () => {
+      setRolesLoading(true);
+      try {
+        const response = await rolesAPI.getAll();
+        const rolesData = response?.data ?? response;
+        if (Array.isArray(rolesData)) setRoles(sortItemsAlphabetically(rolesData, ["name", "id"]));
+      } catch (err) {
+        console.error("Failed to load roles:", err);
+      } finally {
+        setRolesLoading(false);
+      }
+    };
+    loadRoles();
+  }, []);
+
+  // Load employee statuses
+  useEffect(() => {
+    employeeStatusesAPI
+      .list()
+      .then((res) => {
+        const data = res?.data ?? res;
+        if (Array.isArray(data)) setEmployeeStatuses(sortItemsAlphabetically(data, ["name"]));
+      })
+      .catch((err) => console.warn("Failed to load employee statuses:", err));
+  }, []);
+
+  // Load departments
+  useEffect(() => {
+    departmentsAPI
+      .getAll()
+      .then((res) => {
+        const d = res?.data ?? res;
+        if (Array.isArray(d)) setDepartments(sortItemsAlphabetically(d, ["name", "id"]));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load insurance plans
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const response = await insurancePlansAPI.getAll();
+        const data = response?.data ?? response;
+        if (Array.isArray(data))
+          setInsurancePlans(
+            sortItemsAlphabetically(
+              data.filter((p) => p.is_active),
+              ["name", "id"]
+            )
+          );
+      } catch (err) {
+        console.error("Failed to load insurance plans:", err);
+      }
+    };
+    loadPlans();
+  }, []);
+
+  // Load employees list
+  useEffect(() => {
+    if (employeesProp.length > 0) {
+      setEmployeesList(sortItemsAlphabetically(employeesProp, ["first_name", "last_name", "username", "email"]));
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await isudAPI.employees.getAll();
+        const data = response?.data ?? response;
+        if (!cancelled && Array.isArray(data)) setEmployeesList(sortItemsAlphabetically(data, ["first_name", "last_name", "username", "email"]));
+      } catch (err) {
+        if (!cancelled) console.error("Form_Employee failed to load employees", err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [employeesProp]);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (employee) {
+      setFormData({
+        username: employee.username || "",
+        password: "",
+        first_name: employee.first_name || "",
+        last_name: employee.last_name || "",
+        email: employee.email || "",
+        phone: employee.phone || "",
+        role: employee.role || "EMPLOYEE",
+        hire_date: employee.hire_date ? employee.hire_date.split("T")[0] : new Date().toISOString().split("T")[0],
+        is_active: employee.is_active !== undefined ? employee.is_active : true,
+        reports_to: employee.reports_to || "",
+        supervisor: employee.supervisor || "",
+        role_id: employee.role_id || "",
+        status_id: employee.status_id || "",
+        iod_number: employee.iod_number || "",
+        location: employee.location || "",
+        department_id: employee.department_id || "",
+        employment_type: employee.employment_type || "",
+        salary: employee.salary != null ? formatCompInputAmount(annualSalaryToFrequencyAmount(employee.salary, employee.pay_frequency || "")) : "",
+        hourly_rate: employee.hourly_rate ?? "",
+        pay_frequency: employee.pay_frequency || "",
+        insurance_plan: employee.insurance_plan || "",
+        vacation_days: employee.vacation_days ?? "",
+        vacation_days_used: employee.vacation_days_used ?? "",
+        sick_days: employee.sick_days ?? "",
+        sick_days_used: employee.sick_days_used ?? "",
+      });
+    }
+  }, [employee]);
+
+  // Fetch permissions when switching to permissions tab
+  useEffect(() => {
+    if (activeTab === "permissions" && employee?.id) {
+      fetchUserPermissions(employee.id);
+    }
+  }, [activeTab, employee?.id]);
+
+  // Load signature when switching to signature tab
+  useEffect(() => {
+    if (activeTab === "signature" && employee?.id) {
+      const loadSignature = async () => {
+        setSignatureLoading(true);
+        try {
+          setSavedSignature(employee.signature_data || null);
+        } finally {
+          setSignatureLoading(false);
+        }
+      };
+      loadSignature();
+    }
+  }, [activeTab, employee?.id, employee?.signature_data]);
+
+  // Load pay slips when switching to payments tab
+  useEffect(() => {
+    if (activeTab === "payments" && employee?.id) {
+      setPaySlipsLoading(true);
+      payrollAPI
+        .getByEmployee(employee.id)
+        .then((res) => {
+          const data = res?.data ?? res;
+          setPaySlips(Array.isArray(data) ? data : []);
+        })
+        .catch(() => setPaySlips([]))
+        .finally(() => setPaySlipsLoading(false));
+    }
+  }, [activeTab, employee?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!employee?.id) {
+      setEmployeePaySchedule(null);
+      setEmployeePayScheduleError("");
+      setEmployeePayScheduleSuccess("");
+      return;
+    }
+
+    setEmployeePayScheduleLoading(true);
+    setEmployeePayScheduleError("");
+    payrollAPI
+      .getEmployeeSchedule(employee.id)
+      .then((res) => {
+        if (cancelled) return;
+        const d = res?.data ?? res;
+        setEmployeePaySchedule(d && typeof d === "object" ? d : null);
+      })
+      .catch(() => {
+        if (!cancelled) setEmployeePaySchedule(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEmployeePayScheduleLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [employee?.id]);
+
+  // ─── 6 HANDLERS: SIGNATURE ───────────────────────────────────────────────────
+  const handleSignatureUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      handleSaveSignature(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleSaveSignature = async (dataUrl) => {
+    setSignatureLoading(true);
+    setSignatureMessage("");
+    try {
+      if (!employee?.id) {
+        throw new Error("Employee record is required to save a signature.");
+      }
+      await employeesAPI.updateUser(employee.id, { signature_data: dataUrl });
+      setSavedSignature(dataUrl);
+      setShowSignaturePad(false);
+      setSignatureMessage("Signature saved successfully");
+      setTimeout(() => setSignatureMessage(""), 3000);
+    } catch (err) {
+      setSignatureMessage("Failed to save signature: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setSignatureLoading(false);
+    }
+  };
+
+  const fetchUserPermissions = async (userId) => {
+    try {
+      const response = await api.get(`/auth/users/${userId}/permissions`);
+      setUserPermissions(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch permissions:", err);
+      setPermError("Failed to load permissions");
+    }
+  };
+
+  // ─── 4 DERIVED DATA ──────────────────────────────────────────────────────────
+  // Filter out current employee from potential supervisors.
+  // Also enforce one-supervisoree constraint: exclude employees who already have someone
+  // else reporting to them (they can't take on another supervisee).
+  const managerOptions = useMemo(() => {
+    // Build a set of employee IDs that already have at least one supervisee,
+    // but exclude any supervisor who is ALREADY assigned to the current employee.
+    const alreadySupervisingOther = new Set(employeesList.filter((e) => e.reports_to && e.id !== employee?.id && e.reports_to !== employee?.id).map((e) => e.reports_to));
+    return sortItemsAlphabetically(
+      employeesList.filter((e) => {
+        if (e.id === employee?.id) return false; // can't supervise yourself
+        if (alreadySupervisingOther.has(e.id)) return false; // already has a different supervisee
+        return true;
+      }),
+      ["first_name", "last_name", "username", "email"]
+    );
+  }, [employeesList, employee?.id]);
+
+  // Direct reports for this employee
+  const directReports = useMemo(() => {
+    if (!employee?.id) return [];
+    return sortItemsAlphabetically(
+      employeesList.filter((e) => e.reports_to === employee.id),
+      ["first_name", "last_name", "username", "email"]
+    );
+  }, [employeesList, employee?.id]);
+
+  // ─── 5 HANDLERS: CORE ────────────────────────────────────────────────────────
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (name === "reports_to") {
+      // Auto-sync supervisor text field with the selected person's name
+      const selected = employeesList.find((emp) => emp.id === value);
+      const supervisorName = selected ? `${selected.first_name} ${selected.last_name}` : "";
+      setFormData((prev) => ({
+        ...prev,
+        reports_to: value,
+        supervisor: supervisorName,
+      }));
+    } else if (name === "pay_frequency") {
+      setFormData((prev) => {
+        const next = {
+          ...prev,
+          pay_frequency: value,
+        };
+
+        if (prev.employment_type !== "hourly" && prev.salary !== "") {
+          const currentDisplayed = Number(prev.salary);
+          if (Number.isFinite(currentDisplayed)) {
+            const annualized = frequencyAmountToAnnualSalary(currentDisplayed, prev.pay_frequency);
+            const converted = annualized != null ? annualSalaryToFrequencyAmount(annualized, value) : null;
+            if (converted != null) next.salary = formatCompInputAmount(converted);
+          }
+        }
+
+        return next;
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
+  };
+
+  const handleCreateDepartment = async () => {
+    const name = newDeptName.trim();
+    if (!name || deptCreating) return;
+    setDeptCreating(true);
+    try {
+      const res = await departmentsAPI.create({ name, description: newDeptDesc.trim() || undefined });
+      const created = res?.data ?? res;
+      setDepartments((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setFormData((prev) => ({ ...prev, department_id: created.id }));
+      setNewDeptName("");
+      setNewDeptDesc("");
+      setShowNewDept(false);
+    } catch (err) {
+      console.error("Failed to create department", err);
+    } finally {
+      setDeptCreating(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.username.trim()) {
+      alert("Username is required");
+      return;
+    }
+    if (!employee && !formData.password.trim()) {
+      alert("Password is required for new employees");
+      return;
+    }
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      alert("First name and last name are required");
+      return;
+    }
+
+    const submitData = { ...formData };
+
+    // Don't send empty password for updates
+    if (employee && !submitData.password.trim()) delete submitData.password;
+    // Convert empty strings to null for optional fields
+    if (!submitData.email.trim()) submitData.email = null;
+    if (!submitData.reports_to) submitData.reports_to = null;
+    if (!submitData.role_id) submitData.role_id = null;
+    if (!submitData.status_id) submitData.status_id = null;
+    if (!submitData.iod_number.trim()) submitData.iod_number = null;
+    if (!submitData.location.trim()) submitData.location = null;
+    if (!submitData.department_id) submitData.department_id = null;
+    if (!submitData.employment_type) submitData.employment_type = null;
+    if (!submitData.pay_frequency) submitData.pay_frequency = null;
+    if (!submitData.insurance_plan) submitData.insurance_plan = null;
+    // Convert numeric fields
+    if (submitData.employment_type === "hourly") {
+      submitData.salary = null;
+    } else {
+      const salaryInput = submitData.salary !== "" ? parseFloat(submitData.salary) : null;
+      submitData.salary = salaryInput != null ? frequencyAmountToAnnualSalary(salaryInput, submitData.pay_frequency) : null;
+    }
+    submitData.hourly_rate = submitData.hourly_rate !== "" ? parseFloat(submitData.hourly_rate) : null;
+    submitData.vacation_days = submitData.vacation_days !== "" ? parseInt(submitData.vacation_days) : null;
+    submitData.vacation_days_used = submitData.vacation_days_used !== "" ? parseInt(submitData.vacation_days_used) : null;
+    submitData.sick_days = submitData.sick_days !== "" ? parseInt(submitData.sick_days) : null;
+    submitData.sick_days_used = submitData.sick_days_used !== "" ? parseInt(submitData.sick_days_used) : null;
+
+    const payFreq = String(submitData.pay_frequency || "").toLowerCase();
+    if (activeTab === "pay_settings" && employee?.id && employeePaySchedule) {
+      setEmployeePayScheduleSaving(true);
+      setEmployeePayScheduleError("");
+      setEmployeePayScheduleSuccess("");
+      try {
+        const payload = {
+          frequency: payFreq || employeePaySchedule.frequency || "monthly",
+          work_days: employeePaySchedule.work_days ?? "mon,tue,wed,thu,fri",
+          payday_weekday: employeePaySchedule.payday_weekday ?? "fri",
+          monthly_payday_type: employeePaySchedule.monthly_payday_type ?? "date",
+          monthly_payday_date: employeePaySchedule.monthly_payday_date ?? 28,
+          monthly_payday_week: employeePaySchedule.monthly_payday_week ?? null,
+          monthly_payday_weekday: employeePaySchedule.monthly_payday_weekday ?? null,
+          pay_timing: employeePaySchedule.pay_timing ?? "arrears",
+          cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
+          base_pay: Number(employeePaySchedule.base_pay || 0),
+          compensation_percentage: Number(employeePaySchedule.compensation_percentage || 0),
+          base_pay_included: true,
+        };
+        await payrollAPI.updateEmployeeSchedule(employee.id, payload);
+        setEmployeePayScheduleSuccess("Pay settings saved");
+        setTimeout(() => setEmployeePayScheduleSuccess(""), 3000);
+      } catch (err) {
+        setEmployeePayScheduleError(err?.response?.data?.detail || "Failed to save pay settings");
+      } finally {
+        setEmployeePayScheduleSaving(false);
+      }
+    }
+
+    await onSubmit(submitData);
+  };
+
+  // ─── 7 HANDLERS: PERMISSIONS ─────────────────────────────────────────────────
+  // Permission handlers
+  const handleCreatePermission = async (e) => {
+    e.preventDefault();
+    if (!employee?.id) return;
+    setPermError("");
+    setPermSuccess("");
+    try {
+      await api.post(`/auth/users/${employee.id}/permissions`, {
+        user_id: employee.id,
+        page: newPermission.page,
+        permission: newPermission.permission,
+        granted: true,
+      });
+      setPermSuccess("Permission added");
+      setNewPermission({ page: "", permission: "" });
+      fetchUserPermissions(employee.id);
+      setTimeout(() => setPermSuccess(""), 3000);
+    } catch (err) {
+      setPermError(err.response?.data?.detail || "Failed to create permission");
+    }
+  };
+
+  const handleTogglePermission = async (permissionId, granted) => {
+    if (!employee?.id) return;
+    setPermError("");
+    try {
+      await api.put(`/auth/users/${employee.id}/permissions/${permissionId}`, { granted });
+      fetchUserPermissions(employee.id);
+    } catch (err) {
+      setPermError(err.response?.data?.detail || "Failed to update permission");
+    }
+  };
+
+  const handleDeletePermission = async (permissionId) => {
+    if (!employee?.id) return;
+    if (!(await showConfirm("Delete this permission?"))) return;
+    setPermError("");
+    try {
+      await api.delete(`/auth/users/${employee.id}/permissions/${permissionId}`);
+      fetchUserPermissions(employee.id);
+    } catch (err) {
+      setPermError(err.response?.data?.detail || "Failed to delete permission");
+    }
+  };
+
+  // ─── 8 RENDER ─────────────────────────────────────────────────────────────────
+  const tabs = [
+    { key: "details", label: "Details" },
+    { key: "benefits", label: "Benefits" },
+    { key: "permissions", label: "Permissions", disabled: !employee },
+    { key: "performance", label: "Performance", disabled: !employee },
+    { key: "pay_settings", label: "Pay settings", disabled: !employee },
+    { key: "payments", label: "Payments", disabled: !employee },
+  ];
+
+  return (
+    <div className="ui-page-shell">
+      {/* Header */}
+      <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+        <h6 className="app-modal-title ui-heading-strong">{employee ? "Edit Employee" : "Add Employee"}</h6>
+      </div>
+
+      {/* ─── 9 RENDER: TAB PANES ────────────────────────────────────────────────── */}
+      {/* Scrollable Body */}
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
+        <form id="employee-form" onSubmit={handleSubmit}>
+          {/* ===== DETAILS TAB ===== */}
+          {activeTab === "details" && (
+            <div className="tab-pane">
+              <div className="row ui-row-g2">
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <FormControl type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Username" required />
+                    <label htmlFor="username">Username *</label>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <FormControl type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Password" required={!employee} />
+                    <label htmlFor="password">{employee ? "Password (blank = keep current)" : "Password *"}</label>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <FormControl type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="First Name" required />
+                    <label htmlFor="first_name">First Name *</label>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <FormControl type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Last Name" required />
+                    <label htmlFor="last_name">Last Name *</label>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <FormControl type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Email" />
+                    <label htmlFor="email">Email</label>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <FormControl type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Phone" />
+                    <label htmlFor="phone">Phone</label>
+                  </div>
+                </div>
+                {!selfEdit && (
+                  <>
+                    <div className="col-md-6">
+                      <Dropdown_Custom
+                        id="role"
+                        name="role"
+                        className="ui-control-sm"
+                        value={formData.role}
+                        onChange={handleInputChange}
+                        options={roleOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                        placeholder="Select role"
+                        floatingLabel="Role"
+                        closeOnSelect
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <FormControl type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Hire Date" />
+                        <label htmlFor="hire_date">Hire Date</label>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <Dropdown_Custom
+                        id="reports_to"
+                        name="reports_to"
+                        className="ui-control-sm"
+                        value={formData.reports_to}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Manager (Top Level)" }, ...managerOptions.map((mgr) => ({ value: mgr.id, label: `${mgr.first_name} ${mgr.last_name} (${mgr.role})` }))]}
+                        placeholder="Select supervisor"
+                        closeOnSelect
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <Dropdown_Custom
+                        id="role_id"
+                        name="role_id"
+                        className="ui-control-sm"
+                        value={formData.role_id}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Role Assigned" }, ...roles.map((role) => ({ value: role.id, label: `${role.name}${role.role_permissions?.length > 0 ? ` (${role.role_permissions.length} permissions)` : ""}` }))]}
+                        placeholder="Select role"
+                        disabled={rolesLoading}
+                        closeOnSelect
+                      />
+                      {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
+                        <div className="bg-body-secondary border mt-2 p-0 rounded" style={{ fontSize: "0.8rem" }}>
+                          <strong>Role Permissions:</strong>
+                          <div className="d-flex flex-wrap gap-1 mt-1">
+                            {roles
+                              .find((r) => r.id === formData.role_id)
+                              ?.role_permissions?.map((perm) => (
+                                <span key={perm.id} className="badge bg-secondary">
+                                  {perm.page}:{perm.permission}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-md-6"> 
+                      <Dropdown_Custom
+                        id="status_id"
+                        name="status_id"
+                        className="ui-control-sm"
+                        value={formData.status_id}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Status" }, ...employeeStatuses.map((st) => ({ value: st.id, label: st.name }))]}
+                        placeholder="Select status"
+                        closeOnSelect
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="text" id="iod_number" name="iod_number" value={formData.iod_number} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="IOD Number" />
+                        <label htmlFor="iod_number">IOD Number</label>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Location" />
+                        <label htmlFor="location">Location</label>
+                      </div>
+                    </div>
+
+                    {/* Department */}
+                    <div className="col-12">
+                      <div className="ui-flex-center-gap-2">
+                        <div className="flex-grow-1"> 
+                          <Dropdown_Custom
+                            id="department_id"
+                            name="department_id"
+                            className="ui-control-sm"
+                            value={formData.department_id}
+                            onChange={handleInputChange}
+                            options={[{ value: "", label: "— None —" }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+                            placeholder="Select department"
+                            closeOnSelect
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          title={showNewDept ? "Close" : "Create a new department"}
+                          onClick={() => {
+                            setShowNewDept((v) => !v);
+                            setNewDeptName("");
+                            setNewDeptDesc("");
+                          }}
+                          className="btn btn-outline-secondary btn-sm flex-shrink-0"
+                          style={{ height: "3.2rem", width: "2.6rem", fontSize: "1rem" }}
+                        >
+                          {showNewDept ? "×" : "+"}
+                        </button>
+                      </div>
+
+                      {showNewDept && (
+                        <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 mt-2 p-0 rounded">
+                          <p className="mb-2 ui-small-muted">Create a new department</p>
+                          <div className="d-flex flex-column gap-1">
+                            <input
+                              type="text"
+                              value={newDeptName}
+                              onChange={(e) => setNewDeptName(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
+                              placeholder="Department name (required)"
+                              className="form-control ui-control-sm"
+                              style={{ fontSize: "0.82rem" }}
+                              autoFocus
+                            />
+                            <input
+                              type="text"
+                              value={newDeptDesc}
+                              onChange={(e) => setNewDeptDesc(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
+                              placeholder="Description (optional)"
+                              className="form-control ui-control-sm"
+                              style={{ fontSize: "0.82rem" }}
+                            />
+                            <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="align-self-start btn btn-outline-primary btn-sm px-1" style={{ fontSize: "0.8rem" }}>
+                              {deptCreating ? "…" : "Add"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Direct Reports (read-only) */}
+                    {employee && directReports.length > 0 && (
+                      <div className="col-12">
+                        <label className="form-label">Direct Reports</label>
+                        <div className="d-flex flex-wrap gap-1">
+                          {directReports.map((dr) => (
+                            <span key={dr.id} className="badge bg-info text-white">
+                              {dr.first_name} {dr.last_name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="col-12">
+                      <button type="button" onClick={() => setFormData((prev) => ({ ...prev, is_active: !prev.is_active }))} className={`btn btn-sm rounded-pill px-1 pb-0 ${formData.is_active ? "btn-success" : "btn-outline-secondary"}`}>
+                        Active
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ===== BENEFITS TAB ===== */}
+          {activeTab === "benefits" && (
+            <div className="tab-pane">
+              <div className="g-3 row">
+                {/* Leave */}
+                <div className="col-12 mt-3">
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Leave</h6>
+                  <hr className="mb-2 mt-1" />
+                </div>
+                <div className="col-md-3">
+                  <div className="form-floating">
+                    <input type="number" id="vacation_days" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Total" min="0" />
+                    <label htmlFor="vacation_days">Vacation Days</label>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="form-floating">
+                    <input type="number" id="vacation_days_used" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Used" min="0" />
+                    <label htmlFor="vacation_days_used">Vacation Used</label>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="form-floating">
+                    <input type="number" id="sick_days" name="sick_days" value={formData.sick_days} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Total" min="0" />
+                    <label htmlFor="sick_days">Sick Days</label>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="form-floating">
+                    <input type="number" id="sick_days_used" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Used" min="0" />
+                    <label htmlFor="sick_days_used">Sick Used</label>
+                  </div>
+                </div>
+
+                {/* Leave summary bar */}
+                {(formData.vacation_days || formData.sick_days) && (
+                  <div className="col-12 mt-2">
+                    <div className="row ui-row-g2">
+                      {formData.vacation_days && (
+                        <div className="col-md-6">
+                          <small className="text-muted">
+                            Vacation: {formData.vacation_days_used || 0} / {formData.vacation_days} used
+                          </small>
+                          <div className="progress">
+                            <div
+                              className="bg-primary progress-bar"
+                              style={{
+                                width: `${Math.min(100, ((formData.vacation_days_used || 0) / formData.vacation_days) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {formData.sick_days && (
+                        <div className="col-md-6">
+                          <small className="text-muted">
+                            Sick: {formData.sick_days_used || 0} / {formData.sick_days} used
+                          </small>
+                          <div className="progress">
+                            <div
+                              className="bg-warning progress-bar"
+                              style={{
+                                width: `${Math.min(100, ((formData.sick_days_used || 0) / formData.sick_days) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Insurance */}
+                <div className="col-12 mt-3">
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Insurance</h6>
+                  <hr className="mb-2 mt-1" />
+                </div>
+                <div className="col-md-6">
+                  <div className="align-items-stretch d-flex gap-2">
+                    <div className="flex-grow-1"> 
+                      <Dropdown_Custom
+                        id="insurance_plan"
+                        name="insurance_plan"
+                        className="ui-control-sm"
+                        value={formData.insurance_plan}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "No Plan Selected" }, ...insurancePlans.map((plan) => ({ value: plan.name, label: plan.name }))]}
+                        placeholder="Select insurance plan"
+                        closeOnSelect
+                      />
+                    </div>
+                    <div className="align-items-center d-flex flex-shrink-0" style={{ paddingTop: "0.35rem" }}>
+                      <Button_InsuranceDocument planId={insurancePlans.find((p) => p.name === formData.insurance_plan)?.id} planName={formData.insurance_plan} insurancePlans={insurancePlans} title="View insurance plan document" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===== SIGNATURE TAB ===== */}
+          {activeTab === "signature" && (
+            <div className="tab-pane">
+              {employee ? (
+                <div className="g-3 row">
+                  {signatureMessage && (
+                    <div className="col-12">
+                      <div className={`alert py-0 small ${signatureMessage.includes("Failed") ? "alert-danger" : "alert-success"}`}>{signatureMessage}</div>
+                    </div>
+                  )}
+
+                  {signatureLoading ? (
+                    <div className="col-12 py-1 text-center">
+                      <div className="spinner-border spinner-border-sm text-primary" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
+                    </div>
+                  ) : showSignaturePad ? (
+                    <div className="col-12">
+                      <Widget_Signature onSave={handleSaveSignature} onCancel={() => setShowSignaturePad(false)} initialSignature={savedSignature} />
+                    </div>
+                  ) : savedSignature ? (
+                    <div className="col-12 text-center">
+                      <div className="bg-body border d-inline-block p-1 rounded">
+                        <img src={savedSignature} alt="Saved signature" style={{ maxWidth: "400px", maxHeight: "150px" }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="col-12 py-1 text-center">
+                      <p className="mb-0 text-muted">No signature saved yet.</p>
+                    </div>
+                  )}
+
+                  {/* Hidden file input */}
+                  <input type="file" ref={signatureFileRef} accept="image/*" style={{ display: "none" }} onChange={handleSignatureUpload} />
+                </div>
+              ) : (
+                <div className="p-1 text-center">
+                  <p className="text-muted">Create the employee first, then add a signature.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== PERMISSIONS TAB ===== */}
+          {activeTab === "permissions" && (
+            <div className="tab-pane">
+              {employee ? (
+                <>
+                  {/* Current Permissions Table */}
+                  {userPermissions.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="mb-0 table table-sm">
+                        <thead>
+                          <tr>
+                            <th style={{ width: "70px" }}>Actions</th>
+                            <th>Page</th>
+                            <th>Permission</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userPermissions.map((perm) => (
+                            <tr key={perm.id}>
+                              <td>
+                                <div className="d-flex align-items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeletePermission(perm.id)}
+                                    className="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0"
+                                    style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                                    title="Delete permission"
+                                  >
+                                    <XMarkIcon style={{ width: 14, height: 14 }} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTogglePermission(perm.id, !perm.granted)}
+                                    className={`btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`}
+                                    style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                                    title={perm.granted ? "Deny permission" : "Grant permission"}
+                                  >
+                                    <i className={`bi ${perm.granted ? "bi-x-circle" : "bi-check-circle"}`} style={{ fontSize: "1rem" }}></i>
+                                  </button>
+                                </div>
+                              </td>
+                              <td>{perm.page}</td>
+                              <td>{perm.permission}</td>
+                              <td>
+                                <span className={`badge ${perm.granted ? "bg-success" : "bg-danger"}`}>{perm.granted ? "Granted" : "Denied"}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="py-0 text-center text-muted">No permissions assigned yet.</p>
+                  )}
+
+                  {/* Role inherited permissions */}
+                  {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
+                    <div className="bg-light border mt-3 p-0 rounded" style={{ fontSize: "0.8rem" }}>
+                      <strong>Inherited from Role:</strong>
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        {roles
+                          .find((r) => r.id === formData.role_id)
+                          ?.role_permissions?.map((perm) => (
+                            <span key={perm.id} className="badge bg-secondary">
+                              {perm.page}:{perm.permission}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-1 text-center">
+                  <p className="text-muted">Create the employee first, then manage permissions.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== PERFORMANCE TAB ===== */}
+          {activeTab === "performance" && (
+            <div className="tab-pane">
+              {employee ? (
+                <div className="g-3 row">
+                  {/* Task Statistics */}
+                  <div className="col-12">
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Task Statistics</h6>
+                    <hr className="mb-2 mt-1" />
+                  </div>
+                  <div className="col-md-6">
+                    <div className="card">
+                      <div className="card-body py-1 text-center">
+                        <div className="ui-small-muted">Scheduled Appointments</div>
+                        <div className="fs-4 fw-bold">{employee.schedules?.length ?? "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="card">
+                      <div className="card-body py-1 text-center">
+                        <div className="ui-small-muted">Attendance Records</div>
+                        <div className="fs-4 fw-bold">{employee.attendance_records?.length ?? "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Review History placeholder */}
+                  <div className="col-12 mt-2">
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Review History</h6>
+                    <hr className="mb-2 mt-1" />
+                    <p className="mb-0 py-0 text-center text-muted">No reviews recorded yet.</p>
+                  </div>
+
+                  {/* Goals placeholder */}
+                  <div className="col-12">
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Goals</h6>
+                    <hr className="mb-2 mt-1" />
+                    <p className="mb-0 py-0 text-center text-muted">No goals set.</p>
+                  </div>
+
+                  {/* Feedback placeholder */}
+                  <div className="col-12">
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Feedback</h6>
+                    <hr className="mb-2 mt-1" />
+                    <p className="mb-0 py-0 text-center text-muted">No feedback entries.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-1 text-center">
+                  <p className="text-muted">Create the employee first to view performance data.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "pay_settings" && (
+            <div className="tab-pane">
+              {employee ? (
+                <div className="g-3 row">
+                  <div className="col-12">
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Compensation</h6>
+                    <hr className="mb-2 mt-1" />
+                  </div>
+
+                  <div className="col-md-6">
+                    <Dropdown_Custom
+                      id="employment_type"
+                      name="employment_type"
+                      className="ui-control-sm"
+                      value={formData.employment_type}
+                      onChange={handleInputChange}
+                      options={employmentTypeOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                      placeholder="Select employment type"
+                      floatingLabel="Employment Type"
+                      closeOnSelect
+                    />
+                  </div>
+
+                  <div className="col-md-6">
+                    <Dropdown_Custom
+                      id="pay_frequency"
+                      name="pay_frequency"
+                      className="ui-control-sm"
+                      value={formData.pay_frequency}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        if (["weekly", "biweekly", "monthly"].includes(e.target.value) && employeePaySchedule) {
+                          setEmployeePaySchedule((p) => ({ ...p, frequency: e.target.value }));
+                        }
+                      }}
+                      options={payFrequencyOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+                      placeholder="Select pay frequency"
+                      floatingLabel="Pay Frequency"
+                      closeOnSelect
+                    />
+                  </div>
+
+                  {formData.employment_type !== "hourly" && (
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder={salaryFieldMeta.placeholder} step="0.01" min="0" />
+                        <label htmlFor="salary">{salaryFieldMeta.label} ($)</label>
+                      </div>
+                      <div className="mt-1 ui-small-muted">Amount follows selected pay frequency.</div>
+                    </div>
+                  )}
+                  {formData.employment_type === "hourly" && (
+                    <div className="col-md-6">
+                      <div className="form-floating">
+                        <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
+                        <label htmlFor="hourly_rate">Hourly Rate ($)</label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="col-12 mt-3">
+                    <h6 className="mb-0 text-uppercase ui-small-muted">Pay Schedule</h6>
+                    <hr className="mb-2 mt-1" />
+                  </div>
+
+                  {!employeePayScheduleLoading && employeePayScheduleError && (
+                    <div className="col-12">
+                      <div className="alert alert-danger mb-0 px-1 py-0 small">{employeePayScheduleError}</div>
+                    </div>
+                  )}
+                  {!employeePayScheduleLoading && employeePayScheduleSuccess && (
+                    <div className="col-12">
+                      <div className="alert alert-success mb-0 px-1 py-0 small">{employeePayScheduleSuccess}</div>
+                    </div>
+                  )}
+
+                  {!employeePayScheduleLoading && employeePaySchedule && (
+                    <>
+                      <div className="col-12 mt-2">
+                        <h6 className="mb-0 text-uppercase ui-small-muted">Service Compensation</h6>
+                        <hr className="mb-2 mt-1" />
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <input
+                            type="number"
+                            id="base_pay"
+                            value={employeePaySchedule.base_pay ?? 0}
+                            onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))}
+                            className="form-control ui-control-sm"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                          />
+                          <label htmlFor="base_pay">Base Pay ($)</label>
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="form-floating position-relative">
+                          <input
+                            type="number"
+                            id="compensation_percentage"
+                            value={employeePaySchedule.compensation_percentage ?? 0}
+                            onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))}
+                            className="form-control ui-control-sm"
+                            placeholder="0"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            style={{ paddingRight: "2.5rem" }}
+                          />
+                          <label htmlFor="compensation_percentage">Compensation (%)</label>
+                          <button
+                            type="button"
+                            className="align-items-center app-label--bold app-menu-action btn btn-link btn-sm d-flex justify-content-center position-absolute top-50 translate-middle-y text-muted text-decoration-none app-input-icon-btn"
+                            style={{ right: "0.25rem", width: "1.75rem", height: "1.75rem", lineHeight: 1, fontWeight: 700, fontSize: "0.8rem", border: "none" }}
+                            aria-label="Compensation help"
+                            onMouseEnter={() => setShowCompensationHelp(true)}
+                            onMouseLeave={() => setShowCompensationHelp(false)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowCompensationHelp((prev) => !prev);
+                            }}
+                          >
+                            ?
+                          </button>
+                          {showCompensationHelp && (
+                            <div className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start" onMouseEnter={() => setShowCompensationHelp(true)} onMouseLeave={() => setShowCompensationHelp(false)}>
+                              <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">Service Compensation</div>
+                              <div className="dark:text-gray-300 small text-gray-700">Base pay is guaranteed. Compensation applies only to paid service revenue above twice the base pay.</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {employeePayScheduleLoading ? (
+                    <div className="col-12">
+                      <div className="py-1 text-center">
+                        <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                      </div>
+                    </div>
+                  ) : !employeePaySchedule ? (
+                    <div className="col-12">
+                      <div className="ui-small-muted">Unable to load pay schedule.</div>
+                    </div>
+                  ) : !["weekly", "biweekly", "monthly"].includes(String(formData.pay_frequency || "").toLowerCase()) ? (
+                    <div className="col-12">
+                      <div className="ui-small-muted">Select Weekly, Bi-weekly, or Monthly pay frequency to configure payday and pay timing.</div>
+                    </div>
+                  ) : (
+                    <>
+                      {(String(formData.pay_frequency || "").toLowerCase() === "weekly" || String(formData.pay_frequency || "").toLowerCase() === "biweekly") && (
+                        <>
+                          <div className="col-12">
+                            <div className="fw-semibold mb-2 ui-text-sm">Work Days</div>
+                            <div className="d-flex flex-wrap gap-2">
+                              {PAY_SCHEDULE_DAYS.map((d) => {
+                                const workDays = parsePayScheduleWorkDays(employeePaySchedule.work_days);
+                                const active = workDays.includes(d.key);
+                                return (
+                                  <button
+                                    key={d.key}
+                                    type="button"
+                                    onClick={() => {
+                                      const current = parsePayScheduleWorkDays(employeePaySchedule.work_days);
+                                      const next = current.includes(d.key) ? current.filter((x) => x !== d.key) : [...current, d.key];
+                                      setEmployeePaySchedule((p) => ({ ...p, work_days: serializePayScheduleWorkDays(next) }));
+                                    }}
+                                    className={`btn btn-sm ${active ? "btn-primary" : "btn-outline-secondary"}`}
+                                    style={{ minWidth: 48, fontSize: "0.8rem" }}
+                                  >
+                                    {d.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="col-12">
+                            <div className="fw-semibold mb-2 ui-text-sm">Payday</div>
+                            <div className="d-flex flex-wrap gap-2">
+                              {PAY_SCHEDULE_DAYS.map((d) => (
+                                <button
+                                  key={d.key}
+                                  type="button"
+                                  onClick={() => setEmployeePaySchedule((p) => ({ ...p, payday_weekday: d.key }))}
+                                  className={`btn btn-sm ${employeePaySchedule.payday_weekday === d.key ? "btn-success" : "btn-outline-secondary"}`}
+                                  style={{ minWidth: 48, fontSize: "0.8rem" }}
+                                >
+                                  {d.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <div className="fw-semibold mb-2 ui-text-sm">Cycle Start Date</div>
+                            <input type="date" className="form-control ui-control-sm" style={{ maxWidth: 220 }} value={employeePaySchedule.cycle_anchor_date || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, cycle_anchor_date: e.target.value || null }))} />
+                          </div>
+                        </>
+                      )}
+
+                      {String(formData.pay_frequency || "").toLowerCase() === "monthly" && (
+                        <>
+                          <div className="col-12">
+                            <div className="fw-semibold mb-2 ui-text-sm">Payday</div>
+                            <div className="d-flex flex-wrap gap-2 mb-3">
+                              {[
+                                { value: "date", label: "Specific date" },
+                                { value: "weekday", label: "Weekday of month" },
+                              ].map((t) => (
+                                <button
+                                  key={t.value}
+                                  type="button"
+                                  onClick={() => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_type: t.value }))}
+                                  className={`btn btn-sm ${employeePaySchedule.monthly_payday_type === t.value ? "btn-primary" : "btn-outline-secondary"}`}
+                                  style={{ fontSize: "0.8rem" }}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {employeePaySchedule.monthly_payday_type === "date" && (
+                            <div className="col-12">
+                              <div className="align-items-center d-flex flex-wrap gap-2">
+                                <label className="form-label fw-semibold mb-0 small">Day of month</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={31}
+                                  className="form-control ui-control-sm"
+                                  style={{ width: 80 }}
+                                  value={employeePaySchedule.monthly_payday_date || ""}
+                                  onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_date: parseInt(e.target.value) || null }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {employeePaySchedule.monthly_payday_type === "weekday" && (
+                            <div className="col-12">
+                              <div className="align-items-center d-flex flex-wrap gap-2">
+                                <label className="form-label fw-semibold mb-0 small">The</label>
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  style={{ width: 130 }}
+                                  value={String(employeePaySchedule.monthly_payday_week ?? "")}
+                                  onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_week: parseInt(e.target.value) || null }))}
+                                  options={[{ value: "", label: "—" }, ...PAY_SCHEDULE_WEEK_OPTS.map((w) => ({ value: String(w.value), label: w.label }))]}
+                                  placeholder="Week"
+                                  closeOnSelect
+                                />
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  style={{ width: 170 }}
+                                  value={employeePaySchedule.monthly_payday_weekday || ""}
+                                  onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_weekday: e.target.value || null }))}
+                                  options={[{ value: "", label: "— day —" }, ...PAY_SCHEDULE_DAYS.map((d) => ({ value: d.key, label: d.full }))]}
+                                  placeholder="Weekday"
+                                  closeOnSelect
+                                />
+                                <span className="ui-small-muted">of the month</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div className="col-12">
+                        <div className="fw-semibold mb-2 ui-text-sm">Pay Timing</div>
+                        <div className="d-flex flex-column gap-2">
+                          {[
+                            { value: "arrears", label: "Arrears — pay after work is done" },
+                            { value: "advance", label: "Advance — pay before work begins" },
+                          ].map((opt) => (
+                            <div
+                              key={opt.value}
+                              onClick={() => setEmployeePaySchedule((p) => ({ ...p, pay_timing: opt.value }))}
+                              className={`p-1 rounded border ${employeePaySchedule.pay_timing === opt.value ? "border-primary bg-primary bg-opacity-10" : "border-secondary-subtle"}`}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <div className="align-items-center d-flex gap-2 mb-1">
+                                <input type="radio" readOnly checked={employeePaySchedule.pay_timing === opt.value} className="form-check-input mt-0" />
+                                <span className="fw-medium small">{opt.label}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="col-12">
+                        <button
+                          type="button"
+                          className="align-items-center btn btn-primary d-flex gap-2 justify-content-center w-100"
+                          onClick={async () => {
+                            if (!employee?.id) return;
+                            const payFreq = String(formData.pay_frequency || "").toLowerCase();
+                            if (!["weekly", "biweekly", "monthly"].includes(payFreq)) return;
+                            setEmployeePayScheduleSaving(true);
+                            setEmployeePayScheduleError("");
+                            setEmployeePayScheduleSuccess("");
+                            try {
+                              const payload = {
+                                frequency: payFreq,
+                                work_days: employeePaySchedule.work_days ?? "mon,tue,wed,thu,fri",
+                                payday_weekday: employeePaySchedule.payday_weekday ?? "fri",
+                                monthly_payday_type: employeePaySchedule.monthly_payday_type ?? "date",
+                                monthly_payday_date: employeePaySchedule.monthly_payday_date ?? 28,
+                                monthly_payday_week: employeePaySchedule.monthly_payday_week ?? null,
+                                monthly_payday_weekday: employeePaySchedule.monthly_payday_weekday ?? null,
+                                pay_timing: employeePaySchedule.pay_timing ?? "arrears",
+                                cycle_anchor_date: employeePaySchedule.cycle_anchor_date ?? null,
+                                base_pay: Number(employeePaySchedule.base_pay || 0),
+                                compensation_percentage: Number(employeePaySchedule.compensation_percentage || 0),
+                                base_pay_included: true,
+                              };
+                              await payrollAPI.updateEmployeeSchedule(employee.id, payload);
+                              setEmployeePayScheduleSuccess("Pay settings saved");
+                              setTimeout(() => setEmployeePayScheduleSuccess(""), 3000);
+                            } catch (err) {
+                              setEmployeePayScheduleError(err?.response?.data?.detail || "Failed to save pay settings");
+                            } finally {
+                              setEmployeePayScheduleSaving(false);
+                            }
+                          }}
+                          disabled={employeePayScheduleSaving}
+                        >
+                          <CheckCircleIcon className="ui-icon-4" />
+                          <span>{employeePayScheduleSaving ? "Saving…" : "Save Pay settings"}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="p-1 text-center">
+                  <p className="text-muted">Create the employee first to configure pay settings.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== PAYMENTS TAB ===== */}
+          {activeTab === "payments" && (
+            <div className="tab-pane">
+              {employee ? (
+                <>
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Wage History</h6>
+                  <hr className="mb-2 mt-1" />
+                  {paySlipsLoading ? (
+                    <div className="py-1 text-center">
+                      <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                    </div>
+                  ) : paySlips.length === 0 ? (
+                    <p className="py-1 small text-center text-muted">No pay slips on record.</p>
+                  ) : (
+                    <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                      <Table className="table-hover table-sm" responsive={false} style={{ fontSize: "0.8rem" }}>
+                        <thead className="table-light">
+                          <tr>
+                            <th>Period</th>
+                            <th className="text-end">Gross</th>
+                            <th className="text-end">Deductions</th>
+                            <th className="text-end">Net</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paySlips.map((slip) => (
+                            <tr key={slip.id}>
+                              <td>{slip.pay_period_start ? new Date(slip.pay_period_start).toLocaleDateString() : "—"}</td>
+                              <td className="text-end">${Number(slip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                              <td className="text-danger text-end">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                              <td className="fw-semibold text-end">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                              <td>
+                                <button type="button" className="btn btn-outline-secondary btn-sm px-1 py-0" style={{ fontSize: "0.7rem" }} onClick={() => setSelectedSlip(slip)}>
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-1 text-center">
+                  <p className="text-muted">Create the employee first to view payment history.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </form>
+      </div>
+
+      {/* ─── 10 RENDER: FOOTER ──────────────────────────────────────────────────── */}
+      {/* Footer: Two-row setup (Row 1: Tabs scrollable, Row 2: Save & Cancel) */}
+      <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell d-flex flex-column align-items-stretch" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        {/* Row 1: Tab Navigation (Horizontally scrollable with no visible scrollbar) */}
+        <div
+          className="d-flex flex-row gap-1 overflow-x-auto no-scrollbar w-100 py-1"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              className={`btn btn-sm rounded-pill text-nowrap flex-shrink-0 ${activeTab === tab.key ? "btn-primary" : "btn-outline-secondary"}`}
+              onClick={() => setActiveTab(tab.key)}
+              type="button"
+              disabled={tab.disabled}
+              style={{ fontSize: "0.75rem", padding: "0.25rem 0.75rem" }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Signature tab footer controls */}
+        {activeTab === "signature" && employee && !showSignaturePad && !signatureLoading && (
+          <div className="d-flex gap-2 justify-content-center mb-1">
+            <button type="button" onClick={() => signatureFileRef.current?.click()} className="btn btn-outline-secondary btn-sm px-1 rounded-pill">
+              Upload
+            </button>
+            <button type="button" onClick={() => setShowSignaturePad(true)} className="btn btn-primary btn-sm px-1 rounded-pill" title={savedSignature ? "Replace signature" : "Create signature"}>
+              {savedSignature ? "Replace" : "Sign"}
+            </button>
+          </div>
+        )}
+
+        {/* Permissions tab footer controls */}
+        {activeTab === "permissions" && employee && (
+          <div className="mb-1 w-100">
+            {permError && <div className="alert alert-danger mb-2 py-1 small">{permError}</div>}
+            {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
+            <div className="align-items-center g-2 row">
+              <div className="col">
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  value={newPermission.page}
+                  onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))}
+                  options={[{ value: "", label: "Select Page" }, ...PAGE_OPTION_GROUPS.flatMap((group) => group.options.map((option) => ({ value: option.value, label: `${group.label} - ${option.label}` })))]}
+                  placeholder="Select Page"
+                  closeOnSelect
+                />
+              </div>
+              <div className="col">
+                <Dropdown_Custom
+                  className="ui-control-sm"
+                  value={newPermission.permission}
+                  onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))}
+                  options={[
+                    { value: "", label: "Select Permission" },
+                    ...PERMISSION_TYPES.map((pt) => ({
+                      value: pt,
+                      label: pt,
+                      description: PERMISSION_DESCRIPTIONS[pt] || `Allows ${pt} access.`,
+                    })),
+                  ]}
+                  placeholder="Select Permission"
+                  closeOnSelect
+                />
+              </div>
+              <div className="col-auto">
+                <button type="button" onClick={handleCreatePermission} className="btn btn-primary btn-sm" disabled={!newPermission.page || !newPermission.permission}>
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payments tab footer controls */}
+        {activeTab === "payments" && employee && hasPermission("employees", "write") && (
+          <div className="d-flex justify-content-center mb-1">
+            <button type="button" className="btn btn-outline-secondary btn-sm px-1 rounded-pill" onClick={() => setShowPayModal(true)}>
+              Pay
+            </button>
+          </div>
+        )}
+
+        {/* Row 2: Action Buttons (Save, Cancel, and Delete) */}
+        <div className="w-100">
+          <Footer_Actions
+            start={
+              activeTab === "details" || activeTab === "benefits" || activeTab === "pay_settings" ? <Button_Toolbar icon={CheckIcon} label={employee ? "Save" : "Add"} type="submit" form="employee-form" className="btn-outline-secondary" title={employee ? "Save employee" : "Add employee"} /> : null
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+            end={
+              employee && canDelete ? (
+                <Button_Toolbar
+                  icon={TrashIcon}
+                  label="Delete"
+                  title="Delete employee"
+                  onClick={async () => {
+                    if (await showConfirm("Are you sure you want to delete this employee?", { confirmLabel: "Delete Employee" })) onDelete(employee.id);
+                  }}
+                  className="btn-outline-danger"
+                />
+              ) : null
+            }
+          />
+        </div>
+      </div>
+
+      {/* Process Pay Modal */}
+      <Modal_Pay_Employee
+        isOpen={showPayModal}
+        onClose={() => setShowPayModal(false)}
+        employee={employee}
+        onPaySuccess={() => {
+          setShowPayModal(false);
+          // Reload pay slips
+          if (employee?.id) {
+            setPaySlipsLoading(true);
+            payrollAPI
+              .getByEmployee(employee.id)
+              .then((res) => {
+                const d = res?.data ?? res;
+                setPaySlips(Array.isArray(d) ? d : []);
+              })
+              .catch(() => setPaySlips([]))
+              .finally(() => setPaySlipsLoading(false));
+          }
+        }}
+      />
+
+      {/* Pay Slip Detail Modal */}
+      <Modal
+        isOpen={Boolean(selectedSlip)}
+        onClose={() => setSelectedSlip(null)}
+        title="Pay Slip"
+        footer={
+          <div className="component-footer-left d-flex align-items-center gap-1">
+            <button
+              type="button"
+              className="align-items-center btn btn-primary btn-sm d-flex gap-2"
+              onClick={() => {
+                const el = document.getElementById("pay-slip-print-area-emp");
+                if (el) {
+                  const w = window.open("", "_blank");
+                  w.document.write('<html><head><title>Pay Slip</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"></head><body class="p-1">' + el.innerHTML + "</body></html>");
+                  w.document.close();
+                  w.focus();
+                  setTimeout(() => {
+                    w.print();
+                  }, 500);
+                }
+              }}
+            >
+              <PrinterIcon className="ui-icon-4" />
+              <span>Print</span>
+            </button>
+            <button type="button" className="btn ui-btn-circle-outline-secondary btn-circle" onClick={() => setSelectedSlip(null)} title="Close">
+              <XMarkIcon />
+            </button>
+          </div>
+        }
+      >
+        {selectedSlip && (
+          <div id="pay-slip-print-area-emp" className="p-1" style={{ fontSize: "0.85rem" }}>
+            <div className="mb-3 text-center">
+              <div className="fs-6 fw-bold">
+                {employee?.first_name} {employee?.last_name}
+              </div>
+              <div className="ui-small-muted">{employee?.role}</div>
+            </div>
+            <hr className="my-2" />
+            <div className="g-1 mb-2 row">
+              <div className="col-6 ui-text-muted">Pay Period</div>
+              <div className="col-6 ui-text-end">
+                {selectedSlip.pay_period_start ? new Date(selectedSlip.pay_period_start).toLocaleDateString() : "—"} – {selectedSlip.pay_period_end ? new Date(selectedSlip.pay_period_end).toLocaleDateString() : "—"}
+              </div>
+              <div className="col-6 ui-text-muted">Type</div>
+              <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
+                {selectedSlip.employment_type || "—"}
+              </div>
+              {selectedSlip.employment_type === "hourly" && (
+                <>
+                  <div className="col-6 ui-text-muted">Hours</div>
+                  <div className="col-6 ui-text-end">{selectedSlip.hours_worked ?? "—"}</div>
+                  <div className="col-6 ui-text-muted">Rate</div>
+                  <div className="col-6 ui-text-end">${Number(selectedSlip.hourly_rate_snapshot ?? 0).toFixed(2)}/hr</div>
+                </>
+              )}
+              <div className="col-6 ui-text-muted">Pay Frequency</div>
+              <div className="col-6 ui-text-end" style={{ textTransform: "capitalize" }}>
+                {selectedSlip.pay_frequency || "—"}
+              </div>
+            </div>
+            <hr className="my-2" />
+            <div className="g-1 row">
+              <div className="col-6 ui-text-muted">Gross Pay</div>
+              <div className="col-6 ui-text-end">${Number(selectedSlip.gross_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              {selectedSlip.base_pay_snapshot != null && (
+                <>
+                  <div className="col-6 small text-muted">Service Revenue</div>
+                  <div className="col-6 small text-end">${Number(selectedSlip.service_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="col-6 small text-muted">Base Pay</div>
+                  <div className="col-6 small text-end">${Number(selectedSlip.base_pay_snapshot ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div className="col-6 small text-muted">Compensation</div>
+                  <div className="col-6 small text-end">{Number(selectedSlip.compensation_percentage_snapshot ?? 0).toFixed(2)}%</div>
+                </>
+              )}
+              {selectedSlip.insurance_plan_name && (
+                <>
+                  <div className="col-6 small text-muted">Insurance ({selectedSlip.insurance_plan_name})</div>
+                  <div className="col-6 small text-danger text-end">-${Number(selectedSlip.insurance_deduction ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </>
+              )}
+              {(selectedSlip.other_deductions ?? 0) > 0 && (
+                <>
+                  <div className="col-6 small text-muted">Other Deductions</div>
+                  <div className="col-6 small text-danger text-end">-${Number(selectedSlip.other_deductions).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </>
+              )}
+              <div className="border-top col-6 fw-bold mt-1 pt-1">Net Pay</div>
+              <div className="border-top col-6 fw-bold mt-1 pt-1 text-end text-success">${Number(selectedSlip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+            </div>
+            {selectedSlip.notes && <div className="mt-2 small text-muted">Notes: {selectedSlip.notes}</div>}
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}

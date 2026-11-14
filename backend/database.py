@@ -1,230 +1,1717 @@
+# ============================================================
+# FILE: database.py
+#
+# PURPOSE:
+#   Creates the SQLAlchemy engine, provides the FastAPI session dependency,
+#   and runs all incremental schema migrations that bring an existing database
+#   up to the current schema version on every server startup.
+#
+# FUNCTIONAL PARTS:
+#   [1] Imports                              — SQLModel, SQLAlchemy, stdlib
+#   [2] Engine Setup                         — PostgreSQL runtime URL resolution
+#                                              and engine creation
+#   [3] Schema Version Tracking             — CURRENT_SCHEMA_VERSION constant,
+#                                              _schema_is_current(), _mark_schema_current()
+#   [4] Migration: Documents Table           — nullability fix, entity_type enum -> VARCHAR
+#   [5] Migration: Items / Inventory         — product -> item rename, FK column rename
+#   [6] Migration: Document Extra Columns    — owner_id, review_date, category_id,
+#                                              e-sign columns
+#   [7] Migration: Employee Columns          — user_id, supervisor columns on legacy table
+#   [8] Migration: InventoryImage Table      — table creation with indexes and triggers
+#   [9] Migration: Service Columns           — duration_minutes
+#   [10] Migration: Schedule Columns         — appointment_type, duration_minutes,
+#                                              recurrence columns
+#   [11] Migration: User Columns             — payroll, benefit, signature, profile picture
+#   [12] Migration: Leave Request            — supervisor_id column
+#   [13] Migration: AppSettings Columns      — company info columns
+#   [14] Migration: Chat Message Table       — table creation for older databases
+#   [15] Seed Functions                      — user colors, insurance plans
+#   [15b] Migration: Schedule Payment        — is_paid, discount, sale_transaction_id on schedule;
+#                                              schedule_id on sale_transaction;
+#                                              consumption_rate_pct on service_resource
+#   [16] create_db_and_tables()              — orchestrates create_all + all migrations
+#   [17] get_session()                       — FastAPI dependency that yields a DB session
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-03-29 | GitHub Copilot | Removed stale SQLite migration paths and aligned runtime helpers with PostgreSQL-only deployment
+#   2026-05-26 | GitHub Copilot | Added asset_unit.employee_id migration/required artifact checks for assigned/shared asset ownership
+#   2026-06-13 | GitHub Copilot | Extended required schema artifact checks with schedule columns to prevent stale version-marker skips
+#   2026-06-13 | GitHub Copilot | Added sale_transaction.discount_amount schema checks/migration to fix schedule delete failures
+#   2026-07-28 | GitHub Copilot | Added Stripe test/live mode app_settings migrations with legacy key backfill
+#   2026-08-09 | GitHub Copilot | Required service and schedule add-on columns in schema drift checks
+#   2026-08-09 | GitHub Copilot | Moved add-on column repair ahead of schema fast-path checks
+#   2026-09-11 | GitHub Copilot | Synchronized PostgreSQL permissiontype storage labels before schema fast-path checks
+#   2026-09-11 | GitHub Copilot | Added employee base-pay compensation and pay-slip snapshot columns
+# ============================================================
+
+# ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy import text
-import os
 from typing import Generator
 
-# Database URL from environment variable - defaults to SQLite for easy local development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./business_manager.db")
+# ─── 2 ENGINE SETUP ────────────────────────────────────────────────────────────
+# Import PostgreSQL runtime database configuration
+try:
+    from backend.db_config import get_database_url
+except ImportError:
+    from db_config import get_database_url
 
-# Create engine with appropriate settings for SQLite (local) or PostgreSQL (production)
+# Database URL from db_config (PostgreSQL runtime only)
+DATABASE_URL = get_database_url()
+
+# PostgreSQL-only runtime: reject SQLite URLs up front.
 if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
-else:
-    # PostgreSQL settings - use psycopg driver instead of psycopg2
-    # Normalize both 'postgres://' and 'postgresql://' to psycopg driver URL
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-    elif DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
-    engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
+    raise RuntimeError("SQLite is not supported in this deployment. Configure PostgreSQL DATABASE_URL.")
 
-def _migrate_documents_table_if_needed():
-    """Ensure SQLite 'document' table allows NULL for entity fields.
-    If existing table has NOT NULL constraints on entity_type/entity_id, migrate schema preserving data.
+# PostgreSQL - normalize URL to use psycopg driver
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
+
+# ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
+# Bump this string whenever you add a new migration function or required artifact
+CURRENT_SCHEMA_VERSION = "2026.11.11.2"
+
+
+def _required_schema_artifacts_present() -> bool:
+    """Return True when late-added schema artifacts required by current code exist."""
+    try:
+        with engine.connect() as conn:
+            department_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user' AND column_name='department_id'"
+            )).fetchone()
+            company_email_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='company_email'"
+            )).fetchone()
+            registration_status_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='registration_status'"
+            )).fetchone()
+            registration_notes_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='registration_notes'"
+            )).fetchone()
+            cost_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory' AND column_name='cost_type'"
+            )).fetchone()
+            client_email_verified_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='client' AND column_name='email_verified'"
+            )).fetchone()
+            asset_unit_employee_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='employee_id'"
+            )).fetchone()
+            asset_unit_location_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='location'"
+            )).fetchone()
+            descriptive_feature_description_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='descriptive_feature' AND column_name='description'"
+            )).fetchone()
+            schedule_appointment_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='appointment_type'"
+            )).fetchone()
+            schedule_duration_minutes_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='duration_minutes'"
+            )).fetchone()
+            schedule_recurrence_frequency_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='recurrence_frequency'"
+            )).fetchone()
+            schedule_parent_schedule_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='parent_schedule_id'"
+            )).fetchone()
+            schedule_send_reminder_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='send_reminder'"
+            )).fetchone()
+            service_addons_json_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='service' AND column_name='addons_json'"
+            )).fetchone()
+            schedule_service_addons_json_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='schedule' AND column_name='service_addons_json'"
+            )).fetchone()
+            sale_transaction_discount_amount_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='discount_amount'"
+            )).fetchone()
+            sale_transaction_inventory_consumed_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='inventory_consumed_at'"
+            )).fetchone()
+            sale_transaction_receipt_emailed_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='sale_transaction' AND column_name='receipt_emailed_at'"
+            )).fetchone()
+            client_status_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='client' AND column_name='status_id'"
+            )).fetchone()
+            user_status_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user' AND column_name='status_id'"
+            )).fetchone()
+            document_status_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='document' AND column_name='status_id'"
+            )).fetchone()
+            user_startup_page_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='user' AND column_name='startup_page'"
+            )).fetchone()
+            return (
+                department_column is not None
+                and company_email_column is not None
+                and registration_status_column is not None
+                and registration_notes_column is not None
+                and cost_type_column is not None
+                and client_email_verified_column is not None
+                and asset_unit_employee_column is not None
+                and asset_unit_location_column is not None
+                and descriptive_feature_description_column is not None
+                and schedule_appointment_type_column is not None
+                and schedule_duration_minutes_column is not None
+                and schedule_recurrence_frequency_column is not None
+                and schedule_parent_schedule_id_column is not None
+                and schedule_send_reminder_column is not None
+                and service_addons_json_column is not None
+                and schedule_service_addons_json_column is not None
+                and sale_transaction_discount_amount_column is not None
+                and sale_transaction_inventory_consumed_column is not None
+                and sale_transaction_receipt_emailed_column is not None
+                and client_status_id_column is not None
+                and user_status_id_column is not None
+                and document_status_id_column is not None
+                and user_startup_page_column is not None
+            )
+    except Exception:
+        return False
+
+
+def _ensure_asset_unit_employee_column_if_needed():
+    """Ensure asset_unit table has employee_id for shared/assigned unit ownership."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='asset_unit' AND column_name='employee_id'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE asset_unit ADD COLUMN employee_id UUID"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_asset_unit_employee_id ON asset_unit(employee_id)"))
+                print("  + Added asset_unit.employee_id")
+    except Exception as e:
+        print(f"  Warning: Could not ensure asset_unit.employee_id column: {e}")
+
+
+def _ensure_asset_unit_location_column_if_needed():
+    """Ensure asset_unit table has location for per-unit placement tracking."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='asset_unit' AND column_name='location'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE asset_unit ADD COLUMN location VARCHAR"))
+                print("  + Added asset_unit.location")
+    except Exception as e:
+        print(f"  Warning: Could not ensure asset_unit.location column: {e}")
+
+
+def _ensure_descriptive_feature_description_column_if_needed():
+    """Ensure descriptive_feature table has description column for feature metadata."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='descriptive_feature' AND column_name='description'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE descriptive_feature ADD COLUMN description TEXT"))
+                print("  + Added descriptive_feature.description")
+    except Exception as e:
+        print(f"  Warning: Could not ensure descriptive_feature.description column: {e}")
+
+def _schema_is_current() -> bool:
+    """Returns True if schema is already at CURRENT_SCHEMA_VERSION."""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE TABLE IF NOT EXISTS schema_migration (version TEXT PRIMARY KEY)"))
+            result = conn.execute(
+                text("SELECT 1 FROM schema_migration WHERE version = :v"),
+                {"v": CURRENT_SCHEMA_VERSION}
+            ).fetchone()
+            return result is not None
+    except Exception:
+        return False
+
+def _mark_schema_current():
+    """Record that the schema is now at CURRENT_SCHEMA_VERSION."""
+    try:
+        with engine.begin() as conn:
+            # Ensure table exists first with explicit DDL
+            try:
+                conn.execute(text("CREATE TABLE IF NOT EXISTS schema_migration (version TEXT PRIMARY KEY)"))
+            except Exception:
+                # Table might already exist or permission denied, proceed
+                pass
+
+            conn.execute(
+                text("INSERT INTO schema_migration (version) VALUES (:v) ON CONFLICT (version) DO NOTHING"),
+                {"v": CURRENT_SCHEMA_VERSION}
+            )
+    except Exception as e:
+        print(f"Warning: Could not mark schema version: {e}")
+
+# ─── 4 MIGRATION: DOCUMENT ENTITY_TYPE ENUM -> VARCHAR ─────────────────────────
+def _migrate_document_entity_type_enum_to_varchar():
+    """Convert document.entity_type from PostgreSQL enum to VARCHAR.
+
+    The Document model defines entity_type as Optional[str], but older
+    database schemas created a PostgreSQL enum column. This causes insert
+    failures: 'column entity_type is of type entitytype but expression is
+    of type character varying'. This migration converts the column to
+    VARCHAR and normalises existing values to lowercase.
     """
-    # Only handle SQLite simple migration
-    if not DATABASE_URL.startswith("sqlite"):
-        return
     with engine.begin() as conn:
-        # Check if table exists
-        tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
+        result = conn.execute(text(
+            "SELECT udt_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document' AND column_name='entity_type'"
+        ))
+        row = result.fetchone()
+        if not row or row[0] in ("varchar", "text", "character varying"):
+            return  # Already correct type or column missing
+        # Convert enum to VARCHAR
+        conn.execute(text(
+            "ALTER TABLE document ALTER COLUMN entity_type TYPE VARCHAR USING entity_type::TEXT"
+        ))
+        # Normalise to lowercase
+        conn.execute(text(
+            "UPDATE document SET entity_type = LOWER(entity_type) WHERE entity_type IS NOT NULL"
+        ))
+        # Map legacy 'item' to 'inventory'
+        conn.execute(text(
+            "UPDATE document SET entity_type = 'inventory' WHERE entity_type = 'item'"
+        ))
+        # Drop orphaned enum type if unused
+        remaining = conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE udt_name = 'entitytype' AND table_schema = 'public'"
+        )).scalar()
+        if remaining == 0:
+            conn.execute(text("DROP TYPE IF EXISTS entitytype"))
+        print("✓ Migrated document.entity_type from enum to VARCHAR")
+
+
+# ─── 15b MIGRATION: SCHEDULE PAYMENT + SERVICE RESOURCE RATE ───────────────────
+def _ensure_schedule_payment_columns_if_needed():
+    """Add is_paid, discount, sale_transaction_id to schedule;
+    schedule_id + financial columns to sale_transaction; consumption_rate_pct to service_resource."""
+    tables = {
+        "schedule": {
+            "is_paid": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "send_reminder": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "discount": "DOUBLE PRECISION NOT NULL DEFAULT 0.0",
+            "sale_transaction_id": "UUID",
+        },
+        "sale_transaction": {
+            "schedule_id": "UUID",
+            "discount_amount": "DOUBLE PRECISION NOT NULL DEFAULT 0.0",
+            "paid_at": "TIMESTAMP",
+            "stripe_payment_intent_id": "VARCHAR",
+            "stripe_checkout_session_id": "VARCHAR",
+            "stripe_charge_id": "VARCHAR",
+            "inventory_consumed_at": "TIMESTAMP",
+            "receipt_emailed_at": "TIMESTAMP",
+        },
+        "service_resource": {
+            "consumption_rate_pct": "DOUBLE PRECISION",
+        },
+    }
+
+    with engine.begin() as conn:
+        for table, cols in tables.items():
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                f"WHERE table_schema='public' AND table_name='{table}')"
+            )).scalar()
+            if not tbl_exists:
+                continue
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}'"
+            )).fetchall()}
+            for col, pg_type in cols.items():
+                if col not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {pg_type}"))
+                    print(f"  + Added column {table}.{col} ({pg_type})")
+
+
+# ─── MIGRATION: MULTI-TENANCY COMPANY_ID COLUMNS ────────────────────────────────
+def _ensure_company_multitenancy_if_needed():
+    """Add company_id column to all tenant-scoped tables, create default company,
+    and migrate existing data to the default company."""
+
+    # Tables that need company_id (excludes: company, document_blob, database_connection, schema_migration)
+    tenant_tables = [
+        "user", "user_permission", "role", "role_permission",
+        # SQLModel auto-names InventoryImage table as 'inventoryimage' (no underscore).
+        # Keep 'inventory_image' as a legacy fallback for older/manual schemas.
+        "client", "inventory", "inventoryimage", "inventory_image", "supplier",
+        "descriptive_feature", "feature_option", "inventory_feature", "inventory_feature_option_data",
+        "service", "service_resource", "service_asset", "service_employee",
+        "service_location", "service_recipe",
+        "schedule", "schedule_attendee", "schedule_document",
+        "attendance", "app_settings", "document", "document_category", "document_assignment",
+        "task", "task_link", "leave_request", "onboarding_request", "offboarding_request",
+        "insurance_plan", "pay_slip", "sale_transaction", "sale_transaction_item",
+        "chat_message", "document_template",
+        "product_resource", "product_asset", "product_location", "client_cart_item",
+    ]
+
+    DEFAULT_COMPANY_ID = "DEFAULT"
+    DEFAULT_COMPANY_NAME = "Default Company"
+
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS company (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP,
+                company_id VARCHAR UNIQUE NOT NULL,
+                name VARCHAR NOT NULL,
+                company_email VARCHAR,
+                company_phone VARCHAR,
+                company_address TEXT,
+                tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE
+            )
+        """))
+
+        company_cols = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='company'"
+        )).fetchall()}
+        if "company_email" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN company_email VARCHAR"))
+            print("  + Added company.company_email")
+        if "company_phone" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN company_phone VARCHAR"))
+            print("  + Added company.company_phone")
+        if "company_address" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN company_address TEXT"))
+            print("  + Added company.company_address")
+        if "logo_data" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN logo_data BYTEA"))
+            print("  + Added company.logo_data")
+        if "tax_rate" not in company_cols:
+            conn.execute(text("ALTER TABLE company ADD COLUMN tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0.0"))
+            print("  + Added company.tax_rate")
+
+        existing = conn.execute(text("SELECT id FROM company LIMIT 1")).fetchone()
+        if not existing:
+            import uuid as _uuid
+            from datetime import datetime as _dt
+            default_id = str(_uuid.uuid4())
+            now = _dt.utcnow()
+            conn.execute(text(
+                "INSERT INTO company (id, created_at, updated_at, company_id, name, tax_rate, is_active) "
+                "VALUES (:id, :created_at, :updated_at, :company_id, :name, 0.0, TRUE)"
+            ), {"id": default_id, "created_at": now, "updated_at": now, "company_id": DEFAULT_COMPANY_ID, "name": DEFAULT_COMPANY_NAME})
+            print(f"  + Created default company '{DEFAULT_COMPANY_ID}'")
+
+        default_row = conn.execute(text("SELECT company_id FROM company LIMIT 1")).fetchone()
+        default_cid = default_row[0] if default_row else DEFAULT_COMPANY_ID
+
+        for table in tenant_tables:
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                f"WHERE table_schema='public' AND table_name='{table}')"
+            )).scalar()
+            if not tbl_exists:
+                continue
+            existing_cols = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}'"
+            )).fetchall()}
+            if "company_id" not in existing_cols:
+                quoted = f'"{table}"'
+                conn.execute(text(f"ALTER TABLE {quoted} ADD COLUMN company_id VARCHAR"))
+                conn.execute(text(f"UPDATE {quoted} SET company_id = :cid WHERE company_id IS NULL"), {"cid": default_cid})
+                print(f"  + Added company_id to {table}, set existing rows to '{default_cid}'")
+
+        for table, col in [
+            ("client", "name"), ("service", "name"), ("role", "name"),
+            ("insurance_plan", "name"), ("inventory", "sku"), ("descriptive_feature", "name"),
+        ]:
+            try:
+                result = conn.execute(text(f"""
+                    SELECT tc.constraint_name
+                    FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                    WHERE tc.table_schema = 'public'
+                      AND tc.table_name = '{table}'
+                      AND kcu.column_name = '{col}'
+                      AND tc.constraint_type = 'UNIQUE'
+                """)).fetchone()
+                if result:
+                    constraint_name = result[0]
+                    conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {constraint_name}"))
+                    print(f"  + Dropped unique constraint {constraint_name} on {table}.{col}")
+            except Exception as e:
+                print(f"  Warning: Could not drop unique constraint on {table}.{col}: {e}")
+
+
+def _seed_document_templates_for_existing_companies_if_needed():
+    """Backfill company-scoped document templates for every company in the database."""
+    try:
+        from backend.company_scaffold import seed_document_templates_for_all_companies
+    except ModuleNotFoundError:
+        from company_scaffold import seed_document_templates_for_all_companies  # type: ignore
+
+    try:
+        with engine.begin() as conn:
+            seeded_by_company = seed_document_templates_for_all_companies(conn)
+            if seeded_by_company:
+                summary = ", ".join(f"{cid}:{count}" for cid, count in sorted(seeded_by_company.items()))
+                print(f"  + Seeded document templates for existing companies ({summary})")
+    except Exception as e:
+        print(f"  [WARN] Could not backfill document templates for existing companies: {e}")
+
+
+# ─── MIGRATION: ENSURE userrole ENUM HAS ALL EXPECTED VALUES ────────────────────
+def _ensure_userrole_enum_values_if_needed():
+    """Add any missing values to the userrole PostgreSQL enum (idempotent)."""
+    required_values = ["admin", "manager", "employee", "viewer"]
+    try:
+        with engine.begin() as conn:
+            for val in required_values:
+                conn.execute(text(f"ALTER TYPE userrole ADD VALUE IF NOT EXISTS '{val}'"))
+    except Exception as e:
+        print(f"  Warning: Could not patch userrole enum: {e}")
+
+
+# ─── MIGRATION: ENSURE permissiontype ENUM HAS ALL EXPECTED VALUES ─────────────
+def _ensure_permissiontype_enum_values_if_needed():
+    """Add any missing SQLAlchemy storage labels to PostgreSQL."""
+    try:
+        from backend.models import UserPermission
+    except ModuleNotFoundError:
+        from models import UserPermission  # type: ignore
+
+    required_values = UserPermission.__table__.c.permission.type.enums
+
+    try:
+        with engine.begin() as conn:
+            for value in required_values:
+                conn.execute(text(f"ALTER TYPE permissiontype ADD VALUE IF NOT EXISTS '{value}'"))
+    except Exception as e:
+        print(f"  Warning: Could not patch permissiontype enum: {e}")
+
+
+# ─── MIGRATION: COMPOSITE UNIQUE CONSTRAINT ON (company_id, username) ───────────
+def _ensure_user_username_composite_unique_if_needed():
+    """
+    Drop the old single-column unique constraint on user.username (and user.email)
+    and replace with a composite unique constraint on (company_id, username) so
+    the same username can exist across different companies.
+    """
+    try:
+        with engine.begin() as conn:
+            # Drop old single-column unique constraint on username if it exists
+            for col in ("username", "email"):
+                result = conn.execute(text(f"""
+                    SELECT tc.constraint_name
+                    FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                       AND tc.table_schema = kcu.table_schema
+                    WHERE tc.table_schema = 'public'
+                      AND tc.table_name = 'user'
+                      AND kcu.column_name = '{col}'
+                      AND tc.constraint_type = 'UNIQUE'
+                      AND (SELECT COUNT(*) FROM information_schema.key_column_usage k2
+                           WHERE k2.constraint_name = tc.constraint_name) = 1
+                """)).fetchone()
+                if result:
+                    conn.execute(text(f'ALTER TABLE "user" DROP CONSTRAINT IF EXISTS "{result[0]}"'))
+                    print(f"  + Dropped single-column unique constraint on user.{col}: {result[0]}")
+
+            # Also drop SQLAlchemy-created unique indexes (ix_user_username, ix_user_email)
+            for idx in ("ix_user_username", "ix_user_email"):
+                idx_exists = conn.execute(text("""
+                    SELECT 1 FROM pg_indexes
+                    WHERE schemaname = 'public' AND tablename = 'user' AND indexname = :idx
+                """), {"idx": idx}).fetchone()
+                if idx_exists:
+                    conn.execute(text(f'DROP INDEX IF EXISTS "{idx}"'))
+                    print(f"  + Dropped unique index {idx} on user")
+
+            # Add composite unique constraint on (company_id, username) if not already present
+            exists = conn.execute(text("""
+                SELECT 1 FROM information_schema.table_constraints
+                WHERE table_schema = 'public'
+                  AND table_name = 'user'
+                  AND constraint_name = 'uq_user_company_username'
+            """)).fetchone()
+            if not exists:
+                conn.execute(text(
+                    'ALTER TABLE "user" ADD CONSTRAINT uq_user_company_username '
+                    'UNIQUE (company_id, username)'
+                ))
+                print("  + Added composite unique constraint uq_user_company_username on (company_id, username)")
+    except Exception as e:
+        print(f"  Warning: Could not migrate user username uniqueness: {e}")
+
+
+# ─── MIGRATION: BUNDLE COMPONENT TABLE ──────────────────────────────────────────
+def _ensure_bundle_component_table_if_needed():
+    """Create the bundle_component table for bundle item type support."""
+    with engine.begin() as conn:
+        exists = conn.execute(text("SELECT to_regclass('bundle_component')")).scalar()
+        if not exists:
+            conn.execute(text("""
+                CREATE TABLE bundle_component (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    bundle_id UUID NOT NULL,
+                    component_id UUID NOT NULL,
+                    quantity REAL NOT NULL DEFAULT 1.0,
+                    notes TEXT,
+                    company_id VARCHAR
+                )
+            """))
+            print("  + Created table bundle_component")
+
+
+# ─── MIGRATION: MIX TABLES ───────────────────────────────────────────────────────
+def _ensure_mix_tables_if_needed():
+    """Create mix_config and mix_component tables for the mix item type."""
+    with engine.begin() as conn:
+        def tbl_exists(name):
+            return conn.execute(text("SELECT to_regclass(:n)"), {"n": name}).scalar() is not None
+
+        if not tbl_exists("mix_config"):
+            conn.execute(text("""
+                CREATE TABLE mix_config (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL, total_quantity INTEGER NOT NULL DEFAULT 1,
+                    has_max_per_product BOOLEAN NOT NULL DEFAULT FALSE,
+                    max_per_product INTEGER, company_id VARCHAR
+                )
+            """))
+            print("  + Created table mix_config")
+
+        if not tbl_exists("mix_component"):
+            conn.execute(text("""
+                CREATE TABLE mix_component (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                    mix_id UUID NOT NULL, component_id UUID NOT NULL,
+                    max_quantity INTEGER, company_id VARCHAR
+                )
+            """))
+            print("  + Created table mix_component")
+
+
+def _ensure_inventory_price_columns_if_needed():
+    """Add price_type and price_percentage columns to inventory for bundle/mix pricing."""
+    try:
+        with engine.begin() as conn:
+            for col, coltype, default in [
+                ("price_type", "VARCHAR", "'fixed'"),
+                ("price_percentage", "DOUBLE PRECISION", "NULL"),
+            ]:
+                exists = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='inventory' AND column_name=:c"
+                ), {"c": col}).fetchone()
+                if not exists:
+                    conn.execute(text(f"ALTER TABLE inventory ADD COLUMN {col} {coltype} DEFAULT {default}"))
+                    print(f"  + Added inventory.{col}")
+    except Exception as e:
+        print(f"  Warning: Could not add inventory price columns: {e}")
+
+
+def _ensure_sale_transaction_item_mix_selections_if_needed():
+    """Add mix_selections TEXT column to sale_transaction_item for storing mix pick data."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='sale_transaction_item' AND column_name='mix_selections'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE sale_transaction_item ADD COLUMN mix_selections TEXT"))
+                print("  + Added sale_transaction_item.mix_selections")
+    except Exception as e:
+        print(f"  Warning: Could not add mix_selections column: {e}")
+
+
+def _ensure_sale_transaction_item_options_json_if_needed():
+    """Add options_json TEXT column to sale_transaction_item for descriptive feature picks."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='sale_transaction_item' AND column_name='options_json'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE sale_transaction_item ADD COLUMN options_json TEXT"))
+                print("  + Added sale_transaction_item.options_json")
+    except Exception as e:
+        print(f"  Warning: Could not add options_json column: {e}")
+
+
+def _ensure_inventory_feature_combination_table_if_needed():
+    """Create inventory_feature_combination for full variant stock tracking."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text("SELECT to_regclass('inventory_feature_combination')")).scalar()
+            if not exists:
+                conn.execute(text("""
+                    CREATE TABLE inventory_feature_combination (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        created_at TIMESTAMP NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP,
+                        inventory_id UUID NOT NULL REFERENCES inventory(id),
+                        combination_key VARCHAR NOT NULL,
+                        option_ids_json TEXT NOT NULL,
+                        quantity INTEGER NOT NULL DEFAULT 0,
+                        company_id VARCHAR
+                    )
+                """))
+                conn.execute(text("CREATE INDEX ix_inventory_feature_combination_inventory_id ON inventory_feature_combination (inventory_id)"))
+                conn.execute(text("CREATE INDEX ix_inventory_feature_combination_combination_key ON inventory_feature_combination (combination_key)"))
+                print("  + Created inventory_feature_combination")
+    except Exception as e:
+        print(f"  Warning: Could not ensure inventory_feature_combination: {e}")
+
+
+def _ensure_client_order_workflow_columns_if_needed():
+    """Add workflow-tracking columns to client_order and options_json to client_order_item."""
+    try:
+        with engine.begin() as conn:
+            for col, definition in [
+                ("employee_id", "UUID"),
+                ("paid_at", "TIMESTAMP"),
+                ("fulfilled_at", "TIMESTAMP"),
+                ("inventory_deducted_at", "TIMESTAMP"),
+            ]:
+                exists = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name='client_order' AND column_name=:c"
+                ), {"c": col}).fetchone()
+                if not exists:
+                    conn.execute(text(f"ALTER TABLE client_order ADD COLUMN {col} {definition}"))
+                    print(f"  + Added client_order.{col}")
+
+            status_exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='client_order' AND column_name='status'"
+            )).fetchone()
+            if status_exists:
+                conn.execute(text(
+                    "UPDATE client_order SET status = 'payment_pending' WHERE status = 'pending'"
+                ))
+                conn.execute(text(
+                    "UPDATE client_order SET status = 'ordered', paid_at = COALESCE(paid_at, updated_at, created_at) WHERE status = 'paid'"
+                ))
+
+            options_exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='client_order_item' AND column_name='options_json'"
+            )).fetchone()
+            if not options_exists:
+                conn.execute(text("ALTER TABLE client_order_item ADD COLUMN options_json TEXT"))
+                print("  + Added client_order_item.options_json")
+    except Exception as e:
+        print(f"  Warning: Could not ensure client order workflow columns: {e}")
+
+
+# ─── MIGRATION: DISCOUNT RULE TABLE ─────────────────────────────────────────────
+def _ensure_discount_rule_table_if_needed():
+    """Create the discount_rule table for scheduled inventory discounts."""
+    with engine.begin() as conn:
+        exists = conn.execute(text("SELECT to_regclass('discount_rule')")).scalar()
+        if not exists:
+            conn.execute(text("""
+                CREATE TABLE discount_rule (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
+                    name VARCHAR NOT NULL, applies_to VARCHAR NOT NULL DEFAULT 'all',
+                    item_ids TEXT, discount_type VARCHAR NOT NULL DEFAULT 'percentage',
+                    discount_value DOUBLE PRECISION NOT NULL DEFAULT 0,
+                    start_date TIMESTAMP, end_date TIMESTAMP,
+                    is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+                    recur_frequency VARCHAR, recur_days TEXT, recur_count INTEGER,
+                    times_per_day INTEGER, day_start_time VARCHAR, day_end_time VARCHAR,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE, company_id VARCHAR
+                )
+            """))
+            print("  + Created table discount_rule")
+
+
+# ─── MIGRATION: MAKE inventory.sku NULLABLE ─────────────────────────────────────
+def _ensure_inventory_sku_nullable_if_needed():
+    """Drop NOT NULL constraint on inventory.sku so handmade products don't need a SKU."""
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("""
+                SELECT is_nullable FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'inventory' AND column_name = 'sku'
+            """)).fetchone()
+            if result and result[0] == 'NO':
+                conn.execute(text('ALTER TABLE inventory ALTER COLUMN sku DROP NOT NULL'))
+                print("  + Made inventory.sku nullable")
+    except Exception as e:
+        print(f"  Warning: Could not make inventory.sku nullable: {e}")
+
+
+def _ensure_inventory_category_column_if_needed():
+    """Ensure inventory.category exists for environments that predate this column."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'inventory'
+                  AND column_name = 'category'
+                """
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE inventory ADD COLUMN category VARCHAR"))
+                print("  + Added inventory.category")
+    except Exception as e:
+        print(f"  Warning: Could not ensure inventory.category: {e}")
+
+
+def _ensure_inventory_image_db_storage_if_needed():
+    """Add image_data (bytea) and mime_type columns to inventoryimage.
+
+    SQLModel auto-names the table 'inventoryimage' (no underscore) from the class name.
+    Before this migration images were written to the local filesystem (uploads/)
+    which is ephemeral on cloud deployments. Now bytes are stored in the database
+    so they survive redeployments indefinitely.
+    
+    Updates CHECK constraint check_image_source to allow image_data as an alternative
+    storage method to image_url or file_path. The revised constraint requires at least
+    one of image_url, file_path, or image_data to be non-null.
+    """
+    try:
+        with engine.begin() as conn:
+            exists_data = conn.execute(text("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='image_data'
+            """)).fetchone()
+            if not exists_data:
+                # Drop the existing check constraint before adding the new column
+                conn.execute(text("""
+                    ALTER TABLE inventoryimage DROP CONSTRAINT check_image_source
+                """))
+                print("  - Dropped inventoryimage.check_image_source constraint")
+                
+                # Add the new storage columns
+                conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN image_data BYTEA"))
+                print("  + Added inventoryimage.image_data (BYTEA)")
+
+                exists_mime = conn.execute(text("""
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='mime_type'
+                """)).fetchone()
+                if not exists_mime:
+                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
+                    print("  + Added inventoryimage.mime_type")
+                
+                # Add revised constraint: at least one storage method must be non-null
+                conn.execute(text("""
+                    ALTER TABLE inventoryimage ADD CONSTRAINT check_image_source CHECK (
+                        (image_url IS NOT NULL) OR
+                        (file_path IS NOT NULL) OR
+                        (image_data IS NOT NULL)
+                    )
+                """))
+                print("  + Added revised inventoryimage.check_image_source constraint (includes image_data)")
+            else:
+                # image_data already exists, ensure mime_type is present
+                exists_mime = conn.execute(text("""
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='inventoryimage' AND column_name='mime_type'
+                """)).fetchone()
+                if not exists_mime:
+                    conn.execute(text("ALTER TABLE inventoryimage ADD COLUMN mime_type VARCHAR"))
+                    print("  + Added inventoryimage.mime_type")
+    except Exception as e:
+        print(f"  Warning: Could not add inventoryimage storage columns: {e}")
+
+
+def _drop_descriptive_feature_name_unique_index_if_needed():
+    """Drop the old single-column unique index on descriptive_feature.name.
+
+    Before multi-tenancy, this index was UNIQUE which prevents two companies from
+    having a feature with the same name (e.g. both having 'Size'). The composite
+    unique constraint uq_descriptive_feature_company_name(company_id, name) is the
+    correct constraint now.
+    """
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text("""
+                SELECT 1 FROM pg_indexes
+                WHERE schemaname = 'public'
+                  AND tablename = 'descriptive_feature'
+                  AND indexname = 'ix_descriptive_feature_name'
+            """)).fetchone()
+            if exists:
+                conn.execute(text("DROP INDEX IF EXISTS ix_descriptive_feature_name"))
+                print("  + Dropped legacy unique index ix_descriptive_feature_name")
+    except Exception as e:
+        print(f"  Warning: Could not drop ix_descriptive_feature_name: {e}")
+
+
+def _ensure_inventory_category_table_if_needed():
+    """Create inventory_category table for item-type-scoped category lookup."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT to_regclass('inventory_category')"
+            )).scalar()
+            if not exists:
+                conn.execute(text("""
+                    CREATE TABLE inventory_category (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        item_type VARCHAR NOT NULL,
+                        name VARCHAR NOT NULL,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inventory_category_item_type ON inventory_category(item_type)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inventory_category_company_id ON inventory_category(company_id)"))
+                print("  + Created inventory_category table")
+    except Exception as e:
+        print(f"  Warning: Could not create inventory_category table: {e}")
+
+
+def _ensure_department_table_if_needed():
+    """Create department table and add department_id FK column to user table."""
+    try:
+        with engine.begin() as conn:
+            dept_exists = conn.execute(text("SELECT to_regclass('department')")).scalar()
+            if not dept_exists:
+                conn.execute(text("""
+                    CREATE TABLE department (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name VARCHAR NOT NULL,
+                        description VARCHAR,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_department_name ON department(name)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_department_company_id ON department(company_id)"))
+                print("  + Created department table")
+
+            col_exists = conn.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'user' AND column_name = 'department_id'
+            """)).fetchone()
+            if not col_exists:
+                conn.execute(text(
+                    'ALTER TABLE "user" ADD COLUMN department_id UUID REFERENCES department(id) ON DELETE SET NULL'
+                ))
+                print("  + Added department_id to user table")
+    except Exception as e:
+        print(f"  Warning: Could not set up department table: {e}")
+
+
+def _ensure_document_tag_tables_if_needed():
+    """Create document_tag and document_tag_link tables for document tagging."""
+    try:
+        with engine.begin() as conn:
+            tag_exists = conn.execute(text("SELECT to_regclass('document_tag')")).scalar()
+            if not tag_exists:
+                conn.execute(text("""
+                    CREATE TABLE document_tag (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name VARCHAR NOT NULL,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_name ON document_tag(name)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_company_id ON document_tag(company_id)"))
+                print("  + Created document_tag table")
+            link_exists = conn.execute(text("SELECT to_regclass('document_tag_link')")).scalar()
+            if not link_exists:
+                conn.execute(text("""
+                    CREATE TABLE document_tag_link (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        document_id UUID NOT NULL REFERENCES document(id) ON DELETE CASCADE,
+                        tag_id UUID NOT NULL REFERENCES document_tag(id) ON DELETE CASCADE,
+                        company_id VARCHAR,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW(),
+                        UNIQUE(document_id, tag_id)
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_link_document_id ON document_tag_link(document_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_document_tag_link_tag_id ON document_tag_link(tag_id)"))
+                print("  + Created document_tag_link table")
+    except Exception as e:
+        print(f"  Warning: Could not create document tag tables: {e}")
+
+
+def _seed_inventory_categories_for_03897():
+    """Seed default item categories for company 03897."""
+    COMPANY_ID = "03897"
+    SEED_CATEGORIES = {
+        "product":  ["Clothing", "Accessories", "Electronics", "Footwear", "Home Goods", "Food & Beverage", "Books & Media", "Toys & Games", "Sports & Outdoors"],
+        "resource": ["Raw Materials", "Packaging", "Fabric", "Chemicals", "Printing Supplies", "Cleaning Supplies"],
+        "asset":    ["Machinery", "Furniture", "Vehicles", "Technology", "Display Equipment", "Tools"],
+        "location": ["Storage", "Storefront", "Warehouse", "Office", "Back Room", "Display Floor", "Fitting Room"],
+        "item":     ["Miscellaneous", "Sample", "Promotional", "Display Only"],
+        "bundle":   ["Starter Pack", "Gift Set", "Seasonal Bundle", "Value Pack"],
+        "mix":      ["Custom Mix", "Client Choice", "Variety Pack"],
+    }
+    try:
+        with engine.begin() as conn:
+            for item_type, names in SEED_CATEGORIES.items():
+                for name in names:
+                    existing = conn.execute(text(
+                        "SELECT 1 FROM inventory_category WHERE company_id = :c AND item_type = :t AND name = :n"
+                    ), {"c": COMPANY_ID, "t": item_type, "n": name}).fetchone()
+                    if not existing:
+                        conn.execute(text(
+                            "INSERT INTO inventory_category (item_type, name, company_id) VALUES (:t, :n, :c)"
+                        ), {"t": item_type, "n": name, "c": COMPANY_ID})
+        print("  + Seeded inventory categories for company 03897")
+    except Exception as e:
+        print(f"  Warning: Could not seed inventory categories: {e}")
+
+
+# ─── MIGRATION: EMPLOYEE LUNCH TIME + INVENTORY PROCUREMENT LEAD ───────────────
+def _ensure_app_settings_core_columns_if_needed():
+    """Add all app_settings columns that have no dedicated migration."""
+    cols_to_add = [
+        ("start_of_day",                 "VARCHAR",          "'06:00'"),
+        ("end_of_day",                   "VARCHAR",          "'21:00'"),
+        ("attendance_check_in_required", "BOOLEAN",          "FALSE"),
+        ("reminder_time_minutes",        "INTEGER",          "30"),
+        ("reminder_send_notification",   "BOOLEAN",          "TRUE"),
+        ("monday_enabled",               "BOOLEAN",          "TRUE"),
+        ("tuesday_enabled",              "BOOLEAN",          "TRUE"),
+        ("wednesday_enabled",            "BOOLEAN",          "TRUE"),
+        ("thursday_enabled",             "BOOLEAN",          "TRUE"),
+        ("friday_enabled",               "BOOLEAN",          "TRUE"),
+        ("saturday_enabled",             "BOOLEAN",          "TRUE"),
+        ("sunday_enabled",               "BOOLEAN",          "TRUE"),
+        ("tax_rate",                     "DOUBLE PRECISION", "0.0"),
+        ("portal_hero_title",            "VARCHAR",          None),
+        ("portal_hero_subtitle",         "VARCHAR",          None),
+        ("portal_hero_tagline",          "VARCHAR",          None),
+        ("portal_hero_bg_color",         "VARCHAR",          None),
+        ("portal_hero_text_color",       "VARCHAR",          None),
+        ("portal_hero_image_url",        "VARCHAR",          None),
+        ("portal_banner_text",           "VARCHAR",          None),
+        ("portal_banner_color",          "VARCHAR",          None),
+        ("portal_show_hero",             "BOOLEAN",          "TRUE"),
+        ("portal_show_banner",           "BOOLEAN",          "FALSE"),
+        ("portal_footer_text",           "VARCHAR",          None),
+        ("portal_primary_color",         "VARCHAR",          None),
+        ("portal_secondary_color",       "VARCHAR",          None),
+    ]
+    with engine.begin() as conn:
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()}
+        for col, pg_type, default in cols_to_add:
+            if col not in existing:
+                default_clause = f" DEFAULT {default}" if default is not None else ""
+                conn.execute(text(f"ALTER TABLE app_settings ADD COLUMN {col} {pg_type}{default_clause}"))
+                print(f"  + Added column app_settings.{col}")
+
+
+def _ensure_inventory_core_columns_if_needed():
+    """Add core inventory columns missing from older schemas where inventory
+    was a separate stock-tracking table without product detail fields."""
+    cols_to_add = [
+        ("name",        "VARCHAR",          "''"),
+        ("sku",         "VARCHAR",          None),
+        ("price",       "DOUBLE PRECISION", "0"),
+        ("description", "VARCHAR",          None),
+        ("type",        "VARCHAR",          "'product'"),
+        ("image_url",   "VARCHAR",          None),
+        ("service_id",  "UUID",             None),
+        ("cost",        "DOUBLE PRECISION", None),
+        ("cost_type",   "VARCHAR",          "'one_time'"),
+    ]
+    with engine.begin() as conn:
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='inventory'"
+        )).fetchall()}
+        for col, pg_type, default in cols_to_add:
+            if col not in existing:
+                default_clause = f" DEFAULT {default}" if default is not None else ""
+                conn.execute(text(f"ALTER TABLE inventory ADD COLUMN {col} {pg_type}{default_clause}"))
+                print(f"  + Added column inventory.{col}")
+
+
+def _ensure_service_image_url_if_needed():
+    """Add image_url column to service table if missing."""
+    with engine.begin() as conn:
+        exists = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='service' AND column_name='image_url'"
         )).fetchone()
+        if not exists:
+            conn.execute(text("ALTER TABLE service ADD COLUMN image_url VARCHAR"))
+            print("  + Added column service.image_url")
+
+
+def _ensure_service_and_schedule_addons_if_needed():
+    """Add service/schedule add-on JSON columns if missing."""
+    with engine.begin() as conn:
+        svc_addons_exists = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='service' AND column_name='addons_json'"
+        )).fetchone()
+        if not svc_addons_exists:
+            conn.execute(text("ALTER TABLE service ADD COLUMN addons_json TEXT"))
+            print("  + Added column service.addons_json")
+
+        sched_addons_exists = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='schedule' AND column_name='service_addons_json'"
+        )).fetchone()
+        if not sched_addons_exists:
+            conn.execute(text("ALTER TABLE schedule ADD COLUMN service_addons_json TEXT"))
+            print("  + Added column schedule.service_addons_json")
+
+
+def _ensure_user_hierarchy_columns_if_needed():
+    """Add reports_to and role_id columns to user table if missing."""
+    cols_to_add = {
+        "reports_to": "UUID",
+        "role_id": "UUID",
+    }
+    with engine.begin() as conn:
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()}
+        for col, pg_type in cols_to_add.items():
+            if col not in existing:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column user.{col}")
+
+
+def _ensure_status_lookup_columns_if_needed():
+    """Add status_id lookup columns to client, user, and document tables.
+    The client_status / employee_status / document_status lookup tables
+    themselves are created by SQLModel.metadata.create_all."""
+    targets = ("client", "user", "document")
+    with engine.begin() as conn:
+        for tbl in targets:
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=:t"
+            ), {"t": tbl}).fetchall()}
+            if "status_id" not in existing:
+                conn.execute(text(f'ALTER TABLE "{tbl}" ADD COLUMN status_id UUID'))
+                print(f"  + Added column {tbl}.status_id")
+
+
+def _ensure_user_db_environment_if_needed():
+    """Add db_environment column to user table if missing."""
+    with engine.begin() as conn:
+        col_exists = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name='user' AND column_name='db_environment'"
+        )).fetchone()
+        if not col_exists:
+            conn.execute(text(
+                'ALTER TABLE "user" ADD COLUMN db_environment VARCHAR DEFAULT \'production\''
+            ))
+            print("  + Added column user.db_environment")
+
+
+def _ensure_user_startup_page_if_needed():
+    """Add startup_page column to user table if missing."""
+    with engine.begin() as conn:
+        col_exists = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name='user' AND column_name='startup_page'"
+        )).fetchone()
+        if not col_exists:
+            conn.execute(text(
+                'ALTER TABLE "user" ADD COLUMN startup_page VARCHAR DEFAULT \'schedule\''
+            ))
+            print("  + Added column user.startup_page")
+
+
+def _ensure_procurement_order_tax_shipping_if_needed():
+    """Add import_tax and shipping_cost to procurement_order."""
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='procurement_order')"
+        )).scalar()
         if not tbl_exists:
             return
-        # Inspect columns
-        cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
-        info = {row[1]: {"notnull": row[3]} for row in cols}
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='procurement_order'"
+        )).fetchall()}
+        for col, pg_type in (("import_tax", "DOUBLE PRECISION"), ("shipping_cost", "DOUBLE PRECISION")):
+            if col not in existing:
+                conn.execute(text(f'ALTER TABLE procurement_order ADD COLUMN {col} {pg_type} DEFAULT 0'))
+                print(f"  + Added column procurement_order.{col}")
 
-        # Detect presence of e-signature columns
-        has_is_signed = "is_signed" in info
-        has_signed_by = "signed_by" in info
-        has_signed_at = "signed_at" in info
 
-        # Determine if we must rebuild table due to nullability constraints
-        needs_rebuild = False
-        for col in ("entity_type", "entity_id"):
-            if col in info and info[col]["notnull"] == 1:
-                needs_rebuild = True
+def _ensure_employee_lunch_and_procurement_if_needed():
+    """Add lunch_start / lunch_duration_minutes to user;
+    procurement_lead_days to inventory."""
+    tables = {
+        "user": {
+            "lunch_start": "VARCHAR",
+            "lunch_duration_minutes": "INTEGER",
+        },
+        "inventory": {
+            "procurement_lead_days": "INTEGER",
+        },
+    }
+    with engine.begin() as conn:
+        for table, cols in tables.items():
+            tbl_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                f"WHERE table_schema='public' AND table_name='{table}')"
+            )).scalar()
+            if not tbl_exists:
+                continue
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}'"
+            )).fetchall()}
+            for col, pg_type in cols.items():
+                if col not in existing:
+                    conn.execute(text(f"ALTER TABLE \"{table}\" ADD COLUMN {col} {pg_type}"))
+                    print(f"  + Added column {table}.{col} ({pg_type})")
 
-        # If we don't need a rebuild, but are missing e-sign columns, add them in-place
-        if not needs_rebuild:
-            if not has_is_signed:
-                conn.execute(text("ALTER TABLE document ADD COLUMN is_signed BOOLEAN NOT NULL DEFAULT 0"))
-                has_is_signed = True
-            if not has_signed_by:
-                conn.execute(text("ALTER TABLE document ADD COLUMN signed_by TEXT"))
-                has_signed_by = True
-            if not has_signed_at:
-                conn.execute(text("ALTER TABLE document ADD COLUMN signed_at DATETIME"))
-                has_signed_at = True
-            # Nothing else to do
+
+def _ensure_company_registration_columns_if_needed():
+    """Ensure company registration columns exist for approval workflow."""
+    with engine.begin() as conn:
+        has_company = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='company')"
+        )).scalar()
+        if not has_company:
             return
-        # Perform migration: create new table with correct nullability
+
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='company'"
+        )).fetchall()}
+
+        if "registration_status" not in existing:
+            conn.execute(text(
+                "ALTER TABLE company "
+                "ADD COLUMN registration_status VARCHAR DEFAULT 'approved'"
+            ))
+            print("  + Added column company.registration_status")
+
+        if "registration_notes" not in existing:
+            conn.execute(text(
+                "ALTER TABLE company "
+                "ADD COLUMN registration_notes TEXT DEFAULT NULL"
+            ))
+            print("  + Added column company.registration_notes")
+
+
+def _ensure_client_auth_columns_if_needed():
+    """Add client portal / auth columns expected by Client ORM (email_verified, password_hash, etc.)."""
+    with engine.begin() as conn:
+        has_client = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='client')"
+        )).scalar()
+        if not has_client:
+            return
+
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='client'"
+        )).fetchall()}
+
+        columns = {
+            "password_hash": "VARCHAR",
+            "email_verified": "BOOLEAN DEFAULT FALSE",
+            "last_login": "TIMESTAMP",
+            "reset_token": "VARCHAR",
+            "reset_token_expires": "TIMESTAMP",
+        }
+        for col, definition in columns.items():
+            if col not in existing:
+                conn.execute(text(f"ALTER TABLE client ADD COLUMN {col} {definition}"))
+                print(f"  + Added column client.{col}")
+
+
+def _ensure_client_membership_fk_cascade_if_needed():
+    """Ensure client_membership.membership_id FK cascades on membership delete."""
+    with engine.begin() as conn:
+        has_client_membership = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='client_membership')"
+        )).scalar()
+        has_membership = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='membership')"
+        )).scalar()
+        if not has_client_membership or not has_membership:
+            return
+
+        fk_rows = conn.execute(text(
+            "SELECT tc.constraint_name, rc.delete_rule "
+            "FROM information_schema.table_constraints tc "
+            "JOIN information_schema.key_column_usage kcu "
+            "  ON tc.constraint_name = kcu.constraint_name "
+            " AND tc.table_schema = kcu.table_schema "
+            "JOIN information_schema.constraint_column_usage ccu "
+            "  ON ccu.constraint_name = tc.constraint_name "
+            " AND ccu.table_schema = tc.table_schema "
+            "JOIN information_schema.referential_constraints rc "
+            "  ON rc.constraint_name = tc.constraint_name "
+            " AND rc.constraint_schema = tc.table_schema "
+            "WHERE tc.table_schema = 'public' "
+            "  AND tc.table_name = 'client_membership' "
+            "  AND tc.constraint_type = 'FOREIGN KEY' "
+            "  AND kcu.column_name = 'membership_id' "
+            "  AND ccu.table_name = 'membership'"
+        )).fetchall()
+
+        if not fk_rows:
+            return
+
+        has_cascade = any((row[1] or "").upper() == "CASCADE" for row in fk_rows)
+        if has_cascade:
+            return
+
+        for row in fk_rows:
+            conn.execute(text(f'ALTER TABLE client_membership DROP CONSTRAINT IF EXISTS "{row[0]}"'))
+
         conn.execute(text(
-            """
-            CREATE TABLE IF NOT EXISTS document_new (
-              id TEXT PRIMARY KEY,
-              created_at DATETIME NOT NULL,
-              updated_at DATETIME,
-              filename TEXT NOT NULL,
-              original_filename TEXT NOT NULL,
-              file_path TEXT NOT NULL,
-              file_size INTEGER NOT NULL,
-              content_type TEXT NOT NULL,
-              entity_type VARCHAR,
-              entity_id TEXT,
-              description TEXT,
-              is_signed BOOLEAN NOT NULL DEFAULT 0,
-              signed_by TEXT,
-              signed_at DATETIME
-            )
-            """
+            "ALTER TABLE client_membership "
+            "ADD CONSTRAINT fk_client_membership_membership_id "
+            "FOREIGN KEY (membership_id) REFERENCES membership(id) ON DELETE CASCADE"
         ))
-        # Copy data
-        # Build SELECT list using literals for any missing columns
-        select_is_signed = "is_signed" if has_is_signed else "0 AS is_signed"
-        select_signed_by = "signed_by" if has_signed_by else "NULL AS signed_by"
-        select_signed_at = "signed_at" if has_signed_at else "NULL AS signed_at"
+        print("  + Updated client_membership.membership_id FK to ON DELETE CASCADE")
 
-        insert_sql = f"""
-            INSERT INTO document_new (
-              id, created_at, updated_at, filename, original_filename, file_path, file_size, content_type,
-              entity_type, entity_id, description, is_signed, signed_by, signed_at
-            )
-            SELECT 
-              id, created_at, updated_at, filename, original_filename, file_path, file_size, content_type,
-              entity_type, entity_id, description, {select_is_signed}, {select_signed_by}, {select_signed_at}
-            FROM document
-        """
-        conn.execute(text(insert_sql))
-        # Replace old table
-        conn.execute(text("DROP TABLE document"))
-        conn.execute(text("ALTER TABLE document_new RENAME TO document"))    
-    
+def _ensure_inventory_cost_fk_cascade_if_needed():
+    """Ensure inventory_cost.inventory_id FK cascades on inventory delete."""
+    with engine.begin() as conn:
+        has_inventory_cost = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='inventory_cost')"
+        )).scalar()
+        has_inventory = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='inventory')"
+        )).scalar()
+        if not has_inventory_cost or not has_inventory:
+            return
+
+        fk_rows = conn.execute(text(
+            "SELECT tc.constraint_name, rc.delete_rule "
+            "FROM information_schema.table_constraints tc "
+            "JOIN information_schema.key_column_usage kcu "
+            "  ON tc.constraint_name = kcu.constraint_name "
+            " AND tc.table_schema = kcu.table_schema "
+            "JOIN information_schema.constraint_column_usage ccu "
+            "  ON ccu.constraint_name = tc.constraint_name "
+            " AND ccu.table_schema = tc.table_schema "
+            "JOIN information_schema.referential_constraints rc "
+            "  ON rc.constraint_name = tc.constraint_name "
+            " AND rc.constraint_schema = tc.table_schema "
+            "WHERE tc.table_schema = 'public' "
+            "  AND tc.table_name = 'inventory_cost' "
+            "  AND tc.constraint_type = 'FOREIGN KEY' "
+            "  AND kcu.column_name = 'inventory_id' "
+            "  AND ccu.table_name = 'inventory'"
+        )).fetchall()
+
+        if not fk_rows:
+            return
+
+        has_cascade = any((row[1] or "").upper() == "CASCADE" for row in fk_rows)
+        if has_cascade:
+            return
+
+        for row in fk_rows:
+            conn.execute(text(f'ALTER TABLE inventory_cost DROP CONSTRAINT IF EXISTS "{row[0]}"'))
+
+        conn.execute(text(
+            "ALTER TABLE inventory_cost "
+            "ADD CONSTRAINT fk_inventory_cost_inventory_id "
+            "FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE CASCADE"
+        ))
+        print("  + Updated inventory_cost.inventory_id FK to ON DELETE CASCADE")
+        
+def _ensure_app_settings_stripe_columns_if_needed() -> None:
+    """Ensure Stripe configuration columns exist on app_settings."""
+    with engine.begin() as conn:
+        existing_cols = {
+            row[0]
+            for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='app_settings'"
+            )).fetchall()
+        }
+
+        if "stripe_enabled" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_enabled BOOLEAN NOT NULL DEFAULT FALSE"))
+            print("  + Added app_settings.stripe_enabled")
+
+        if "stripe_mode" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_mode VARCHAR NOT NULL DEFAULT 'test'"))
+            print("  + Added app_settings.stripe_mode")
+
+        if "stripe_test_publishable_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_test_publishable_key VARCHAR"))
+            print("  + Added app_settings.stripe_test_publishable_key")
+
+        if "stripe_test_secret_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_test_secret_key VARCHAR"))
+            print("  + Added app_settings.stripe_test_secret_key")
+
+        if "stripe_test_webhook_secret" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_test_webhook_secret VARCHAR"))
+            print("  + Added app_settings.stripe_test_webhook_secret")
+
+        if "stripe_live_publishable_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_live_publishable_key VARCHAR"))
+            print("  + Added app_settings.stripe_live_publishable_key")
+
+        if "stripe_live_secret_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_live_secret_key VARCHAR"))
+            print("  + Added app_settings.stripe_live_secret_key")
+
+        if "stripe_live_webhook_secret" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_live_webhook_secret VARCHAR"))
+            print("  + Added app_settings.stripe_live_webhook_secret")
+
+        if "stripe_publishable_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_publishable_key VARCHAR"))
+            print("  + Added app_settings.stripe_publishable_key")
+
+        if "stripe_secret_key" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_secret_key VARCHAR"))
+            print("  + Added app_settings.stripe_secret_key")
+
+        if "stripe_webhook_secret" not in existing_cols:
+            conn.execute(text("ALTER TABLE app_settings ADD COLUMN stripe_webhook_secret VARCHAR"))
+            print("  + Added app_settings.stripe_webhook_secret")
+
+        # Normalize mode values and backfill new per-environment fields from legacy keys.
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_mode = CASE "
+            "WHEN stripe_mode IS NULL OR LOWER(TRIM(stripe_mode)) NOT IN ('test', 'live') THEN 'test' "
+            "ELSE LOWER(TRIM(stripe_mode)) END"
+        ))
+
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_live_publishable_key = stripe_publishable_key "
+            "WHERE stripe_live_publishable_key IS NULL "
+            "AND stripe_publishable_key IS NOT NULL "
+            "AND stripe_publishable_key LIKE 'pk_live_%'"
+        ))
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_test_publishable_key = stripe_publishable_key "
+            "WHERE stripe_test_publishable_key IS NULL "
+            "AND stripe_publishable_key IS NOT NULL "
+            "AND stripe_publishable_key NOT LIKE 'pk_live_%'"
+        ))
+
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_live_secret_key = stripe_secret_key "
+            "WHERE stripe_live_secret_key IS NULL "
+            "AND stripe_secret_key IS NOT NULL "
+            "AND stripe_secret_key LIKE 'sk_live_%'"
+        ))
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_test_secret_key = stripe_secret_key "
+            "WHERE stripe_test_secret_key IS NULL "
+            "AND stripe_secret_key IS NOT NULL "
+            "AND stripe_secret_key NOT LIKE 'sk_live_%'"
+        ))
+
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_test_webhook_secret = stripe_webhook_secret "
+            "WHERE stripe_test_webhook_secret IS NULL "
+            "AND stripe_webhook_secret IS NOT NULL "
+            "AND (stripe_mode = 'test' OR stripe_live_webhook_secret IS NULL)"
+        ))
+        conn.execute(text(
+            "UPDATE app_settings "
+            "SET stripe_live_webhook_secret = stripe_webhook_secret "
+            "WHERE stripe_live_webhook_secret IS NULL "
+            "AND stripe_webhook_secret IS NOT NULL "
+            "AND stripe_mode = 'live'"
+        ))
+
+
+# ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
-    """Create database tables and run safe migrations."""
-    # Pre-create migrations: move legacy product/assets to item schema and adjust inventory FK
-    _migrate_products_and_inventory_to_items_if_needed()
-    # Create all tables based on current models
-    SQLModel.metadata.create_all(engine)
-    # Post-create migrations
-    _ensure_item_type_column_if_needed()
-    _migrate_documents_table_if_needed()
-    _ensure_document_extra_columns_if_needed()
-    _ensure_employee_user_id_column_if_needed()
-    _normalize_item_types_if_needed()
+    """Run safe migrations to bring schema to current version."""
+    try:
+        import backend.models  # noqa: F401
+    except ModuleNotFoundError:
+        import models  # type: ignore  # noqa: F401
 
+    SQLModel.metadata.create_all(engine)
+
+    # These columns are read by core service queries, so repair them before any
+    # version fast path or unrelated migration can prevent the API from starting.
+    _ensure_user_undo_action_table_if_needed()
+    _ensure_service_and_schedule_addons_if_needed()
+    _ensure_permissiontype_enum_values_if_needed()
+    _ensure_payroll_compensation_columns_if_needed()
+    _seed_document_templates_for_existing_companies_if_needed()
+
+    # Skip migrations only when the version marker and required artifacts match reality.
+    if _schema_is_current() and _required_schema_artifacts_present():
+        print(f"Schema already at {CURRENT_SCHEMA_VERSION}, skipping migrations.")
+        return
+
+    print(f"Running migrations to schema version {CURRENT_SCHEMA_VERSION}...")
+    _migrate_document_entity_type_enum_to_varchar()
+    _ensure_document_extra_columns_if_needed()
+    _ensure_employee_supervisor_column_if_needed()
+    _ensure_employee_color_column_if_needed()
+    _normalize_item_types_if_needed()
+    _ensure_inventory_image_table_if_needed()
+    _ensure_service_duration_column_if_needed()
+    _ensure_schedule_extra_columns_if_needed()
+    _ensure_user_extra_columns_if_needed()
+    _ensure_signature_columns_if_needed()
+    _ensure_user_profile_picture_if_needed()
+    _seed_user_colors_if_needed()
+    _seed_insurance_plans_if_needed()
+    _ensure_leave_request_supervisor_id_if_needed()
+    _ensure_user_payroll_columns_if_needed()
+    _ensure_insurance_plan_monthly_deduction_if_needed()
+    _ensure_insurance_plan_document_id_if_needed()
+    _ensure_schedule_recurrence_columns_if_needed()
+    _ensure_chat_message_table_if_needed()
+    _ensure_app_settings_company_columns_if_needed()
+    _ensure_app_settings_logo_columns_if_needed()
+    _ensure_user_training_mode_if_needed()
+    _ensure_user_ui_preference_columns_if_needed()
+    _ensure_schedule_payment_columns_if_needed()
+    _ensure_service_recipe_if_needed()
+    _ensure_production_tables_if_needed()
+    _ensure_bundle_component_table_if_needed()
+    _ensure_mix_tables_if_needed()
+    _ensure_inventory_price_columns_if_needed()
+    _ensure_sale_transaction_item_mix_selections_if_needed()
+    _ensure_sale_transaction_item_options_json_if_needed()
+    _ensure_inventory_feature_combination_table_if_needed()
+    _ensure_client_order_workflow_columns_if_needed()
+    _ensure_discount_rule_table_if_needed()
+    _ensure_schedule_client_nullable_if_needed()
+    _ensure_document_template_name_unique_if_needed()
+    _ensure_company_multitenancy_if_needed()
+    _backfill_company_logo_from_settings_if_needed()
+    _ensure_user_username_composite_unique_if_needed()
+    _ensure_userrole_enum_values_if_needed()
+    _ensure_inventory_sku_nullable_if_needed()
+    _ensure_inventory_category_column_if_needed()
+    _ensure_inventory_image_db_storage_if_needed()
+    _drop_descriptive_feature_name_unique_index_if_needed()
+    _ensure_inventory_category_table_if_needed()
+    _seed_inventory_categories_for_03897()
+    _ensure_document_tag_tables_if_needed()
+    _ensure_department_table_if_needed()
+    _ensure_employee_lunch_and_procurement_if_needed()
+    _ensure_procurement_order_tax_shipping_if_needed()
+    _ensure_company_registration_columns_if_needed()
+    _ensure_client_auth_columns_if_needed()
+    _ensure_client_membership_fk_cascade_if_needed()
+    _ensure_inventory_cost_fk_cascade_if_needed()
+    _ensure_app_settings_stripe_columns_if_needed()
+    _ensure_app_settings_core_columns_if_needed()
+    _ensure_inventory_core_columns_if_needed()
+    _ensure_service_image_url_if_needed()
+    _ensure_user_hierarchy_columns_if_needed()
+    _ensure_asset_unit_employee_column_if_needed()
+    _ensure_asset_unit_location_column_if_needed()
+    _ensure_descriptive_feature_description_column_if_needed()
+    _ensure_user_db_environment_if_needed()
+    _ensure_status_lookup_columns_if_needed()
+    _ensure_user_startup_page_if_needed()
+    _mark_schema_current()
+    print("Migrations complete.")
+
+# ─── 18 MIGRATION: PRODUCTION TABLES & SCHEDULE PRODUCTION COLUMNS ─────────────
+def _ensure_production_tables_if_needed():
+    """Create product_resource, product_asset, product_location tables and
+    add production columns to the schedule table for existing databases."""
+
+    with engine.begin() as conn:
+
+        def table_exists(name: str) -> bool:
+            return conn.execute(text(
+                "SELECT to_regclass(:n)"
+            ), {"n": name}).scalar() is not None
+
+        def col_exists(tbl: str, col: str) -> bool:
+            result = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name=:t AND column_name=:c"
+            ), {"t": tbl, "c": col}).fetchone()
+            return result is not None
+
+        if not table_exists("product_resource"):
+            conn.execute(text("""
+                CREATE TABLE product_resource (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL,
+                    resource_id  UUID NOT NULL,
+                    quantity_per_batch REAL NOT NULL DEFAULT 1.0,
+                    notes TEXT
+                )
+            """))
+            print("  + Created table product_resource")
+
+        if not table_exists("product_asset"):
+            conn.execute(text("""
+                CREATE TABLE product_asset (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL,
+                    asset_id     UUID NOT NULL,
+                    batch_size   INTEGER NOT NULL DEFAULT 1,
+                    duration_minutes REAL,
+                    notes TEXT
+                )
+            """))
+            print("  + Created table product_asset")
+
+        if not table_exists("product_location"):
+            conn.execute(text("""
+                CREATE TABLE product_location (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP,
+                    inventory_id UUID NOT NULL,
+                    location_id  UUID NOT NULL,
+                    notes TEXT
+                )
+            """))
+            print("  + Created table product_location")
+
+        if table_exists("schedule"):
+            pg_types = {
+                "task_type": "VARCHAR DEFAULT 'service'",
+                "production_item_id": "UUID",
+                "production_quantity": "INTEGER DEFAULT 1",
+            }
+            for col, pg_type in pg_types.items():
+                if not col_exists("schedule", col):
+                    conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {pg_type}"))
+                    print(f"  + Added column schedule.{col}")
+
+
+# ─── 19 MIGRATION: SCHEDULE CLIENT_ID NULLABLE ──────────────────────────────────
+def _ensure_schedule_client_nullable_if_needed():
+    """Make schedule.client_id and service_id nullable so meetings and tasks can exist without a client/service."""
+    try:
+        with engine.begin() as conn:
+            for col in ("client_id", "service_id"):
+                row = conn.execute(text(
+                    "SELECT is_nullable FROM information_schema.columns "
+                    f"WHERE table_name='schedule' AND column_name='{col}'"
+                )).fetchone()
+                if row and row[0] == "NO":
+                    conn.execute(text(f"ALTER TABLE schedule ALTER COLUMN {col} DROP NOT NULL"))
+                    print(f"  + Dropped NOT NULL constraint on schedule.{col}")
+    except Exception as e:
+        print(f"  [WARN] Could not make schedule columns nullable: {e}")
+
+
+# ─── 20 MIGRATION: DOCUMENT TEMPLATE NAME UNIQUE CONSTRAINT ─────────────────────
+def _ensure_document_template_name_unique_if_needed():
+    """Ensure document_template name uniqueness is scoped per company.
+
+    The old migration created a single-column unique index on (name) alone, which
+    prevents two companies from having templates with the same name (e.g. both
+    wanting an "Invoice" template). This migration drops that index and replaces it
+    with a composite index on (company_id, name).
+    """
+    try:
+        with engine.begin() as conn:
+            # Drop the old single-column unique index if it exists
+            old_exists = conn.execute(text(
+                "SELECT 1 FROM pg_indexes WHERE tablename='document_template' AND indexname='uq_document_template_name'"
+            )).fetchone()
+            if old_exists:
+                conn.execute(text("DROP INDEX IF EXISTS uq_document_template_name"))
+                print("  + Dropped legacy single-column unique index uq_document_template_name")
+
+            # Create composite unique index on (company_id, name) if not already present
+            new_exists = conn.execute(text(
+                "SELECT 1 FROM pg_indexes WHERE tablename='document_template' AND indexname='uq_document_template_company_name'"
+            )).fetchone()
+            if not new_exists:
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX uq_document_template_company_name ON document_template (company_id, name)"
+                ))
+                print("  + Added composite unique index on document_template (company_id, name)")
+    except Exception as e:
+        print(f"  [WARN] Could not update unique index on document_template: {e}")
+
+
+# ─── 17 SESSION DEPENDENCY ─────────────────────────────────────────────────────
 def get_session() -> Generator[Session, None, None]:
     """Get database session"""
     with Session(engine) as session:
         yield session
 
-def _migrate_products_and_inventory_to_items_if_needed():
-    """SQLite-safe migrations to remove legacy products/assets and move to items.
-
-    Steps:
-    - If both product and item tables exist, copy any missing rows from product -> item, then drop product.
-    - If only product exists, rename it to item.
-    - Update inventory table to use item_id instead of product_id (rebuild table if needed).
-    - Drop legacy asset table if it exists.
-    """
-    if not DATABASE_URL.startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        # Helpers
-        def table_exists(name: str) -> bool:
-            return conn.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=:name"
-            ), {"name": name}).fetchone() is not None
-
-        product_exists = table_exists("product")
-        item_exists = table_exists("item")
-
-        # Case 1: both product and item exist -> copy missing rows then drop product
-        if product_exists and item_exists:
-            # Inspect columns available on both; use intersection
-            prod_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('product')")).fetchall()]
-            item_cols = [row[1] for row in conn.execute(text("PRAGMA table_info('item')")).fetchall()]
-            common_cols = [c for c in prod_cols if c in item_cols]
-            if common_cols:
-                cols_csv = ", ".join(common_cols)
-                insert_sql = f"INSERT OR IGNORE INTO item ({cols_csv}) SELECT {cols_csv} FROM product"
-                conn.execute(text(insert_sql))
-            # Drop product table after copy
-            conn.execute(text("DROP TABLE product"))
-            product_exists = False
-
-        # Case 2: only product exists -> rename to item
-        if product_exists and not item_exists:
-            conn.execute(text("ALTER TABLE product RENAME TO item"))
-            item_exists = True
-            product_exists = False
-
-        # Migrate inventory FK column from product_id -> item_id
-        if table_exists("inventory"):
-            cols = conn.execute(text("PRAGMA table_info('inventory')")).fetchall()
-            col_names = {row[1] for row in cols}
-            has_product_id = "product_id" in col_names
-            has_item_id = "item_id" in col_names
-            if has_product_id and not has_item_id:
-                # Rebuild inventory table with correct schema
-                conn.execute(text(
-                    """
-                    CREATE TABLE IF NOT EXISTS inventory_new (
-                      id TEXT PRIMARY KEY,
-                      created_at DATETIME NOT NULL,
-                      updated_at DATETIME,
-                      item_id TEXT NOT NULL,
-                      supplier_id TEXT,
-                      quantity INTEGER NOT NULL,
-                      min_stock_level INTEGER NOT NULL DEFAULT 10,
-                      location TEXT
-                    )
-                    """
-                ))
-                # Copy data mapping product_id -> item_id
-                conn.execute(text(
-                    """
-                    INSERT INTO inventory_new (
-                      id, created_at, updated_at, item_id, supplier_id, quantity, min_stock_level, location
-                    )
-                    SELECT 
-                      id, created_at, updated_at, product_id AS item_id, supplier_id, quantity, min_stock_level, location
-                    FROM inventory
-                    """
-                ))
-                conn.execute(text("DROP TABLE inventory"))
-                conn.execute(text("ALTER TABLE inventory_new RENAME TO inventory"))
-
-        # Drop legacy asset table if present
-        if table_exists("asset"):
-            conn.execute(text("DROP TABLE asset"))
-
-def _ensure_item_type_column_if_needed():
-    """Ensure the 'item' table has a 'type' column; add it if missing (SQLite).
-
-    If the column is added, initialize existing rows with 'item'.
-    """
-    if not DATABASE_URL.startswith("sqlite"):
-        # For non-SQLite, assume external migrations handle schema.
-        return
-    with engine.begin() as conn:
-        # Check item table exists
-        tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='item'"
-        )).fetchone()
-        if not tbl_exists:
-            return
-        # Inspect columns
-        cols = conn.execute(text("PRAGMA table_info('item')")).fetchall()
-        col_names = {row[1] for row in cols}
-        if "type" not in col_names:
-            # Add column and backfill existing rows to 'item'
-            conn.execute(text("ALTER TABLE item ADD COLUMN type VARCHAR DEFAULT 'item'"))
-            # Ensure existing rows have a non-null value
-            conn.execute(text("UPDATE item SET type = 'item' WHERE type IS NULL"))
-
+# ─── 5 MIGRATION: ITEM TYPES ──────────────────────────────────────────────────
 def _normalize_item_types_if_needed():
     """Normalize legacy item.type values to 'item'.
 
@@ -232,60 +1719,711 @@ def _normalize_item_types_if_needed():
     to 'item'. This helps avoid enum parsing errors at the API layer.
     """
     with engine.begin() as conn:
-        # Ensure item table exists and has a 'type' column
         tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='item'"
-        )).fetchone() if DATABASE_URL.startswith("sqlite") else True
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='item')"
+        )).scalar()
         if not tbl_exists:
             return
-        # Attempt to perform normalization; works on SQLite and most SQL dialects
         try:
             conn.execute(text(
                 "UPDATE item SET type = 'item' WHERE LOWER(type) IN ('product', 'asset')"
             ))
         except Exception:
-            # Fallback for engines without LOWER or case-insensitive compare
             try:
                 conn.execute(text("UPDATE item SET type = 'item' WHERE type IN ('product','asset','PRODUCT','ASSET')"))
             except Exception:
                 pass
 
+# ─── 6 MIGRATION: DOCUMENT EXTRA COLUMNS ───────────────────────────────────────
 def _ensure_document_extra_columns_if_needed():
-    """Ensure new columns exist on 'document' table: owner_id, review_date, category_id.
-    Create auxiliary tables if not present is handled by create_all, but on SQLite add columns if missing.
+    """Ensure new columns exist on 'document' table: owner_id, review_date, category_id,
+    is_signed, signed_by, signed_at.
     """
-    if not DATABASE_URL.startswith("sqlite"):
-        return
-    with engine.begin() as conn:
-        # Check document table exists
-        tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='document'"
-        )).fetchone()
-        if not tbl_exists:
-            return
-        cols = conn.execute(text("PRAGMA table_info('document')")).fetchall()
-        col_names = {row[1] for row in cols}
-        if "owner_id" not in col_names:
-            conn.execute(text("ALTER TABLE document ADD COLUMN owner_id TEXT"))
-        if "review_date" not in col_names:
-            conn.execute(text("ALTER TABLE document ADD COLUMN review_date DATETIME"))
-        if "category_id" not in col_names:
-            conn.execute(text("ALTER TABLE document ADD COLUMN category_id TEXT"))
+    extra_cols = {
+        "owner_id": "UUID",
+        "review_date": "TIMESTAMP WITH TIME ZONE",
+        "category_id": "UUID",
+        "is_signed": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "signed_by": "TEXT",
+        "signed_at": "TIMESTAMP WITH TIME ZONE",
+    }
 
-def _ensure_employee_user_id_column_if_needed():
-    """Ensure the 'employee' table has a 'user_id' column; add it if missing (SQLite)."""
-    if not DATABASE_URL.startswith("sqlite"):
-        return
     with engine.begin() as conn:
-        # Check employee table exists
         tbl_exists = conn.execute(text(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='employee'"
-        )).fetchone()
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='document')"
+        )).scalar()
         if not tbl_exists:
             return
-        # Inspect columns
-        cols = conn.execute(text("PRAGMA table_info('employee')")).fetchall()
-        col_names = {row[1] for row in cols}
-        if "user_id" not in col_names:
-            # Add column
-            conn.execute(text("ALTER TABLE employee ADD COLUMN user_id TEXT"))
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in extra_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column document.{col} ({pg_type})")
+
+# ─── 7 MIGRATION: EMPLOYEE COLUMNS ─────────────────────────────────────────────
+
+
+def _ensure_employee_supervisor_column_if_needed():
+    """Ensure the 'employee' table has a 'supervisor' column."""
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='employee')"
+        )).scalar()
+        if not tbl_exists:
+            return
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='employee'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "supervisor" not in col_names:
+            conn.execute(text("ALTER TABLE employee ADD COLUMN supervisor VARCHAR"))
+
+
+def _ensure_employee_color_column_if_needed():
+    """Ensure the legacy 'employee' table has a 'color' column.
+
+    Profile color is stored on `user.color` in current schema, but some older
+    deployments still depend on data mirrored in `employee.color`.
+    """
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='employee')"
+        )).scalar()
+        if not tbl_exists:
+            return
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='employee'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "color" not in col_names:
+            conn.execute(text("ALTER TABLE employee ADD COLUMN color VARCHAR"))
+
+
+# ─── 8 MIGRATION: INVENTORYIMAGE TABLE ─────────────────────────────────────────
+def _ensure_inventory_image_table_if_needed():
+    """Ensure InventoryImage table exists and has proper structure."""
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'inventoryimage')"
+        )).scalar()
+        if not tbl_exists:
+            conn.execute(text("""
+                CREATE TABLE inventoryimage (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    inventory_id UUID NOT NULL,
+                    image_url TEXT,
+                    file_path TEXT,
+                    file_name TEXT,
+                    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_inventory_image_inventory 
+                        FOREIGN KEY(inventory_id) REFERENCES inventory(id) ON DELETE CASCADE,
+                    CONSTRAINT check_image_source CHECK (
+                        (image_url IS NOT NULL AND file_path IS NULL) OR
+                        (image_url IS NULL AND file_path IS NOT NULL) OR
+                        (image_url IS NOT NULL AND file_path IS NOT NULL)
+                    )
+                )
+            """))
+
+            conn.execute(text(
+                "CREATE INDEX idx_inventoryimage_inventory_id ON inventoryimage(inventory_id)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX idx_inventoryimage_is_primary ON inventoryimage(inventory_id, is_primary) WHERE is_primary = TRUE"
+            ))
+            conn.execute(text(
+                "CREATE INDEX idx_inventoryimage_sort_order ON inventoryimage(inventory_id, sort_order)"
+            ))
+
+            conn.execute(text("""
+                CREATE OR REPLACE FUNCTION update_inventoryimage_updated_at()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = CURRENT_TIMESTAMP;
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+            """))
+
+            conn.execute(text("""
+                CREATE TRIGGER trigger_inventoryimage_updated_at
+                    BEFORE UPDATE ON inventoryimage
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_inventoryimage_updated_at();
+            """))
+
+            print("✓ Created InventoryImage table for PostgreSQL with indexes and triggers")
+
+
+# ─── 9 MIGRATION: SERVICE COLUMNS ──────────────────────────────────────────────
+def _ensure_service_duration_column_if_needed():
+    """Ensure service table has duration_minutes column."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='service'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "duration_minutes" not in col_names:
+            conn.execute(text("ALTER TABLE service ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+
+
+# ─── 10 MIGRATION: SCHEDULE COLUMNS ────────────────────────────────────────────
+def _ensure_schedule_extra_columns_if_needed():
+    """Ensure schedule table has appointment_type and duration_minutes columns."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='schedule'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "appointment_type" not in col_names:
+            conn.execute(text("ALTER TABLE schedule ADD COLUMN appointment_type VARCHAR DEFAULT 'one_time'"))
+        if "duration_minutes" not in col_names:
+            conn.execute(text("ALTER TABLE schedule ADD COLUMN duration_minutes INTEGER DEFAULT 60"))
+
+# ─── 11 MIGRATION: USER COLUMNS ────────────────────────────────────────────────
+def _ensure_user_extra_columns_if_needed():
+    """Ensure user table has employee detail/benefit columns."""
+    new_cols = {
+        "color": "VARCHAR",
+        "iod_number": "VARCHAR",
+        "supervisor": "VARCHAR",
+        "location": "VARCHAR",
+        "salary": "FLOAT",
+        "pay_frequency": "VARCHAR",
+        "insurance_plan": "VARCHAR",
+        "vacation_days": "INTEGER",
+        "vacation_days_used": "INTEGER DEFAULT 0",
+        "sick_days": "INTEGER",
+        "sick_days_used": "INTEGER DEFAULT 0",
+        "button_text_size": "VARCHAR DEFAULT 'medium'",
+        "footer_align": "VARCHAR DEFAULT 'left'",
+        "ui_scale": "INTEGER DEFAULT 100",
+    }
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, col_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+
+
+# ─── 11b MIGRATION: USER PROFILE PICTURE ───────────────────────────────────────
+def _ensure_user_profile_picture_if_needed():
+    """Ensure user table has profile_picture column."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "profile_picture" not in col_names:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN profile_picture VARCHAR'))
+
+
+# ─── 15 SEED: USER COLORS ──────────────────────────────────────────────────────
+def _seed_user_colors_if_needed():
+    """Assign unique colors to users that do not have one."""
+    def _hsl_to_hex(h: float, s: float, l: float) -> str:
+        c = (1 - abs(2 * l - 1)) * s
+        x = c * (1 - abs((h / 60) % 2 - 1))
+        m = l - c / 2
+        if 0 <= h < 60:
+            r, g, b = c, x, 0
+        elif 60 <= h < 120:
+            r, g, b = x, c, 0
+        elif 120 <= h < 180:
+            r, g, b = 0, c, x
+        elif 180 <= h < 240:
+            r, g, b = 0, x, c
+        elif 240 <= h < 300:
+            r, g, b = x, 0, c
+        else:
+            r, g, b = c, 0, x
+        to_hex = lambda v: f"{int((v + m) * 255):02x}"
+        return f"#{to_hex(r)}{to_hex(g)}{to_hex(b)}"
+
+    palette = [
+        "#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0d9488",
+        "#ea580c", "#0891b2", "#b91c1c", "#4f46e5", "#65a30d", "#d97706",
+        "#0f766e", "#be123c", "#9333ea", "#15803d", "#c2410c", "#0e7490",
+    ]
+
+    user_table = '"user"'
+    id_col = "id"
+    color_col = "color"
+
+    with engine.begin() as conn:
+        # Ensure column exists before seeding
+        try:
+            existing = conn.execute(text(f"SELECT {id_col}, {color_col} FROM {user_table}"))
+        except Exception:
+            return
+
+        rows = existing.fetchall()
+        if not rows:
+            return
+
+        used_colors = set()
+        available = [c for c in palette]
+
+        updates = []
+        color_index = 0
+        hue = 0.0
+        hue_step = 37.0
+
+        for user_id, color in rows:
+            normalized = color.lower() if color else None
+            if normalized and normalized not in used_colors:
+                used_colors.add(normalized)
+                continue
+
+            if color_index < len(available):
+                while color_index < len(available) and available[color_index].lower() in used_colors:
+                    color_index += 1
+                if color_index < len(available):
+                    chosen = available[color_index]
+                    color_index += 1
+                else:
+                    chosen = None
+            else:
+                chosen = None
+
+            if chosen is None:
+                # Generate additional distinct colors if palette is exhausted
+                while True:
+                    generated = _hsl_to_hex(hue % 360, 0.72, 0.5)
+                    hue += hue_step
+                    if generated.lower() not in used_colors:
+                        chosen = generated
+                        break
+
+            used_colors.add(chosen.lower())
+            updates.append((str(user_id), chosen))
+
+        if updates:
+            for user_id, color in updates:
+                conn.execute(
+                    text(f"UPDATE {user_table} SET {color_col} = :color WHERE {id_col} = :id"),
+                    {"color": color, "id": user_id}
+                )
+
+
+# ─── 11c MIGRATION: SIGNATURE COLUMNS ──────────────────────────────────────────
+def _ensure_signature_columns_if_needed():
+    """Ensure signature-related columns exist on user and document tables.
+
+    user.signature_data - base64 PNG signature data
+    document.signature_image - base64 PNG of signer's signature
+    document.signed_by_user_id - FK to user who signed
+    """
+    user_cols = {
+        "signature_data": "TEXT",
+    }
+    doc_cols = {
+        "signature_image": "TEXT",
+        "signed_by_user_id": "UUID",
+    }
+
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in user_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column user.{col} ({pg_type})")
+
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='document'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in doc_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE document ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column document.{col} ({pg_type})")
+
+
+# ─── 15b SEED: INSURANCE PLANS ─────────────────────────────────────────────────
+def _seed_insurance_plans_if_needed():
+    """Seed the insurance_plan table with default plans if it is empty."""
+    default_plans = [
+        ("Basic Health Plan", "Entry-level coverage for individuals"),
+        ("Standard Health Plan", "Comprehensive coverage for employees and dependents"),
+        ("Premium Health Plan", "Full-coverage plan with low deductibles"),
+        ("Dental & Vision Basic", "Basic dental and vision coverage"),
+        ("Dental & Vision Plus", "Enhanced dental and vision with orthodontics"),
+        ("Life Insurance - Basic", "Basic term life insurance"),
+        ("Life Insurance - Enhanced", "Enhanced life insurance with supplemental benefits"),
+        ("Short-Term Disability", "Income protection for short-term disability"),
+        ("Long-Term Disability", "Income protection for long-term disability"),
+        ("No Coverage", "Employee opted out of insurance coverage"),
+    ]
+
+    table = "insurance_plan"
+
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name=:tbl)"
+        ), {"tbl": table}).scalar()
+        if not tbl_exists:
+            return
+
+        count = conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
+        if count and count > 0:
+            return
+
+        import uuid as _uuid
+        from datetime import datetime as _dt
+        now = _dt.utcnow().isoformat()
+        for name, description in default_plans:
+            conn.execute(text(
+                f"INSERT INTO {table} (id, name, description, is_active, created_at) "
+                "VALUES (:id, :name, :description, :is_active, :created_at)"
+            ), {
+                "id": str(_uuid.uuid4()),
+                "name": name,
+                "description": description,
+                "is_active": True,
+                "created_at": now,
+            })
+        print(f"✓ Seeded {len(default_plans)} insurance plans")
+
+
+# ─── 11d MIGRATION: USER PAYROLL COLUMNS ───────────────────────────────────────
+def _ensure_user_payroll_columns_if_needed():
+    """Ensure user table has hourly_rate and employment_type columns for payroll support."""
+    new_cols = {
+        "hourly_rate": "FLOAT",
+        "employment_type": "VARCHAR",
+    }
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column user.{col} ({pg_type})")
+
+
+def _ensure_payroll_compensation_columns_if_needed():
+    """Ensure employee compensation settings and pay-slip snapshots exist."""
+    table_columns = {
+        "employee_pay_schedule": {
+            "base_pay": "DOUBLE PRECISION NOT NULL DEFAULT 0",
+            "compensation_percentage": "DOUBLE PRECISION NOT NULL DEFAULT 0",
+            "base_pay_included": "BOOLEAN NOT NULL DEFAULT TRUE",
+        },
+        "pay_slip": {
+            "service_revenue": "DOUBLE PRECISION NOT NULL DEFAULT 0",
+            "base_pay_snapshot": "DOUBLE PRECISION",
+            "compensation_percentage_snapshot": "DOUBLE PRECISION",
+            "base_pay_included_snapshot": "BOOLEAN",
+        },
+    }
+    with engine.begin() as conn:
+        for table_name, columns in table_columns.items():
+            existing = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=:table_name"
+            ), {"table_name": table_name}).fetchall()
+            existing_names = {row[0] for row in existing}
+            for column_name, definition in columns.items():
+                if column_name not in existing_names:
+                    conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}"))
+                    print(f"  + Added column {table_name}.{column_name}")
+
+
+# ─── 11e MIGRATION: INSURANCE PLAN MONTHLY DEDUCTION ───────────────────────────
+def _ensure_insurance_plan_monthly_deduction_if_needed():
+    """Ensure insurance_plan table has monthly_deduction column."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='insurance_plan'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "monthly_deduction" not in col_names:
+            conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN monthly_deduction FLOAT DEFAULT 0"))
+            print("  + Added column insurance_plan.monthly_deduction")
+
+
+def _ensure_insurance_plan_document_id_if_needed():
+    """Ensure insurance_plan table has document_id FK to shared plan documents."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='insurance_plan'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "document_id" not in col_names:
+            conn.execute(text("ALTER TABLE insurance_plan ADD COLUMN document_id UUID REFERENCES document(id)"))
+            print("  + Added column insurance_plan.document_id")
+
+
+# ─── 10b MIGRATION: SCHEDULE RECURRENCE COLUMNS ────────────────────────────────
+def _ensure_schedule_recurrence_columns_if_needed():
+    """Ensure schedule table has recurrence-related columns."""
+    new_cols = {
+        "recurrence_frequency": "VARCHAR",
+        "recurrence_end_date": "TIMESTAMP WITH TIME ZONE",
+        "recurrence_count": "INTEGER",
+        "parent_schedule_id": "UUID",
+        "is_recurring_master": "BOOLEAN DEFAULT FALSE",
+    }
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='schedule'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, col_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
+                print(f"  + Added column schedule.{col} ({col_type})")
+
+
+# ─── 14 MIGRATION: CHAT MESSAGE TABLE ──────────────────────────────────────────
+def _ensure_chat_message_table_if_needed():
+    """Ensure the chat_message table exists with all required columns.
+
+    SQLModel.metadata.create_all creates the table on fresh installs, but
+    existing databases that were set up before chat was added need an explicit
+    migration to create the table.
+    """
+    with engine.begin() as conn:
+        tbl_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='chat_message')"
+        )).scalar()
+        if not tbl_exists:
+            conn.execute(text("""
+                CREATE TABLE chat_message (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE,
+                    sender_id UUID NOT NULL REFERENCES "user"(id),
+                    receiver_id UUID NOT NULL REFERENCES "user"(id),
+                    content TEXT,
+                    message_type VARCHAR NOT NULL DEFAULT 'text',
+                    document_id UUID REFERENCES document(id),
+                    is_read BOOLEAN NOT NULL DEFAULT FALSE
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_sender_id ON chat_message(sender_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_message_receiver_id ON chat_message(receiver_id)"))
+            print("✓ Created chat_message table (PostgreSQL)")
+
+
+# ─── 12 MIGRATION: LEAVE REQUEST SUPERVISOR ID ─────────────────────────────────
+def _ensure_leave_request_supervisor_id_if_needed():
+    """Ensure leave_request table has a supervisor_id column."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='leave_request'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "supervisor_id" not in col_names:
+            conn.execute(text("ALTER TABLE leave_request ADD COLUMN supervisor_id UUID"))
+            print("✓ Added leave_request.supervisor_id (PostgreSQL)")
+
+
+# ─── 13 MIGRATION: APP SETTINGS COMPANY COLUMNS ────────────────────────────────
+def _ensure_app_settings_company_columns_if_needed():
+    """Ensure app_settings table has company name, email, phone, address, and timezone columns."""
+    new_cols = {
+        "company_name": "VARCHAR",
+        "company_email": "VARCHAR",
+        "company_phone": "VARCHAR",
+        "company_address": "TEXT",
+        "company_timezone": "VARCHAR",
+    }
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column app_settings.{col} ({pg_type})")
+
+        # Ensure company table also has timezone column
+        company_cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='company'"
+        )).fetchall()
+        company_col_names = {row[0] for row in company_cols}
+        if "timezone" not in company_col_names:
+            conn.execute(text('ALTER TABLE company ADD COLUMN timezone VARCHAR'))
+            print("  + Added column company.timezone (VARCHAR)")
+
+# ─── MIGRATION: APP SETTINGS LOGO COLUMNS ─────────────────────────────────────
+def _ensure_app_settings_logo_columns_if_needed():
+    """Ensure app_settings table has logo_data column for company branding."""
+    new_cols = {
+        "logo_data": "BYTEA",
+    }
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        for col, pg_type in new_cols.items():
+            if col not in col_names:
+                conn.execute(text(f'ALTER TABLE app_settings ADD COLUMN {col} {pg_type}'))
+                print(f"  + Added column app_settings.{col} ({pg_type})")
+
+
+def _backfill_company_logo_from_settings_if_needed():
+    """Move existing logo bytes from app_settings into company when missing."""
+    try:
+        with engine.begin() as conn:
+            company_logo_exists = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='logo_data'"
+            )).fetchone()
+            if not company_logo_exists:
+                return
+
+            settings_logo_exists = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='app_settings' AND column_name='logo_data'"
+            )).fetchone()
+            if not settings_logo_exists:
+                return
+
+            conn.execute(text(
+                """
+                UPDATE company c
+                SET logo_data = s.logo_data
+                FROM app_settings s
+                WHERE s.company_id = c.company_id
+                  AND c.logo_data IS NULL
+                  AND s.logo_data IS NOT NULL
+                """
+            ))
+    except Exception as e:
+        print(f"  Warning: Could not backfill company.logo_data from app_settings: {e}")
+
+# ─── MIGRATION: USER TRAINING MODE ─────────────────────────────────────────────
+def _ensure_user_training_mode_if_needed():
+    """Ensure user table has training_mode column."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "training_mode" not in col_names:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode BOOLEAN DEFAULT TRUE'))
+            print("  + Added column user.training_mode (BOOLEAN)")
+        else:
+            conn.execute(text('ALTER TABLE "user" ALTER COLUMN training_mode SET DEFAULT TRUE'))
+
+        if "training_mode_explicit" not in col_names:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN training_mode_explicit BOOLEAN DEFAULT FALSE'))
+            print("  + Added column user.training_mode_explicit (BOOLEAN)")
+
+
+def _ensure_user_ui_preference_columns_if_needed():
+    """Ensure user table has persistent UI preference columns."""
+    with engine.begin() as conn:
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='user'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "button_text_size" not in col_names:
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN button_text_size VARCHAR DEFAULT 'medium'"))
+            print("  + Added column user.button_text_size (VARCHAR)")
+        else:
+            conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN button_text_size SET DEFAULT 'medium'"))
+
+        if "footer_align" not in col_names:
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN footer_align VARCHAR DEFAULT 'left'"))
+            print("  + Added column user.footer_align (VARCHAR)")
+        else:
+            conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN footer_align SET DEFAULT 'left'"))
+
+        if "ui_scale" not in col_names:
+            conn.execute(text("ALTER TABLE \"user\" ADD COLUMN ui_scale INTEGER DEFAULT 100"))
+            print("  + Added column user.ui_scale (INTEGER)")
+        else:
+            conn.execute(text("ALTER TABLE \"user\" ALTER COLUMN ui_scale SET DEFAULT 100"))
+
+
+# ─── 16 MIGRATION: SERVICE RECIPE TABLE + ASSET DURATION ───────────────────────
+def _ensure_service_recipe_if_needed():
+    """Create service_recipe table and add asset_duration_minutes to service_asset."""
+    with engine.begin() as conn:
+        tables = {row[0] for row in conn.execute(text(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+        )).fetchall()}
+        if "service_recipe" not in tables:
+            conn.execute(text("""
+                CREATE TABLE service_recipe (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    service_id UUID NOT NULL UNIQUE REFERENCES service(id),
+                    is_produced BOOLEAN NOT NULL DEFAULT FALSE,
+                    batch_size INTEGER NOT NULL DEFAULT 1,
+                    batch_duration_minutes DOUBLE PRECISION,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            print("  + Created service_recipe table (PostgreSQL)")
+        cols = conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='service_asset'"
+        )).fetchall()
+        col_names = {row[0] for row in cols}
+        if "asset_duration_minutes" not in col_names:
+            conn.execute(text("ALTER TABLE service_asset ADD COLUMN asset_duration_minutes DOUBLE PRECISION"))
+            print("  + Added column service_asset.asset_duration_minutes (DOUBLE PRECISION)")
+
+
+def _ensure_user_undo_action_table_if_needed():
+    """Create user_undo_action table if it does not exist."""
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS user_undo_action (
+                    id UUID PRIMARY KEY,
+                    user_id UUID NOT NULL,
+                    action_type VARCHAR(16) NOT NULL,
+                    table_name VARCHAR(64) NOT NULL,
+                    record_id VARCHAR(64) NOT NULL,
+                    entity_title VARCHAR(255),
+                    before_state TEXT,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITHOUT TIME ZONE
+                )
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_undo_action_user_id ON user_undo_action (user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_undo_action_created_at ON user_undo_action (created_at)"))
+    except Exception as e:
+        print(f"Warning: could not ensure user_undo_action table: {e}")

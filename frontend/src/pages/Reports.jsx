@@ -1,0 +1,1705 @@
+/*
+ * ============================================================
+ * FILE: Reports.jsx
+ *
+ * PURPOSE:
+ *   Analytics and reporting page that lets users select a report type, configure
+ *   date-range and grouping filters, and view the results as an interactive chart.
+ *   Permission-gated: only reports whose underlying tables the user can read are
+ *   shown. Supports PDF export via the browser print dialog.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Imports & module-level constants — heroicons, API services, report/filter config arrays
+ *   [2] Component setup & permission guard — useStore hooks, early redirect if no permissions
+ *   [3] State declarations — selected report, report data, filter state, employee/service lists
+ *   [4] Derived state — accessibleReports (permission-filtered), selectedReport memo
+ *   [5] Report selection handler — handleReportSelect resets filters to report defaults
+ *   [6] Data loading / API fetch — loadReportData dispatches to the correct report endpoint
+ *   [7] Date range helpers — getStartDate / getEndDate compute ISO date strings
+ *   [8] Data transform functions — one transform per report type maps API response to Chart.js shape
+ *   [9] useEffect / lifecycle hooks — default report selection, load employees/services, reload on filter change
+ *   [10] PDF export handler — handleExportPdf opens a print window with the chart snapshot
+ *   [11] Render — header, chart area, filter footer row, report dropup selector
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-01 | Claude  | P10-A: KPI summary cards; P10-B: collapsible data table; P10-C: CSV export
+ *   2026-05-15 | Copilot | Shortened standalone report action labels for compact training-mode layouts
+ *   2026-05-26 | GitHub Copilot | Updated Events dropup sizing/icon behavior and refined Financial Controls footer actions
+ *   2026-06-13 | GitHub Copilot | Added report controls visibility toggle and normalized report selector dropup behavior
+ *   2026-09-04 | GitHub Copilot | Added persisted employee activity workday report
+ *   2026-09-11 | GitHub Copilot | Added compensation metrics, explicit activity filters, and report pay action
+ *   2026-09-11 | GitHub Copilot | Removed unused report symbols and stabilized report reload effect dependencies
+ *   2026-11-04 | GitHub Copilot | Added weekly activity report and labeled report filter controls
+ *   2026-11-08 | GitHub Copilot | Upgraded report period navigation buttons to Button_Toolbar with labels and floating mobile positioning
+ *   2026-11-09 | GitHub Copilot | Floated period navigation toolbar above footer across all viewports below footer dropups
+ *   2026-11-09 | GitHub Copilot | Made period navigation buttons circular and conditionally rendered footer beforeSearch to eliminate double-height footer
+ * ============================================================
+ */
+
+// ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
+import {
+  ChartBarIcon,
+  CalendarIcon,
+  UsersIcon,
+  BanknotesIcon,
+  CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
+  ArchiveBoxIcon,
+  ClockIcon,
+  ArrowDownTrayIcon,
+  ChevronUpDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CalculatorIcon,
+  ShoppingCartIcon,
+  ClipboardDocumentCheckIcon,
+  Cog6ToothIcon,
+  FunnelIcon,
+  XMarkIcon,
+  PhoneIcon,
+  BellIcon,
+  ListBulletIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
+
+import useStore from "../services/useStore";
+import { reportsAPI, employeesAPI, servicesAPI, payrollAPI } from "../services/api";
+import useBranding from "../services/useBranding";
+import { getMobileEnvironment } from "../services/mobileEnvironment";
+import Chart_Report from "./components/panels/Chart_Report";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Report_SelectorDropup from "./components/dropdowns/Report_SelectorDropup";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import useViewMode from "../services/useViewMode";
+import Modal_ForecastCalculator from "./components/modals/Modal_ForecastCalculator";
+import Modal_Reports_SaveFilter from "./components/modals/Modal_Reports_SaveFilter";
+import Modal_Reports_FinancialDashboard from "./components/modals/Modal_Reports_FinancialDashboard";
+import Modal_Reports_Settings from "./components/modals/Modal_Reports_Settings";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
+
+const AVAILABLE_REPORTS = [
+  {
+    id: "appointments",
+    title: "Events",
+    description: "Track events, meetings, and appointments over time",
+    icon: CalendarIcon,
+    color: "blue",
+    tables: ["schedule", "clients", "services", "user"],
+    chartTypes: ["line", "bar", "pie"],
+    supportsEventType: true,
+  },
+  {
+    id: "revenue",
+    title: "Revenue Analysis",
+    description: "Monitor earnings and financial performance",
+    icon: BanknotesIcon,
+    color: "green",
+    tables: ["schedule", "services"],
+    chartTypes: ["line", "bar", "area"],
+  },
+  {
+    id: "clients",
+    title: "Client Activity",
+    description: "Analyze client engagement and retention",
+    icon: UsersIcon,
+    color: "purple",
+    tables: ["clients", "schedule"],
+    chartTypes: ["bar", "pie", "doughnut"],
+  },
+  {
+    id: "weekly-activity",
+    title: "Weekly Activity",
+    description: "See which days of the week have the most and least appointments",
+    icon: CalendarIcon,
+    color: "pink",
+    tables: ["schedule", "clients"],
+    chartTypes: ["bar", "pie", "doughnut"],
+  },
+  {
+    id: "services",
+    title: "Service Performance",
+    description: "Compare service popularity and profitability",
+    icon: WrenchScrewdriverIcon,
+    color: "orange",
+    tables: ["services", "schedule"],
+    chartTypes: ["pie", "bar", "doughnut"],
+  },
+  {
+    id: "sales",
+    title: "Sales Trends",
+    description: "Track transaction totals over time",
+    icon: CurrencyDollarIcon,
+    color: "emerald",
+    tables: ["sale_transaction", "user", "client"],
+    chartTypes: ["line", "bar", "area"],
+  },
+  {
+    id: "payroll",
+    title: "Payroll Summary",
+    description: "Monitor payroll payouts by period",
+    icon: BanknotesIcon,
+    color: "teal",
+    tables: ["pay_slip", "user"],
+    chartTypes: ["bar", "line", "area"],
+  },
+  {
+    id: "expenses",
+    title: "Expense Analysis",
+    description: "Track one-time and recurring inventory expenses",
+    icon: CurrencyDollarIcon,
+    color: "rose",
+    tables: ["inventory"],
+    chartTypes: ["line", "bar", "area"],
+  },
+  {
+    id: "inventory",
+    title: "Inventory Analytics",
+    description: "Track stock levels and usage patterns",
+    icon: ArchiveBoxIcon,
+    color: "red",
+    tables: ["inventory", "item", "supplier"],
+    chartTypes: ["bar", "line"],
+  },
+  {
+    id: "employees",
+    title: "Employee Performance",
+    description: "Monitor staff productivity and schedules",
+    icon: ClockIcon,
+    color: "indigo",
+    tables: ["user", "schedule", "attendance"],
+    chartTypes: ["bar", "line"],
+  },
+  {
+    id: "employee-activity",
+    title: "Employee Activity",
+    description: "Review an employee's worked days, services, and sales",
+    icon: CalendarIcon,
+    color: "teal",
+    tables: ["user", "schedule", "sale_transaction"],
+    chartTypes: ["bar"],
+  },
+  {
+    id: "attendance",
+    title: "Attendance Tracking",
+    description: "View employee attendance patterns",
+    icon: ClockIcon,
+    color: "gray",
+    tables: ["attendance", "user"],
+    chartTypes: ["line", "bar"],
+  },
+  {
+    id: "orders",
+    title: "Portal Orders",
+    description: "Track order volume and revenue from the client portal",
+    icon: ShoppingCartIcon,
+    color: "cyan",
+    tables: ["sale_transaction", "client"],
+    chartTypes: ["bar", "line", "area"],
+  },
+  {
+    id: "tasks",
+    title: "Task Completion",
+    description: "Monitor completed vs open tasks over time",
+    icon: ClipboardDocumentCheckIcon,
+    color: "violet",
+    tables: ["user", "schedule"],
+    chartTypes: ["bar", "line"],
+  },
+];
+
+const DATE_RANGE_OPTIONS = [
+  { value: "last7days", label: "Last 7 Days" },
+  { value: "last30days", label: "Last 30 Days" },
+  { value: "last3months", label: "Last 3 Months" },
+  { value: "last6months", label: "Last 6 Months" },
+  { value: "lastyear", label: "Last Year" },
+];
+
+const GROUP_BY_OPTIONS = [
+  { value: "day", label: "Day" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
+];
+
+const DATE_RANGE_DURATION_LABELS = {
+  last7days: "7 Days",
+  last30days: "30 Days",
+  last3months: "3 Months",
+  last6months: "6 Months",
+  lastyear: "1 Year",
+};
+
+const formatPdfDate = (isoDate) => {
+  if (!isoDate) return "—";
+  return new Date(`${isoDate}T12:00:00`).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const formatChartTypeLabel = (chartType) => {
+  if (!chartType) return "—";
+  if (chartType === "doughnut") return "Ring";
+  return chartType.charAt(0).toUpperCase() + chartType.slice(1);
+};
+
+function buildPdfMetaHtml({ filters, reportId, startDate, endDate, employees, services, user }) {
+  const lines = [];
+  const duration = DATE_RANGE_DURATION_LABELS[filters.dateRange] || filters.dateRange;
+  lines.push(`<div><strong>Range:</strong> From ${formatPdfDate(startDate)} to ${formatPdfDate(endDate)} totaling ${escapeHtml(duration)}</div>`);
+  lines.push(`<div><strong>Chart Type:</strong> ${escapeHtml(formatChartTypeLabel(filters.chartType))}</div>`);
+
+  const generatedBy = `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || user?.username || "—";
+  lines.push(`<div><strong>Generated By:</strong> ${escapeHtml(generatedBy)}</div>`);
+
+  const now = new Date();
+  lines.push(`<div><strong>Generated on:</strong> ${now.toLocaleDateString()}</div>`);
+  lines.push(`<div><strong>Generated at:</strong> ${now.toLocaleTimeString()}</div>`);
+
+  if (FILTER_CONFIG.status.condition(reportId)) {
+    const opt = FILTER_CONFIG.status.options.find((o) => o.value === filters.status);
+    if (opt) lines.push(`<div><strong>Status:</strong> ${escapeHtml(opt.label)}</div>`);
+  }
+  if (FILTER_CONFIG.eventType.condition(reportId)) {
+    const opt = FILTER_CONFIG.eventType.options.find((o) => o.value === filters.eventType);
+    if (opt) lines.push(`<div><strong>Events:</strong> ${escapeHtml(opt.label)}</div>`);
+  }
+  if (FILTER_CONFIG.employee.condition(reportId)) {
+    if (filters.employeeId === "all") {
+      lines.push("<div><strong>Employees:</strong> All Employees</div>");
+    } else {
+      const emp = employees.find((e) => String(e.id) === String(filters.employeeId));
+      const name = emp ? FILTER_CONFIG.employee.labelKey(emp) : filters.employeeId;
+      lines.push(`<div><strong>Employees:</strong> ${escapeHtml(name)}</div>`);
+    }
+  }
+  if (FILTER_CONFIG.service.condition(reportId)) {
+    if (filters.serviceId === "all") {
+      lines.push("<div><strong>Services:</strong> All Services</div>");
+    } else {
+      const svc = services.find((s) => String(s.id) === String(filters.serviceId));
+      const name = svc ? svc[FILTER_CONFIG.service.labelKey] : filters.serviceId;
+      lines.push(`<div><strong>Services:</strong> ${escapeHtml(name)}</div>`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+// ─── REUSABLE STYLE CONSTANTS ───────────────────────────────────────────────
+const CIRCULAR_SELECT_STYLE = {
+  appearance: "none",
+  backgroundImage: "none",
+  borderRadius: "50rem",
+  paddingLeft: "0.5rem",
+  paddingRight: "0.5rem",
+  paddingTop: "0.25rem",
+  paddingBottom: "0.25rem",
+  width: "auto",
+  height: "auto",
+};
+
+const INLINE_SELECT_STYLE = {
+  appearance: "none",
+  backgroundImage: "none",
+  borderRadius: "50rem",
+  paddingLeft: "0.5rem",
+  paddingRight: "0.5rem",
+  paddingTop: "0.25rem",
+  paddingBottom: "0.25rem",
+  width: "auto",
+  height: "auto",
+};
+
+// ─── DYNAMIC FILTER CONFIGURATION ─────────────────────────────────────────────
+// Defines which filters appear for which report types, eliminating repetitive JSX
+const FILTER_CONFIG = {
+  status: {
+    key: "status",
+    condition: (reportId) => ["appointments", "attendance", "tasks", "orders", "weekly-activity"].includes(reportId),
+    options: [
+      { value: "all", label: "All Statuses" },
+      { value: "scheduled", label: "Scheduled" },
+      { value: "completed", label: "Completed" },
+      { value: "cancelled", label: "Cancelled" },
+    ],
+  },
+  eventType: {
+    key: "eventType",
+    condition: (reportId) => reportId === "appointments",
+    options: [
+      { value: "all", label: "All", icon: ListBulletIcon },
+      { value: "meeting", label: "Meeting", icon: UsersIcon },
+      { value: "call", label: "Call", icon: PhoneIcon },
+      { value: "appointment", label: "Appointment", icon: CalendarIcon },
+      { value: "task", label: "Task", icon: ClipboardDocumentCheckIcon },
+      { value: "reminder", label: "Reminder", icon: BellIcon },
+    ],
+  },
+  service: {
+    key: "serviceId",
+    condition: (reportId) => ["appointments", "revenue", "services", "weekly-activity"].includes(reportId),
+    dataSource: "services",
+    labelKey: "name",
+    allLabel: "All Services",
+  },
+  employee: {
+    key: "employeeId",
+    condition: (reportId) => ["appointments", "revenue", "attendance", "payroll", "tasks", "employee-activity", "weekly-activity"].includes(reportId),
+    dataSource: "employees",
+    labelKey: (e) => `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.username,
+    allLabel: "All Employees",
+  },
+};
+
+// ─── LABELED FILTER FIELD WRAPPER ───────────────────────────────────────────
+// Gives each compact footer filter control a small caption so its purpose is clear
+function FilterField({ label, children }) {
+  return (
+    <div className="align-items-start d-flex flex-column">
+      <span className="ui-muted-xs text-nowrap" style={{ fontSize: "0.65rem", lineHeight: 1.1, paddingLeft: "0.5rem" }}>
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+// ─── REPORT API & TRANSFORM MAPPING ─────────────────────────────────────────
+// Eliminates repetitive switch statement cases
+const REPORT_HANDLERS = {
+  appointments: { api: (p) => reportsAPI.getAppointmentsReport(p), transform: "transformAppointmentsData" },
+  revenue: { api: (p) => reportsAPI.getRevenueReport(p), transform: "transformRevenueData" },
+  clients: { api: (p) => reportsAPI.getClientsReport(p), transform: "transformClientsData" },
+  "weekly-activity": { api: (p) => reportsAPI.getWeeklyActivityReport(p), transform: "transformWeeklyActivityData" },
+  services: { api: (p) => reportsAPI.getServicesReport(p), transform: "transformServicesData" },
+  inventory: { api: () => reportsAPI.getInventoryReport(), transform: "transformInventoryData" },
+  employees: { api: (p) => reportsAPI.getEmployeesReport(p), transform: "transformEmployeesData" },
+  "employee-activity": { api: (p) => reportsAPI.getEmployeeActivityReport(p), transform: "transformEmployeeActivityData" },
+  attendance: { api: (p) => reportsAPI.getAttendanceReport(p), transform: "transformAttendanceData" },
+  sales: { api: (p) => reportsAPI.getSalesReport(p), transform: "transformSalesData" },
+  payroll: { api: (p) => reportsAPI.getPayrollReport(p), transform: "transformPayrollData" },
+  expenses: { api: (p) => reportsAPI.getExpensesReport(p), transform: "transformMultiDatasetData" },
+  orders: { api: (p) => reportsAPI.getOrdersReport(p), transform: "transformMultiDatasetData" },
+  tasks: { api: (p) => reportsAPI.getTasksReport(p), transform: "transformMultiDatasetData" },
+};
+
+export default function Reports() {
+  // ─── 2 COMPONENT SETUP & PERMISSION GUARD ──────────────────────────────
+  const { user, loading, setLoading, error, setError, clearError, hasPageAccess } = useStore();
+
+  const { branding } = useBranding();
+  const { isTrainingMode } = useViewMode();
+
+  // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
+  // NOTE: permission guard is evaluated AFTER all hooks to comply with React's Rules of Hooks
+  const [selectedReportId, setSelectedReportId] = useState("");
+  const [reportData, setReportData] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [services, setServices] = useState([]);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const [showForecastCalculator, setShowForecastCalculator] = useState(false);
+  const [showFinancialDashboard, setShowFinancialDashboard] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
+  const [reportFilters, setReportFilters] = useState({
+    dateRange: "last30days",
+    groupBy: "month",
+    chartType: "line",
+    status: "all",
+    employeeId: "all",
+    serviceId: "all",
+    eventType: "all",
+  });
+  const [savedFilters, setSavedFilters] = useState([]);
+  const [savedFiltersMenuOpen, setSavedFiltersMenuOpen] = useState(false);
+  const [showSaveFilterModal, setShowSaveFilterModal] = useState(false);
+  const [saveFilterName, setSaveFilterName] = useState("");
+  const [currentPeriodOffset, setCurrentPeriodOffset] = useState(0);
+  const [fullScreenMode, setFullScreenMode] = useState(false);
+  const [kpiVisibility, setKpiVisibility] = useState({ Total: true, "Avg / Period": true, Peak: true, Periods: true });
+  const [eventTypeMenuOpen, setEventTypeMenuOpen] = useState(false);
+  const [showReportControls, setShowReportControls] = useState(false);
+  const [employeeActivitySections, setEmployeeActivitySections] = useState({ services: true, sales: true });
+  const [activityStartDate, setActivityStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 29);
+    return date.toISOString().slice(0, 10);
+  });
+  const [activityEndDate, setActivityEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [activityPayProcessing, setActivityPayProcessing] = useState(false);
+  const [activityPayError, setActivityPayError] = useState("");
+  const [reportRefreshKey, setReportRefreshKey] = useState(0);
+  const eventTypeRef = useRef(null);
+  const footerRef = useRef(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
+  const { settings: reportsTableSettings, savePageSettings } = usePageTableSettings("reports");
+  const [pendingReportsSettings, setPendingReportsSettings] = useState(reportsTableSettings);
+
+  useEffect(() => {
+    if (showPageControls) {
+      setPendingReportsSettings(reportsTableSettings);
+    }
+  }, [showPageControls]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(getMobileEnvironment().isMobileViewport);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // ─── 4 DERIVED STATE — permission-filtered report list & selected report ─
+  const accessibleReports = AVAILABLE_REPORTS.filter((report) => {
+    return report.tables.some((table) => {
+      const pageMap = {
+        schedule: "schedule",
+        clients: "clients",
+        services: "services",
+        user: "employees",
+        inventory: "inventory",
+        item: "inventory",
+        supplier: "suppliers",
+        attendance: "attendance",
+        sale_transaction: "sales",
+        pay_slip: "profile",
+        client_order: "clients",
+        task: "employees",
+      };
+      const page = pageMap[table];
+      if (page === "profile") return true;
+      return page && hasPageAccess(page);
+    });
+  });
+
+  const selectedReport = useMemo(() => accessibleReports.find((r) => r.id === selectedReportId) || null, [accessibleReports, selectedReportId]);
+  const activeReportId = selectedReport?.id;
+
+  useEffect(() => {
+    if (!footerRef.current) return;
+    const update = () => {
+      if (footerRef.current) {
+        setFooterHeight(footerRef.current.offsetHeight || 0);
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(footerRef.current);
+    return () => ro.disconnect();
+  }, [selectedReport, showReportControls]);
+
+  // ─── 5 REPORT SELECTION HANDLER ──────────────────────────────────────────
+  const handleReportSelect = (reportId) => {
+    const report = accessibleReports.find((r) => r.id === reportId);
+    if (!report) return;
+    setSelectedReportId(report.id);
+    setReportFilters((prev) => ({
+      ...prev,
+      groupBy: "month",
+      chartType: report.chartTypes[0] || "line",
+    }));
+    setReportMenuOpen(false);
+  };
+
+  // ─── SAVED FILTERS HANDLERS ────────────────────────────────────────────
+  const loadSavedFilters = async () => {
+    try {
+      const response = await reportsAPI.getSavedFilters();
+      setSavedFilters(response.data || []);
+    } catch (err) {
+      console.error("Failed to load saved filters:", err);
+    }
+  };
+
+  const handleSaveFilter = async () => {
+    if (!saveFilterName.trim() || !selectedReport) return;
+    try {
+      await reportsAPI.createSavedFilter({
+        name: saveFilterName.trim(),
+        report_id: selectedReport.id,
+        date_range: reportFilters.dateRange,
+        group_by: reportFilters.groupBy,
+        chart_type: reportFilters.chartType,
+        status_filter: reportFilters.status,
+        employee_id: reportFilters.employeeId,
+        service_id: reportFilters.serviceId,
+        event_type: reportFilters.eventType,
+      });
+      setSaveFilterName("");
+      setShowSaveFilterModal(false);
+      await loadSavedFilters();
+    } catch (err) {
+      setError("Failed to save filter");
+      console.error(err);
+    }
+  };
+
+  const handleLoadFilter = (filter) => {
+    setReportFilters({
+      dateRange: filter.date_range || "last30days",
+      groupBy: filter.group_by || "month",
+      chartType: filter.chart_type || "line",
+      status: filter.status_filter || "all",
+      employeeId: filter.employee_id || "all",
+      serviceId: filter.service_id || "all",
+      eventType: filter.event_type || "all",
+    });
+    setCurrentPeriodOffset(0);
+    setSavedFiltersMenuOpen(false);
+  };
+
+  const handleDeleteFilter = async (filterId) => {
+    try {
+      await reportsAPI.deleteSavedFilter(filterId);
+      await loadSavedFilters();
+    } catch (err) {
+      console.error("Failed to delete filter:", err);
+    }
+  };
+
+  // ─── TIME NAVIGATION ─────────────────────────────────────────────────────
+  const handleNavigatePeriod = (direction) => {
+    setCurrentPeriodOffset((prev) => Math.min(0, prev + direction));
+  };
+
+  const handleResetPeriod = () => {
+    setCurrentPeriodOffset(0);
+  };
+
+  // ─── 7 DATE RANGE HELPERS ────────────────────────────────────────────────
+  const getPeriodDuration = useCallback((dateRange) => {
+    switch (dateRange) {
+      case "last7days":
+        return { days: 7 };
+      case "last30days":
+        return { days: 30 };
+      case "last3months":
+        return { months: 3 };
+      case "last6months":
+        return { months: 6 };
+      case "lastyear":
+        return { years: 1 };
+      default:
+        return { days: 30 };
+    }
+  }, []);
+
+  const getStartDate = useCallback(
+    (dateRange, offset = 0) => {
+      const duration = getPeriodDuration(dateRange);
+      const base = new Date();
+
+      // Calculate the offset distance: positive offset = future, negative = past
+      if (offset !== 0) {
+        if (duration.days) base.setDate(base.getDate() + duration.days * offset);
+        else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
+        else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
+      }
+
+      // Then go back one period for the start date
+      if (duration.days) base.setDate(base.getDate() - duration.days);
+      else if (duration.months) base.setMonth(base.getMonth() - duration.months);
+      else if (duration.years) base.setFullYear(base.getFullYear() - duration.years);
+
+      return base.toISOString().split("T")[0];
+    },
+    [getPeriodDuration]
+  );
+
+  const getEndDate = useCallback(
+    (dateRange, offset = 0) => {
+      if (offset === 0) return new Date().toISOString().split("T")[0];
+
+      const duration = getPeriodDuration(dateRange);
+      const base = new Date();
+
+      if (duration.days) base.setDate(base.getDate() + duration.days * offset);
+      else if (duration.months) base.setMonth(base.getMonth() + duration.months * offset);
+      else if (duration.years) base.setFullYear(base.getFullYear() + duration.years * offset);
+
+      return base.toISOString().split("T")[0];
+    },
+    [getPeriodDuration]
+  );
+
+  // ─── 8 DATA TRANSFORM FUNCTIONS — map API responses to Chart.js datasets ─
+  const getPalette = useCallback((count, alpha = 0.5) => Array.from({ length: Math.max(count, 1) }, (_, i) => `hsla(${Math.round((i * 360) / Math.max(count, 1))}, 70%, 55%, ${alpha})`), []);
+
+  const transformAppointmentsData = (data, chartType) => ({
+    labels: data.labels,
+    datasets: [
+      {
+        label: "Appointments",
+        data: data.data,
+        backgroundColor: chartType === "pie" || chartType === "doughnut" ? data.data.map((_, i) => `hsl(${(i * 360) / data.data.length}, 70%, 60%)`) : "rgba(59, 130, 246, 0.5)",
+        borderColor: "rgb(59, 130, 246)",
+        borderWidth: 2,
+      },
+    ],
+  });
+
+  const transformRevenueData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets:
+        Array.isArray(data.datasets) && data.datasets.length > 0
+          ? data.datasets.map((dataset, idx) => {
+              const hue = [142, 204, 25, 276][idx % 4];
+              const values = dataset.data || [];
+              return {
+                label: dataset.label || `Revenue ${idx + 1}`,
+                data: values,
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
+                borderColor: `hsl(${hue}, 70%, 45%)`,
+                borderWidth: 2,
+              };
+            })
+          : [
+              {
+                label: "Revenue ($)",
+                data: data.data || [],
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? (data.data || []).map((_, i) => `hsl(${(i * 360) / Math.max((data.data || []).length, 1)}, 70%, 60%)`) : "rgba(34, 197, 94, 0.5)",
+                borderColor: "rgb(34, 197, 94)",
+                borderWidth: 2,
+              },
+            ],
+    }),
+    [getPalette]
+  );
+
+  const transformClientsData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets:
+        Array.isArray(data.datasets) && data.datasets.length > 0
+          ? data.datasets.map((dataset, idx) => {
+              const palette = getPalette((data.labels || []).length, chartType === "pie" || chartType === "doughnut" ? 0.6 : 0.35);
+              const hue = (idx * 120) % 360;
+              return {
+                label: dataset.label || `Series ${idx + 1}`,
+                data: dataset.data || [],
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? palette : `hsla(${hue}, 70%, 55%, 0.35)`,
+                borderColor: `hsl(${hue}, 70%, 45%)`,
+                borderWidth: 2,
+              };
+            })
+          : [
+              {
+                label: "Clients",
+                data: data.data || [],
+                backgroundColor: ["rgba(147, 51, 234, 0.5)", "rgba(59, 130, 246, 0.5)", "rgba(107, 114, 128, 0.5)"],
+                borderColor: ["rgb(147, 51, 234)", "rgb(59, 130, 246)", "rgb(107, 114, 128)"],
+                borderWidth: 2,
+              },
+            ],
+    }),
+    [getPalette]
+  );
+
+  // Weekday appointment counts — busiest day shown green, slowest red
+  const transformWeeklyActivityData = useCallback(
+    (data, chartType) => {
+      const values = (data.data || []).map(Number);
+      const maxVal = values.length ? Math.max(...values) : 0;
+      const minVal = values.length ? Math.min(...values) : 0;
+      const highlight = maxVal !== minVal;
+      const backgroundColor = highlight ? values.map((v) => (v === maxVal ? "rgba(34, 197, 94, 0.6)" : v === minVal ? "rgba(239, 68, 68, 0.6)" : "rgba(59, 130, 246, 0.5)")) : "rgba(59, 130, 246, 0.5)";
+      const borderColor = highlight ? values.map((v) => (v === maxVal ? "rgb(34, 197, 94)" : v === minVal ? "rgb(239, 68, 68)" : "rgb(59, 130, 246)")) : "rgb(59, 130, 246)";
+      return {
+        labels: data.labels,
+        datasets: [
+          {
+            label: "Appointments",
+            data: values,
+            backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(values.length, 0.6) : backgroundColor,
+            borderColor: chartType === "pie" || chartType === "doughnut" ? undefined : borderColor,
+            borderWidth: 2,
+          },
+        ],
+      };
+    },
+    [getPalette]
+  );
+
+  const transformServicesData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets: [
+        {
+          label: "Service Usage",
+          data: data.data || [],
+          backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette((data.labels || []).length) : "rgba(251, 146, 60, 0.5)",
+          borderColor: "rgb(251, 146, 60)",
+          borderWidth: 2,
+        },
+      ],
+    }),
+    [getPalette]
+  );
+
+  const transformInventoryData = (data, _chartType) => ({
+    labels: data.labels,
+    datasets: [
+      {
+        label: "Current Stock",
+        data: data.data || [],
+        backgroundColor: "rgba(239, 68, 68, 0.5)",
+        borderColor: "rgb(239, 68, 68)",
+        borderWidth: 2,
+      },
+    ],
+  });
+
+  const transformEmployeesData = (data, _chartType) => ({
+    labels: data.labels,
+    datasets: [
+      {
+        label: "Appointments",
+        data: data.data || [],
+        backgroundColor: "rgba(99, 102, 241, 0.5)",
+        borderColor: "rgb(99, 102, 241)",
+        borderWidth: 2,
+      },
+    ],
+  });
+
+  const transformEmployeeActivityData = (data) => data;
+
+  const transformAttendanceData = (data, _chartType) => ({
+    labels: data.labels,
+    datasets: [
+      {
+        label: "Attendance Records",
+        data: data.data || [],
+        backgroundColor: "rgba(75, 85, 99, 0.5)",
+        borderColor: "rgb(75, 85, 99)",
+        borderWidth: 2,
+      },
+    ],
+  });
+
+  const transformSalesData = useCallback(
+    (data, chartType) => ({
+      labels: data.labels,
+      datasets:
+        Array.isArray(data.datasets) && data.datasets.length > 0
+          ? data.datasets.map((dataset, idx) => {
+              const hue = [160, 205, 285][idx % 3];
+              const values = dataset.data || [];
+              return {
+                label: dataset.label || `Sales ${idx + 1}`,
+                data: values,
+                backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(Math.max(values.length, 1), 0.6) : `hsla(${hue}, 70%, 55%, 0.35)`,
+                borderColor: `hsl(${hue}, 70%, 45%)`,
+                borderWidth: 2,
+              };
+            })
+          : [
+              {
+                label: "Sales Total ($)",
+                data: data.data || [],
+                backgroundColor: "rgba(16, 185, 129, 0.5)",
+                borderColor: "rgb(16, 185, 129)",
+                borderWidth: 2,
+              },
+            ],
+    }),
+    [getPalette]
+  );
+
+  const transformPayrollData = (data, _chartType) => ({
+    labels: data.labels,
+    datasets: [
+      {
+        label: "Payroll Net ($)",
+        data: data.data || [],
+        backgroundColor: "rgba(20, 184, 166, 0.5)",
+        borderColor: "rgb(20, 184, 166)",
+        borderWidth: 2,
+      },
+    ],
+  });
+
+  // Generic multi-dataset transform for reports that already return datasets array
+  const transformMultiDatasetData = useCallback(
+    (data, chartType) => {
+      if (!Array.isArray(data.datasets) || data.datasets.length === 0) {
+        return { labels: data.labels || [], datasets: [] };
+      }
+      const palette = [
+        { bg: "rgba(59,130,246,0.5)", border: "rgb(59,130,246)" },
+        { bg: "rgba(239,68,68,0.5)", border: "rgb(239,68,68)" },
+        { bg: "rgba(16,185,129,0.5)", border: "rgb(16,185,129)" },
+        { bg: "rgba(245,158,11,0.5)", border: "rgb(245,158,11)" },
+      ];
+      return {
+        labels: data.labels,
+        datasets: data.datasets.map((dataset, idx) => {
+          const colors = palette[idx % palette.length];
+          const values = dataset.data || [];
+          return {
+            label: dataset.label || `Series ${idx + 1}`,
+            data: values,
+            backgroundColor: chartType === "pie" || chartType === "doughnut" ? getPalette(values.length, 0.6) : colors.bg,
+            borderColor: colors.border,
+            borderWidth: 2,
+          };
+        }),
+      };
+    },
+    [getPalette]
+  );
+
+  // ─── 9 LIFECYCLE HOOKS ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (accessibleReports.length > 0 && !selectedReportId) {
+      setSelectedReportId(accessibleReports[0].id);
+    }
+  }, [accessibleReports, selectedReportId]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [empRes, svcRes] = await Promise.all([employeesAPI.getAll(), servicesAPI.getAll()]);
+        setEmployees(sortItemsAlphabetically(empRes.data || [], ["first_name", "last_name", "name", "email"]));
+        setServices(sortItemsAlphabetically(svcRes.data || [], ["name", "category"]));
+      } catch {
+        setEmployees([]);
+        setServices([]);
+      }
+    };
+    loadOptions();
+  }, []);
+
+  useEffect(() => {
+    if (!activeReportId) return;
+
+    const run = async () => {
+      const filters = {
+        dateRange: reportFilters.dateRange,
+        groupBy: reportFilters.groupBy,
+        chartType: reportFilters.chartType,
+        status: reportFilters.status,
+        employeeId: reportFilters.employeeId,
+        serviceId: reportFilters.serviceId,
+        eventType: reportFilters.eventType,
+      };
+
+      setLoading(true);
+      try {
+        const apiParams = {
+          start_date: activeReportId === "employee-activity" ? activityStartDate : getStartDate(filters.dateRange, currentPeriodOffset),
+          end_date: activeReportId === "employee-activity" ? activityEndDate : getEndDate(filters.dateRange, currentPeriodOffset),
+          group_by: filters.groupBy,
+          ...(filters.status && filters.status !== "all" ? { status: filters.status } : {}),
+          ...(filters.employeeId && filters.employeeId !== "all" ? { employee_id: filters.employeeId } : {}),
+          ...(filters.serviceId && filters.serviceId !== "all" ? { service_id: filters.serviceId } : {}),
+          ...(filters.eventType && filters.eventType !== "all" ? { event_type: filters.eventType } : {}),
+        };
+
+        const handler = REPORT_HANDLERS[activeReportId];
+        if (!handler) {
+          setReportData({ labels: [], datasets: [] });
+        } else {
+          const response = await handler.api(apiParams);
+          const transformFn = {
+            transformAppointmentsData,
+            transformRevenueData,
+            transformClientsData,
+            transformWeeklyActivityData,
+            transformServicesData,
+            transformInventoryData,
+            transformEmployeesData,
+            transformEmployeeActivityData,
+            transformAttendanceData,
+            transformSalesData,
+            transformPayrollData,
+            transformMultiDatasetData,
+          }[handler.transform];
+          setReportData(transformFn(response.data, filters.chartType));
+        }
+        clearError();
+      } catch (err) {
+        setError("Failed to load report data");
+        console.error(err);
+        setReportData({ labels: [], datasets: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [
+    clearError,
+    currentPeriodOffset,
+    reportFilters.chartType,
+    reportFilters.dateRange,
+    reportFilters.employeeId,
+    reportFilters.eventType,
+    reportFilters.groupBy,
+    reportFilters.serviceId,
+    reportFilters.status,
+    activeReportId,
+    activityEndDate,
+    activityStartDate,
+    getEndDate,
+    getStartDate,
+    transformClientsData,
+    transformMultiDatasetData,
+    transformRevenueData,
+    transformSalesData,
+    transformServicesData,
+    transformWeeklyActivityData,
+    setError,
+    setLoading,
+    reportRefreshKey,
+  ]);
+
+  useEffect(() => {
+    loadSavedFilters();
+  }, []);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (eventTypeRef.current && !eventTypeRef.current.contains(e.target)) setEventTypeMenuOpen(false);
+    };
+    if (eventTypeMenuOpen) document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [eventTypeMenuOpen]);
+
+  const canUseStatus = ["appointments", "weekly-activity"].includes(selectedReport?.id || "");
+  const canUseEventType = selectedReport?.id === "appointments";
+  const isEmployeeActivityReport = selectedReport?.id === "employee-activity";
+  const isWeeklyActivityReport = selectedReport?.id === "weekly-activity";
+  const canUseGroupBy = !isWeeklyActivityReport;
+  const canUseService = ["appointments", "services", "revenue", "weekly-activity"].includes(selectedReport?.id || "");
+  const canUseEmployee = ["appointments", "employees", "attendance", "employee-activity", "weekly-activity"].includes(selectedReport?.id || "");
+
+  const handleEmployeeActivityPay = async () => {
+    const employee = employees.find((entry) => String(entry.id) === String(reportFilters.employeeId));
+    if (!employee || !activityStartDate || !activityEndDate || reportData?.compensation?.is_paid) return;
+    const calculatedPay = Number(reportData?.compensation?.calculated_gross || 0);
+    const confirmed = window.confirm(`Record $${calculatedPay.toFixed(2)} as paid to ${FILTER_CONFIG.employee.labelKey(employee)} for ${activityStartDate} through ${activityEndDate}?`);
+    if (!confirmed) return;
+
+    setActivityPayProcessing(true);
+    setActivityPayError("");
+    try {
+      await payrollAPI.processPayment(employee.id, {
+        pay_period_start: new Date(`${activityStartDate}T00:00:00`).toISOString(),
+        pay_period_end: new Date(`${activityEndDate}T00:00:00`).toISOString(),
+        employment_type: employee.employment_type || "salary",
+        notes: "Paid from Employee Activity report",
+      });
+      setReportRefreshKey((current) => current + 1);
+    } catch (paymentError) {
+      setActivityPayError(paymentError?.response?.data?.detail || "Failed to record wage payment");
+    } finally {
+      setActivityPayProcessing(false);
+    }
+  };
+
+  const handleEventTypeKeyDown = (e) => {
+    if (!eventTypeMenuOpen) {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setEventTypeMenuOpen(true);
+      }
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setEventTypeMenuOpen(false);
+      eventTypeRef.current?.querySelector("button")?.focus();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const first = eventTypeRef.current?.querySelector("[role='option']");
+      first?.focus();
+    }
+  };
+
+  const [showDataTable, setShowDataTable] = useState(false);
+
+  // Derive KPI summary cards from current chart data
+  const kpis = useMemo(() => {
+    if (isEmployeeActivityReport) {
+      const totals = reportData?.totals;
+      const compensation = reportData?.compensation;
+      if (!totals) return null;
+      return [
+        { label: "Work Days", value: totals.work_days || 0 },
+        { label: "Paid Services", value: `$${Number(compensation?.paid_service_revenue || 0).toFixed(2)}` },
+        { label: "Base Variance", value: `${Number(compensation?.base_variance || 0) < 0 ? "-" : "+"}$${Math.abs(Number(compensation?.base_variance || 0)).toFixed(2)}` },
+        { label: "Calculated Pay", value: `$${Number(compensation?.calculated_gross || 0).toFixed(2)}` },
+      ];
+    }
+    const values = reportData?.datasets?.[0]?.data;
+    if (!values?.length) return null;
+    const nums = values.map(Number);
+    const labels = reportData.labels || [];
+    const total = nums.reduce((s, v) => s + v, 0);
+    if (isWeeklyActivityReport) {
+      const maxVal = Math.max(...nums);
+      const minVal = Math.min(...nums);
+      return [
+        { label: "Busiest Day", value: labels[nums.indexOf(maxVal)] || "—", sub: `${maxVal} appointment${maxVal === 1 ? "" : "s"}` },
+        { label: "Slowest Day", value: labels[nums.indexOf(minVal)] || "—", sub: `${minVal} appointment${minVal === 1 ? "" : "s"}` },
+        { label: "Total", value: total.toLocaleString("en-US") },
+        { label: "Avg / Day", value: (total / 7).toLocaleString("en-US", { maximumFractionDigits: 1 }) },
+      ];
+    }
+    const avg = total / nums.length;
+    const maxVal = Math.max(...nums);
+    const maxIdx = nums.indexOf(maxVal);
+    const isCurrency = (reportData.datasets[0].label || "").includes("($)");
+    const fmt = (n) => (isCurrency ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : n.toLocaleString("en-US", { maximumFractionDigits: 1 }));
+    return [
+      { label: "Total", value: fmt(total) },
+      { label: "Avg / Period", value: fmt(avg) },
+      { label: "Peak", value: fmt(maxVal), sub: labels[maxIdx] || "" },
+      { label: "Periods", value: nums.length },
+    ];
+  }, [isEmployeeActivityReport, isWeeklyActivityReport, reportData]);
+
+  // ─── 10 PDF EXPORT HANDLER ───────────────────────────────────────────────
+  const handleExportPdf = () => {
+    if (!selectedReport) return;
+
+    const reportEl = document.getElementById("report-export-section");
+    if (!reportEl) return;
+
+    const chartCanvas = reportEl.querySelector("canvas");
+    const chartImg = chartCanvas ? chartCanvas.toDataURL("image/png") : "";
+
+    const startDate = getStartDate(reportFilters.dateRange, currentPeriodOffset);
+    const endDate = getEndDate(reportFilters.dateRange, currentPeriodOffset);
+    const metaHtml = buildPdfMetaHtml({
+      filters: reportFilters,
+      reportId: selectedReport.id,
+      startDate,
+      endDate,
+      employees,
+      services,
+      user,
+    });
+
+    const printWindow = window.open("", "_blank", "width=1000,height=800");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${selectedReport.title} - PDF Export</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #111827; }
+            h1 { margin: 0 0 8px; font-size: 24px; }
+            p { margin: 0 0 6px; color: #4b5563; }
+            .meta { margin: 12px 0 18px; font-size: 12px; color: #6b7280; }
+            .chart-wrap { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+            .chart-wrap img { width: 100%; height: auto; display: block; }
+            .footer { margin-top: 18px; font-size: 12px; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <h1>${selectedReport.title}</h1>
+          <p>${selectedReport.description}</p>
+          <div class="meta">
+            ${metaHtml}
+          </div>
+          <div class="chart-wrap">
+            ${chartImg ? `<img src="${chartImg}" alt="${selectedReport.title}" />` : "<p>Chart preview unavailable.</p>"}
+          </div>
+          <div class="footer">${branding.companyName || "Business Manager"}</div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  // ─── 11 CSV EXPORT HANDLER ───────────────────────────────────────────────
+  const handleExportCsv = () => {
+    if (!reportData?.labels?.length || !selectedReport) return;
+    const datasets = Array.isArray(reportData.datasets) && reportData.datasets.length > 0 ? reportData.datasets : [{ label: "Value", data: [] }];
+    const header = ["Period", ...datasets.map((dataset) => dataset.label || "Value")];
+    const rows = [header, ...reportData.labels.map((label, i) => [label, ...datasets.map((dataset) => dataset?.data?.[i] ?? "")])];
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedReport.id}-${reportFilters.dateRange}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ─── 12 RENDER ───────────────────────────────────────────────────────────
+  // Permission guard — placed after all hooks to comply with React's Rules of Hooks
+  if (!hasPageAccess("reports")) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  const activeStartDate = selectedReport?.id === "employee-activity" ? activityStartDate : getStartDate(reportFilters.dateRange, currentPeriodOffset);
+  const activeEndDate = selectedReport?.id === "employee-activity" ? activityEndDate : getEndDate(reportFilters.dateRange, currentPeriodOffset);
+
+  if (loading && !selectedReport) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`h-full flex flex-col position-relative reports-page${fullScreenMode ? " reports-page--full" : ""}`} style={{ minHeight: 0 }}>
+      <style>{`.reports-page::-webkit-scrollbar{display:none!important}`}</style>
+
+      {!fullScreenMode && (
+        <div className="app-page-header align-items-center border-bottom border-gray-200 d-flex dark:border-gray-700 justify-content-between p-1">
+          <h1 className="app-page-title">Reports</h1>
+          <div className="ui-flex-center-gap-2">
+            <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
+            <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
+            <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+          </div>
+        </div>
+      )}
+
+      <div className={`flex-grow-1 reports-page__chart-area ${fullScreenMode ? "overflow-hidden p-1 d-flex flex-column" : "overflow-auto p-1"}`} style={{ minHeight: 0, scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        {error && <div className="bg-red-50 border border-red-200 mb-3 px-1 py-0 rounded text-red-700">{error}</div>}
+
+        {!selectedReport ? (
+          <div className="py-1 text-center">
+            <ChartBarIcon className="h-12 mx-auto text-gray-400 w-12" />
+            <h3 className="font-medium mt-2 text-gray-900 text-sm">No reports available</h3>
+            <p className="mt-1 text-gray-500 text-sm">You don't have permissions to view reports.</p>
+          </div>
+        ) : (
+          <>
+            {/* ── KPI SUMMARY CARDS ── */}
+            {!fullScreenMode && kpis && kpis.some((kpi) => kpiVisibility[kpi.label] !== false) && (
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {kpis
+                  .filter((kpi) => kpiVisibility[kpi.label] !== false)
+                  .map((kpi) => (
+                    <div key={kpi.label} className="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-1 px-1 py-0 rounded-lg text-center" style={{ minWidth: "6rem" }}>
+                      <div className="dark:text-white font-bold leading-tight text-gray-900 text-lg">{kpi.value}</div>
+                      <div className="ui-muted-xs">{kpi.label}</div>
+                      {kpi.sub && <div className="dark:text-gray-500 text-gray-400 text-xs truncate">{kpi.sub}</div>}
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {isEmployeeActivityReport ? (
+              <div id="report-export-section" className="d-flex flex-column gap-2" style={{ maxHeight: fullScreenMode ? "100%" : "60vh" }}>
+                <div className="align-items-end bg-white border border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-wrap gap-2 p-2 rounded-lg">
+                  <div>
+                    <label htmlFor="activity-start-date" className="form-label ui-form-label-sm">
+                      Start Date
+                    </label>
+                    <input id="activity-start-date" type="date" className="form-control ui-control-sm" value={activityStartDate} max={activityEndDate || undefined} onChange={(event) => setActivityStartDate(event.target.value)} />
+                  </div>
+                  <div>
+                    <label htmlFor="activity-end-date" className="form-label ui-form-label-sm">
+                      End Date
+                    </label>
+                    <input id="activity-end-date" type="date" className="form-control ui-control-sm" value={activityEndDate} min={activityStartDate || undefined} onChange={(event) => setActivityEndDate(event.target.value)} />
+                  </div>
+                  <div className="flex-grow-1" style={{ minWidth: "12rem" }}>
+                    <label className="form-label ui-form-label-sm">Employee</label>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      value={reportFilters.employeeId}
+                      onChange={(event) => setReportFilters((current) => ({ ...current, employeeId: event.target.value }))}
+                      options={[{ value: "all", label: "Select Employee" }, ...employees.map((employee) => ({ value: employee.id, label: FILTER_CONFIG.employee.labelKey(employee) }))]}
+                      placeholder="Select Employee"
+                      closeOnSelect
+                    />
+                  </div>
+                  <button type="button" className="btn btn-primary btn-sm" disabled={activityPayProcessing || reportFilters.employeeId === "all" || !activityStartDate || !activityEndDate || Boolean(reportData?.compensation?.is_paid)} onClick={handleEmployeeActivityPay}>
+                    {activityPayProcessing ? "Paying…" : reportData?.compensation?.is_paid ? "Paid" : "Pay"}
+                  </button>
+                </div>
+                {activityPayError && <div className="alert alert-danger mb-0 py-1 small">{activityPayError}</div>}
+                {reportFilters.employeeId !== "all" && reportData?.compensation && (
+                  <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-2 rounded-lg">
+                    <div className="d-flex flex-wrap gap-3 justify-content-between">
+                      <div>
+                        <div className="ui-small-muted">Base Pay</div>
+                        <strong>${Number(reportData.compensation.base_pay || 0).toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Compensation Threshold</div>
+                        <strong>${Number(reportData.compensation.threshold || 0).toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Revenue vs Base</div>
+                        <strong className={Number(reportData.compensation.base_variance || 0) < 0 ? "text-danger" : "text-success"}>
+                          {Number(reportData.compensation.base_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.base_variance || 0)).toFixed(2)}
+                        </strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Revenue vs Threshold</div>
+                        <strong className={Number(reportData.compensation.threshold_variance || 0) < 0 ? "text-danger" : "text-success"}>
+                          {Number(reportData.compensation.threshold_variance || 0) < 0 ? "-" : "+"}${Math.abs(Number(reportData.compensation.threshold_variance || 0)).toFixed(2)}
+                        </strong>
+                      </div>
+                      <div>
+                        <div className="ui-small-muted">Wage Status</div>
+                        <strong>{reportData.compensation.is_paid ? `Paid ${new Date(reportData.compensation.paid_at).toLocaleString()}` : "Unpaid"}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {reportFilters.employeeId === "all" ? (
+                  <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-3 rounded-lg text-center text-gray-500">Select an employee to view their activity.</div>
+                ) : !reportData?.days?.length ? (
+                  <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 p-3 rounded-lg text-center text-gray-500">No services or sales were recorded in this period.</div>
+                ) : (
+                  <>
+                    <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100"
+                        onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, services: !sections.services }))}
+                        aria-expanded={employeeActivitySections.services}
+                      >
+                        <span>Services</span>
+                        <span className="text-gray-500">Subtotal: ${Number(reportData.totals.services_total || 0).toFixed(2)}</span>
+                      </button>
+                      {employeeActivitySections.services && (
+                        <div className="overflow-auto">
+                          <table className="mb-0 table table-sm align-middle">
+                            <thead className="bg-white dark:bg-gray-900 sticky-top">
+                              <tr>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Service</th>
+                                <th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reportData.days.flatMap((day) =>
+                                day.appointments.map((appointment, index) => (
+                                  <tr key={`${day.date}-service-${index}`}>
+                                    <td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.time}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{appointment.service}</td>
+                                    <td className="dark:text-white font-medium text-end text-gray-900 text-sm">${Number(appointment.amount || 0).toFixed(2)}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        className="align-items-center bg-transparent border-0 dark:text-white d-flex fw-semibold justify-content-between p-2 text-gray-900 w-100"
+                        onClick={() => setEmployeeActivitySections((sections) => ({ ...sections, sales: !sections.sales }))}
+                        aria-expanded={employeeActivitySections.sales}
+                      >
+                        <span>Sales</span>
+                        <span className="text-gray-500">Total: ${Number(reportData.totals.sales_total || 0).toFixed(2)}</span>
+                      </button>
+                      {employeeActivitySections.sales && (
+                        <div className="overflow-auto">
+                          <table className="mb-0 table table-sm align-middle">
+                            <thead className="bg-white dark:bg-gray-900 sticky-top">
+                              <tr>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Workday</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Time</th>
+                                <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Items</th>
+                                <th className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reportData.days.flatMap((day) =>
+                                day.sales.map((sale, index) => (
+                                  <tr key={`${day.date}-sale-${index}`}>
+                                    <td className="dark:text-white font-medium text-gray-900 text-sm text-nowrap">{formatPdfDate(day.date)}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{sale.time}</td>
+                                    <td className="dark:text-gray-300 text-gray-700 text-sm">{sale.items.join(", ") || "Sale"}</td>
+                                    <td className="dark:text-white font-medium text-end text-gray-900 text-sm">${sale.total.toFixed(2)}</td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div
+                id="report-export-section"
+                className={fullScreenMode ? "flex-grow-1 min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-0 d-flex flex-column" : "h-[60vh] min-h-[320px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1"}
+              >
+                <div className={fullScreenMode ? "flex-grow-1 min-h-0 h-100 position-relative" : "h-100 position-relative"} style={{ minHeight: fullScreenMode ? 0 : "280px" }}>
+                  <div className="end-0 position-absolute top-0" style={{ zIndex: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => setFullScreenMode((v) => !v)}
+                      className={`btn btn-sm ${fullScreenMode ? "btn-primary" : "btn-outline-secondary"}`}
+                      style={{ fontSize: "0.875rem", whiteSpace: "nowrap" }}
+                      title={fullScreenMode ? "Exit full screen report view" : "Full screen report view"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrows-fullscreen" viewBox="0 0 16 16">
+                        <path
+                          fillRule="evenodd"
+                          d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707m4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707m0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707m-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
+                </div>
+              </div>
+            )}
+
+            {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
+            {!fullScreenMode && (
+              <div
+                className="align-items-center d-flex gap-2 justify-content-center reports-nav-floating"
+                style={{
+                  position: "fixed",
+                  bottom: `${(footerHeight || 56) + 10}px`,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  zIndex: 20,
+                }}
+              >
+                <Button_Toolbar icon={ChevronLeftIcon} label="" compact onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary rounded-circle" title="Previous period" />
+
+                <div
+                  className="align-items-center d-flex flex-column px-1 text-center"
+                  style={{ minWidth: 0, cursor: currentPeriodOffset !== 0 ? "pointer" : "default" }}
+                  onClick={currentPeriodOffset !== 0 ? handleResetPeriod : undefined}
+                  title={currentPeriodOffset !== 0 ? "Click to reset to current period" : undefined}
+                >
+                  <span className="fw-semibold text-nowrap text-xs">{currentPeriodOffset === 0 ? "Current Period" : `${Math.abs(currentPeriodOffset)} period${Math.abs(currentPeriodOffset) > 1 ? "s" : ""} prior`}</span>
+                  {activeStartDate && activeEndDate && (
+                    <span className="text-muted text-nowrap text-xxs">
+                      {activeStartDate} – {activeEndDate}
+                    </span>
+                  )}
+                </div>
+
+                <Button_Toolbar icon={ChevronRightIcon} label="" compact onClick={() => handleNavigatePeriod(1)} disabled={currentPeriodOffset >= 0} className="btn-outline-secondary rounded-circle" title="Next period" />
+
+                {!isEmployeeActivityReport && reportData?.labels?.length > 0 && (
+                  <Button_Toolbar icon={ChevronUpDownIcon} label={showDataTable ? "Hide" : "Table"} onClick={() => setShowDataTable((v) => !v)} className={showDataTable ? "btn-primary" : "btn-outline-secondary"} title={showDataTable ? "Hide data table" : "Show data table"} />
+                )}
+              </div>
+            )}
+            {!fullScreenMode && !isEmployeeActivityReport && showDataTable && reportData?.labels?.length > 0 && (
+              <div className="border border-gray-200 dark:border-gray-700 mt-2 overflow-auto rounded-lg" style={{ maxHeight: "16rem" }}>
+                <table className="mb-0 table table-sm" style={getTextSizeStyle(reportsTableSettings.textSize)}>
+                  <thead className="bg-white dark:bg-gray-900 sticky-top">
+                    <tr>
+                      <th className="dark:text-gray-400 fw-semibold text-gray-600 text-xs">Period</th>
+                      {(reportData.datasets || []).map((dataset, idx) => (
+                        <th key={`col-${idx}`} className="dark:text-gray-400 fw-semibold text-end text-gray-600 text-xs">
+                          {dataset?.label || `Value ${idx + 1}`}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.labels.map((label, i) => (
+                      <tr key={i}>
+                        <td className="dark:text-gray-300 text-gray-700 text-sm">{label}</td>
+                        {(reportData.datasets || []).map((dataset, idx) => (
+                          <td key={`row-${i}-col-${idx}`} className="dark:text-white font-medium text-end text-gray-900 text-sm">
+                            {dataset?.data?.[i] ?? "—"}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {selectedReport && (
+        <div ref={footerRef} className="position-relative" style={{ zIndex: 50 }}>
+          <PageTableFooter
+            hideSearch
+            searchTerm=""
+            onSearch={() => {}}
+            beforeSearch={
+              showReportControls ? (
+                <div className="align-items-end d-flex flex-wrap gap-2 w-100">
+                  <FilterField>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={CIRCULAR_SELECT_STYLE}
+                      value={reportFilters.dateRange}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, dateRange: e.target.value }))}
+                      options={DATE_RANGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                      placeholder="Date range"
+                      closeOnSelect
+                    />
+                  </FilterField>
+
+                  {canUseGroupBy && (
+                    <FilterField>
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={CIRCULAR_SELECT_STYLE}
+                        value={reportFilters.groupBy}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, groupBy: e.target.value }))}
+                        options={GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                        placeholder="Group by"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
+
+                  <FilterField>
+                    <Dropdown_Custom
+                      className="ui-control-sm"
+                      style={CIRCULAR_SELECT_STYLE}
+                      value={reportFilters.chartType}
+                      onChange={(e) => setReportFilters((prev) => ({ ...prev, chartType: e.target.value }))}
+                      options={selectedReport.chartTypes.map((chartType) => ({ value: chartType, label: formatChartTypeLabel(chartType) }))}
+                      placeholder="Chart type"
+                      closeOnSelect
+                    />
+                  </FilterField>
+
+                  {canUseStatus && (
+                    <FilterField>
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.status}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, status: e.target.value }))}
+                        options={FILTER_CONFIG.status.options.map((o) => ({ value: o.value, label: o.label }))}
+                        placeholder="Status"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
+
+                  {canUseService && (
+                    <FilterField>
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.serviceId}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, serviceId: e.target.value }))}
+                        options={[{ value: "all", label: FILTER_CONFIG.service.allLabel }, ...services.map((s) => ({ value: s.id, label: s[FILTER_CONFIG.service.labelKey] }))]}
+                        placeholder="Service"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
+
+                  {canUseEmployee && (
+                    <FilterField>
+                      <Dropdown_Custom
+                        className="ui-control-sm"
+                        style={INLINE_SELECT_STYLE}
+                        value={reportFilters.employeeId}
+                        onChange={(e) => setReportFilters((prev) => ({ ...prev, employeeId: e.target.value }))}
+                        options={[{ value: "all", label: FILTER_CONFIG.employee.allLabel }, ...employees.map((employeeOption) => ({ value: employeeOption.id, label: FILTER_CONFIG.employee.labelKey(employeeOption) }))]}
+                        placeholder="Employee"
+                        closeOnSelect
+                      />
+                    </FilterField>
+                  )}
+
+                  {canUseEventType && (
+                    <FilterField>
+                      <div className="ui-pos-rel" ref={eventTypeRef}>
+                        <button
+                          type="button"
+                          onClick={() => setEventTypeMenuOpen((v) => !v)}
+                          onKeyDown={handleEventTypeKeyDown}
+                          aria-haspopup="listbox"
+                          aria-expanded={eventTypeMenuOpen}
+                          className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-2"
+                          style={{ whiteSpace: "nowrap", minWidth: "11rem" }}
+                        >
+                          <CalendarIcon className="flex-shrink-0 h-4 w-4" />
+                          <span>{FILTER_CONFIG.eventType.options.find((o) => o.value === reportFilters.eventType)?.label || "Events"}</span>
+                        </button>
+                        {eventTypeMenuOpen && (
+                          <div
+                            className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 overflow-auto position-absolute rounded-3 shadow-sm start-0"
+                            style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }}
+                            role="listbox"
+                          >
+                            {FILTER_CONFIG.eventType.options.map((o) => {
+                              const OptionIcon = o.icon;
+                              return (
+                                <div
+                                  key={o.value}
+                                  onClick={() => {
+                                    setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                                    setEventTypeMenuOpen(false);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      setReportFilters((prev) => ({ ...prev, eventType: o.value }));
+                                      setEventTypeMenuOpen(false);
+                                    } else if (e.key === "ArrowDown") {
+                                      e.preventDefault();
+                                      e.currentTarget.nextElementSibling?.focus();
+                                    } else if (e.key === "ArrowUp") {
+                                      e.preventDefault();
+                                      e.currentTarget.previousElementSibling?.focus();
+                                    } else if (e.key === "Escape") {
+                                      e.preventDefault();
+                                      setEventTypeMenuOpen(false);
+                                      eventTypeRef.current?.querySelector("button")?.focus();
+                                    }
+                                  }}
+                                  tabIndex={0}
+                                  className={`app-menu-item px-1 py-0 d-flex align-items-center gap-2 text-nowrap${reportFilters.eventType === o.value ? " bg-primary text-white" : " text-body"}`}
+                                  style={{ cursor: "pointer", width: "100%", margin: 0, userSelect: "none" }}
+                                  role="option"
+                                  aria-selected={reportFilters.eventType === o.value}
+                                >
+                                  {OptionIcon && <OptionIcon className="flex-shrink-0 h-4 w-4" />}
+                                  <span className="text-nowrap">{o.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </FilterField>
+                  )}
+
+                  {/* Time Navigation */}
+                  {currentPeriodOffset !== 0 && (
+                    <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
+                      Today
+                    </button>
+                  )}
+                </div>
+              ) : null
+            }
+          >
+            <div className="align-items-center d-flex justify-content-between position-relative w-100">
+              {/* Left: Save + Filter */}
+              <div className="ui-flex-center-gap-1">
+                <Button_Toolbar icon={ArrowDownTrayIcon} label={isTrainingMode ? "Save" : ""} onClick={() => setShowSaveFilterModal(true)} className="btn-outline-secondary" title="Save current filter" />
+                <Button_Toolbar
+                  icon={showReportControls ? EyeSlashIcon : EyeIcon}
+                  label={isTrainingMode ? (showReportControls ? "" : "") : ""}
+                  onClick={() => {
+                    setShowReportControls((prev) => {
+                      const next = !prev;
+                      if (!next) setEventTypeMenuOpen(false);
+                      return next;
+                    });
+                  }}
+                  className="btn-outline-secondary"
+                  title={showReportControls ? "Hide report controls" : "Show report controls"}
+                />
+                {currentPeriodOffset !== 0 && !showReportControls && (
+                  <button type="button" onClick={handleResetPeriod} className="btn ui-btn-outline-secondary-sm" title="Reset to current period">
+                    Today
+                  </button>
+                )}
+                {/* Saved Filters Dropup */}
+                <div className="ui-pos-rel">
+                  <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
+
+                  {savedFiltersMenuOpen && (
+                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-2 p-1 position-absolute rounded-3 shadow-sm start-0" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
+                      {savedFilters.filter((f) => f.report_id === selectedReport?.id).length === 0 ? (
+                        <div className="app-menu-empty px-1 py-0 text-gray-500">No saved filters</div>
+                      ) : (
+                        savedFilters
+                          .filter((f) => f.report_id === selectedReport?.id)
+                          .map((filter) => (
+                            <div key={filter.id} className="align-items-center d-flex gap-2 justify-content-between px-0 py-1">
+                              <button type="button" onClick={() => handleLoadFilter(filter)} className="app-menu-item btn btn-outline-secondary btn-sm flex-grow-1 text-start text-truncate">
+                                {filter.name}
+                              </button>
+                              <button type="button" onClick={() => handleDeleteFilter(filter.id)} className="app-menu-action btn btn-outline-danger btn-sm" title="Delete">
+                                ×
+                              </button>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Center: Report Selector */}
+              <Report_SelectorDropup open={reportMenuOpen} onToggle={setReportMenuOpen} selectedTitle={selectedReport?.title} reports={accessibleReports} selectedReportId={selectedReportId} onSelectReport={handleReportSelect} onOpenFinancial={() => setShowFinancialDashboard(true)} />
+
+              {/* Right: Spacer for balanced layout */}
+              <div className="align-items-center d-flex" style={{ minWidth: "6rem" }} />
+            </div>
+          </PageTableFooter>
+        </div>
+      )}
+
+      {/* Forecast Calculator Modal */}
+      <Modal_ForecastCalculator isOpen={showForecastCalculator} onClose={() => setShowForecastCalculator(false)} />
+
+      <Modal_Reports_FinancialDashboard
+        isOpen={showFinancialDashboard}
+        onClose={() => setShowFinancialDashboard(false)}
+        onOpenForecast={() => setShowForecastCalculator(true)}
+      />
+
+      <Modal_Reports_Settings
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        onSave={async () => {
+          await savePageSettings("reports", pendingReportsSettings);
+        }}
+        kpiVisibility={kpiVisibility}
+        setKpiVisibility={setKpiVisibility}
+        pendingReportsSettings={pendingReportsSettings}
+        setPendingReportsSettings={setPendingReportsSettings}
+      />
+
+      {/* Save Filter Modal */}
+      <Modal_Reports_SaveFilter
+        isOpen={showSaveFilterModal}
+        onClose={() => {
+          setShowSaveFilterModal(false);
+          setSaveFilterName("");
+        }}
+        filterName={saveFilterName}
+        setFilterName={setSaveFilterName}
+        onSave={handleSaveFilter}
+      />
+    </div>
+  );
+}

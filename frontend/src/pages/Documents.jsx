@@ -1,387 +1,529 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { PlusIcon, DocumentIcon, TrashIcon, PencilIcon, CheckIcon, ClockIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
-import { documentsAPI, documentCategoriesAPI, employeesAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
-import { renderAsync } from 'docx-preview';
-import OnlyOfficeEditor from '../components/OnlyOfficeEditor';
-import CustomDropdown from '../components/CustomDropdown';
+/*
+ * ============================================================
+ * FILE: Documents.jsx
+ *
+ * PURPOSE:
+ *   Document management page that enables uploading, viewing, editing,
+ *   signing, and deleting documents. Also provides category management,
+ *   filterable document and template lists, and a template editor for
+ *   reusable HTML content templates (invoices, emails, memos, etc.).
+ *
+ * FUNCTIONAL PARTS:
+ *   [1]  Imports                        — React, router, icons, store, API helpers, and modal components
+ *   [2]  DocumentUploadForm Component   — Standalone drag-and-drop file upload form with description field
+ *   [3]  formatFileSize Helper          — Utility to convert bytes to a human-readable size string
+ *   [4]  Documents Component (export)   — Main page shell with store bindings and permission guard
+ *   [5]  State Declarations             — Documents list, filter state, modal open flags, category and template state
+ *   [6]  Derived / Computed Values      — categoryNameById map, entityTypeOptions list, filteredDocuments memo
+ *   [7]  Lifecycle / useEffect          — Initial fetch guard that loads documents, categories, and templates
+ *   [8]  Template API Handlers          — loadTemplates, handleNewTemplate, handleEditTemplate, handleSaveTemplate, handleDeleteTemplate
+ *   [9]  Document Data Loading          — loadDocuments (with retry), loadCategories (with retry)
+ *   [10] Document View / Edit Handlers  — handleView, handleOpenEdit, handleEditFromViewer, handleSaveEdit, handleOpenEditor
+ *   [11] Document Sign Handlers         — handleOpenSign, handleSubmitSign
+ *   [12] Document History Handlers      — handleOpenHistory, handleReplaceContent
+ *   [13] Upload / Delete Handlers       — handleUploadDocument, handleSubmitDocument, handleDeleteDocument
+ *   [14] Category Management Handlers   — handleCreateCategory, startEditCategory, cancelEditCategory, saveEditCategory, handleDeleteCategory
+ *   [15] Render / Return                — Table layout toggling between documents and templates, footer controls, and all modal outlets
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-03-07 | Copilot | Added per-option help popovers for footer filter options
+ *   2026-05-15 | Copilot | Shortened standalone document action button labels for compact training-mode layouts
+ *   2026-05-26 | GitHub Copilot | Added left-column delete action for documents list and removed delete action from viewer modal wiring
+ *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete and combined selected edit/delete actions
+ *   2026-09-11 | GitHub Copilot | Removed unused imports and dead handlers to clear ESLint warnings
+ *   2026-11-08 | GitHub Copilot | Made template rows clickable to open the template editor
+ * ============================================================
+ */
 
-function DocumentUploadForm({ onSubmit, onCancel }) {
-  const [formData, setFormData] = useState({
-    description: '',
-    file: null
-  });
-  const [uploading, setUploading] = useState(false);
+// ─── 1  IMPORTS ────────────────────────────────────────────────────────────
+import React, { useEffect, useState, useMemo } from "react";
+import { formatDateTime } from "../utils/dateFormatters";
+import { S } from "../utils/strings";
+import useFetchOnce from "../services/useFetchOnce";
+import usePagePermission from "../services/usePagePermission";
+import useViewMode from "../services/useViewMode";
+import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
+import useStore from "../services/useStore";
+import { showConfirm } from "../services/showConfirm";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Footer_Actions from "./components/footers/Footer_Actions";
+import api, { documentsAPI, documentCategoriesAPI, documentStatusesAPI, templatesAPI, documentTagsAPI } from "../services/api";
+import Modal from "./components/modals/Modal";
+import Modal_Documents_Settings from "./components/modals/Modal_Documents_Settings";
+import Modal_Document_Form from "./components/modals/Modal_Document_Form";
+import Modal_Document_History from "./components/modals/Modal_Document_History";
+import Modal_Document_Sign from "./components/modals/Modal_Document_Sign";
+import Modal_Document_Categories from "./components/modals/Modal_Document_Categories";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Modal_Viewer_Document from "./components/modals/Modal_DocumentView";
+import Modal_Edit_Document from "./components/modals/Modal_DocumentEdit";
+import Modal_Template_Editor from "./components/modals/Modal_TemplateEdit";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import Modal_Generic from "./components/modals/Modal";
+import { WorkflowModal, WorkflowStatusTracker } from "./components/panels/Panel_Workflow";
+import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import { sortItemsAlphabetically } from "../utils/displaySort";
+import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+// ─── 3  FILE TYPE ICON HELPER ───────────────────────────────────────────
+function getFileTypeIcon(filename = "", contentType = "") {
+  const ext = (filename || "").toLowerCase().split(".").pop();
+  const mimeType = (contentType || "").toLowerCase();
 
-  const handleFileChange = (e) => {
-    setFormData(prev => ({ ...prev, file: e.target.files[0] }));
-  };
+  // Image types
+  if (mimeType.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(ext)) {
+    return PhotoIcon;
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.file) {
-      alert('Please select a file to upload');
-      return;
-    }
-    try {
-      setUploading(true);
-      await onSubmit(formData);
-    } finally {
-      setUploading(false);
-    }
-  };
+  // PDF
+  if (ext === "pdf" || mimeType === "application/pdf") {
+    return DocumentTextIcon;
+  }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Document</h3>
-      </div>
+  // Documents
+  if (["doc", "docx"].includes(ext) || mimeType.includes("word")) {
+    return DocumentIcon;
+  }
 
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Description
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          value={formData.description}
-          onChange={handleChange}
-          className="input-field mt-1"
-          placeholder="Document description"
-        />
-      </div>
+  // Spreadsheets
+  if (["xls", "xlsx", "csv"].includes(ext) || mimeType.includes("spreadsheet")) {
+    return Squares2X2Icon;
+  }
 
-      <div>
-        <label htmlFor="file" className="block text-sm font-medium text-gray-700">
-          File *
-        </label>
-        <input
-          type="file"
-          id="file"
-          name="file"
-          required
-          onChange={handleFileChange}
-          className="input-field mt-1"
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
-        />
-        <p className="mt-1 text-sm text-gray-500">
-          Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF
-        </p>
-      </div>
+  // Presentations
+  if (["ppt", "pptx"].includes(ext) || mimeType.includes("presentation")) {
+    return DocumentIcon;
+  }
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button type="button" onClick={onCancel} className="btn-secondary" disabled={uploading}>
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary" disabled={uploading}>
-          {uploading ? 'Uploading…' : 'Upload Document'}
-        </button>
-      </div>
-    </form>
-  );
+  // Default file icon
+  return DocumentIcon;
+}
+
+// ─── 4  FORMAT FILE SIZE HELPER ───────────────────────────────────────────
+function formatFileSize(bytes) {
+  const size = Number(bytes);
+  if (!Number.isFinite(size) || size <= 0) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const unitIndex = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+  const formatted = size / Math.pow(1024, unitIndex);
+  const precision = unitIndex === 0 ? 0 : 2;
+
+  return `${formatted.toFixed(precision)} ${units[unitIndex]}`;
 }
 
 export default function Documents() {
-  const navigate = useNavigate();
-  const { 
-    loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
-  } = useStore();
+  const { user, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
 
-  // Use the permission refresh hook
-  usePermissionRefresh();
-
-  // Check permissions at page level
-  if (!hasPermission('documents', 'read') && 
-      !hasPermission('documents', 'write') && 
-      !hasPermission('documents', 'delete') && 
-      !hasPermission('documents', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
-
+  // ─── 5  STATE DECLARATIONS ────────────────────────────────────────────────
   const [documents, setDocuments] = useState([]);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState(null);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState([]);
+  const [statusFilter, setStatusFilter] = useState([]);
+  const [typeFilter, setTypeFilter] = useState([]);
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'grid'
+
+  // Viewer modal state
+  const [viewerDoc, setViewerDoc] = useState(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+
+  // Edit modal state
   const [editDoc, setEditDoc] = useState(null);
-  const [isSignOpen, setIsSignOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Sign modal state
   const [signDoc, setSignDoc] = useState(null);
-  const [signerName, setSignerName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [categories, setCategories] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [editOwnerId, setEditOwnerId] = useState('');
-  const [editCategoryId, setEditCategoryId] = useState('');
-  const [editReviewDate, setEditReviewDate] = useState('');
-  const [editAssignments, setEditAssignments] = useState([]);
-  const [assignEmployeeId, setAssignEmployeeId] = useState('');
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [historyDoc, setHistoryDoc] = useState(null);
+  const [isSignOpen, setIsSignOpen] = useState(false);
+  const [signaturePreview, setSignaturePreview] = useState(null);
+  const [signLoading, setSignLoading] = useState(false);
+
+  // History modal state
+  const [historyDoc] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // Categories management state
+  const [categories, setCategories] = useState([]);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatDesc, setNewCatDesc] = useState('');
+  // Statuses management state
+  const [docStatuses, setDocStatuses] = useState([]);
+  const [showStatusManager, setShowStatusManager] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("documents");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
+
+  useEffect(() => {
+    if (showPageControls) {
+      setPendingSettings(pageSettings);
+    }
+  }, [showPageControls]);
+
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatDesc, setNewCatDesc] = useState("");
   const [editingCatId, setEditingCatId] = useState(null);
-  const [editingCatName, setEditingCatName] = useState('');
-  const [editingCatDesc, setEditingCatDesc] = useState('');
-  const [docxContainerEl, setDocxContainerEl] = useState(null);
-  const [docxError, setDocxError] = useState('');
-  const ONLYOFFICE_URL = (import.meta.env.VITE_ONLYOFFICE_URL || '').trim();
-  const onlyofficeEnabled = !!ONLYOFFICE_URL;
+  const [editingCatName, setEditingCatName] = useState("");
+  const [editingCatDesc, setEditingCatDesc] = useState("");
 
-  useEffect(() => {
-    loadDocuments();
-    loadMetaLists();
-  }, []);
+  // Filter dropdown state
+  const [isFilterCategoriesOpen, setIsFilterCategoriesOpen] = useState(false);
+  const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
+  const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
+  const { isTrainingMode } = useViewMode();
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const selectionMode = selectedIds.size > 0;
+  const [showMultiEdit, setShowMultiEdit] = useState(false);
+  const [multiSaving, setMultiSaving] = useState(false);
+  const [sortColumn, setSortColumn] = useState("filename");
+  const [sortAsc, setSortAsc] = useState(true);
 
-  // Render DOCX inline when preview modal opens (view-only fallback if OnlyOffice editing isn't enabled)
-  useEffect(() => {
-    let canceled = false;
-    const renderDocx = async () => {
-      const ct = (previewDoc?.content_type || '').toLowerCase();
-      const name = (previewDoc?.original_filename || '').toLowerCase();
-      if (!isPreviewOpen || !previewDoc) return;
-      // If OnlyOffice is enabled and this is an editable Office doc, skip docx-preview fallback
-      const isOfficeEditable = ct.includes('wordprocessingml.document') || name.endsWith('.docx') || ct.includes('spreadsheetml.sheet') || name.endsWith('.xlsx') || ct.includes('presentationml.presentation') || name.endsWith('.pptx');
-      if (onlyofficeEnabled && isOfficeEditable) return;
-      if (!docxContainerEl) return;
-      const isDocx = ct.includes('wordprocessingml.document') || name.endsWith('.docx');
-      if (isDocx) {
-        try {
-          const res = await fetch(documentsAPI.fileUrl(previewDoc.id));
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
-          const ab = await res.arrayBuffer();
-          if (canceled) return;
-          // Clear previous content before rendering
-          docxContainerEl.innerHTML = '';
-          await renderAsync(ab, docxContainerEl, undefined, { className: 'docx', inWrapper: false });
-          setDocxError('');
-        } catch (err) {
-          console.error('Failed to render DOCX preview', err);
-          setDocxError('Unable to render DOCX preview.');
-        }
-      } else {
-        // Clean up if switching away from DOCX type
-        if (docxContainerEl) {
-          docxContainerEl.innerHTML = '';
-        }
-        setDocxError('');
+  // Tag data: {documentId: [tagName, ...]} — loaded once, refreshed after edit
+  const [docTagMap, setDocTagMap] = useState({});
+
+  // Templates state
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+  const [templateTypeFilter, setTemplateTypeFilter] = useState("all");
+  const [isTemplateTypeFilterOpen, setIsTemplateTypeFilterOpen] = useState(false);
+  const [workflowDoc, setWorkflowDoc] = useState(null);
+  const [showWorkflowAssign, setShowWorkflowAssign] = useState(false);
+  const [showWorkflowStatus, setShowWorkflowStatus] = useState(false);
+
+  // ─── 6  DERIVED / COMPUTED VALUES ────────────────────────────────────────
+  const categoryNameById = useMemo(() => {
+    return new Map(categories.map((cat) => [String(cat.id), cat.name]));
+  }, [categories]);
+
+  const entityTypeOptions = useMemo(() => {
+    const types = documents.map((doc) => doc.entity_type).filter(Boolean);
+    return Array.from(new Set(types)).sort();
+  }, [documents]);
+
+  const sortedCategories = useMemo(() => sortItemsAlphabetically(categories, ["name"]), [categories]);
+  const sortedDocStatuses = useMemo(() => sortItemsAlphabetically(docStatuses, ["name"]), [docStatuses]);
+
+  const getStatusFilterButtonClass = () => {
+    if (statusFilter.length === 1 && statusFilter[0] === "signed") return "bg-green-600 text-white";
+    if (statusFilter.length === 1 && statusFilter[0] === "unsigned") return "bg-red-600 text-white";
+    if (statusFilter.length > 0) return "bg-primary-600 text-white";
+    return "btn-app-secondary";
+  };
+
+  const filteredDocuments = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return documents.filter((doc) => {
+      const categoryId = doc.category_id ?? doc.category?.id;
+      const categoryName = categoryId != null ? categoryNameById.get(String(categoryId)) || "" : "";
+      const docType = doc.entity_type || "document";
+
+      if (categoryFilter.length > 0 && !categoryFilter.includes(String(categoryId || ""))) return false;
+      if (statusFilter.length > 0) {
+        const signedKey = doc.is_signed ? "signed" : "unsigned";
+        const matchesStatus = statusFilter.includes(signedKey) || (doc.status_id && statusFilter.includes(String(doc.status_id)));
+        if (!matchesStatus) return false;
       }
-    };
-    renderDocx();
-    return () => {
-      canceled = true;
-      if (docxContainerEl) docxContainerEl.innerHTML = '';
-      setDocxError('');
-    };
-  }, [isPreviewOpen, previewDoc, docxContainerEl, onlyofficeEnabled]);
+      if (typeFilter.length > 0 && !typeFilter.includes(docType)) return false;
 
-  const loadDocuments = async () => {
-    setLoading(true);
+      if (!term) return true;
+
+      const tagNames = (docTagMap[String(doc.id)] || []).join(" ");
+      const haystack = [doc.original_filename, doc.description, doc.entity_type, categoryName, tagNames].filter(Boolean).join(" ").toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }, [documents, searchTerm, categoryFilter, statusFilter, typeFilter, categoryNameById, docTagMap]);
+
+  const docMultiEditFields = useMemo(
+    () => [
+      { key: "category_id", label: "Category", type: "select", options: [{ value: "", label: "— Leave unchanged —" }, ...sortedCategories.map((c) => ({ value: c.id, label: c.name }))] },
+      { key: "status_id", label: "Status", type: "select", options: sortedDocStatuses.map((s) => ({ value: s.id, label: s.name })) },
+    ],
+    [sortedCategories, sortedDocStatuses]
+  );
+
+  const toggleSelectDoc = (id) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const allVisibleSelectedDoc = filteredDocuments.length > 0 && filteredDocuments.every((d) => selectedIds.has(d.id));
+  const handleSelectAllDoc = () => {
+    if (allVisibleSelectedDoc) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDocuments.map((d) => d.id)));
+    }
+  };
+  const clearSelectionDoc = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleDocMultiEditSave = async (updates) => {
+    setMultiSaving(true);
     try {
-      const response = await documentsAPI.getAll();
-      setDocuments(response.data);
-      clearError();
-    } catch (err) {
-      setError('Failed to load documents');
-      console.error(err);
+      await Promise.all([...selectedIds].map((id) => documentsAPI.update(id, updates)));
+      await loadDocuments();
+      setShowMultiEdit(false);
+      clearSelectionDoc();
+    } catch {
+      setError("Failed to update some documents");
     } finally {
-      setLoading(false);
+      setMultiSaving(false);
     }
   };
 
-  const handlePreview = (doc) => {
-    setPreviewDoc(doc);
-    // Initialize inline edit fields with selected document values
-    setEditDescription(doc.description || '');
-    setEditOwnerId(doc.owner_id || '');
-    setEditCategoryId(doc.category_id || '');
-    setEditReviewDate(formatDateInput(doc.review_date));
-    setIsPreviewOpen(true);
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
   };
 
-  const handleOpenEditor = (doc) => {
-    navigate(`/documents/${doc.id}/edit`);
+  const sortedAndFiltered = useMemo(() => {
+    let sorted = [...filteredDocuments];
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let aVal, bVal;
+        if (sortColumn === "filename") {
+          aVal = (a.original_filename || "").toLowerCase();
+          bVal = (b.original_filename || "").toLowerCase();
+        } else if (sortColumn === "category") {
+          const aCatId = a.category_id ?? a.category?.id;
+          const bCatId = b.category_id ?? b.category?.id;
+          aVal = (categoryNameById.get(String(aCatId || "")) || "").toLowerCase();
+          bVal = (categoryNameById.get(String(bCatId || "")) || "").toLowerCase();
+        }
+        if (aVal === bVal) return 0;
+        const cmp = aVal < bVal ? -1 : 1;
+        return sortAsc ? cmp : -cmp;
+      });
+    }
+    return sorted;
+  }, [filteredDocuments, sortColumn, sortAsc, categoryNameById]);
+
+  // ─── 7  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
+  useFetchOnce(() => {
+    loadDocuments();
+    loadCategories();
+    loadDocStatuses();
+    loadTemplates();
+    loadDocTagMap();
+  });
+
+  // ─── 8  TEMPLATE API HANDLERS ─────────────────────────────────────────────
+  const loadTemplates = async () => {
+    setTemplatesLoading(true);
+    try {
+      const res = await templatesAPI.getAll();
+      setTemplates(sortItemsAlphabetically(res.data || [], ["name", "template_type"]));
+    } catch (err) {
+      console.warn("Failed to load templates", err);
+    } finally {
+      setTemplatesLoading(false);
+    }
   };
 
+  const handleNewTemplate = () => {
+    setEditingTemplate(null);
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleEditTemplate = (tpl) => {
+    setEditingTemplate(tpl);
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleSaveTemplate = async (data) => {
+    if (editingTemplate?.id) {
+      const res = await templatesAPI.update(editingTemplate.id, data);
+      setTemplates((prev) =>
+        sortItemsAlphabetically(
+          prev.map((t) => (t.id === editingTemplate.id ? res.data : t)),
+          ["name", "template_type"]
+        )
+      );
+    } else {
+      const res = await templatesAPI.create(data);
+      setTemplates((prev) => sortItemsAlphabetically([...prev, res.data], ["name", "template_type"]));
+    }
+    setIsTemplateEditorOpen(false);
+    setEditingTemplate(null);
+  };
+
+  const handleDeleteTemplate = async (tpl) => {
+    if (!(await showConfirm(`Delete template "${tpl.name}"?`))) return;
+    try {
+      await templatesAPI.delete(tpl.id);
+      setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
+    } catch (err) {
+      const msg = err?.response?.data?.detail || "Failed to delete template";
+      alert(msg);
+    }
+  };
+
+  // ─── 9  DOCUMENT DATA LOADING ─────────────────────────────────────────────
+  const loadDocuments = async (retries = 2) => {
+    setLoading(true);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await documentsAPI.getAll();
+        const documentsData = response?.data ?? response;
+        if (Array.isArray(documentsData)) {
+          setDocuments(documentsData);
+          clearError();
+          setLoading(false);
+          return;
+        } else {
+          console.error("Invalid documents data format:", documentsData);
+          setError("Invalid data format received from server");
+          setDocuments([]);
+        }
+      } catch (err) {
+        const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
+        if (isTimeout && attempt < retries) {
+          console.warn(`Document load timeout, retrying (${attempt + 1}/${retries})...`);
+          continue;
+        }
+        setError("Failed to load documents");
+        console.error("Error loading documents:", err);
+        setDocuments([]);
+      }
+    }
+    setLoading(false);
+  };
+
+  const loadCategories = async (retries = 2) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await documentCategoriesAPI.list();
+        setCategories(sortItemsAlphabetically(res.data || [], ["name"]));
+        return;
+      } catch (err) {
+        const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
+        if (isTimeout && attempt < retries) {
+          continue;
+        }
+        console.warn("Failed to load categories", err);
+      }
+    }
+  };
+
+  const loadDocStatuses = async () => {
+    try {
+      const res = await documentStatusesAPI.list();
+      setDocStatuses(res.data || []);
+    } catch (err) {
+      console.warn("Failed to load document statuses", err);
+    }
+  };
+
+  const loadDocTagMap = async () => {
+    try {
+      const res = await documentTagsAPI.getAllLinks();
+      setDocTagMap(res.data || {});
+    } catch {
+      // non-critical — search will just not include tags
+    }
+  };
+
+  // ─── 10  DOCUMENT VIEW / EDIT HANDLERS ───────────────────────────────────
+  // View document in modal
+  const handleView = (doc) => {
+    setViewerDoc(doc);
+    setIsViewerOpen(true);
+  };
+
+  // Open edit modal (can be called from viewer)
   const handleOpenEdit = (doc) => {
     setEditDoc(doc);
-    setEditDescription(doc.description || '');
-    setEditOwnerId(doc.owner_id || '');
-    setEditCategoryId(doc.category_id || '');
-    setEditReviewDate(formatDateInput(doc.review_date));
-    loadAssignments(doc.id);
     setIsEditOpen(true);
   };
 
-  const handleSubmitEdit = async (e) => {
-    e.preventDefault();
-    if (!editDoc) return;
-    try {
-      const body = {
-        description: editDescription,
-        owner_id: editOwnerId || null,
-        category_id: editCategoryId || null,
-        review_date: editReviewDate || null,
-      };
-      const res = await documentsAPI.update(editDoc.id, body);
-      setDocuments((prev) => prev.map((d) => (d.id === editDoc.id ? res.data : d)));
-      setIsEditOpen(false);
-      setEditDoc(null);
-      clearError();
-    } catch (err) {
-      setError('Failed to update document');
-      console.error(err);
+  // Handle edit from viewer modal
+  const handleEditFromViewer = () => {
+    if (viewerDoc) {
+      setIsViewerOpen(false);
+      handleOpenEdit(viewerDoc);
     }
   };
 
-  // Save edits from the fullscreen preview footer without closing the preview
-  const handleSubmitInlineEdit = async (e) => {
-    e.preventDefault();
-    if (!previewDoc) return;
-    try {
-      const body = {
-        description: editDescription,
-        owner_id: editOwnerId || null,
-        category_id: editCategoryId || null,
-        review_date: editReviewDate || null,
-      };
-      const res = await documentsAPI.update(previewDoc.id, body);
-      setDocuments((prev) => prev.map((d) => (d.id === previewDoc.id ? res.data : d)));
-      setPreviewDoc(res.data);
-      clearError();
-    } catch (err) {
-      setError('Failed to update document');
-      console.error(err);
-    }
+  // Handle sign from viewer modal
+  const handleSignFromViewer = (doc) => {
+    setIsViewerOpen(false);
+    handleOpenSign(doc);
   };
 
-  const handleOpenSign = (doc) => {
+  // Save edited document
+  const handleSaveEdit = (updatedDoc) => {
+    setDocuments((prev) => prev.map((d) => (d.id === updatedDoc.id ? updatedDoc : d)));
+    // Also update viewerDoc if it's the same document
+    if (viewerDoc && viewerDoc.id === updatedDoc.id) {
+      setViewerDoc(updatedDoc);
+    }
+    // Refresh tag map so search reflects any tag changes
+    loadDocTagMap();
+  };
+
+  // ─── 11  DOCUMENT SIGN HANDLERS ──────────────────────────────────────────
+  // Sign document
+  const handleOpenSign = async (doc) => {
     setSignDoc(doc);
-    setSignerName('');
+    setSignaturePreview(null);
     setIsSignOpen(true);
-  };
-
-  const loadMetaLists = async () => {
+    // Load user's signature
     try {
-      const [catsRes, empRes] = await Promise.all([
-        documentCategoriesAPI.list(),
-        employeesAPI.getAll(),
-      ]);
-      setCategories(catsRes.data || []);
-      setEmployees(empRes.data || []);
+      const res = await api.get("/auth/me/signature");
+      setSignaturePreview(res.data?.signature_data || null);
     } catch (err) {
-      console.warn('Failed to load categories or employees', err);
+      setSignaturePreview(null);
     }
   };
 
-  const loadAssignments = async (documentId) => {
+  const handleSubmitSign = async () => {
+    if (!signDoc) return;
+    setSignLoading(true);
     try {
-      const res = await documentsAPI.listAssignments(documentId);
-      setEditAssignments(res.data || []);
+      const res = await documentsAPI.sign(signDoc.id);
+      const signData = res.data;
+      // Update the document in the list with sign info
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === signDoc.id
+            ? {
+                ...d,
+                is_signed: true,
+                signed_by: signData.signed_by,
+                signed_at: signData.signed_at,
+                signature_image: signData.signature_image,
+              }
+            : d
+        )
+      );
+      setIsSignOpen(false);
+      setSignDoc(null);
+      clearError();
     } catch (err) {
-      console.warn('Failed to load assignments', err);
-      setEditAssignments([]);
+      setError(err.response?.data?.detail || "Failed to sign document");
+      console.error(err);
+    } finally {
+      setSignLoading(false);
     }
   };
 
-  const handleAddAssignment = async () => {
-    if (!editDoc || !assignEmployeeId) return;
-    try {
-      await documentsAPI.addAssignment(editDoc.id, assignEmployeeId);
-      setAssignEmployeeId('');
-      await loadAssignments(editDoc.id);
-    } catch (err) {
-      console.error('Failed to add assignment', err);
-    }
-  };
-
-  const handleRemoveAssignment = async (employee_id) => {
-    if (!editDoc) return;
-    try {
-      await documentsAPI.removeAssignment(editDoc.id, employee_id);
-      await loadAssignments(editDoc.id);
-    } catch (err) {
-      console.error('Failed to remove assignment', err);
-    }
-  };
-
-  // Categories management handlers
-  const handleCreateCategory = async (e) => {
-    e?.preventDefault?.();
-    const name = newCatName.trim();
-    if (!name) return;
-    try {
-      const res = await documentCategoriesAPI.create({ name, description: newCatDesc || null });
-      setCategories((prev) => [...prev, res.data]);
-      setNewCatName('');
-      setNewCatDesc('');
-    } catch (err) {
-      console.error('Failed to create category', err);
-    }
-  };
-
-  const startEditCategory = (cat) => {
-    setEditingCatId(cat.id);
-    setEditingCatName(cat.name || '');
-    setEditingCatDesc(cat.description || '');
-  };
-
-  const cancelEditCategory = () => {
-    setEditingCatId(null);
-    setEditingCatName('');
-    setEditingCatDesc('');
-  };
-
-  const saveEditCategory = async (catId) => {
-    try {
-      const payload = { name: editingCatName || undefined, description: editingCatDesc };
-      const res = await documentCategoriesAPI.update(catId, payload);
-      setCategories((prev) => prev.map((c) => (c.id === catId ? res.data : c)));
-      cancelEditCategory();
-    } catch (err) {
-      console.error('Failed to update category', err);
-    }
-  };
-
-  const handleDeleteCategory = async (catId) => {
-    if (!window.confirm('Delete this category?')) return;
-    try {
-      await documentCategoriesAPI.delete(catId);
-      setCategories((prev) => prev.filter((c) => c.id !== catId));
-      // If current edit doc uses this category, clear selection
-      setEditCategoryId((prev) => (prev === catId ? '' : prev));
-    } catch (err) {
-      console.error('Failed to delete category', err);
-    }
-  };
-
-  const handleOpenHistory = async (doc) => {
-    setHistoryDoc(doc);
-    try {
-      const res = await documentsAPI.history(doc.id);
-      setHistoryItems(res.data || []);
-    } catch (err) {
-      console.error('Failed to load history', err);
-      setHistoryItems([]);
-    }
-    setIsHistoryOpen(true);
-  };
-
+  // ─── 12  DOCUMENT HISTORY HANDLERS ───────────────────────────────────────
   const handleReplaceContent = async (e) => {
     e.preventDefault();
     if (!historyDoc) return;
@@ -397,676 +539,655 @@ export default function Documents() {
       setHistoryItems(res.data || []);
       clearError();
     } catch (err) {
-      setError('Failed to replace content');
+      setError("Failed to replace content");
       console.error(err);
     }
   };
 
-  const formatDateInput = (value) => {
-    if (!value) return '';
-    try {
-      const d = new Date(value);
-      if (Number.isNaN(d.getTime())) return '';
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    } catch {
-      return '';
-    }
-  };
-
-  const handleSubmitSign = async (e) => {
-    e.preventDefault();
-    if (!signDoc || !signerName.trim()) return;
-    try {
-      const res = await documentsAPI.sign(signDoc.id, signerName.trim());
-      setDocuments((prev) => prev.map((d) => (d.id === signDoc.id ? res.data : d)));
-      setIsSignOpen(false);
-      setSignDoc(null);
-      setSignerName('');
-      clearError();
-    } catch (err) {
-      setError('Failed to sign document');
-      console.error(err);
-    }
-  };
-
+  // ─── 13  UPLOAD / DELETE HANDLERS ────────────────────────────────────────
+  // Upload
   const handleUploadDocument = () => {
-    if (!hasPermission('documents', 'write')) {
-      setError('You do not have permission to upload documents');
+    if (!hasPermission("documents", "write")) {
+      setError("You do not have permission to upload documents");
       return;
     }
-    openModal('document-form');
+    openModal("document-form");
   };
 
   const handleSubmitDocument = async (documentData) => {
     try {
-      await documentsAPI.upload(
-        documentData.file,
-        documentData.description
-      );
-      loadDocuments(); // Reload to show new document
+      await documentsAPI.upload(documentData.file, documentData.description);
+      loadDocuments();
       closeModal();
       clearError();
     } catch (err) {
-      setError('Failed to upload document');
-      console.error(err);
+      const errorMsg = err?.response?.data?.detail || err?.message || "Failed to upload document";
+      setError(errorMsg);
+      throw err; // Re-throw so DocumentUploadForm can catch it
     }
   };
 
-  const handleDeleteDocument = async (documentId) => {
-    if (!hasPermission('documents', 'delete')) {
-      setError('You do not have permission to delete documents');
+  const handleDeleteSelectedDocuments = async () => {
+    if (selectedIds.size === 0) return;
+    if (!hasPermission("documents", "delete")) {
+      setError("You do not have permission to delete documents");
       return;
     }
-    
-    if (!window.confirm('Are you sure you want to delete this document?')) return;
+    if (!(await showConfirm(`Delete ${selectedIds.size} selected document${selectedIds.size !== 1 ? "s" : ""}?`))) return;
 
     try {
-      await documentsAPI.delete(documentId);
-      setDocuments(docs => docs.filter(doc => doc.id !== documentId));
+      await Promise.all([...selectedIds].map((id) => documentsAPI.delete(id)));
+      setDocuments((docs) => docs.filter((doc) => !selectedIds.has(doc.id)));
+      clearSelectionDoc();
       clearError();
     } catch (err) {
-      setError('Failed to delete document');
-      console.error(err);
+      const msg = err?.response?.data?.detail || "Failed to delete selected documents";
+      setError(msg);
     }
   };
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  // ─── 14  CATEGORY MANAGEMENT HANDLERS ────────────────────────────────────
+  // Categories management
+  const handleCreateCategory = async (e) => {
+    e?.preventDefault?.();
+    const name = newCatName.trim();
+    if (!name) return;
+    try {
+      const res = await documentCategoriesAPI.create({
+        name,
+        description: newCatDesc || null,
+      });
+      setCategories((prev) => sortItemsAlphabetically([...prev, res.data], ["name"]));
+      setNewCatName("");
+      setNewCatDesc("");
+    } catch (err) {
+      console.error("Failed to create category", err);
+    }
   };
+
+  const startEditCategory = (cat) => {
+    setEditingCatId(cat.id);
+    setEditingCatName(cat.name || "");
+    setEditingCatDesc(cat.description || "");
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCatId(null);
+    setEditingCatName("");
+    setEditingCatDesc("");
+  };
+
+  const saveEditCategory = async (catId) => {
+    try {
+      const payload = {
+        name: editingCatName || undefined,
+        description: editingCatDesc,
+      };
+      const res = await documentCategoriesAPI.update(catId, payload);
+      setCategories((prev) =>
+        sortItemsAlphabetically(
+          prev.map((c) => (c.id === catId ? res.data : c)),
+          ["name"]
+        )
+      );
+      cancelEditCategory();
+    } catch (err) {
+      console.error("Failed to update category", err);
+    }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    if (!(await showConfirm("Delete this category?"))) return;
+    try {
+      await documentCategoriesAPI.delete(catId);
+      setCategories((prev) => prev.filter((c) => c.id !== catId));
+    } catch (err) {
+      console.error("Failed to delete category", err);
+    }
+  };
+
+  // ─── 15  RENDER / RETURN ──────────────────────────────────────────────────
+  usePagePermission("documents");
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <PermissionGate page="documents" permission="write">
-            <button 
-              type="button" 
-              onClick={handleUploadDocument}
-              className="btn-primary flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Upload Document
-            </button>
-          </PermissionGate>
-          <PermissionGate page="documents" permission="write">
-            <button
-              type="button"
-              onClick={() => setIsCategoriesOpen((v) => !v)}
-              className="ml-2 btn-secondary"
-              title="Manage Categories"
-            >
-              {isCategoriesOpen ? 'Hide Categories' : 'Manage Categories'}
-            </button>
-          </PermissionGate>
-        </div>
+    <div className="bg-body d-flex flex-column min-h-0 overflow-hidden vh-100">
+      {/* Header */}
+      <div className="app-page-header align-items-center border-bottom d-flex flex-shrink-0 justify-content-between p-1">
+        <h1 className="app-page-title">{showTemplates ? "Templates" : "Documents"}</h1>
+        <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
+          <Cog6ToothIcon className="app-icon-18" />
+        </button>
       </div>
 
+      {/* Error Alert */}
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+        <div className="alert alert-danger align-items-center border-0 d-flex flex-shrink-0 justify-content-between m-0 rounded-0">
+          <span>{error}</span>
+          <button
+            className="btn btn-outline-danger btn-sm ms-3"
+            onClick={() => {
+              clearError();
+              loadDocuments();
+              loadCategories();
+            }}
+          >
+            Retry
+          </button>
         </div>
       )}
 
-      {isCategoriesOpen && (
-        <div className="mt-4 p-4 border rounded bg-gray-50">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-medium text-gray-900">Manage Categories</h3>
-          </div>
-          <form onSubmit={handleCreateCategory} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="New category name"
-              className="input-field"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Description (optional)"
-              className="input-field"
-              value={newCatDesc}
-              onChange={(e) => setNewCatDesc(e.target.value)}
-            />
-            <div className="flex justify-end">
-              <button type="submit" className="btn-primary">Add Category</button>
-            </div>
-          </form>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {categories.map((cat) => (
-                  <tr key={cat.id}>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {editingCatId === cat.id ? (
-                        <input className="input-field" value={editingCatName} onChange={(e) => setEditingCatName(e.target.value)} />
-                      ) : (
-                        cat.name
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {editingCatId === cat.id ? (
-                        <input className="input-field" value={editingCatDesc} onChange={(e) => setEditingCatDesc(e.target.value)} />
-                      ) : (
-                        cat.description || '-'
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-sm">
-                      {editingCatId === cat.id ? (
-                        <div className="flex gap-2">
-                          <button type="button" className="btn-primary" onClick={() => saveEditCategory(cat.id)}>Save</button>
-                          <button type="button" className="btn-secondary" onClick={cancelEditCategory}>Cancel</button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button type="button" className="btn-secondary" onClick={() => startEditCategory(cat)}>Edit</button>
-                          <button type="button" className="btn-secondary text-red-700" onClick={() => handleDeleteCategory(cat.id)}>Delete</button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {categories.length === 0 && (
-                  <tr>
-                    <td className="px-4 py-4 text-sm text-gray-500" colSpan={3}>No categories yet.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
-        <MobileTable
-          data={documents}
-          columns={[
-            { key: 'original_filename', title: 'File Name' },
-            { key: 'entity_type', title: 'Entity', render: (v) => v ? <span className="capitalize">{v}</span> : '-' },
-            { key: 'file_size', title: 'Size', render: (v) => formatFileSize(v) },
-            { key: 'is_signed', title: 'Signed', render: (v, row) => (
-              v ? <span className="text-green-600">Yes</span> : <span className="text-gray-500">No</span>
-            ) },
-          ]}
-          onDelete={(item) => handleDeleteDocument(item.id)}
-          rightActions={(item) => (
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleOpenEditor(item)}
-                className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Open in Editor"
-              >
-                <DocumentIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => handlePreview(item)}
-                className="flex-shrink-0 p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                title="Preview"
-              >
-                <PencilIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => handleOpenEdit(item)}
-                className="flex-shrink-0 p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Meta"
-              >
-                <AdjustmentsHorizontalIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => handleOpenSign(item)}
-                className="flex-shrink-0 p-2 text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                title="Sign"
-              >
-                <CheckIcon className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-          emptyMessage="No documents uploaded yet"
-        />
-        <MobileAddButton onClick={handleUploadDocument} label="Upload" />
-      </div>
-
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      File Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Entity Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Entity ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      File Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Upload Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Signed
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {documents.map((document) => (
-                    <tr key={document.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        <div className="flex items-center">
-                          <DocumentIcon className="h-5 w-5 text-gray-400 mr-2" />
-                          {document.original_filename}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {document.entity_type ? (
-                          <span className="capitalize">{document.entity_type}</span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                        {document.entity_id ? `${document.entity_id.slice(0, 8)}...` : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatFileSize(document.file_size)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(document.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {document.description || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {document.is_signed ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-green-700 bg-green-100">
-                            Signed{document.signed_by ? ` by ${document.signed_by}` : ''}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-gray-700 bg-gray-100">Not signed</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                        <button
-                          onClick={() => handleOpenEditor(document)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Open in Editor"
-                        >
-                          <DocumentIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handlePreview(document)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                          title="Preview"
-                        >
-                          <PencilIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenHistory(document)}
-                          className="text-amber-700 hover:text-amber-900"
-                          title="History"
-                        >
-                          <ClockIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(document)}
-                          className="text-gray-700 hover:text-gray-900"
-                          title="Meta"
-                        >
-                          <AdjustmentsHorizontalIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenSign(document)}
-                          className="text-green-700 hover:text-green-900"
-                          title="Sign"
-                        >
-                          <CheckIcon className="h-5 w-5 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDocument(document.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {documents.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No documents found. Upload your first document to get started.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal for Document Upload Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'document-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'document-form' && (
-          <DocumentUploadForm
-            onSubmit={handleSubmitDocument}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-
-      {/* Edit Modal - Fullscreen with footer controls */}
-      <Modal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        fullScreen
-        noPadding
-        footer={(
-          isPreviewOpen && previewDoc ? (
-            <form onSubmit={handleSubmitInlineEdit} className="w-full grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-600">Description</label>
-                <input
-                  type="text"
-                  className="input-field mt-1"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Description"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600">Owner</label>
-                <CustomDropdown
-                  value={editOwnerId || ''}
-                  onChange={(e) => setEditOwnerId(e.target.value)}
-                  options={[
-                    { value: '', label: 'Unassigned' },
-                    ...employees.map((emp) => ({
-                      value: emp.id,
-                      label: emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id
-                    }))
-                  ]}
-                  placeholder="Select owner"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600">Category</label>
-                <CustomDropdown
-                  value={editCategoryId || ''}
-                  onChange={(e) => setEditCategoryId(e.target.value)}
-                  options={[
-                    { value: '', label: 'None' },
-                    ...categories.map((cat) => ({
-                      value: cat.id,
-                      label: cat.name
-                    }))
-                  ]}
-                  placeholder="Select category"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600">Review Date</label>
-                <input
-                  type="date"
-                  className="input-field mt-1"
-                  value={editReviewDate}
-                  onChange={(e) => setEditReviewDate(e.target.value)}
-                />
-              </div>
-              <div className="md:col-span-5 flex justify-end">
-                <button type="submit" className="btn-primary">Save</button>
-              </div>
-            </form>
-          ) : null
-        )}
-      >
-        {isPreviewOpen && previewDoc && (
-          <div className="w-full h-full">
-            {(() => { const ct = (previewDoc.content_type || '').toLowerCase(); const name=(previewDoc.original_filename||'').toLowerCase(); const isDocx = ct.includes('wordprocessingml.document') || name.endsWith('.docx'); const isXlsx = ct.includes('spreadsheetml.sheet') || name.endsWith('.xlsx'); const isPptx = ct.includes('presentationml.presentation') || name.endsWith('.pptx'); const isOffice = isDocx || isXlsx || isPptx; return (
-            <div className="w-full h-full">
-              {(ct && ct.startsWith('image/')) || /(\.png|\.jpg|\.jpeg|\.gif|\.webp)$/i.test(name) ? (
-                <img
-                  src={documentsAPI.fileUrl(previewDoc.id)}
-                  alt={previewDoc.original_filename}
-                  className="w-full h-full object-contain"
-                />
-              ) : ct.includes('pdf') || name.endsWith('.pdf') ? (
-                <iframe
-                  title="PDF Preview"
-                  src={documentsAPI.fileUrl(previewDoc.id)}
-                  className="w-full h-full"
-                />
-              ) : isOffice ? (
-                onlyofficeEnabled ? (
-                  <OnlyOfficeEditor documentId={previewDoc.id} />
-                ) : isDocx ? (
-                  <div className="w-full h-full overflow-auto bg-gray-50">
-                    {docxError && (
-                      <div className="m-2 text-sm text-red-700 bg-red-50 border border-red-200 p-2 rounded">{docxError}</div>
-                    )}
-                    <div ref={setDocxContainerEl} />
-                  </div>
-                ) : (
-                  <div className="p-4 text-sm text-gray-700">Editing for this Office file requires configuring OnlyOffice Document Server.</div>
-                )
+      {/* Main table container */}
+      <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
+        {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+        <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
+          {showTemplates ? (
+            /* ── Templates list ── */
+            (() => {
+              const TEMPLATE_TYPE_COLORS = {
+                email: "bg-blue-100 text-blue-800",
+                invoice: "bg-green-100 text-green-800",
+                receipt: "bg-teal-100 text-teal-800",
+                memo: "bg-purple-100 text-purple-800",
+                quote: "bg-yellow-100 text-yellow-800",
+                payslip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
+                custom: "bg-gray-100 text-gray-700",
+              };
+              const filtered = templates.filter((t) => templateTypeFilter === "all" || t.template_type === templateTypeFilter).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
+              return filtered.length > 0 ? (
+                <table className="app-main-page-table mb-0 table table-borderless table-hover w-100">
+                  <colgroup>
+                    <col className="app-col-action-56" />
+                    <col className="app-col-flex" />
+                    <col className="app-col-action-56" />
+                  </colgroup>
+                  <tbody>
+                    {filtered.map((tpl) => (
+                      <tr
+                        key={tpl.id}
+                        className="app-clickable-row align-middle border-bottom"
+                        tabIndex={0}
+                        onClick={() => handleEditTemplate(tpl)}
+                        onKeyDown={(e) => {
+                          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            handleEditTemplate(tpl);
+                          }
+                        }}
+                      >
+                        <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTemplate(tpl);
+                            }}
+                            className="align-items-center border-0 btn btn-outline-danger btn-sm d-flex justify-content-center p-1"
+                            title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
+                            disabled={tpl.is_standard}
+                          >
+                            <XMarkIcon className="ui-icon-4" />
+                          </button>
+                        </td>
+                        <td className="px-0">
+                          <div className="ui-flex-center-gap-2">
+                            <span className="fw-medium text-truncate">{tpl.name}</span>
+                            {tpl.is_standard && <span className="badge bg-warning text-dark text-xxs">Standard</span>}
+                          </div>
+                          <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>{tpl.template_type}</span>
+                        </td>
+                        <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTemplate(tpl);
+                            }}
+                            className="align-items-center border-0 btn btn-outline-primary btn-sm d-flex justify-content-center p-1"
+                            title="Edit"
+                          >
+                            <PencilIcon className="ui-icon-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               ) : (
-                <div className="p-4 text-sm text-gray-700">
-                  Preview not available for this file type.
-                </div>
-              )}
-            </div>); })()}
-          </div>
-        )}
-      </Modal>
-
-      {/* Edit Document Modal */}
-      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
-        {isEditOpen && editDoc && (
-          <form onSubmit={handleSubmitEdit} className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Edit Document</h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                className="input-field mt-1"
-                rows={3}
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Owner</label>
-                <CustomDropdown
-                  value={editOwnerId || ''}
-                  onChange={(e) => setEditOwnerId(e.target.value)}
-                  options={[
-                    { value: '', label: 'Unassigned' },
-                    ...employees.map((emp) => ({
-                      value: emp.id,
-                      label: emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id
-                    }))
-                  ]}
-                  placeholder="Select owner"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Review Date</label>
-                <input
-                  type="date"
-                  className="input-field mt-1"
-                  value={editReviewDate}
-                  onChange={(e) => setEditReviewDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Category</label>
-                <CustomDropdown
-                  value={editCategoryId || ''}
-                  onChange={(e) => setEditCategoryId(e.target.value)}
-                  options={[
-                    { value: '', label: 'None' },
-                    ...categories.map((cat) => ({
-                      value: cat.id,
-                      label: cat.name
-                    }))
-                  ]}
-                  placeholder="Select category"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assignments</label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {editAssignments.length === 0 && (
-                  <span className="text-sm text-gray-500">No assigned employees</span>
-                )}
-                {editAssignments.map((a) => {
-                  const emp = employees.find((e) => e.id === a.employee_id);
-                  const label = emp ? (emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || a.employee_id) : a.employee_id;
+                <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{templatesLoading ? S.loading : S.noResults}</div>
+              );
+            })()
+          ) : /* ── Documents: List or Grid View ── */
+          sortedAndFiltered.length > 0 ? (
+            viewMode === "grid" ? (
+              /* Grid View */
+              <div className="p-1" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "1.5rem", overflowY: "auto" }}>
+                {sortedAndFiltered.map((doc, index) => {
+                  const FileIcon = getFileTypeIcon(doc.original_filename, doc.content_type);
+                  const isImage = doc.content_type?.startsWith("image/");
                   return (
-                    <span key={a.employee_id} className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                      {label}
-                      <button type="button" onClick={() => handleRemoveAssignment(a.employee_id)} className="ml-2 text-red-600 hover:text-red-800">×</button>
-                    </span>
+                    <div key={doc.id || index} className="app-clickable-card align-items-center d-flex flex-column gap-2 hover-highlight p-0 rounded-lg" role="button" onClick={() => handleView(doc)}>
+                      {isImage ? (
+                        <img src={documentsAPI.fileUrl(doc.id)} alt={doc.original_filename} style={{ width: "100%", height: "100px", objectFit: "cover", borderRadius: "6px", border: "1px solid var(--bs-border-color)" }} />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "6px",
+                            border: "1px solid var(--bs-border-color)",
+                            backgroundColor: "var(--bs-gray-100)",
+                          }}
+                        >
+                          <FileIcon className="h-12 text-muted w-12" />
+                        </div>
+                      )}
+                      <div className="small text-center text-truncate" style={{ maxWidth: "120px" }} title={doc.original_filename}>
+                        {doc.original_filename ?? "(unnamed)"}
+                      </div>
+                      <div className="text-muted text-xs">{formatFileSize(doc.file_size)}</div>
+                    </div>
                   );
                 })}
               </div>
-              <div className="flex gap-2">
-                <CustomDropdown
-                  value={assignEmployeeId}
-                  onChange={(e) => setAssignEmployeeId(e.target.value)}
-                  options={employees.map((emp) => ({
-                    value: emp.id,
-                    label: emp.first_name ? `${emp.first_name} ${emp.last_name || ''}`.trim() : emp.name || emp.email || emp.id
-                  }))}
-                  placeholder="Select employee"
-                  className="flex-1"
-                />
-                <button type="button" onClick={handleAddAssignment} className="btn-secondary">Add</button>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 pt-2">
-              <button type="button" onClick={() => setIsEditOpen(false)} className="btn-secondary">Cancel</button>
-              <button type="submit" className="btn-primary">Save</button>
-            </div>
-          </form>
-        )}
-      </Modal>
+            ) : (
+              /* List View */
+              <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
+                <colgroup>
+                  <col className="app-col-select" />
+                  <col className="app-col-flex" />
+                  {pageSettings.showActions !== false && <col className="app-col-action-60" />}
+                </colgroup>
+                <tbody>
+                  {sortedAndFiltered.map((doc, index) => {
+                    const catId = doc.category_id ?? doc.category?.id;
+                    const catName = catId != null ? categoryNameById.get(String(catId)) : null;
 
-      {/* History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)}>
-        {isHistoryOpen && historyDoc && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">History: {historyDoc.original_filename}</h3>
-            <div className="max-h-[40vh] overflow-auto border rounded">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {historyItems.map((h) => (
-                    <tr key={h.id}>
-                      <td className="px-4 py-2 text-sm text-gray-700">{new Date(h.created_at).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-sm text-gray-700">{h.note || '-'}</td>
-                      <td className="px-4 py-2 text-sm">
-                        <a
-                          className="text-indigo-600 hover:text-indigo-800"
-                          href={documentsAPI.historyFileUrl(h.id, { download: true })}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Download
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                  {historyItems.length === 0 && (
-                    <tr>
-                      <td className="px-4 py-4 text-sm text-gray-500" colSpan={3}>No history yet.</td>
-                    </tr>
-                  )}
+                    return (
+                      <tr key={doc.id || index} className="app-clickable-row main-page-table-row app-table-row align-middle border-bottom" onClick={() => !selectionMode && handleView(doc)}>
+                        <td className="app-col-select app-select-icon-cell text-center" onClick={(e) => e.stopPropagation()}>
+                          <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
+                        </td>
+
+                        {/* File Name */}
+                        <td className="px-1">
+                          <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
+                            {doc.original_filename ?? "(unnamed)"}
+                          </div>
+                          <div className="align-items-center d-flex flex-wrap gap-1 small text-muted">
+                            {pageSettings.showType !== false && <span className="text-capitalize">{doc.entity_type || "Document"}</span>}
+                            {pageSettings.showCategory !== false && catName && (
+                              <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs">
+                                {catName}
+                              </span>
+                            )}
+                            {pageSettings.showTags !== false &&
+                              (docTagMap[String(doc.id)] || []).map((tag) => (
+                                <span key={tag} className="badge fw-medium rounded-pill text-xxs" style={{ background: "var(--bs-info-bg-subtle)", color: "var(--bs-info-text-emphasis)" }}>
+                                  {tag}
+                                </span>
+                              ))}
+                          </div>
+                        </td>
+
+                        {/* View */}
+                        {pageSettings.showActions !== false && (
+                          <td className="px-0 text-center">
+                            <button onClick={() => handleView(doc)} className="border-0 btn btn-outline-primary btn-sm p-1" title="View">
+                              <MagnifyingGlassIcon className="ui-icon-4" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-            </div>
+            )
+          ) : (
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+          )}
+        </div>
 
-            <form onSubmit={handleReplaceContent} className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Upload new version</label>
-              <input type="file" name="newVersionFile" className="input-field" />
-              <input type="text" name="newVersionNote" placeholder="Optional note for this version" className="input-field" />
-              <div className="flex justify-end">
-                <button type="submit" className="btn-primary">Replace Content</button>
-              </div>
-            </form>
+        {selectedIds.size > 0 && !showTemplates && (
+          <div className="align-items-center border-top d-flex flex-shrink-0 px-1 py-1" style={{ background: "rgba(var(--app-active-color-rgb),0.08)", borderColor: "rgba(var(--app-active-color-rgb),0.2)" }}>
+            <div className="ui-flex-center-gap-2">
+              <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
+                {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
+              </span>
+              <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
+                <PencilSquareIcon className="app-icon-14" />
+              </button>
+              <Gate_Permission page="documents" permission="delete">
+                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected documents" onClick={handleDeleteSelectedDocuments}>
+                  <TrashIcon className="app-icon-14" />
+                </button>
+              </Gate_Permission>
+              <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionDoc}>
+                <XMarkIcon className="app-icon-14" />
+              </button>
+            </div>
           </div>
         )}
-      </Modal>
+        <PageTableHeader
+          columns={
+            showTemplates
+              ? [
+                  { label: "", className: "app-col-action-56" },
+                  { label: "Template", className: "app-col-flex" },
+                  { label: "Actions", className: "app-col-action-56 app-col-action-header" },
+                ]
+              : [
+                  { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedDoc} onToggle={handleSelectAllDoc} title="Select all visible documents" />, className: "app-col-select p-0 text-center" },
+                  { label: "Document", className: "app-col-flex", sortKey: "filename" },
+                  ...(pageSettings.showActions !== false ? [{ label: "View", className: "app-col-action-60 text-center" }] : []),
+                ]
+          }
+          sortColumn={sortColumn}
+          sortAsc={sortAsc}
+          onSort={handleSort}
+        />
+
+        {/* Fixed bottom – headers + controls */}
+        <PageTableFooter
+          searchTerm={searchTerm}
+          onSearch={setSearchTerm}
+          searchPlaceholder="Search by name, type, description, or tag…"
+          hideSearch={showTemplates}
+          addButton={
+            !showTemplates ? (
+              <Gate_Permission page="documents" permission="write">
+                <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleUploadDocument} className="btn-app-primary" />
+              </Gate_Permission>
+            ) : null
+          }
+        >
+          {/* Templates toggle */}
+          <Button_Toolbar
+            icon={DocumentTextIcon}
+            label="Temp"
+            title={showTemplates ? "Back to documents" : "Document templates"}
+            onClick={() => setShowTemplates((v) => !v)}
+            className={`border-0 shadow-lg transition-all ${showTemplates ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
+          />
+
+          {showTemplates ? (
+            /* Templates mode controls */
+            <>
+              <button type="button" onClick={handleNewTemplate} className="align-items-center btn btn-app-primary d-flex flex-shrink-0 justify-content-center px-1 rounded-pill" title="New template">
+                <PlusIcon className="ui-icon-5" />
+              </button>
+              {/* Type filter for templates */}
+              <div className="ui-pos-rel">
+                <Button_Toolbar
+                  icon={TagIcon}
+                  label="Type"
+                  onClick={() => setIsTemplateTypeFilterOpen((prev) => !prev)}
+                  className={`border-0 shadow-lg transition-all ${templateTypeFilter !== "all" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
+                  data-active={templateTypeFilter !== "all"}
+                />
+                {isTemplateTypeFilterOpen && (
+                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={{ minWidth: "180px" }}>
+                    {[
+                      { value: "all", label: "All Types" },
+                      { value: "email", label: "Email" },
+                      { value: "invoice", label: "Invoice" },
+                      { value: "receipt", label: "Receipt" },
+                      { value: "memo", label: "Memo" },
+                      { value: "quote", label: "Quote" },
+                      { value: "payslip", label: "Payslip" },
+                      { value: "custom", label: "Custom" },
+                    ].map((option, index, arr) => {
+                      const isLast = index === arr.length - 1;
+                      const isSelected = templateTypeFilter === option.value;
+                      return (
+                        <div key={option.value} className={isLast ? "" : "mb-1"}>
+                          <button
+                            onClick={() => {
+                              setTemplateTypeFilter(option.value);
+                              setIsTemplateTypeFilterOpen(false);
+                            }}
+                            className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
+                          >
+                            {option.label}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Documents mode controls */
+            <>
+              {/* View Toggle: List <-> Grid */}
+              <Button_Toolbar
+                icon={viewMode === "grid" ? ListBulletIcon : Squares2X2Icon}
+                label={viewMode === "grid" ? "List" : "Grid"}
+                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                className={`border-0 shadow-lg transition-all ${viewMode === "grid" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
+                title={viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
+              />
+
+              {/* Clear Filters Button */}
+              {(categoryFilter.length > 0 || statusFilter.length > 0 || typeFilter.length > 0) && (
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Clear"
+                  onClick={() => {
+                    setCategoryFilter([]);
+                    setStatusFilter([]);
+                    setTypeFilter([]);
+                  }}
+                  className="btn-app-danger"
+                />
+              )}
+
+              {/* Categories Filter */}
+              <Dropdown_Filter
+                icon={Squares2X2Icon}
+                label="Category"
+                multiSelect
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                isOpen={isFilterCategoriesOpen}
+                setIsOpen={setIsFilterCategoriesOpen}
+                showHelp={isTrainingMode}
+                options={[{ value: "all", label: "All Categories", description: "Shows documents from every category." }, ...sortedCategories.map((cat) => ({ value: String(cat.id), label: cat.name, description: `Shows only documents in the "${cat.name}" category.` }))]}
+              />
+
+              {/* Status Filter */}
+              <Dropdown_Filter
+                icon={CheckCircleIcon}
+                label="Status"
+                multiSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                isOpen={isFilterStatusOpen}
+                setIsOpen={setIsFilterStatusOpen}
+                activeClass={getStatusFilterButtonClass()}
+                showHelp={isTrainingMode}
+                options={[
+                  { value: "all", label: "All Statuses", description: "Shows documents in every status." },
+                  { value: "signed", label: "Signed", description: "Shows only documents that have signatures." },
+                  { value: "unsigned", label: "Unsigned", description: "Shows only documents without signatures." },
+                  ...sortedDocStatuses.map((st) => ({ value: String(st.id), label: st.name, description: st.description || `Shows only documents with the "${st.name}" status.` })),
+                ]}
+              />
+
+              {/* Type Filter */}
+              <Dropdown_Filter
+                icon={TagIcon}
+                label="Type"
+                multiSelect
+                value={typeFilter}
+                onChange={setTypeFilter}
+                isOpen={isFilterTypeOpen}
+                setIsOpen={setIsFilterTypeOpen}
+                activeClass="bg-indigo-600 hover:bg-indigo-700 text-white"
+                showHelp={isTrainingMode}
+                dropdownStyle={{ maxHeight: "300px", overflowY: "auto" }}
+                options={[{ value: "all", label: "All Types", description: "Shows all document entity types." }, ...entityTypeOptions.map((type) => ({ value: type, label: type, description: `Shows only documents with type "${type}".` }))]}
+              />
+            </>
+          )}
+        </PageTableFooter>
+      </div>
+
+      {/* Template Editor Modal */}
+      {isTemplateEditorOpen && (
+        <Modal_Template_Editor
+          template={editingTemplate}
+          onSave={handleSaveTemplate}
+          onClose={() => {
+            setIsTemplateEditorOpen(false);
+            setEditingTemplate(null);
+          }}
+        />
+      )}
+
+      {/* Document Upload Modal */}
+      <Modal_Document_Form
+        isOpen={isModalOpen && modalContent === "document-form"}
+        onClose={closeModal}
+        onSubmit={handleSubmitDocument}
+      />
+
+      {/* Document Viewer Modal */}
+      <Modal_Viewer_Document
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        document={viewerDoc}
+        onEdit={handleEditFromViewer}
+        onSign={handleSignFromViewer}
+        onWorkflow={(doc) => {
+          setWorkflowDoc(doc);
+          setShowWorkflowStatus(true);
+        }}
+      />
+
+      {showWorkflowAssign && workflowDoc && (
+        <WorkflowModal
+          documentId={workflowDoc.id}
+          onClose={() => setShowWorkflowAssign(false)}
+          onAssigned={() => {
+            setShowWorkflowAssign(false);
+            setShowWorkflowStatus(true);
+            loadDocuments();
+          }}
+        />
+      )}
+
+      <Modal_Generic isOpen={showWorkflowStatus} onClose={() => setShowWorkflowStatus(false)} fullScreen={true} noPadding={true}>
+        {showWorkflowStatus && workflowDoc && (
+          <div className="bg-white dark:bg-gray-900 h-full overflow-auto p-1">
+            <div className="align-items-center d-flex justify-content-between mb-3">
+              <div>
+                <h3 className="font-semibold mb-1 text-lg">Workflow</h3>
+                <p className="mb-0 text-muted text-sm">{workflowDoc.original_filename}</p>
+              </div>
+              <div className="d-flex gap-2">
+                <button type="button" onClick={() => setShowWorkflowAssign(true)} className="btn btn-primary btn-sm">
+                  Assign
+                </button>
+                <button type="button" onClick={() => setShowWorkflowStatus(false)} className="btn ui-btn-outline-secondary-sm">
+                  Close
+                </button>
+              </div>
+            </div>
+            <WorkflowStatusTracker documentId={workflowDoc.id} currentUserId={user?.id} onWorkflowUpdated={loadDocuments} />
+          </div>
+        )}
+      </Modal_Generic>
+
+      {/* Document Edit Modal */}
+      <Modal_Edit_Document isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} document={editDoc} onSave={handleSaveEdit} />
+
+      {/* History Modal */}
+      <Modal_Document_History
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        historyDoc={historyDoc}
+        historyItems={historyItems}
+        onReplaceContent={handleReplaceContent}
+      />
 
       {/* Sign Document Modal */}
-      <Modal isOpen={isSignOpen} onClose={() => setIsSignOpen(false)}>
-        {isSignOpen && signDoc && (
-          <form onSubmit={handleSubmitSign} className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Sign Document</h3>
-            <p className="text-sm text-gray-600">{signDoc.original_filename}</p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Signer Name *</label>
-              <input
-                type="text"
-                required
-                className="input-field mt-1"
-                value={signerName}
-                onChange={(e) => setSignerName(e.target.value)}
-                placeholder="Enter your name"
-              />
-            </div>
-            <div className="flex justify-end space-x-3 pt-2">
-              <button type="button" onClick={() => setIsSignOpen(false)} className="btn-secondary">Cancel</button>
-              <button type="submit" className="btn-primary">Sign</button>
-            </div>
-          </form>
-        )}
-      </Modal>
+      <Modal_Document_Sign
+        isOpen={isSignOpen}
+        onClose={() => setIsSignOpen(false)}
+        signDoc={signDoc}
+        signaturePreview={signaturePreview}
+        user={user}
+        signLoading={signLoading}
+        onSubmitSign={handleSubmitSign}
+      />
+
+      {/* Categories Management Modal */}
+      <Modal_Document_Categories
+        isOpen={isCategoriesOpen}
+        onClose={() => {
+          setIsCategoriesOpen(false);
+          cancelEditCategory();
+        }}
+        categories={categories}
+        sortedCategories={sortedCategories}
+        editingCatId={editingCatId}
+        editingCatName={editingCatName}
+        setEditingCatName={setEditingCatName}
+        editingCatDesc={editingCatDesc}
+        setEditingCatDesc={setEditingCatDesc}
+        startEditCategory={startEditCategory}
+        saveEditCategory={saveEditCategory}
+        cancelEditCategory={cancelEditCategory}
+        handleDeleteCategory={handleDeleteCategory}
+        newCatName={newCatName}
+        setNewCatName={setNewCatName}
+        newCatDesc={newCatDesc}
+        setNewCatDesc={setNewCatDesc}
+        handleCreateCategory={handleCreateCategory}
+      />
+
+      <Modal_Documents_Settings
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        onSave={async () => {
+          await savePageSettings("documents", pendingSettings);
+        }}
+        onOpenCategories={() => setIsCategoriesOpen(true)}
+        onOpenStatuses={() => setShowStatusManager(true)}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+      />
+
+      <Modal_ManageLookup
+        isOpen={showStatusManager}
+        onClose={() => setShowStatusManager(false)}
+        title="Manage Statuses"
+        entityLabel="status"
+        items={docStatuses}
+        onItemsChanged={loadDocStatuses}
+        api={documentStatusesAPI}
+      />
+
+      <Modal_MultiEdit
+        isOpen={showMultiEdit}
+        onClose={() => setShowMultiEdit(false)}
+        title={`Edit ${selectedIds.size} Document${selectedIds.size !== 1 ? "s" : ""}`}
+        fields={docMultiEditFields}
+        selectedItems={documents.filter((d) => selectedIds.has(d.id))}
+        onSave={handleDocMultiEditSave}
+        saving={multiSaving}
+      />
     </div>
   );
 }

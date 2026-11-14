@@ -1,5 +1,45 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+# ============================================================
+# FILE: auth.py
+#
+# PURPOSE:
+#   Handles all authentication and user-management concerns for the
+#   BusinessManager API.  It issues and validates JWT tokens, exposes
+#   login/logout endpoints, and provides admin-gated CRUD for users,
+#   roles, individual permissions, passwords, signatures, and profile
+#   pictures.
+#
+# FUNCTIONAL PARTS:
+#   [1] Imports                     — stdlib, third-party, and local imports
+#   [2] JWT Configuration & Helpers — constants, create_access_token, verify_token,
+#                                     get_current_user, get_user_permissions_list
+#   [3] Token Verification / get_current_user Dependency
+#                                   — verify_token + get_current_user FastAPI deps
+#   [4] Login / Token Endpoints     — /initialize, /login, /logout
+#   [5] User CRUD Endpoints         — /me, /users (create, list, get, update, lock/unlock)
+#   [6] Password Management         — /reset-password, /change-password, /admin/reset-password,
+#                                     /admin/unlock-account, /admin/lock-account,
+#                                     /admin/account-status, /admin/normalize-permissions,
+#                                     /me/dark-mode
+#   [7] User Permission Endpoints   — /users/{id}/permissions, /permissions (body variant)
+#   [8] Role Management Endpoints   — /roles CRUD + /roles/{id}/permissions
+#   [9] Signature Endpoints         — /me/signature (GET/PUT)
+#  [10] Profile Self-Update & Profile Picture
+#                                   — /me/profile, /me/profile-picture,
+#                                     /users/{id}/profile-picture
+#
+# CHANGE LOG — all modifications to this file must be recorded here:
+#   Format : YYYY-MM-DD | Author | Description
+#   ─────────────────────────────────────────────────────────────
+#   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-07-26 | GitHub Copilot | Added initiate_refunds permission aliasing and admin permission expansion
+#   2026-09-11 | GitHub Copilot | Normalized and validated permission updates before PostgreSQL enum persistence
+#   2026-09-11 | GitHub Copilot | Allowed employees:admin assignment, company-scoped permissions, and idempotent re-grants
+# ============================================================
+
+# ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
+from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from sqlalchemy import text
 from datetime import datetime, timedelta
@@ -7,22 +47,62 @@ from typing import List, Optional
 from uuid import UUID
 import jwt
 import os
+import uuid as uuid_mod
 import bcrypt
 from backend.database import get_session
 from backend.models import (
     User, UserCreate, UserUpdate, UserRead, UserPermission, UserPermissionCreate,
     UserPermissionUpdate, UserPermissionRead, LoginRequest, LoginResponse,
-    PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType
+    PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType,
+    Role, RolePermission, RoleCreate, RoleUpdate, RoleRead, RolePermissionCreate, RolePermissionRead
 )
 
+# ─── [2] JWT CONFIGURATION AND HELPERS ────────────────────────────────────────
 router = APIRouter()
 security = HTTPBearer()
 
 # JWT Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours (was 30 min — too short for a working session)
 REMEMBER_ME_EXPIRE_DAYS = 30
+
+
+def normalize_permission_value(value: Optional[str]) -> str:
+    """Normalize permission values and support legacy aliases."""
+    if value is None:
+        return ""
+    if isinstance(value, PermissionType):
+        return value.value
+
+    text = str(value).strip().lower()
+    aliases = {
+        "viewall": PermissionType.VIEW_ALL.value,
+        "view_all": PermissionType.VIEW_ALL.value,
+        "write_selfonly": PermissionType.WRITE_SELF_ONLY.value,
+        "writeselfonly": PermissionType.WRITE_SELF_ONLY.value,
+        "write-self-only": PermissionType.WRITE_SELF_ONLY.value,
+        "write_self_only": PermissionType.WRITE_SELF_ONLY.value,
+        "readall": PermissionType.READ_ALL.value,
+        "read_all": PermissionType.READ_ALL.value,
+        "writeall": PermissionType.WRITE_ALL.value,
+        "write_all": PermissionType.WRITE_ALL.value,
+        "approvepayments": PermissionType.APPROVE_PAYMENTS.value,
+        "approve_payments": PermissionType.APPROVE_PAYMENTS.value,
+        "initiaterefunds": PermissionType.INITIATE_REFUNDS.value,
+        "initiate_refunds": PermissionType.INITIATE_REFUNDS.value,
+    }
+    return aliases.get(text, text)
+
+
+def parse_permission_type(value: Optional[str]) -> PermissionType:
+    """Parse a permission string into a PermissionType enum with compatibility aliases."""
+    normalized = normalize_permission_value(value)
+    try:
+        return PermissionType(normalized)
+    except ValueError as exc:
+        raise ValueError(f"Invalid permission type: {value}") from exc
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
@@ -35,6 +115,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+# ─── [3] TOKEN VERIFICATION / get_current_user DEPENDENCY ─────────────────────
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """Verify JWT token and return payload"""
     try:
@@ -46,7 +127,13 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.JWTError:
+    except jwt.DecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -97,35 +184,71 @@ def get_current_user(
     
     return user
 
+# ─── [X] ADMIN ROLE DEPENDENCY ───────────────────────────────────────────────
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if str(current_user.role).lower() != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
+    return current_user
+
+def get_current_company_id(
+    payload: dict = Depends(verify_token),
+) -> str:
+    """Extract company_id from JWT token payload."""
+    return payload.get("company_id") or ""
+
 def get_user_permissions_list(user: User, session: Session) -> List[str]:
-    """Get user permissions as list of strings"""
+    """Get user permissions as list of strings (including inherited role permissions)"""
     # Admin users have access to everything
     if str(user.role).lower() == 'admin' or user.role == UserRole.ADMIN:
-        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'employees', 'schedule', 'attendance', 'documents', 'admin']
-        all_permissions = ['read', 'write', 'delete', 'admin']
+        all_pages = ['clients', 'inventory', 'suppliers', 'services', 'sales', 'employees', 'schedule', 'attendance', 'documents', 'templates', 'tasks', 'leave', 'insurance', 'reports', 'settings', 'admin']
+        all_permissions = ['read', 'read_all', 'write', 'write_self_only', 'write_all', 'delete', 'admin', 'view_all', 'approve_payments', 'initiate_refunds']
         admin_permissions = []
         for page in all_pages:
             for permission in all_permissions:
                 admin_permissions.append(f"{page}:{permission}")
         return admin_permissions
-    
-    permissions = session.exec(
+
+    permission_strings = set()  # Use set to avoid duplicates
+
+    # Get permissions from assigned role (if any)
+    if user.role_id:
+        role_permissions = session.exec(
+            select(RolePermission).where(RolePermission.role_id == user.role_id)
+        ).all()
+        for rp in role_permissions:
+            try:
+                val = getattr(rp.permission, "value", str(rp.permission))
+            except Exception:
+                val = str(rp.permission)
+            permission_strings.add(f"{rp.page}:{str(val).lower()}")
+
+    # Get user's individual permissions (these can override or add to role permissions)
+    user_permissions = session.exec(
         select(UserPermission).where(UserPermission.user_id == user.id)
     ).all()
-    
+
     # Convert to list of strings like "clients:read", "inventory:write"
-    permission_strings = []
-    for perm in permissions:
+    for perm in user_permissions:
         if perm.granted:
             # Be tolerant of legacy/corrupt rows where enum casing or value is wrong
             try:
                 val = getattr(perm.permission, "value", str(perm.permission))
             except Exception:
                 val = str(perm.permission)
-            permission_strings.append(f"{perm.page}:{str(val).lower()}")
-    
-    return permission_strings
+            permission_strings.add(f"{perm.page}:{str(val).lower()}")
 
+    return list(permission_strings)
+
+
+def require_employee_permission_admin(current_user: User, session: Session) -> None:
+    """Require a base admin role or an explicit employees:admin permission."""
+    if current_user.role == UserRole.ADMIN:
+        return
+    if "employees:admin" in get_user_permissions_list(current_user, session):
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Employee permission administration required")
+
+# ─── [4] LOGIN / TOKEN ENDPOINTS ──────────────────────────────────────────────
 @router.get("/initialize")
 @router.post("/initialize")
 def initialize_admin(session: Session = Depends(get_session)):
@@ -142,7 +265,7 @@ def initialize_admin(session: Session = Depends(get_session)):
     
     admin_user = User(
         username="admin",
-        email="admin@lavishbeautyhairandnail.care",
+        email="admin@businessmanager.com",
         password_hash=hashed_password.decode('utf-8'),
         first_name="Admin",
         last_name="User",
@@ -163,19 +286,53 @@ def initialize_admin(session: Session = Depends(get_session)):
 @router.post("/login", response_model=LoginResponse)
 def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     """User login endpoint"""
-    # Find user by username or email
-    user = session.exec(
-        select(User).where(
-            (User.username == login_data.username) | (User.email == login_data.username)
+    username_or_email = (login_data.username or "").strip()
+    company_id = (login_data.company_id or "").strip().upper()
+
+    if not username_or_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email is required."
         )
-    ).first()
-    
+
+    # Find user by (username + company_id) when company_id is provided, else by username/email globally
+    if company_id:
+        user = session.exec(
+            select(User).where(
+                ((User.username == username_or_email) | (User.email == username_or_email)),
+                User.company_id == company_id,
+            )
+        ).first()
+        # Fallback: allow login if record hasn't been assigned a company yet (migration in progress)
+        if not user:
+            candidate = session.exec(
+                select(User).where(
+                    (User.username == username_or_email) | (User.email == username_or_email)
+                )
+            ).first()
+            if candidate and candidate.company_id in (None, "", "DEFAULT"):
+                user = candidate
+            elif candidate:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Account was found, but it belongs to company '{candidate.company_id}', not '{company_id}'."
+                )
+    else:
+        user = session.exec(
+            select(User).where(
+                (User.username == username_or_email) | (User.email == username_or_email)
+            )
+        ).first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            detail=(
+                f"No account found for '{username_or_email}'"
+                + (f" in company '{company_id}'." if company_id else ".")
+            )
         )
-    
+
     # Check if account is locked
     if user.is_locked:
         if user.locked_until and user.locked_until > datetime.utcnow():
@@ -208,7 +365,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
         session.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            detail=f"Incorrect password. Attempt {user.failed_login_attempts} of 5 before temporary lock."
         )
     
     # Reset failed attempts on successful login
@@ -221,7 +378,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     # Create access token
     expires_delta = timedelta(days=REMEMBER_ME_EXPIRE_DAYS) if login_data.remember_me else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id), "username": user.username, "role": user.role},
+        data={"sub": str(user.id), "username": user.username, "role": user.role, "company_id": user.company_id or ""},
         expires_delta=expires_delta
     )
     
@@ -242,6 +399,8 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
         is_locked=user.is_locked,
         force_password_reset=user.force_password_reset,
         last_login=user.last_login,
+        supervisor=user.supervisor,
+        company_id=user.company_id,
         created_at=user.created_at,
         updated_at=user.updated_at
     )
@@ -307,12 +466,54 @@ def change_password(
     
     return {"message": "Password changed successfully"}
 
+# ─── [5] USER CRUD ENDPOINTS ──────────────────────────────────────────────────
 @router.get("/me", response_model=UserRead)
 def get_current_user_info(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get current user information"""
+    # Self-heal legacy deployments: if user.color is missing, attempt fallback
+    # from legacy employee.color keyed by user_id or employee.id.
+    if not current_user.color:
+        legacy_color = None
+        try:
+            row = session.exec(
+                text(
+                    "SELECT color FROM employee "
+                    "WHERE user_id = :user_id AND color IS NOT NULL AND TRIM(color) <> '' "
+                    "LIMIT 1"
+                ),
+                {"user_id": str(current_user.id)},
+            ).first()
+            if row:
+                legacy_color = row[0]
+        except Exception:
+            # Legacy table/column may not exist; ignore and keep normal flow.
+            legacy_color = None
+
+        if not legacy_color:
+            try:
+                row = session.exec(
+                    text(
+                        "SELECT color FROM employee "
+                        "WHERE id = :employee_id AND color IS NOT NULL AND TRIM(color) <> '' "
+                        "LIMIT 1"
+                    ),
+                    {"employee_id": str(current_user.id)},
+                ).first()
+                if row:
+                    legacy_color = row[0]
+            except Exception:
+                legacy_color = None
+
+        if legacy_color:
+            current_user.color = legacy_color
+            current_user.updated_at = datetime.utcnow()
+            session.add(current_user)
+            session.commit()
+            session.refresh(current_user)
+
     # Return user data directly; granular permissions are returned via separate endpoint
     return UserRead.from_orm(current_user)
 
@@ -326,6 +527,7 @@ def get_current_user_permissions(
     permissions = get_user_permissions_list(current_user, session)
     return {"permissions": permissions}
 
+# ─── [6] PASSWORD MANAGEMENT ENDPOINTS ────────────────────────────────────────
 # Admin endpoints for user management
 @router.post("/users", response_model=UserRead)
 def create_user(
@@ -340,17 +542,19 @@ def create_user(
             detail="Admin access required"
         )
     
-    # Check if username or email already exists
+    # Check if username or email already exists within this company
+    company_id = current_user.company_id or ""
     existing_user = session.exec(
         select(User).where(
             (User.username == user_data.username) | (User.email == user_data.email)
-        )
+        ).where(User.company_id == company_id)
     ).first()
-    
+
     if existing_user:
+        field = "Username" if existing_user.username == user_data.username else "Email"
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already exists"
+            detail=f"{field} '{existing_user.username if field == 'Username' else user_data.email}' is already taken"
         )
     
     # Create new user
@@ -360,7 +564,9 @@ def create_user(
         password_hash=User.hash_password(user_data.password),
         first_name=user_data.first_name,
         last_name=user_data.last_name,
-        role=user_data.role
+        role=user_data.role,
+        supervisor=user_data.supervisor,
+        company_id=current_user.company_id,  # inherit company from creator
     )
     
     session.add(user)
@@ -381,7 +587,8 @@ def get_users(
             detail="Admin access required"
         )
     
-    users = session.exec(select(User)).all()
+    stmt = select(User).where(User.company_id == current_user.company_id)
+    users = session.exec(stmt).all()
     return [UserRead.from_orm(user) for user in users]
 
 @router.get("/users/{user_id}", response_model=UserRead)
@@ -390,8 +597,8 @@ def get_user(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get specific user (admin only)"""
-    if current_user.role != UserRole.ADMIN:
+    """Get specific user. Admins can fetch any user; non-admins can only fetch their own profile."""
+    if current_user.role != UserRole.ADMIN and str(current_user.id) != str(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
@@ -403,7 +610,12 @@ def get_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+    if current_user.company_id and user.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
     return UserRead.from_orm(user)
 
 @router.put("/users/{user_id}", response_model=UserRead)
@@ -426,9 +638,16 @@ def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+
+    incoming = user_data.dict(exclude_unset=True)
+    if "db_environment" in incoming and incoming["db_environment"] != "production":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only 'production' database environment is allowed"
+        )
     
     # Update user fields
-    for field, value in user_data.dict(exclude_unset=True).items():
+    for field, value in incoming.items():
         if field == 'password':
             # Hash the password before storing
             user.password_hash = User.hash_password(value)
@@ -520,6 +739,7 @@ def force_password_reset(
     
     return {"message": "User will be required to reset password on next login"}
 
+# ─── [7] USER PERMISSION ENDPOINTS ───────────────────────────────────────────
 # Permission management endpoints
 @router.post("/users/{user_id}/permissions", response_model=UserPermissionRead)
 def create_user_permission(
@@ -528,93 +748,71 @@ def create_user_permission(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Create user permission (admin only)"""
-    print(f"🔥 PERMISSION CREATE DEBUG - user_id: {user_id}")
-    
+    """Create or re-grant a user permission."""
     # Convert user_id to UUID with error handling
     try:
         user_uuid = UUID(user_id)
-    except (ValueError, TypeError) as e:
-        print(f"🔥 PERMISSION CREATE DEBUG - Invalid user_id format: {user_id}")
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid user_id format: {user_id}. Must be a valid UUID."
         )
-    print(f"🔥 PERMISSION CREATE DEBUG - Converted user_id to UUID: {user_uuid}")
-    print(f"🔥 PERMISSION CREATE DEBUG - permission_data: {permission_data}")
-    print(f"🔥 PERMISSION CREATE DEBUG - permission type: {permission_data.permission}")
-    print(f"🔥 PERMISSION CREATE DEBUG - valid permission types: {list(PermissionType)}")
-    
-    # Validate permission type (no auto-conversion to avoid enum issues)
-    valid_permissions = [p.value for p in PermissionType]
-    original_permission = permission_data.permission
-    
+
+    # Validate permission type
+    valid_permissions = sorted([p.value for p in PermissionType])
     try:
-        # Test if permission type is valid
-        perm_type = PermissionType(permission_data.permission)
-        print(f"🔥 PERMISSION CREATE DEBUG - Permission type validation passed: {perm_type}")
-    except ValueError as e:
-        print(f"🔥 PERMISSION CREATE DEBUG - Invalid permission type: {permission_data.permission}")
-        print(f"🔥 PERMISSION CREATE DEBUG - Available types: {valid_permissions}")
+        perm_type = parse_permission_type(permission_data.permission)
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
         )
-    
-    if current_user.role != UserRole.ADMIN:
-        print(f"🔥 PERMISSION CREATE DEBUG - Access denied: {current_user.role} != ADMIN")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    
+
+    require_employee_permission_admin(current_user, session)
+
     user = session.get(User, user_uuid)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Found user: {user}")
     if not user:
-        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - User {user_uuid} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+    if current_user.company_id and user.company_id != current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
     # Check if permission already exists
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Checking for existing permission...")
     existing_permission = session.exec(
         select(UserPermission).where(
             (UserPermission.user_id == user_uuid) &
             (UserPermission.page == permission_data.page) &
-            (UserPermission.permission == permission_data.permission)
+            (UserPermission.permission == perm_type)
         )
     ).first()
-    
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Existing permission: {existing_permission}")
-    
+
     if existing_permission:
-        print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission already exists!")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Permission already exists"
-        )
-    
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Creating new permission...")
+        existing_permission.granted = permission_data.granted
+        existing_permission.updated_at = datetime.utcnow()
+        session.add(existing_permission)
+        session.commit()
+        session.refresh(existing_permission)
+        return UserPermissionRead.from_orm(existing_permission)
+
     permission = UserPermission(
         user_id=user_uuid,
         page=permission_data.page,
-        permission=permission_data.permission,
-        granted=permission_data.granted
+        permission=perm_type,
+        granted=permission_data.granted,
+        company_id=current_user.company_id,
     )
-    
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission object created: {permission}")
+
     session.add(permission)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission added to session")
-    session.commit()
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Session committed")
-    session.refresh(permission)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Permission refreshed: {permission}")
-    
-    result = UserPermissionRead.from_orm(permission)
-    print(f"🔥 CREATE PERMISSION BACKEND DEBUG - Returning result: {result}")
-    return result
+    try:
+        session.commit()
+        session.refresh(permission)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
+    return UserPermissionRead.from_orm(permission)
 
 # Convenience endpoint: allow creating a permission with user_id in the body instead of the URL
 @router.post("/permissions", response_model=UserPermissionRead)
@@ -623,7 +821,7 @@ def create_user_permission_with_body(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Create user permission (admin only) with user_id provided in the body.
+    """Create or re-grant a user permission with user_id provided in the body.
     This complements POST /auth/users/{user_id}/permissions for clients that send payload-only data.
     """
     # Validate/normalize user_id
@@ -635,43 +833,45 @@ def create_user_permission_with_body(
         raise HTTPException(status_code=400, detail="Invalid user_id format; must be a UUID")
 
     # Reuse the same logic as the path-based endpoint by inlining the checks
-    # Validate permission type (no auto-conversion to avoid enum issues)
-    valid_permissions = [p.value for p in PermissionType]
-    original_permission = permission_data.permission
-
+    # Validate permission type with compatibility aliases for legacy clients.
+    valid_permissions = sorted([p.value for p in PermissionType])
     try:
-        perm_type = PermissionType(permission_data.permission)
+        perm_type = parse_permission_type(permission_data.permission)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid permission type: {permission_data.permission}. Valid types: {valid_permissions}"
         )
 
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    require_employee_permission_admin(current_user, session)
 
     user = session.get(User, body_user_id)
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if current_user.company_id and user.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="User not found")
 
     existing_permission = session.exec(
         select(UserPermission).where(
             (UserPermission.user_id == body_user_id) &
             (UserPermission.page == permission_data.page) &
-            (UserPermission.permission == permission_data.permission)
+            (UserPermission.permission == perm_type)
         )
     ).first()
     if existing_permission:
-        raise HTTPException(status_code=400, detail="Permission already exists")
+        existing_permission.granted = permission_data.granted
+        existing_permission.updated_at = datetime.utcnow()
+        session.add(existing_permission)
+        session.commit()
+        session.refresh(existing_permission)
+        return UserPermissionRead.from_orm(existing_permission)
 
     permission = UserPermission(
         user_id=body_user_id,
         page=permission_data.page,
-        permission=permission_data.permission,
-        granted=permission_data.granted
+        permission=perm_type,
+        granted=permission_data.granted,
+        company_id=current_user.company_id,
     )
     session.add(permission)
     session.commit()
@@ -684,12 +884,8 @@ def get_user_permissions(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get user permissions (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    """Get user permissions for an employee permission administrator."""
+    require_employee_permission_admin(current_user, session)
     
     # Convert user_id to UUID with error handling
     try:
@@ -706,6 +902,8 @@ def get_user_permissions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    if current_user.company_id and user.company_id != current_user.company_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
     permissions = session.exec(
         select(UserPermission).where(UserPermission.user_id == user_uuid)
@@ -721,12 +919,8 @@ def update_user_permission(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Update user permission (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    """Update a user permission."""
+    require_employee_permission_admin(current_user, session)
     
     # Convert IDs to UUID with error handling
     try:
@@ -744,13 +938,30 @@ def update_user_permission(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
-    
+    if current_user.company_id and permission.company_id not in {None, current_user.company_id}:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
+
+    incoming = permission_data.dict(exclude_unset=True)
+    if "permission" in incoming:
+        try:
+            incoming["permission"] = parse_permission_type(incoming["permission"])
+        except ValueError:
+            valid_permissions = sorted(permission_type.value for permission_type in PermissionType)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid permission type: {incoming['permission']}. Valid types: {valid_permissions}"
+            )
+
     # Update permission fields
-    for field, value in permission_data.dict(exclude_unset=True).items():
+    for field, value in incoming.items():
         setattr(permission, field, value)
-    
-    session.commit()
-    session.refresh(permission)
+
+    try:
+        session.commit()
+        session.refresh(permission)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
     
     return UserPermissionRead.from_orm(permission)
 
@@ -761,53 +972,41 @@ def delete_user_permission(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Delete user permission (admin only)"""
-    print(f"🔥 DELETE PERMISSION DEBUG - user_id: {user_id} (type: {type(user_id)})")
-    print(f"🔥 DELETE PERMISSION DEBUG - permission_id: {permission_id} (type: {type(permission_id)})")
-    
+    """Delete a user permission."""
     # Convert IDs to UUID with error handling
     try:
         user_uuid = UUID(user_id)
         permission_uuid = UUID(permission_id)
-    except (ValueError, TypeError) as e:
-        print(f"🔥 DELETE PERMISSION DEBUG - Invalid ID format: user_id={user_id}, permission_id={permission_id}")
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid ID format. Both user_id and permission_id must be valid UUIDs."
         )
-    
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    
+
+    require_employee_permission_admin(current_user, session)
+
     permission = session.get(UserPermission, permission_uuid)
-    print(f"🔥 DELETE PERMISSION DEBUG - Found permission: {permission}")
-    
     if not permission:
-        print(f"🔥 DELETE PERMISSION DEBUG - Permission {permission_uuid} not found in database")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
-    
-    print(f"🔥 DELETE PERMISSION DEBUG - permission.user_id: {permission.user_id} (type: {type(permission.user_id)})")
-    print(f"🔥 DELETE PERMISSION DEBUG - Comparing {permission.user_id} != {user_uuid}")
-    print(f"🔥 DELETE PERMISSION DEBUG - Comparison result: {permission.user_id != user_uuid}")
-    
+
     if permission.user_id != user_uuid:
-        print(f"🔥 DELETE PERMISSION DEBUG - User ID mismatch! Permission belongs to {permission.user_id}, not {user_uuid}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Permission not found"
         )
-    
-    print(f"🔥 DELETE PERMISSION DEBUG - Deleting permission {permission_uuid} for user {user_uuid}")
+    if current_user.company_id and permission.company_id not in {None, current_user.company_id}:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
+
     session.delete(permission)
-    session.commit()
-    print(f"🔥 DELETE PERMISSION DEBUG - Permission deleted successfully")
-    
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     return {"message": "Permission deleted"}
 
 @router.post("/admin/normalize-permissions")
@@ -843,6 +1042,8 @@ def normalize_permissions(
         norm = (raw or "").strip().lower()
         if norm == "viewall":
             norm = "view_all"
+        if norm in {"write_selfonly", "writeselfonly", "write_self-only"}:
+            norm = "write_self_only"
 
         if norm in allowed:
             try:
@@ -875,50 +1076,6 @@ def update_dark_mode_preference(
     session.refresh(current_user)
     
     return {"message": "Dark mode preference updated", "dark_mode": dark_mode}
-
-# Password Reset and Account Management
-@router.post("/reset-password")
-def reset_password(
-    reset_data: PasswordResetRequest,
-    session: Session = Depends(get_session)
-):
-    """Reset user password (admin only or self-reset with current password)"""
-    user = session.exec(select(User).where(User.username == reset_data.username)).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    # Check if user is locked
-    if user.is_locked:
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail="Account is locked. Contact administrator to unlock."
-        )
-    
-    # Verify current password if provided (for self-reset)
-    if reset_data.current_password:
-        if not user.verify_password(reset_data.current_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Current password is incorrect"
-            )
-    else:
-        # Admin reset - require admin role (this should be checked by the caller)
-        # For now, we'll allow it but in production you'd want proper admin verification
-        pass
-    
-    # Update password
-    user.password_hash = User.hash_password(reset_data.new_password)
-    user.force_password_reset = False
-    user.failed_login_attempts = 0
-    user.locked_until = None
-    
-    session.commit()
-    session.refresh(user)
-    
-    return {"message": "Password reset successfully"}
 
 @router.post("/admin/reset-password")
 def admin_reset_password(
@@ -1070,3 +1227,450 @@ def get_account_status(
         "last_login": user.last_login,
         "force_password_reset": user.force_password_reset
     }
+
+
+# ─── [8] ROLE MANAGEMENT ENDPOINTS ───────────────────────────────────────────
+# ============================================================================
+# Role Management Endpoints
+# ============================================================================
+
+@router.get("/roles", response_model=List[RoleRead])
+def get_roles(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get all roles with their permissions (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    stmt = select(Role).where(Role.company_id == current_user.company_id)
+    roles = session.exec(stmt).all()
+    return roles
+
+@router.post("/roles", response_model=RoleRead)
+def create_role(
+    role_data: RoleCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Create a new role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    # Check if role name already exists within this company
+    existing_stmt = select(Role).where(Role.name == role_data.name, Role.company_id == current_user.company_id)
+    existing = session.exec(existing_stmt).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role with this name already exists"
+        )
+
+    role = Role(
+        name=role_data.name,
+        description=role_data.description,
+        company_id=current_user.company_id,
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+
+    return role
+
+@router.get("/roles/{role_id}", response_model=RoleRead)
+def get_role(
+    role_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get a role by ID with its permissions (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    return role
+
+@router.put("/roles/{role_id}", response_model=RoleRead)
+def update_role(
+    role_id: str,
+    role_data: RoleUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Update a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    if role.is_system:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify system roles"
+        )
+
+    if role_data.name is not None:
+        # Check if name is taken by another role within this company
+        conflict_stmt = select(Role).where(Role.name == role_data.name, Role.id != role_uuid, Role.company_id == current_user.company_id)
+        existing = session.exec(conflict_stmt).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Role with this name already exists"
+            )
+        role.name = role_data.name
+
+    if role_data.description is not None:
+        role.description = role_data.description
+
+    role.updated_at = datetime.utcnow()
+    session.commit()
+    session.refresh(role)
+
+    return role
+
+@router.delete("/roles/{role_id}")
+def delete_role(
+    role_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Delete a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    if role.is_system:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete system roles"
+        )
+
+    # Check if any users are assigned to this role
+    users_with_role = session.exec(select(User).where(User.role_id == role_uuid)).first()
+    if users_with_role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete role while users are assigned to it"
+        )
+
+    # Delete role permissions first
+    role_perms = session.exec(select(RolePermission).where(RolePermission.role_id == role_uuid)).all()
+    for perm in role_perms:
+        session.delete(perm)
+
+    session.delete(role)
+    session.commit()
+
+    return {"message": "Role deleted successfully"}
+
+@router.post("/roles/{role_id}/permissions", response_model=RolePermissionRead)
+def add_role_permission(
+    role_id: str,
+    permission_data: RolePermissionCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Add a permission to a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    # Validate permission type
+    try:
+        perm_type = parse_permission_type(permission_data.permission)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid permission type. Must be one of: {[p.value for p in PermissionType]}"
+        )
+
+    # Check if permission already exists for this role
+    existing = session.exec(
+        select(RolePermission).where(
+            RolePermission.role_id == role_uuid,
+            RolePermission.page == permission_data.page,
+            RolePermission.permission == perm_type
+        )
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This permission already exists for this role"
+        )
+
+    role_perm = RolePermission(
+        role_id=role_uuid,
+        page=permission_data.page,
+        permission=perm_type
+    )
+    session.add(role_perm)
+    session.commit()
+    session.refresh(role_perm)
+
+    return role_perm
+
+@router.delete("/roles/{role_id}/permissions/{permission_id}")
+def remove_role_permission(
+    role_id: str,
+    permission_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Remove a permission from a role (admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        role_uuid = UUID(role_id)
+        perm_uuid = UUID(permission_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid ID format"
+        )
+
+    role = session.get(Role, role_uuid)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Role not found"
+        )
+
+    perm = session.get(RolePermission, perm_uuid)
+    if not perm or perm.role_id != role_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Permission not found for this role"
+        )
+
+    session.delete(perm)
+    session.commit()
+
+    return {"message": "Permission removed from role"}
+
+# ─── [9] SIGNATURE ENDPOINTS ──────────────────────────────────────────────────
+# ============================================================================
+# Signature Endpoints
+# ============================================================================
+
+@router.put("/me/signature")
+def save_my_signature(
+    signature_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Save current user's signature (base64 data URL)"""
+    data = signature_data.get("signature_data")
+    if not data or not isinstance(data, str):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="signature_data is required and must be a base64 data URL string"
+        )
+    if not data.startswith("data:image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="signature_data must be a valid data:image/ URL"
+        )
+    current_user.signature_data = data
+    current_user.updated_at = datetime.utcnow()
+    try:
+        session.commit()
+        session.refresh(current_user)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return {"message": "Signature saved", "signature_data": data}
+
+
+@router.get("/me/signature")
+def get_my_signature(
+    current_user: User = Depends(get_current_user),
+):
+    """Get current user's saved signature"""
+    return {"signature_data": current_user.signature_data}
+
+
+# ─── [10] PROFILE SELF-UPDATE & PROFILE PICTURE ───────────────────────────────
+# ============================================================================
+# Profile Self-Update & Profile Picture
+# ============================================================================
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+@router.put("/me/profile", response_model=UserRead)
+def update_my_profile(
+    user_data: dict = Body(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Update current user's own profile (limited fields)."""
+    allowed_fields = {
+        "first_name", "last_name", "email", "phone",
+        "profile_picture", "signature_data", "password",
+        "color", "dark_mode", "training_mode", "training_mode_explicit",
+        "button_text_size", "footer_align", "ui_scale", "db_environment",
+        "startup_page",
+    }
+    for field, value in user_data.items():
+        if field not in allowed_fields:
+            continue
+        if field == "password":
+            if value:
+                current_user.password_hash = User.hash_password(value)
+        elif field == "ui_scale" and value is not None:
+            try:
+                current_user.ui_scale = max(90, min(150, int(value)))
+            except (TypeError, ValueError):
+                continue
+        else:
+            setattr(current_user, field, value)
+
+    current_user.updated_at = datetime.utcnow()
+    try:
+        session.commit()
+        session.refresh(current_user)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    try:
+        return UserRead.model_validate(current_user)
+    except Exception:
+        return current_user
+
+
+@router.put("/me/profile-picture")
+def upload_my_profile_picture(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Upload profile picture for current user."""
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: JPEG, PNG, GIF, WebP"
+        )
+
+    contents = file.file.read()
+    if len(contents) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Max 5MB.")
+
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "jpg"
+    unique_filename = f"profile_{current_user.id}_{uuid_mod.uuid4().hex[:8]}.{ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    # Delete old profile picture file if it exists
+    if current_user.profile_picture:
+        old_path = os.path.join(UPLOAD_DIR, current_user.profile_picture)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    current_user.profile_picture = unique_filename
+    current_user.updated_at = datetime.utcnow()
+    session.commit()
+    session.refresh(current_user)
+
+    return {"message": "Profile picture uploaded", "profile_picture": unique_filename}
+
+
+@router.get("/users/{user_id}/profile-picture")
+def get_user_profile_picture(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Serve a user's profile picture file."""
+    user = session.get(User, user_id)
+    if not user or not user.profile_picture:
+        raise HTTPException(status_code=404, detail="Profile picture not found")
+
+    file_path = os.path.join(UPLOAD_DIR, user.profile_picture)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Profile picture file not found")
+
+    return FileResponse(file_path)
