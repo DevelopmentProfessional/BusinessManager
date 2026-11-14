@@ -25,6 +25,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+import { InputText, InputTextarea } from "../Inputs";
 import { XMarkIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Modal from "./Modal";
@@ -126,7 +127,7 @@ export default function Modal_BulkImport({
           {/* Textarea */}
           <div className="d-flex flex-column gap-1">
             <p className="mb-0 ui-small-muted">Paste one name per line. Each line will be saved as a new {entityLabel.replace(/s$/i, "").toLowerCase()}.</p>
-            <textarea className="form-control" style={{ resize: "vertical", minHeight: "120px", fontFamily: "monospace", fontSize: "0.875rem" }} placeholder={`Name 1\nName 2\nName 3`} value={text} onChange={(e) => setText(e.target.value)} disabled={saving} autoFocus />
+            <InputTextarea className="form-control" style={{ resize: "vertical", minHeight: "120px", fontFamily: "monospace", fontSize: "0.875rem" }} placeholder={`Name 1\nName 2\nName 3`} value={text} onChange={(e) => setText(e.target.value)} disabled={saving} autoFocus />
           </div>
 
           {/* Per-row details: type + photo (inventory only) */}
@@ -165,7 +166,7 @@ export default function Modal_BulkImport({
                       />
                     )}
 
-                    <input type="text" className="form-control ui-control-sm" style={{ width: "6.5rem", fontSize: "0.72rem" }} placeholder="Category" value={categories[i] || ""} onChange={(e) => setCategories((prev) => ({ ...prev, [i]: e.target.value }))} disabled={saving} />
+                    <InputText className="form-control ui-control-sm" style={{ width: "6.5rem", fontSize: "0.72rem" }} placeholder="Category" value={categories[i] || ""} onChange={(e) => setCategories((prev) => ({ ...prev, [i]: e.target.value }))} disabled={saving} />
 
                     {/* Photo upload / remove */}
                     {allowPhotoUpload &&

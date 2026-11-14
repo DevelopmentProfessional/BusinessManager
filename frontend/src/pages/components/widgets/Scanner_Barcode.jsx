@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import { ErrorState, LoadingSpinner } from "../feedback";
 
 export default function Scanner_Barcode({ onDetected, onCancel: _onCancel }) {
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -64,10 +66,11 @@ export default function Scanner_Barcode({ onDetected, onCancel: _onCancel }) {
 
   return (
     <div className="space-y-3">
-      <div className="aspect-video bg-black overflow-hidden rounded">
-        <video ref={videoRef} className="h-full object-cover w-full" muted playsInline autoPlay />
+      <div className="aspect-video bg-black overflow-hidden position-relative rounded">
+      <video ref={videoRef} onLoadedMetadata={() => setReady(true)} className="h-full object-cover w-full" muted playsInline autoPlay />
+      {!error && !ready && <LoadingSpinner label="Starting scanner" className="position-absolute top-50 start-50 translate-middle" />}
       </div>
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+      {error && <ErrorState description={error} className="mt-2" />}
     </div>
   );
 }

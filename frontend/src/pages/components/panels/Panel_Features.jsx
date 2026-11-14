@@ -25,6 +25,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { featuresAPI, inventoryFeaturesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputCheckbox, InputNumber, InputText } from "../Inputs";
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ function InlineTextInput({ value, onSave, placeholder = "" }) {
   };
 
   return (
-    <input
+    <InputText
       type="text"
       className="form-control ui-control-sm"
       value={draft}
@@ -616,8 +617,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
               Add
             </button>
             <div className="flex-grow-1 position-relative" style={{ minWidth: 0 }}>
-              <input
-                type="text"
+              <InputText
                 className="form-control ui-control-sm"
                 placeholder="Search Feature"
                 value={featureSearchTerm}
@@ -744,7 +744,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                   >
                     <div className="align-items-center d-flex flex-wrap gap-2 min-w-0">
                       {isEditingName ? (
-                        <input
+                        <InputText
                           type="text"
                           className="form-control ui-control-sm"
                           value={featureNameDraft}
@@ -838,14 +838,14 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         {feature.options.map((opt) => (
                           <div key={opt.option_id} className="ui-flex-center-gap-2" style={{ opacity: opt.is_enabled ? 1 : 0.45 }}>
                             <label className="align-items-center d-flex flex-grow-1 gap-2 mb-0" style={{ cursor: "pointer", minWidth: 0 }}>
-                              <input type="checkbox" className="form-check-input" style={{ flexShrink: 0, marginTop: 0 }} checked={opt.is_enabled} onChange={(e) => handleOptionChange(feature.feature_id, opt.option_id, "is_enabled", e.target.checked)} />
+                              <InputCheckbox style={{ flexShrink: 0, marginTop: 0 }} checked={opt.is_enabled} onChange={(e) => handleOptionChange(feature.feature_id, opt.option_id, "is_enabled", e.target.checked)} />
                               <span className="text-truncate" style={{ fontSize: "0.82rem" }}>
                                 {opt.option_name}
                               </span>
                             </label>
 
                             {feature.affects_price && (
-                              <input
+                              <InputNumber
                                 type="number"
                                 min={0}
                                 step="0.01"
@@ -859,7 +859,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                             )}
 
                             {itemFeatures.length === 1 && (
-                              <input
+                              <InputNumber
                                 type="number"
                                 min={0}
                                 step="1"
@@ -878,7 +878,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       <div className="border-top my-2" />
 
                       <div className="ui-flex-center-gap-2">
-                        <input
+                        <InputText
                           type="text"
                           className="form-control ui-control-sm"
                           style={{ fontSize: "0.75rem", minWidth: 80 }}
@@ -960,7 +960,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                               );
                             })}
                             <td>
-                              <input type="number" min={0} className="form-control ui-control-sm" value={row.quantity} onChange={(e) => updateCombinationQuantity(row.combination_key, e.target.value)} />
+                              <InputNumber min={0} className="form-control ui-control-sm" value={row.quantity} onChange={(e) => updateCombinationQuantity(row.combination_key, e.target.value)} />
                             </td>
                             <td className="text-end">
                               <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => removeCombinationRow(row.combination_key)}>
@@ -1001,7 +1001,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                         );
                       })}
                       <td>
-                        <input type="number" min={0} className="form-control ui-control-sm" placeholder="0" value={combinationDraft.quantity} onChange={(e) => setCombinationDraft((prev) => ({ ...prev, quantity: e.target.value }))} />
+                        <InputNumber min={0} className="form-control ui-control-sm" placeholder="0" value={combinationDraft.quantity} onChange={(e) => setCombinationDraft((prev) => ({ ...prev, quantity: e.target.value }))} />
                       </td>
                       <td className="text-end">
                         <button type="button" className="btn btn-outline-primary btn-sm" onClick={handleAddCombination}>

@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import { ArrowUturnLeftIcon, TrashIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 export default function Widget_Signature({ onSave, onCancel, initialSignature, width = 500, height = 200 }) {
   const canvasRef = useRef(null);
@@ -127,6 +129,7 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
           ref={canvasRef}
           width={width}
           height={height}
+          aria-label="Signature drawing area"
           className="cursor-crosshair touch-none w-full"
           style={{ maxWidth: `${width}px` }}
           onMouseDown={startDrawing}
@@ -139,26 +142,14 @@ export default function Widget_Signature({ onSave, onCancel, initialSignature, w
         />
       </div>
       <p className="dark:text-gray-400 text-center text-gray-500 text-xs">Draw your signature above using mouse or touch</p>
-      <div className="grid grid-cols-3 items-center gap-2">
-        <div className="ui-flex-items-gap-2 justify-self-start">
-          <button type="button" onClick={handleUndo} disabled={undoStack.length === 0} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
-            Undo
-          </button>
-        </div>
-        <div className="justify-self-center">
-          <button type="button" onClick={handleClear} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
-            Delete
-          </button>
-        </div>
-        <div className="ui-flex-items-gap-2 justify-self-end">
+      <div className="app-standard-footer align-items-center d-flex gap-2 justify-content-start">
+        <Button_Toolbar icon={ArrowUturnLeftIcon} label="Undo" onClick={handleUndo} disabled={undoStack.length === 0} className="btn-outline-secondary" title="Undo" />
+        <Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleClear} className="btn-outline-secondary" title="Clear signature" />
+        <div className="d-flex gap-2 ms-auto">
           {onCancel && (
-            <button type="button" onClick={onCancel} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-200 px-1 py-1.5 rounded text-gray-700 text-sm">
-              Cancel
-            </button>
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />
           )}
-          <button type="button" onClick={handleSave} disabled={!hasDrawn} className="bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary-700 px-1 py-1.5 rounded text-sm text-white">
-            Save
-          </button>
+          <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} disabled={!hasDrawn} className="btn-primary" title="Save signature" />
         </div>
       </div>
     </div>

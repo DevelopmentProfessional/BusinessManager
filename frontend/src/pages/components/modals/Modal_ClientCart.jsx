@@ -17,6 +17,7 @@ import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { useLocation, useNavigate } from "react-router-dom";
 import { clientCartAPI, clientOrdersAPI, inventoryFeaturesAPI } from "../../../services/api";
+import { LoadingSpinner } from "../feedback";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -255,7 +256,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
           <div className="component-body-inner">
             {loading ? (
               <div className="d-flex justify-content-center py-1">
-                <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                <LoadingSpinner label="Loading cart" size="sm" />
               </div>
             ) : orderCreated ? (
               <div className="px-1 py-1 text-center">
@@ -343,7 +344,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
                           ) : /* ── Product: feature option picker ── */
                           loadingFeat ? (
                             <div className="d-flex justify-content-center py-0">
-                              <div className="spinner-border spinner-border-sm text-secondary" role="status" />
+                              <LoadingSpinner label="Loading item options" size="sm" />
                             </div>
                           ) : features.length === 0 ? (
                             <div className="py-1 small text-muted">No configurable options for this item.</div>

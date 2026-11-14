@@ -53,7 +53,7 @@ import { XMarkIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import FormControl from "../fields/FormControl";
+import { InputText, InputNumber, InputDate, InputTextarea } from "../Inputs";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const APPOINTMENT_TYPES = [
@@ -775,7 +775,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <FormControl type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
+                    <InputText type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -800,7 +800,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
               <div className="row ui-row-g2">
                 <div className="col-6">
                   <div className="form-floating">
-                    <FormControl type="text" id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" className="form-control ui-control-sm" required />
+                    <InputText id="meeting_title" name="notes" value={formData.notes} onChange={handleChange} placeholder="Meeting Title" required />
                     <label htmlFor="meeting_title">Meeting Title</label>
                   </div>
                 </div>
@@ -855,7 +855,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
+                    <InputText type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -949,7 +949,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date and time" />
+                    <InputText type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} placeholder="Date and time" />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -958,7 +958,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
               {/* [Task Description — full width textarea] */}
               <div className="form-floating">
-                <textarea id="task_notes" name="notes" rows={6} value={formData.notes} onChange={handleChange} className="ui-description-textarea form-control ui-control-sm" placeholder="Task details" style={{ minHeight: "10.5rem", resize: "vertical" }} />
+                <InputTextarea id="task_notes" name="notes" rows={6} value={formData.notes} onChange={handleChange} className="ui-description-textarea" placeholder="Task details" style={{ minHeight: "10.5rem", resize: "vertical" }} />
                 <label htmlFor="task_notes">Task Description</label>
               </div>
             </>
@@ -1028,14 +1028,14 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
               {formData.recurrence_end_type === "date" && (
                 <div className="form-floating">
-                  <input type="date" id="recurrence_end_date" name="recurrence_end_date" value={formData.recurrence_end_date} onChange={handleChange} className="form-control ui-control-sm" placeholder="End Date" min={appointmentDateOnly || undefined} />
+                  <InputDate id="recurrence_end_date" name="recurrence_end_date" value={formData.recurrence_end_date} onChange={handleChange} placeholder="End Date" min={appointmentDateOnly || undefined} />
                   <label htmlFor="recurrence_end_date">Repeat until</label>
                 </div>
               )}
 
               {formData.recurrence_end_type === "count" && (
                 <div className="form-floating">
-                  <input type="number" id="recurrence_count" name="recurrence_count" value={formData.recurrence_count} onChange={handleChange} className="form-control ui-control-sm" placeholder="Occurrences" min="1" max="365" />
+                  <InputNumber id="recurrence_count" name="recurrence_count" value={formData.recurrence_count} onChange={handleChange} placeholder="Occurrences" min="1" max="365" />
                   <label htmlFor="recurrence_count">Number of occurrences</label>
                 </div>
               )}
@@ -1045,7 +1045,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           {/* Notes — shown for appointment/series types */}
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (
             <div className="form-floating">
-              <textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
+              <InputTextarea id="notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0" placeholder="Notes" />
               <label htmlFor="notes">Notes (optional)</label>
             </div>
           )}

@@ -4,6 +4,7 @@ import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { LoadingSpinner } from "../feedback";
 
 export default function Modal_Document_Sign({
   isOpen,
@@ -56,7 +57,7 @@ export default function Modal_Document_Sign({
             </div>
           ) : signaturePreview === null && !signDoc ? (
             <div className="py-1 text-center">
-              <div className="animate-spin border-b-2 border-primary-600 h-6 mx-auto rounded-full w-6"></div>
+              <LoadingSpinner label="Loading signature preview" />
             </div>
           ) : (
             <div className="py-1 text-center">

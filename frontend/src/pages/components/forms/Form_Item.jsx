@@ -47,7 +47,7 @@ import Scanner_Barcode from "../widgets/Scanner_Barcode";
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import FormControl from "../fields/FormControl";
+import { InputText, InputNumber, InputDate, InputTextarea, InputCheckbox } from "../Inputs";
 import cacheService from "../../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../../services/api";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
@@ -524,7 +524,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   )}
                   {addImageMode === "url" && (
                     <div className="d-flex gap-1">
-                      <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
+                      <InputText type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." style={{ fontSize: "0.8rem" }} />
                       <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">
                         OK
                       </button>
@@ -543,22 +543,22 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </div>
                   <div className="d-flex gap-2 mb-1">
                     <div className="flex-grow-1 form-floating">
-                      <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control ui-control-sm" placeholder="Min Count" min="0" />
+                      <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder="Min Count" min="0" />
                       <label htmlFor="min_stock_level">Min Count</label>
                     </div>
                     <div className="flex-grow-1 form-floating">
-                      <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control ui-control-sm" placeholder="Current Count" min="0" />
+                      <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Current Count" min="0" />
                       <label htmlFor="quantity">Current Count</label>
                     </div>
                   </div>
 
                   <div className="d-flex gap-2 mb-1">
                     <div className="flex-grow-1 form-floating">
-                      <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                      <InputNumber id="cost" name="cost" value={formData.cost} onChange={handleChange} placeholder="Cost" step="0.01" min="0" />
                       <label htmlFor="cost">Cost</label>
                     </div>
                     <div className="flex-grow-1 form-floating">
-                      <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
+                      <InputNumber id="price" name="price" value={formData.price} onChange={handleChange} placeholder="Price" step="0.01" min="0" />
                       <label htmlFor="price">Price</label>
                     </div>
                   </div>
@@ -575,7 +575,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   {isLocation && (
                     <div className="mb-2">
                       <div className="form-floating">
-                        <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                        <InputNumber id="cost" name="cost" value={formData.cost} onChange={handleChange} placeholder="Cost" step="0.01" min="0" />
                         <label htmlFor="cost">Cost</label>
                       </div>
                     </div>
@@ -584,11 +584,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     <>
                       <div className="d-flex gap-2 mb-1">
                         <div className="flex-grow-1 form-floating">
-                          <input type="number" id="cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                          <InputNumber id="cost" name="cost" value={formData.cost} onChange={handleChange} placeholder="Cost" step="0.01" min="0" />
                           <label htmlFor="cost">Cost (purchase / acquisition)</label>
                         </div>
                         <div className="flex-grow-1 form-floating">
-                          <input type="number" id="price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
+                          <InputNumber id="price" name="price" value={formData.price} onChange={handleChange} placeholder="Price" step="0.01" min="0" />
                           <label htmlFor="price">Price (rental / resale)</label>
                         </div>
                       </div>
@@ -603,12 +603,12 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
           {/* Full-width form fields below */}
           <div className="d-flex gap-2 mb-2">
             <div className="flex-grow-1 form-floating mb-0">
-              <FormControl type="text" id="name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
+              <InputText id="name" name="name" value={formData.name} onChange={handleChange} placeholder="Name" required />
               <label htmlFor="name">Name *</label>
             </div>
             {!isLocation && (
               <div className="flex-grow-1 form-floating mb-0 position-relative">
-                <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
+                <InputText id="sku" name="sku" value={formData.sku} onChange={handleChange} placeholder="Serial Number" style={showScanner ? { paddingRight: "3.5rem" } : undefined} />
                 <label htmlFor="sku">Serial Number</label>
                 {showScanner && (
                   <button type="button" onClick={() => setIsScannerOpen(true)} className="align-items-center btn btn-link btn-sm d-flex justify-content-center m-0 p-0 position-absolute top-50 translate-middle-y" style={{ right: "0.25rem" }} title="Scan Barcode">
@@ -725,17 +725,17 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               />
             </div>
             <div className="flex-grow-1 form-floating">
-              <input type="date" id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
+              <InputDate id="date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} placeholder="Date of Purchase" />
               <label htmlFor="date_of_purchase">Date of Purchase</label>
             </div>
             <div className="flex-grow-1 form-floating">
-              <input type="date" id="date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
+              <InputDate id="date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} placeholder="Date of Sale" />
               <label htmlFor="date_of_sale">Date of Sale</label>
             </div>
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <textarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
+            <InputTextarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea" placeholder="Description" />
             <label htmlFor="description">Description</label>
           </div>
 
@@ -762,7 +762,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                 />
                 {bundlePriceType === "percentage" && (
                   <div className="ui-flex-center-gap-1">
-                    <input type="number" min="1" max="500" className="form-control ui-control-sm" style={{ width: 70 }} value={bundlePricePercentage} onChange={(e) => setBundlePricePercentage(e.target.value)} />
+                    <InputNumber min="1" max="500" style={{ width: 70 }} value={bundlePricePercentage} onChange={(e) => setBundlePricePercentage(e.target.value)} />
                     <span className="ui-small-muted">%</span>
                   </div>
                 )}
@@ -776,7 +776,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       <span className="flex-grow-1 small">{comp.name}</span>
                       <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
                       <span className="ui-small-muted">${(comp.price ?? 0).toFixed(2)} sell</span>
-                      <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={comp.quantity} onChange={(e) => setBundleComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c)))} />
+                      <InputNumber min="0.1" step="0.1" style={{ width: 60 }} value={comp.quantity} onChange={(e) => setBundleComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, quantity: parseFloat(e.target.value) || 1 } : c)))} />
                       <span className="fw-semibold ui-text-sm">${((parseFloat(comp.price) || 0) * (parseFloat(comp.quantity) || 0)).toFixed(2)}</span>
                       <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setBundleComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
                         ✕
@@ -794,8 +794,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
               {/* Add component row */}
               <div className="ui-flex-center-gap-2">
-                <FormControl type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
-                <input type="number" min="0.1" step="0.1" className="form-control ui-control-sm" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
+                <InputText className="flex-grow-1" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <InputNumber min="0.1" step="0.1" style={{ width: 60 }} value={bundleNewQty} onChange={(e) => setBundleNewQty(e.target.value)} placeholder="Qty" />
                 <Dropdown_Custom
                   className="ui-control-sm"
                   style={{ maxWidth: 220 }}
@@ -834,14 +834,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               <div className="align-items-center d-flex flex-wrap gap-3 mb-2">
                 <div className="ui-flex-center-gap-2">
                   <label className="mb-0 ui-small-muted">Total qty:</label>
-                  <FormControl type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
+                  <InputNumber min="1" style={{ width: 70 }} value={mixTotalQty} onChange={(e) => setMixTotalQty(e.target.value)} />
                 </div>
                 <div className="ui-flex-center-gap-2">
-                  <input type="checkbox" id="mix-has-max-inline" checked={mixHasMax} onChange={(e) => setMixHasMax(e.target.checked)} />
+                  <InputCheckbox id="mix-has-max-inline" checked={mixHasMax} onChange={(e) => setMixHasMax(e.target.checked)} />
                   <label htmlFor="mix-has-max-inline" className="mb-0 ui-small-muted" style={{ cursor: "pointer" }}>
                     Max per product
                   </label>
-                  {mixHasMax && <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 70 }} value={mixMaxPerProduct} onChange={(e) => setMixMaxPerProduct(e.target.value)} placeholder="Max" />}
+                  {mixHasMax && <InputNumber min="1" style={{ width: 70 }} value={mixMaxPerProduct} onChange={(e) => setMixMaxPerProduct(e.target.value)} placeholder="Max" />}
                 </div>
               </div>
 
@@ -853,10 +853,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       <span className="flex-grow-1 small">{comp.name}</span>
                       <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
                       <span className="ui-small-muted">${comp.price?.toFixed(2)}</span>
-                      <input
-                        type="number"
+                      <InputNumber
                         min="1"
-                        className="form-control ui-control-sm"
                         style={{ width: 60 }}
                         value={comp.max_quantity || ""}
                         placeholder="Max"
@@ -878,7 +876,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
               {/* Add product row */}
               <div className="ui-flex-center-gap-2">
-                <input type="text" className="flex-grow-1 form-control form-control-sm" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                <InputText className="flex-grow-1" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
                 <Dropdown_Custom
                   className="ui-control-sm"
                   style={{ maxWidth: 220 }}
@@ -888,7 +886,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   placeholder="Select product"
                   closeOnSelect
                 />
-                <input type="number" min="1" className="form-control ui-control-sm" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
+                <InputNumber min="1" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />
                 <button
                   type="button"
                   className="align-items-center btn btn-sm d-flex flex-shrink-0 gap-2"

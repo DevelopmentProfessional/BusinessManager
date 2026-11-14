@@ -7,6 +7,7 @@ import { renderAsync } from "docx-preview";
 import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from "../editors/documentEditorUtils";
 import { useDocumentEditor } from "../editors/useDocumentEditor";
 import Editor_Toolbar from "../editors/Editor_Toolbar";
+import { LoadingSpinner } from "../feedback";
 
 // Lazy-load editor components to reduce initial bundle
 const Editor_RichText = lazy(() => import("../editors/Editor_RichText"));
@@ -135,7 +136,7 @@ function Viewer_PDF({ document, onEdit }) {
     <Suspense
       fallback={
         <div className="flex h-full items-center justify-center">
-          <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+          <LoadingSpinner label="Loading document" size="lg" />
         </div>
       }
     >
@@ -234,7 +235,7 @@ function DocxViewer({ document, onEdit }) {
       <div className="bg-white dark:bg-gray-900 flex-1 min-h-0 overflow-auto w-full">
         {loading && (
           <div className="flex h-full items-center justify-center">
-            <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+            <LoadingSpinner label="Loading document" size="lg" />
           </div>
         )}
         {error && <div className="bg-red-50 dark:bg-red-900/20 m-4 p-1 rounded text-red-600">{error}</div>}
@@ -330,7 +331,7 @@ function TextViewer({ document, onEdit }) {
       <div className="bg-white dark:bg-gray-900 flex-1 min-h-0 overflow-auto w-full">
         {loading && (
           <div className="flex h-full items-center justify-center">
-            <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+            <LoadingSpinner label="Loading document" size="lg" />
           </div>
         )}
         {error && <div className="bg-red-50 dark:bg-red-900/20 m-4 p-1 rounded text-red-600">{error}</div>}
@@ -417,7 +418,7 @@ function EditorArea({ document, documentType }) {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-3 h-full items-center justify-center">
-        <div className="animate-spin border-b-2 border-primary-600 h-10 rounded-full w-10"></div>
+        <LoadingSpinner label="Loading document" size="lg" />
         <p className="dark:text-gray-400 text-gray-500 text-sm">Loading content...</p>
       </div>
     );
@@ -443,7 +444,7 @@ function EditorArea({ document, documentType }) {
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center">
-              <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+              <LoadingSpinner label="Loading document" size="lg" />
             </div>
           }
         >
@@ -495,7 +496,7 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
           <Suspense
             fallback={
               <div className="flex h-full items-center justify-center">
-                <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+                <LoadingSpinner label="Loading document" size="lg" />
               </div>
             }
           >

@@ -5,6 +5,7 @@ import React from "react";
 import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import useViewMode from "../../../services/useViewMode";
 import compactButtonLabel from "../../../utils/compactButtonLabel";
+import InputButton from "../Inputs/InputButton";
 
 /** Display label for toolbar buttons (short); keep full phrase in title when needed. */
 // eslint-disable-next-line react-refresh/only-export-components -- Utility export is intentionally shared by button components.
@@ -83,7 +84,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
   const mergedStyle = iconOnlyStyle ? { ...iconOnlyStyle, ...(rest.style || {}) } : rest.style;
 
   return (
-    <button
+    <InputButton
       type={type}
       onClick={onClick}
       disabled={disabled}
@@ -104,6 +105,6 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
         </span>
       )}
       {badge}
-    </button>
+    </InputButton>
   );
 }

@@ -1,4 +1,4 @@
-// FILE: Dropdown_Filter.jsx
+// FILE: Filter_Menu.jsx
 // Reusable filter dropdown with per-option help popovers.
 // Replaces repeated inline filter + help-popover pattern in Clients, Employees, Documents.
 import React, { useState, useRef, useEffect } from "react";
@@ -19,7 +19,7 @@ function getDropdownPortalHost() {
   return host;
 }
 
-export default function Dropdown_Filter({
+export default function Filter_Menu({
   // options: [{ value, label, description }]
   options,
   value,
@@ -57,7 +57,7 @@ export default function Dropdown_Filter({
           .includes(searchTerm.trim().toLowerCase())
       )
     : sortedOptions;
-  const defaultValue = sortedOptions[0]?.value;
+  const defaultValue = options?.[0]?.value;
   const selectedValues = multiSelect ? (Array.isArray(value) ? value : []) : null;
   const isActive = multiSelect ? selectedValues.length > 0 : value !== defaultValue;
 
@@ -180,8 +180,7 @@ export default function Dropdown_Filter({
                           <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
                         </div>
                       )}
-                    </div>,
-                    portalTarget
+                    </div>
                   )}
                 </div>
               );

@@ -53,7 +53,7 @@ import Widget_Signature from "../widgets/Widget_Signature";
 import Modal_Pay_Employee from "../modals/Modal_EmployeePay";
 import Modal from "../modals/Modal";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import FormControl from "../fields/FormControl";
+import { InputText, InputNumber, InputDate, InputRadio } from "../Inputs";
 import Table from "../tables/Table";
 import useStore from "../../../services/useStore";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
@@ -733,37 +733,37 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
               <div className="row ui-row-g2">
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <FormControl type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Username" required />
+                    <InputText id="username" name="username" value={formData.username} onChange={handleInputChange} placeholder="Username" required />
                     <label htmlFor="username">Username *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <FormControl type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Password" required={!employee} />
+                    <InputText type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} placeholder="Password" required={!employee} />
                     <label htmlFor="password">{employee ? "Password (blank = keep current)" : "Password *"}</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <FormControl type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="First Name" required />
+                    <InputText id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} placeholder="First Name" required />
                     <label htmlFor="first_name">First Name *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <FormControl type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Last Name" required />
+                    <InputText id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} placeholder="Last Name" required />
                     <label htmlFor="last_name">Last Name *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <FormControl type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Email" />
+                    <InputText type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Email" />
                     <label htmlFor="email">Email</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <FormControl type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Phone" />
+                    <InputText type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone" />
                     <label htmlFor="phone">Phone</label>
                   </div>
                 </div>
@@ -784,7 +784,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <FormControl type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Hire Date" />
+                        <InputDate id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} placeholder="Hire Date" />
                         <label htmlFor="hire_date">Hire Date</label>
                       </div>
                     </div>
@@ -841,13 +841,13 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="iod_number" name="iod_number" value={formData.iod_number} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="IOD Number" />
+                        <InputText id="iod_number" name="iod_number" value={formData.iod_number} onChange={handleInputChange} placeholder="IOD Number" />
                         <label htmlFor="iod_number">IOD Number</label>
                       </div>
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="location" name="location" value={formData.location} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Location" />
+                        <InputText id="location" name="location" value={formData.location} onChange={handleInputChange} placeholder="Location" />
                         <label htmlFor="location">Location</label>
                       </div>
                     </div>
@@ -886,23 +886,19 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                         <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 mt-2 p-0 rounded">
                           <p className="mb-2 ui-small-muted">Create a new department</p>
                           <div className="d-flex flex-column gap-1">
-                            <input
-                              type="text"
+                            <InputText
                               value={newDeptName}
                               onChange={(e) => setNewDeptName(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
                               placeholder="Department name (required)"
-                              className="form-control ui-control-sm"
                               style={{ fontSize: "0.82rem" }}
                               autoFocus
                             />
-                            <input
-                              type="text"
+                            <InputText
                               value={newDeptDesc}
                               onChange={(e) => setNewDeptDesc(e.target.value)}
                               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
                               placeholder="Description (optional)"
-                              className="form-control ui-control-sm"
                               style={{ fontSize: "0.82rem" }}
                             />
                             <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="align-self-start btn btn-outline-primary btn-sm px-1" style={{ fontSize: "0.8rem" }}>
@@ -949,25 +945,25 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="vacation_days" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Total" min="0" />
+                    <InputNumber id="vacation_days" name="vacation_days" value={formData.vacation_days} onChange={handleInputChange} placeholder="Total" min="0" />
                     <label htmlFor="vacation_days">Vacation Days</label>
                   </div>
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="vacation_days_used" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Used" min="0" />
+                    <InputNumber id="vacation_days_used" name="vacation_days_used" value={formData.vacation_days_used} onChange={handleInputChange} placeholder="Used" min="0" />
                     <label htmlFor="vacation_days_used">Vacation Used</label>
                   </div>
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="sick_days" name="sick_days" value={formData.sick_days} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Total" min="0" />
+                    <InputNumber id="sick_days" name="sick_days" value={formData.sick_days} onChange={handleInputChange} placeholder="Total" min="0" />
                     <label htmlFor="sick_days">Sick Days</label>
                   </div>
                 </div>
                 <div className="col-md-3">
                   <div className="form-floating">
-                    <input type="number" id="sick_days_used" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Used" min="0" />
+                    <InputNumber id="sick_days_used" name="sick_days_used" value={formData.sick_days_used} onChange={handleInputChange} placeholder="Used" min="0" />
                     <label htmlFor="sick_days_used">Sick Used</label>
                   </div>
                 </div>
@@ -1087,6 +1083,45 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             <div className="tab-pane">
               {employee ? (
                 <>
+                  <div className="mb-2">
+                    {permError && <div className="alert alert-danger mb-2 py-1 small">{permError}</div>}
+                    {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
+                    <div className="align-items-center g-2 row">
+                      <div className="col">
+                        <Dropdown_Custom
+                          className="ui-control-sm"
+                          value={newPermission.page}
+                          onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))}
+                          options={[{ value: "", label: "Select Page" }, ...PAGE_OPTION_GROUPS.flatMap((group) => group.options.map((option) => ({ value: option.value, label: `${group.label} - ${option.label}` })))]}
+                          placeholder="Select Page"
+                          closeOnSelect
+                        />
+                      </div>
+                      <div className="col">
+                        <Dropdown_Custom
+                          className="ui-control-sm"
+                          value={newPermission.permission}
+                          onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))}
+                          options={[
+                            { value: "", label: "Select Permission" },
+                            ...PERMISSION_TYPES.map((pt) => ({
+                              value: pt,
+                              label: pt,
+                              description: PERMISSION_DESCRIPTIONS[pt] || `Allows ${pt} access.`,
+                            })),
+                          ]}
+                          placeholder="Select Permission"
+                          closeOnSelect
+                        />
+                      </div>
+                      <div className="col-auto">
+                        <button type="button" onClick={handleCreatePermission} className="btn btn-primary btn-sm" disabled={!newPermission.page || !newPermission.permission}>
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Current Permissions Table */}
                   {userPermissions.length > 0 ? (
                     <div className="table-responsive">
@@ -1263,7 +1298,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   {formData.employment_type !== "hourly" && (
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="number" id="salary" name="salary" value={formData.salary} onChange={handleInputChange} className="form-control ui-control-sm" placeholder={salaryFieldMeta.placeholder} step="0.01" min="0" />
+                        <InputNumber id="salary" name="salary" value={formData.salary} onChange={handleInputChange} placeholder={salaryFieldMeta.placeholder} step="0.01" min="0" />
                         <label htmlFor="salary">{salaryFieldMeta.label} ($)</label>
                       </div>
                       <div className="mt-1 ui-small-muted">Amount follows selected pay frequency.</div>
@@ -1272,7 +1307,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                   {formData.employment_type === "hourly" && (
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="number" id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="0.00" step="0.01" min="0" />
+                        <InputNumber id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} placeholder="0.00" step="0.01" min="0" />
                         <label htmlFor="hourly_rate">Hourly Rate ($)</label>
                       </div>
                     </div>
@@ -1302,12 +1337,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
                       <div className="col-md-6">
                         <div className="form-floating">
-                          <input
-                            type="number"
+                          <InputNumber
                             id="base_pay"
                             value={employeePaySchedule.base_pay ?? 0}
                             onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, base_pay: Math.max(0, Number(event.target.value || 0)) }))}
-                            className="form-control ui-control-sm"
                             placeholder="0.00"
                             step="0.01"
                             min="0"
@@ -1317,12 +1350,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
                       <div className="col-md-6">
                         <div className="form-floating position-relative">
-                          <input
-                            type="number"
+                          <InputNumber
                             id="compensation_percentage"
                             value={employeePaySchedule.compensation_percentage ?? 0}
                             onChange={(event) => setEmployeePaySchedule((current) => ({ ...current, compensation_percentage: Math.min(100, Math.max(0, Number(event.target.value || 0))) }))}
-                            className="form-control ui-control-sm"
                             placeholder="0"
                             step="0.01"
                             min="0"
@@ -1418,7 +1449,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                           <div className="col-md-6">
                             <div className="fw-semibold mb-2 ui-text-sm">Cycle Start Date</div>
-                            <input type="date" className="form-control ui-control-sm" style={{ maxWidth: 220 }} value={employeePaySchedule.cycle_anchor_date || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, cycle_anchor_date: e.target.value || null }))} />
+                            <InputDate style={{ maxWidth: 220 }} value={employeePaySchedule.cycle_anchor_date || ""} onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, cycle_anchor_date: e.target.value || null }))} />
                           </div>
                         </>
                       )}
@@ -1449,11 +1480,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             <div className="col-12">
                               <div className="align-items-center d-flex flex-wrap gap-2">
                                 <label className="form-label fw-semibold mb-0 small">Day of month</label>
-                                <input
-                                  type="number"
+                                <InputNumber
                                   min={1}
                                   max={31}
-                                  className="form-control ui-control-sm"
                                   style={{ width: 80 }}
                                   value={employeePaySchedule.monthly_payday_date || ""}
                                   onChange={(e) => setEmployeePaySchedule((p) => ({ ...p, monthly_payday_date: parseInt(e.target.value) || null }))}
@@ -1505,7 +1534,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               style={{ cursor: "pointer" }}
                             >
                               <div className="align-items-center d-flex gap-2 mb-1">
-                                <input type="radio" readOnly checked={employeePaySchedule.pay_timing === opt.value} className="form-check-input mt-0" />
+                                <InputRadio readOnly checked={employeePaySchedule.pay_timing === opt.value} className="mt-0" />
                                 <span className="fw-medium small">{opt.label}</span>
                               </div>
                             </div>
@@ -1654,48 +1683,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             <button type="button" onClick={() => setShowSignaturePad(true)} className="btn btn-primary btn-sm px-1 rounded-pill" title={savedSignature ? "Replace signature" : "Create signature"}>
               {savedSignature ? "Replace" : "Sign"}
             </button>
-          </div>
-        )}
-
-        {/* Permissions tab footer controls */}
-        {activeTab === "permissions" && employee && (
-          <div className="mb-1 w-100">
-            {permError && <div className="alert alert-danger mb-2 py-1 small">{permError}</div>}
-            {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
-            <div className="align-items-center g-2 row">
-              <div className="col">
-                <Dropdown_Custom
-                  className="ui-control-sm"
-                  value={newPermission.page}
-                  onChange={(e) => setNewPermission((p) => ({ ...p, page: e.target.value }))}
-                  options={[{ value: "", label: "Select Page" }, ...PAGE_OPTION_GROUPS.flatMap((group) => group.options.map((option) => ({ value: option.value, label: `${group.label} - ${option.label}` })))]}
-                  placeholder="Select Page"
-                  closeOnSelect
-                />
-              </div>
-              <div className="col">
-                <Dropdown_Custom
-                  className="ui-control-sm"
-                  value={newPermission.permission}
-                  onChange={(e) => setNewPermission((p) => ({ ...p, permission: e.target.value }))}
-                  options={[
-                    { value: "", label: "Select Permission" },
-                    ...PERMISSION_TYPES.map((pt) => ({
-                      value: pt,
-                      label: pt,
-                      description: PERMISSION_DESCRIPTIONS[pt] || `Allows ${pt} access.`,
-                    })),
-                  ]}
-                  placeholder="Select Permission"
-                  closeOnSelect
-                />
-              </div>
-              <div className="col-auto">
-                <button type="button" onClick={handleCreatePermission} className="btn btn-primary btn-sm" disabled={!newPermission.page || !newPermission.permission}>
-                  Add
-                </button>
-              </div>
-            </div>
           </div>
         )}
 

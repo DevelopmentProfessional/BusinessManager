@@ -5,5 +5,6 @@ import Badge from "./Badge";
 import { statusVariant } from "../../../utils/colorMapping";
 
 export default function Badge_Status({ status, pill = true }) {
-  return <Badge variant={statusVariant(status)} pill={pill} label={status} />;
+  const label = String(status || "").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return <Badge variant={statusVariant(status)} pill={pill} label={label || "Unknown"} />;
 }

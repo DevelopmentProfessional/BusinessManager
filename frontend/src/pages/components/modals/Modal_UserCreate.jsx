@@ -25,6 +25,8 @@ import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputText } from "../Inputs";
+import Field_Floating from "../fields/Field_Floating";
 
 export default function Modal_Create_User({
   isOpen,
@@ -47,26 +49,21 @@ export default function Modal_Create_User({
         <div className="component-body">
           <div className="component-body-inner">
             <form id="create-user-form" onSubmit={onSubmit}>
-              <div className="form-floating mb-3">
-                <input type="text" id="createUserUsername" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} className="form-control" placeholder="Username" required />
-                <label htmlFor="createUserUsername">Username</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input type="email" id="createUserEmail" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="form-control" placeholder="Email" required />
-                <label htmlFor="createUserEmail">Email</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input type="password" id="createUserPassword" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="form-control" placeholder="Password" required />
-                <label htmlFor="createUserPassword">Password</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input type="text" id="createUserFirstName" value={newUser.first_name} onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })} className="form-control" placeholder="First Name" required />
-                <label htmlFor="createUserFirstName">First Name</label>
-              </div>
-              <div className="form-floating mb-3">
-                <input type="text" id="createUserLastName" value={newUser.last_name} onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })} className="form-control" placeholder="Last Name" required />
-                <label htmlFor="createUserLastName">Last Name</label>
-              </div>
+              <Field_Floating id="createUserUsername" label="Username" className="mb-3">
+                <InputText value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
+              </Field_Floating>
+              <Field_Floating id="createUserEmail" label="Email" className="mb-3">
+                <InputText type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
+              </Field_Floating>
+              <Field_Floating id="createUserPassword" label="Password" className="mb-3">
+                <InputText type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
+              </Field_Floating>
+              <Field_Floating id="createUserFirstName" label="First Name" className="mb-3">
+                <InputText value={newUser.first_name} onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })} required />
+              </Field_Floating>
+              <Field_Floating id="createUserLastName" label="Last Name" className="mb-3">
+                <InputText value={newUser.last_name} onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })} required />
+              </Field_Floating>
               <div className="form-floating mb-3">
                 <Dropdown_Custom id="createUserRole" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="form-select ui-control-sm" options={roles.map((role) => ({ value: role, label: role }))} />
                 <label htmlFor="createUserRole">Role</label>

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { InputNumber } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../../../services/showConfirm";
+import StateMessage from "../feedback/StateMessage";
 
 const DEFAULT_ROW_COUNT = 100;
 const DEFAULT_ADD_ROW_COUNT = 100;
@@ -457,7 +459,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
               <ArrowUpIcon style={{ width: 16, height: 16 }} />
             </button>
             <div className="ui-flex-center-gap-1">
-              <input type="number" className="form-control ui-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
+              <InputNumber className="form-control ui-control-sm" style={{ width: 72 }} min={1} max={10000} value={addRowCount} onChange={(e) => setAddRowCount(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))} disabled={isSaving} />
               <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" onClick={handleAddRows} disabled={isSaving}>
                 <PlusIcon className="ui-icon-4" />
                 <span>Add</span>
@@ -582,8 +584,8 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
           <div className="component-header-right"></div>
         </div>
 
-        <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column" style={{ padding: "var(--app-footer-padding-y, 0.125rem) var(--app-footer-padding-x, 0.125rem)", gap: 0 }}>
-          {status.message && <div className={`px-1 pt-0 pb-1 small ${status.type === "error" ? "text-danger" : status.type === "success" ? "text-success" : "text-muted"}`}>{status.message}</div>}
+        <div className="component-footer app-modal-footer app-form-footer app-standard-footer">
+          {status.message && <StateMessage variant={status.type === "error" ? "error" : status.type === "success" ? "success" : "info"} description={status.message} className="mb-1" />}
           <div className="align-items-center component-footer-left d-flex gap-2 justify-content-start">
             <Button_Toolbar
               icon={ArrowDownTrayIcon}

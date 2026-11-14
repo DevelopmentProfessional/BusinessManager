@@ -26,6 +26,9 @@ import {
   SparklesIcon,
   ChevronUpIcon,
   Bars3BottomLeftIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InboxIcon,
 } from "@heroicons/react/24/outline";
 
 // ─── DIRECT COMPONENT REFERENCES (Original .jsx files) ─────────────────────────
@@ -35,16 +38,18 @@ import Button_Icon from "./components/buttons/Button_Icon";
 import Button_AddMobile from "./components/buttons/Button_AddMobile";
 import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import { InputText, InputNumber, InputDate, InputTextarea, InputButton, InputDropup, InputCheckbox, InputRadio, InputFile, InputColor } from "./components/Inputs";
 
 // Badges
 import Badge from "./components/badges/Badge";
 import Badge_Status from "./components/badges/Badge_Status";
 import Badge_PendingOrder from "./components/badges/Badge_PendingOrder";
+import { EmptyState, ErrorState, LoadingOverlay, LoadingSpinner, SuccessMessage } from "./components/feedback";
 
 // Dropdowns & Selection Filters
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
-import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
-import Dropup_ScheduleFilter from "./components/dropdowns/Dropup_ScheduleFilter";
+import Filter_Menu from "./components/dropdowns/Filter_Menu";
+import Dropup_Filter from "./components/dropdowns/Dropup_Filter";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "./components/dropdowns/Filter_SourceToggle";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
@@ -54,6 +59,7 @@ import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableRow from "./components/tables/Page_TableRow";
 import TableSettingsControls from "./components/tables/TableSettingsControls";
+import Pagination from "./components/tables/Pagination";
 import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
 import Footer_Actions from "./components/footers/Footer_Actions";
 import Footer_Action from "./components/footers/Footer_Action";
@@ -76,6 +82,7 @@ import Panel_Database from "./components/panels/Panel_Database";
 // Widgets & Specialized UI
 import Widget_Attendance from "./components/widgets/Widget_Attendance";
 import Widget_Signature from "./components/widgets/Widget_Signature";
+import ImagePreview from "./components/media/ImagePreview";
 import Chat_Employee from "./components/widgets/Chat_Employee";
 import Dashboard_Financial from "./components/panels/Dashboard_Financial";
 import Chart_Report from "./components/panels/Chart_Report";
@@ -469,6 +476,8 @@ export default function ComponentShowcase() {
   const [dropdownValue, setDropdownValue] = useState("option1");
   const [multiSelectValues, setMultiSelectValues] = useState(["option1", "option2"]);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [showcaseDropupOpen, setShowcaseDropupOpen] = useState(false);
+  const [showcaseFilterValues, setShowcaseFilterValues] = useState({ employees: [], services: [] });
 
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleTrainingMode } = useViewMode();
@@ -519,6 +528,7 @@ export default function ComponentShowcase() {
   const CATEGORIES = [
     { id: "all", label: "All Components" },
     { id: "buttons", label: "Buttons" },
+    { id: "inputs", label: "Inputs" },
     { id: "badges", label: "Badges" },
     { id: "dropdowns", label: "Dropdowns & Filters" },
     { id: "forms", label: "Forms" },
@@ -675,6 +685,64 @@ export default function ComponentShowcase() {
       {/* ── THE ALL-COMPONENTS D-FLEX CONTAINER ── */}
       <main className="d-flex flex-wrap gap-3 align-items-start p-3 w-100">
         {/* ═══════════════════════════════════════════════════════════════════
+            SECTION: BASE INPUTS
+        ═══════════════════════════════════════════════════════════════════ */}
+        {isCardVisible("Inputs (Base Primitives)", "Inputs") && (
+          <ComponentCard title="Inputs (Base Primitives)" category="Inputs" width="440px">
+            <div className="d-flex flex-column gap-2">
+              <InputText placeholder="Text input" defaultValue="Sample text" aria-label="Text input" />
+              <InputNumber placeholder="Number input" defaultValue="42" aria-label="Number input" />
+              <InputDate defaultValue="2026-11-14" aria-label="Date input" />
+              <InputTextarea placeholder="Textarea" defaultValue="Shared textarea primitive" rows={3} aria-label="Textarea" />
+              <InputFile aria-label="File input" />
+              <InputColor defaultValue="#4f46e5" aria-label="Color input" />
+              <label className="align-items-center d-flex gap-2 small">
+                <InputCheckbox defaultChecked aria-label="Checkbox input" />
+                Checkbox input
+              </label>
+              <label className="align-items-center d-flex gap-2 small">
+                <InputRadio name="showcase-radio" defaultChecked aria-label="Radio input" />
+                Radio input
+              </label>
+              <InputDropup
+                value={dropdownValue}
+                onChange={(event) => setDropdownValue(event.target.value)}
+                options={[
+                  { value: "option1", label: "Option One" },
+                  { value: "option2", label: "Option Two" },
+                  { value: "option3", label: "Option Three" },
+                ]}
+                floatingLabel="Dropup input"
+              />
+              <div className="d-flex gap-2">
+                <InputButton type="button" className="btn btn-outline-secondary" onClick={noop}>
+                  Base button
+                </InputButton>
+                <span className="align-self-center small text-muted">Behavioral buttons compose through Button_App.</span>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Feedback States", "Feedback") && (
+          <ComponentCard title="Loading and State Messages" category="Feedback" width="460px">
+            <div className="d-flex flex-column gap-2">
+              <div className="align-items-center d-flex gap-2">
+                <LoadingSpinner label="Loading preview" size="sm" />
+                <span className="small">Inline loading</span>
+              </div>
+              <EmptyState icon={InboxIcon} title="Nothing here yet" description="This reusable empty state can include an action." />
+              <ErrorState icon={ExclamationTriangleIcon} title="Unable to load records" description="The request could not be completed." />
+              <SuccessMessage icon={CheckCircleIcon} title="Changes saved" description="The shared success message supports the same layout." />
+              <div className="position-relative rounded border p-4">
+                <LoadingOverlay label="Loading panel" />
+                <span className="small text-muted">Loading overlay preview</span>
+              </div>
+            </div>
+          </ComponentCard>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
             SECTION: BUTTONS
         ═══════════════════════════════════════════════════════════════════ */}
         {isCardVisible("Button_App (Variants)", "Buttons") && (
@@ -815,9 +883,9 @@ export default function ComponentShowcase() {
           </ComponentCard>
         )}
 
-        {isCardVisible("Dropdown_Filter.jsx", "Dropdowns") && (
-          <ComponentCard title="Dropdown_Filter.jsx" category="Dropdowns" width="320px">
-            <Dropdown_Filter
+        {isCardVisible("Filter_Menu.jsx", "Dropdowns") && (
+          <ComponentCard title="Filter_Menu.jsx" category="Dropdowns" width="320px">
+            <Filter_Menu
               label="Status Filter"
               options={[
                 { value: "all", label: "All Records" },
@@ -826,6 +894,23 @@ export default function ComponentShowcase() {
               ]}
               value="active"
               onChange={noop}
+            />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Dropup_Filter.jsx (Reusable)", "Dropdowns") && (
+          <ComponentCard title="Dropup_Filter.jsx (Reusable)" category="Dropdowns" width="360px" height="260px">
+            <Button_App icon={FunnelIcon} label="Open shared filter dropup" onClick={() => setShowcaseDropupOpen(true)} variant="secondary" />
+            <Dropup_Filter
+              isOpen={showcaseDropupOpen}
+              onClose={() => setShowcaseDropupOpen(false)}
+              filters={showcaseFilterValues}
+              onApply={setShowcaseFilterValues}
+              onClear={() => setShowcaseFilterValues({ employees: [], services: [] })}
+              sections={[
+                { key: "employees", label: "Employees", options: [{ value: "jane", label: "Jane Doe" }, { value: "john", label: "John Smith" }] },
+                { key: "services", label: "Services", options: [{ value: "consulting", label: "Consulting" }, { value: "support", label: "Support" }] },
+              ]}
             />
           </ComponentCard>
         )}
@@ -888,6 +973,12 @@ export default function ComponentShowcase() {
               <Button_App icon={FunnelIcon} label="Filter" variant="secondary" onClick={noop} />
               <Button_App icon={ArrowPathIcon} label="Refresh" variant="ghost" onClick={noop} />
             </PageTableFooter>
+          </ComponentCard>
+        )}
+
+        {isCardVisible("Pagination.jsx", "Tables") && (
+          <ComponentCard title="Pagination.jsx" category="Tables" width="520px">
+            <Pagination page={2} totalPages={6} totalItems={57} pageSize={10} onPageChange={noop} />
           </ComponentCard>
         )}
 
@@ -1222,6 +1313,25 @@ export default function ComponentShowcase() {
               width={400}
               height={140}
             />
+          </ComponentCard>
+        )}
+
+        {isCardVisible("ImagePreview.jsx", "Widgets") && (
+          <ComponentCard title="ImagePreview.jsx" category="Widgets" width="320px" height="auto">
+            <div className="d-flex flex-column gap-2">
+              <ImagePreview
+                src={mockEmployee.signature_data}
+                alt="Image preview example"
+                style={{ width: "96px", height: "72px" }}
+                fallback={<span className="small text-muted">Preview unavailable</span>}
+              />
+              <ImagePreview
+                src=""
+                alt=""
+                style={{ width: "96px", height: "72px" }}
+                fallback={<span className="small text-muted">Broken-image fallback</span>}
+              />
+            </div>
           </ComponentCard>
         )}
 

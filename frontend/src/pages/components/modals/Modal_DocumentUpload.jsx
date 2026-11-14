@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { InputTextarea } from "../Inputs";
 import { DocumentIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { documentsAPI } from "../../../services/api";
+import { ErrorState } from "../feedback";
 
 function formatFileSize(bytes) {
   if (!bytes) return "0 B";
@@ -103,10 +105,10 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
             )}
           </div>
           <div className="form-floating mt-3">
-            <textarea id="po_doc_desc" rows={6} className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={uploading} />
+            <InputTextarea id="po_doc_desc" rows={6} className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" disabled={uploading} />
             <label htmlFor="po_doc_desc">Description (optional)</label>
           </div>
-          {error && <div className="alert alert-danger mb-0 mt-2 py-0 small">{error}</div>}
+          {error && <ErrorState description={error} className="mb-0 mt-2" />}
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 

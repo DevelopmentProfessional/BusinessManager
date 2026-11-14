@@ -9,6 +9,7 @@ import Modal_ColorPicker from "./Modal_ColorPicker";
 import Modal_StartupPage, { STARTUP_PAGE_OPTIONS } from "./Modal_StartupPage";
 import Footer_Settings from "../footers/Footer_Settings";
 import api from "../../../services/api";
+import { LoadingSpinner } from "../feedback";
 
 const Modal_Settings = ({
   embedded = false,
@@ -156,9 +157,7 @@ const Modal_Settings = ({
           );
         })}
         {dbLoading && (
-          <div className="spinner-border spinner-border-sm text-primary" role="status">
-            <span className="visually-hidden">Updating...</span>
-          </div>
+          <LoadingSpinner label="Updating settings" size="sm" />
         )}
       </div>
       <div className="mb-2 small text-muted">

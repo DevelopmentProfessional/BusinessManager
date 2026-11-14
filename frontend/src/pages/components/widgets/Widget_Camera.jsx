@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { ErrorState, LoadingSpinner } from "../feedback";
 
 export default function Widget_Camera({ onCapture, onCancel }) {
   const videoRef = useRef(null);
@@ -63,11 +64,13 @@ export default function Widget_Camera({ onCapture, onCancel }) {
       <video ref={videoRef} style={{ flex: 1, width: "100%", objectFit: "cover" }} muted playsInline autoPlay />
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {error && (
-        <div style={{ position: "absolute", top: "1rem", left: 0, right: 0, textAlign: "center" }}>
-          <span style={{ background: "#dc3545", color: "#fff", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.875rem" }}>{error}</span>
+      {!ready && !error && (
+        <div className="align-items-center d-flex justify-content-center position-absolute top-50 start-50 translate-middle">
+          <LoadingSpinner label="Starting camera" />
         </div>
       )}
+
+      {error && <ErrorState description={error} className="position-absolute top-0 start-0 m-3 w-auto" />}
 
       {/* Bottom controls */}
       <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.5rem 2rem", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", background: "rgba(0,0,0,0.85)" }}>

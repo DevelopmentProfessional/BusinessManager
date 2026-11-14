@@ -2,7 +2,9 @@
 // Embedded wage history for Profile → Wage accordion (scrollable list + bottom filters).
 
 import React, { useMemo, useState } from "react";
+import { InputText } from "../Inputs";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { EmptyState, LoadingSpinner } from "../feedback";
 
 function slipYear(slip) {
   if (!slip?.pay_period_start) return null;
@@ -44,10 +46,10 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
       <div className="flex-grow-1 min-h-0 overflow-auto profile-wage-history__list pt-2 px-0">
         {paySlipsLoading ? (
           <div className="py-1 text-center">
-            <div className="spinner-border spinner-border-sm text-primary" role="status" />
+            <LoadingSpinner label="Loading pay slips" size="sm" />
           </div>
         ) : filteredSlips.length === 0 ? (
-          <p className="mb-0 py-0 small text-muted">{paySlips.length === 0 ? "No pay slips on record." : "No pay slips match your filters."}</p>
+          <EmptyState title={paySlips.length === 0 ? "No pay slips on record" : "No matching pay slips"} description={paySlips.length === 0 ? "Pay history will appear here after payroll is processed." : "Try adjusting your filters."} />
         ) : (
           <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
             <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
@@ -84,7 +86,7 @@ export default function Panel_WageHistory({ paySlips, paySlipsLoading, setSelect
 
       <div className="bg-body flex-shrink-0 profile-wage-history__filters px-0 py-0">
         <div className="align-items-center d-flex flex-wrap gap-2">
-          <input type="text" className="app-search-input flex-grow-1 form-control form-control-sm" placeholder="Search period, notes, amount…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pay history" />
+          <InputText className="app-search-input flex-grow-1 form-control form-control-sm" placeholder="Search period, notes, amount…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pay history" />
           <Dropdown_Custom className="flex-shrink-0 form-select form-select-sm" style={{ width: "5.75rem" }} value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} options={[{ value: "all", label: "All years" }, ...years.map((y) => ({ value: String(y), label: String(y) }))]} />
         </div>
       </div>

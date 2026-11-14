@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { InputText } from "../Inputs";
 import { assetUnitsAPI, employeesAPI, inventoryAPI } from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import useViewMode from "../../../services/useViewMode";
 import Toggle_MultiSelectIcon from "../buttons/Toggle_MultiSelectIcon";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Pagination from "../tables/Pagination";
 
 const STATE_LABELS = {
   available: "Available",
@@ -36,7 +38,7 @@ function InlineText({ value, onSave, placeholder = "—" }) {
 
   if (editing) {
     return (
-      <input
+      <InputText
         autoFocus
         className="form-control ui-control-sm"
         value={draft}
@@ -444,26 +446,14 @@ export default function AssetUnitsPanel({ assetId, onCountChange, perPage = 25 }
       )}
 
       {units.length > 0 && (
-        <div className="align-items-center d-flex justify-content-between mb-2">
-          <div className="ui-small-muted">
-            Page {page} of {totalPages}
-          </div>
-          <div className="ui-flex-center-gap-2">
-            <button className="btn ui-btn-outline-secondary-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-              Prev
-            </button>
-            <button className="btn ui-btn-outline-secondary-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} totalItems={filteredUnits.length} pageSize={perPageSafe} className="mb-2" />
       )}
 
       <div className="align-items-center d-flex flex-wrap gap-2 justify-content-between mb-1">
         <button className="btn btn-outline-primary btn-sm" onClick={handleAddUnit} disabled={saving}>
           {isTrainingMode ? (saving ? "Adding..." : "+ Add") : saving ? "..." : "+"}
         </button>
-        <input type="text" className="form-control ui-control-sm" style={{ width: "320px", maxWidth: "100%" }} placeholder="Search label, location, assigned, state..." value={unitSearchTerm} onChange={(e) => setUnitSearchTerm(e.target.value)} />
+        <InputText className="form-control ui-control-sm" style={{ width: "320px", maxWidth: "100%" }} placeholder="Search label, location, assigned, state..." value={unitSearchTerm} onChange={(e) => setUnitSearchTerm(e.target.value)} />
       </div>
 
       {error && (

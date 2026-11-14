@@ -1,4 +1,5 @@
 import React from "react";
+import { InputNumber, InputText, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
@@ -32,9 +33,9 @@ export default function Modal_Client_Subscriptions({
     >
       <div className="d-flex flex-column gap-3 p-1">
         <div className="border d-flex flex-column gap-2 p-2 rounded ui-pill-container bg-body">
-          <input type="text" className="form-control ui-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
+          <InputText className="form-control ui-control-sm" placeholder="Subscription name" value={membershipForm.name} onChange={(e) => setMembershipForm((p) => ({ ...p, name: e.target.value }))} />
           <div className="d-flex gap-2">
-            <input type="number" min="0" step="0.01" className="form-control ui-control-sm ui-number-narrow" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
+            <InputNumber min="0" step="0.01" className="form-control ui-control-sm ui-number-narrow" placeholder="Price" value={membershipForm.price} onChange={(e) => setMembershipForm((p) => ({ ...p, price: e.target.value }))} />
             <Dropdown_Custom
               className="ui-control-sm flex-grow-1"
               value={membershipForm.billing_frequency}
@@ -50,7 +51,7 @@ export default function Modal_Client_Subscriptions({
             />
           </div>
           <div className="d-flex gap-2">
-            <input type="number" min="0" className="form-control ui-control-sm ui-number-narrow" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
+            <InputNumber min="0" className="form-control ui-control-sm ui-number-narrow" placeholder="Lock term" value={membershipForm.lock_term_count} onChange={(e) => setMembershipForm((p) => ({ ...p, lock_term_count: e.target.value }))} />
             <Dropdown_Custom
               className="ui-control-sm flex-grow-1"
               value={membershipForm.lock_term_unit}
@@ -65,7 +66,7 @@ export default function Modal_Client_Subscriptions({
               closeOnSelect
             />
           </div>
-          <textarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
+          <InputTextarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={membershipForm.description} onChange={(e) => setMembershipForm((p) => ({ ...p, description: e.target.value }))} />
           <div className="d-flex gap-2">
             <Button_Toolbar
               icon={CheckIcon}

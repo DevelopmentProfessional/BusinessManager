@@ -29,11 +29,13 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Modal from "./Modal";
+import { InputCheckbox } from "../Inputs";
 import Modal_TemplateUse from "./Modal_TemplateUse";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { clientsAPI } from "../../../services/api";
 import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ShoppingCartIcon, PrinterIcon, DevicePhoneMobileIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
+import { EmptyState } from "../feedback";
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
 export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], discountAmount = 0, selectedClient = null, checkoutContext = null, onProcessPayment, getDiscountForItems = null, taxRate = 0, currentUser = null, appSettings = null, receiptSettings = null }) {
@@ -329,7 +331,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
 
                 <div className="bg-white border border-gray-200 dark:bg-gray-800/70 dark:border-gray-700 max-h-56 md:max-h-[34vh] overflow-y-auto rounded-xl">
                   {normalizedCart.length === 0 ? (
-                    <p className="dark:text-gray-400 mb-0 p-1 text-gray-500 text-sm">No cart items found.</p>
+                    <EmptyState title="No cart items found" className="justify-content-center" />
                   ) : (
                     normalizedCart.map((item) => {
                       const isSelected = selectedCartKeys.has(item._checkoutKey);
@@ -340,7 +342,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                           onClick={() => toggleCartItem(item._checkoutKey)}
                           className={`bg-transparent border-0 border-b dark:border-gray-700 flex gap-1 items-center p-1 text-left transition-colors w-full ${isSelected ? "bg-emerald-50/60 dark:bg-emerald-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/40"}`}
                         >
-                          <input type="checkbox" checked={isSelected} readOnly className="h-4 w-4" />
+                          <InputCheckbox checked={isSelected} readOnly className="h-4 w-4" />
                           <div className="min-w-0 flex-1">
                             <p className="dark:text-white font-medium mb-0 text-gray-900 text-sm truncate">{item.name}</p>
                             <p className="dark:text-gray-400 mb-0 text-gray-500 text-xs">

@@ -1,6 +1,7 @@
 // FILE: Modal_Document_Categories.jsx
 // Dedicated modal for managing document categories
 import React from "react";
+import { InputText } from "../Inputs";
 import { CheckIcon, XMarkIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
@@ -100,13 +101,13 @@ export default function Modal_Document_Categories({
             <div className="row ui-row-g2">
               <div className="col-6">
                 <div className="form-floating">
-                  <input type="text" id="newCatName" className="form-control ui-control-sm" placeholder="Category Name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} required />
+                  <InputText id="newCatName" className="form-control ui-control-sm" placeholder="Category Name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} required />
                   <label htmlFor="newCatName">Category Name *</label>
                 </div>
               </div>
               <div className="col-6">
                 <div className="form-floating">
-                  <input type="text" id="newCatDesc" className="form-control ui-control-sm" placeholder="Description" value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} />
+                  <InputText id="newCatDesc" className="form-control ui-control-sm" placeholder="Description" value={newCatDesc} onChange={(e) => setNewCatDesc(e.target.value)} />
                   <label htmlFor="newCatDesc">Description</label>
                 </div>
               </div>

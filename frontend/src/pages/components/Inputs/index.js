@@ -1,0 +1,10 @@
+export { default as InputText } from "./InputText";
+export { default as InputNumber } from "./InputNumber";
+export { default as InputDate } from "./InputDate";
+export { default as InputTextarea } from "./InputTextarea";
+export { default as InputButton } from "./InputButton";
+export { default as InputDropup } from "./InputDropup";
+export { default as InputCheckbox } from "./InputCheckbox";
+export { default as InputRadio } from "./InputRadio";
+export { default as InputFile } from "./InputFile";
+export { default as InputColor } from "./InputColor";

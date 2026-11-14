@@ -1,4 +1,5 @@
 import React from "react";
+import Badge_Status from "../badges/Badge_Status";
 import { ChevronUpIcon, PlusCircleIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
 
@@ -93,7 +94,7 @@ export default function Panel_Profile_TimeOff({
                       {pendingRequests.map((r) => (
                         <div key={r.id} className="d-flex justify-content-between align-items-center small p-1 border rounded">
                           <span>{r.type || "Leave"}: {r.start_date} to {r.end_date}</span>
-                          <span className="badge bg-warning-subtle text-warning">{r.status}</span>
+                          <Badge_Status status={r.status} />
                         </div>
                       ))}
                     </div>
@@ -109,7 +110,7 @@ export default function Panel_Profile_TimeOff({
                       {historyRequests.map((r) => (
                         <div key={r.id} className="d-flex justify-content-between align-items-center small p-1 border rounded">
                           <span>{r.type || "Leave"}: {r.start_date} to {r.end_date}</span>
-                          <span className={`badge ${r.status === "approved" ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary"}`}>{r.status}</span>
+                          <Badge_Status status={r.status} />
                         </div>
                       ))}
                     </div>

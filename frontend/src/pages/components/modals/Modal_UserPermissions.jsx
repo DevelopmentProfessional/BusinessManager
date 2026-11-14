@@ -22,13 +22,12 @@
  * ============================================================
  */
 
-import React, { useState, useRef } from "react";
-import ReactDOM from "react-dom";
+import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
+import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { XMarkIcon, CheckCircleIcon, XCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 
 const PERMISSION_DESCRIPTIONS = {
   read: "View records and details on this page.",
@@ -42,118 +41,6 @@ const PERMISSION_DESCRIPTIONS = {
   initiate_refunds: "Initiate client payment refunds and reversals.",
   admin: "Full administrative control and configuration for this page.",
 };
-
-function DropupSelect({ value, onChange, options, placeholder, isDarkMode }) {
-  const [open, setOpen] = useState(false);
-  const [helpKey, setHelpKey] = useState(null);
-  const btnRef = useRef(null);
-  const menuIdRef = useRef(`dropup-menu-${Math.random().toString(36).slice(2)}`);
-  const selectedLabel = value || placeholder;
-  const { ref: labelRef, displayLabel } = useWordSafeLabel(selectedLabel, { enabled: true });
-
-  const getMenuStyle = () => {
-    if (!btnRef.current) return {};
-    const rect = btnRef.current.getBoundingClientRect();
-    return {
-      position: "fixed",
-      left: rect.left,
-      bottom: window.innerHeight - rect.top + 4,
-      width: Math.max(rect.width, 220),
-      zIndex: 9999,
-      background: isDarkMode ? "#1f2937" : "#fff",
-      border: `1px solid ${isDarkMode ? "#374151" : "#dee2e6"}`,
-      borderRadius: 6,
-      boxShadow: isDarkMode ? "0 -4px 10px rgba(0,0,0,0.35)" : "0 -4px 12px rgba(0,0,0,0.15)",
-      overflowY: "auto",
-      maxHeight: 240,
-    };
-  };
-
-  return (
-    <div>
-      <button
-        type="button"
-        ref={btnRef}
-        className={`form-select form-select-sm text-start ${isDarkMode ? "text-light bg-dark border-secondary" : ""}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuIdRef.current}
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={(e) => {
-          if (e.key === " " || e.key === "Enter") {
-            e.preventDefault();
-            setOpen((o) => !o);
-          }
-        }}
-      >
-        <span ref={labelRef} className="app-word-safe-label">
-          {displayLabel}
-        </span>
-      </button>
-      {open && ReactDOM.createPortal(
-        <>
-          <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => { setOpen(false); setHelpKey(null); }} />
-          <ul id={menuIdRef.current} role="menu" style={getMenuStyle()} className="list-unstyled mb-0 py-1">
-            <li>
-              <button type="button" role="menuitem" className="dropdown-item small text-muted px-2 py-1" onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</button>
-            </li>
-            {options.map((opt) => {
-              const optVal = typeof opt === "object" ? opt.value : opt;
-              const optLabel = typeof opt === "object" ? opt.label : opt;
-              const optDesc = typeof opt === "object" ? opt.description : PERMISSION_DESCRIPTIONS[opt];
-              const isSelected = optVal === value;
-              const isHelpOpen = helpKey === optVal;
-
-              return (
-                <li key={optVal} className="d-flex align-items-center justify-content-between px-2 py-0.5 position-relative">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={`dropdown-item small p-1 rounded flex-grow-1 text-start ${isSelected ? "fw-semibold text-primary" : ""}`}
-                    onClick={() => { onChange(optVal); setOpen(false); }}
-                  >
-                    {optLabel}
-                  </button>
-
-                  {optDesc && (
-                    <div className="flex-shrink-0 position-relative">
-                      <button
-                        type="button"
-                        className="btn btn-sm text-muted p-0 d-flex align-items-center justify-content-center"
-                        style={{ width: "1.5rem", height: "1.5rem", fontSize: "0.75rem", fontWeight: 700 }}
-                        onMouseEnter={() => setHelpKey(optVal)}
-                        onMouseLeave={() => setHelpKey((prev) => (prev === optVal ? null : prev))}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setHelpKey((prev) => (prev === optVal ? null : optVal));
-                        }}
-                      >
-                        ?
-                      </button>
-
-                      {isHelpOpen && (
-                        <div
-                          className="app-menu-panel app-help-popover bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-start"
-                          onMouseEnter={() => setHelpKey(optVal)}
-                          onMouseLeave={() => setHelpKey((prev) => (prev === optVal ? null : prev))}
-                        >
-                          <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{optLabel}</div>
-                          <div className="dark:text-gray-300 small text-gray-700">{optDesc}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </>,
-        document.body
-      )}
-    </div>
-  );
-}
 
 export default function Modal_Permissions_User({ isOpen, onClose, userPermissions, newPermission, setNewPermission, onCreatePermission, onDeletePermission, onUpdatePermission, onScheduleWriteSelfOnlyToggle, onScheduleWriteAllToggle, pages, permissions, isDarkMode }) {
   return (
@@ -173,21 +60,25 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
             <h5 className={`mb-3 ${isDarkMode ? "text-light" : "text-dark"}`}>Add New Permission</h5>
             <div className="g-3 row">
               <div className="col-md-6">
-                <DropupSelect
+                <Dropdown_Custom
                   value={newPermission.page}
-                  onChange={(val) => setNewPermission({ ...newPermission, page: val })}
-                  options={pages}
-                  placeholder="Select Page"
-                  isDarkMode={isDarkMode}
+                  onChange={(event) => setNewPermission({ ...newPermission, page: event.target.value })}
+                  options={pages.map((page) => ({ value: page, label: page }))}
+                  placeholder="Page"
+                  floatingLabel="Page"
+                  showHelp
+                  className="ui-control-sm"
                 />
               </div>
               <div className="col-md-6">
-                <DropupSelect
+                <Dropdown_Custom
                   value={newPermission.permission}
-                  onChange={(val) => setNewPermission({ ...newPermission, permission: val })}
-                  options={permissions}
-                  placeholder="Select Permission"
-                  isDarkMode={isDarkMode}
+                  onChange={(event) => setNewPermission({ ...newPermission, permission: event.target.value })}
+                  options={permissions.map((permission) => ({ value: permission, label: permission, description: PERMISSION_DESCRIPTIONS[permission] }))}
+                  placeholder="Permission"
+                  floatingLabel="Permission"
+                  showHelp
+                  className="ui-control-sm"
                 />
               </div>
             </div>

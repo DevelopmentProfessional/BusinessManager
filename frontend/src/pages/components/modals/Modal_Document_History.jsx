@@ -1,6 +1,7 @@
 // FILE: Modal_Document_History.jsx
 // Dedicated modal for viewing and replacing document version history
 import React from "react";
+import { InputFile, InputText } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { ArrowUpTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -69,9 +70,9 @@ export default function Modal_Document_History({
 
           <form onSubmit={onReplaceContent} className="space-y-2">
             <label className="block dark:text-gray-300 font-medium text-gray-700 text-sm">Upload new version</label>
-            <input type="file" name="newVersionFile" className="form-control form-control-sm mb-2" />
+            <InputFile name="newVersionFile" className="mb-2" />
             <div className="form-floating ui-form-floating-mb2">
-              <input type="text" id="newVersionNote" name="newVersionNote" placeholder="Version Note" className="form-control ui-control-sm" />
+              <InputText id="newVersionNote" name="newVersionNote" placeholder="Version Note" className="form-control ui-control-sm" />
               <label htmlFor="newVersionNote">Version Note (optional)</label>
             </div>
             <div className="d-flex justify-content-start gap-2 pt-1">

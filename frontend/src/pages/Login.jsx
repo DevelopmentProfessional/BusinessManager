@@ -32,6 +32,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { InputCheckbox } from "./components/Inputs";
 import useStore from "../services/useStore";
 import api from "../services/api";
 import { getDetailedApiErrorMessage } from "../services/api";
@@ -347,7 +348,7 @@ const Login = () => {
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input id="remember_me" name="remember_me" type="checkbox" className="bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-500 focus:ring-indigo-500 h-4 mb-4 rounded text-indigo-600 w-4" checked={formData.remember_me} onChange={handleInputChange} />
+                <InputCheckbox id="remember_me" name="remember_me" className="bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-500 focus:ring-indigo-500 h-4 mb-4 rounded text-indigo-600 w-4" checked={formData.remember_me} onChange={handleInputChange} />
                 <label htmlFor="remember_me" className="block dark:text-gray-200 mb-4 ml-2 text-gray-200 text-sm">
                   Remember me for 30 days
                 </label>

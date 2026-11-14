@@ -4,6 +4,7 @@ import api from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import Modal from "../modals/Modal";
+import { InputText, InputNumber, InputTextarea, InputCheckbox } from "../Inputs";
 
 const ENVIRONMENT_OPTIONS = [{ value: "production", label: "Production" }];
 const SSL_MODE_OPTIONS = [
@@ -260,7 +261,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Name */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="conn_name" className="form-control ui-control-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Connection Name" required />
+                        <InputText id="conn_name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Connection Name" required />
                         <label htmlFor="conn_name">Connection Name *</label>
                       </div>
                     </div>
@@ -283,7 +284,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Host */}
                     <div className="col-md-8">
                       <div className="form-floating">
-                        <input type="text" id="conn_host" className="form-control ui-control-sm" value={formData.host} onChange={(e) => setFormData({ ...formData, host: e.target.value })} placeholder="Host" required />
+                        <InputText id="conn_host" value={formData.host} onChange={(e) => setFormData({ ...formData, host: e.target.value })} placeholder="Host" required />
                         <label htmlFor="conn_host">Host *</label>
                       </div>
                     </div>
@@ -291,7 +292,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Port */}
                     <div className="col-md-4">
                       <div className="form-floating">
-                        <input type="number" id="conn_port" className="form-control ui-control-sm" value={formData.port} onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })} placeholder="Port" required />
+                        <InputNumber id="conn_port" value={formData.port} onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })} placeholder="Port" required />
                         <label htmlFor="conn_port">Port *</label>
                       </div>
                     </div>
@@ -299,7 +300,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Database Name */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="conn_database_name" className="form-control ui-control-sm" value={formData.database_name} onChange={(e) => setFormData({ ...formData, database_name: e.target.value })} placeholder="Database Name" required />
+                        <InputText id="conn_database_name" value={formData.database_name} onChange={(e) => setFormData({ ...formData, database_name: e.target.value })} placeholder="Database Name" required />
                         <label htmlFor="conn_database_name">Database Name *</label>
                       </div>
                     </div>
@@ -307,7 +308,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Username */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" id="conn_username" className="form-control ui-control-sm" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Username" required />
+                        <InputText id="conn_username" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Username" required />
                         <label htmlFor="conn_username">Username *</label>
                       </div>
                     </div>
@@ -315,7 +316,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Password */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <input type="password" id="conn_password" className="form-control ui-control-sm" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Password" required />
+                        <InputText type="password" id="conn_password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Password" required />
                         <label htmlFor="conn_password">Password *</label>
                       </div>
                     </div>
@@ -337,7 +338,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Pool Size */}
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="number" id="conn_pool_size" className="form-control ui-control-sm" value={formData.pool_size} onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })} placeholder="Pool Size" />
+                        <InputNumber id="conn_pool_size" value={formData.pool_size} onChange={(e) => setFormData({ ...formData, pool_size: parseInt(e.target.value) })} placeholder="Pool Size" />
                         <label htmlFor="conn_pool_size">Pool Size</label>
                       </div>
                     </div>
@@ -345,7 +346,7 @@ export default function Manager_DatabaseConnection() {
                     {/* External URL (Render) */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <input type="text" id="conn_external_url" className="font-monospace form-control form-control-sm" value={formData.external_url} onChange={(e) => setFormData({ ...formData, external_url: e.target.value })} placeholder="External URL" />
+                        <InputText id="conn_external_url" className="font-monospace" value={formData.external_url} onChange={(e) => setFormData({ ...formData, external_url: e.target.value })} placeholder="External URL" />
                         <label htmlFor="conn_external_url">External URL (Optional - Render)</label>
                       </div>
                     </div>
@@ -353,7 +354,7 @@ export default function Manager_DatabaseConnection() {
                     {/* Description */}
                     <div className="col-12">
                       <div className="form-floating">
-                        <textarea id="conn_description" rows={6} className="ui-description-textarea form-control form-control-sm" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
+                        <InputTextarea id="conn_description" rows={6} className="ui-description-textarea" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description" />
                         <label htmlFor="conn_description">Description</label>
                       </div>
                     </div>
@@ -361,13 +362,13 @@ export default function Manager_DatabaseConnection() {
                     {/* Checkboxes */}
                     <div className="col-12">
                       <div className="form-check">
-                        <input type="checkbox" className="form-check-input" id="isActive" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
+                        <InputCheckbox id="isActive" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
                         <label className="form-check-label" htmlFor="isActive">
                           Active
                         </label>
                       </div>
                       <div className="form-check">
-                        <input type="checkbox" className="form-check-input" id="visibleToUsers" checked={formData.visible_to_users} onChange={(e) => setFormData({ ...formData, visible_to_users: e.target.checked })} />
+                        <InputCheckbox id="visibleToUsers" checked={formData.visible_to_users} onChange={(e) => setFormData({ ...formData, visible_to_users: e.target.checked })} />
                         <label className="form-check-label" htmlFor="visibleToUsers">
                           Visible to Users (show in profile)
                         </label>

@@ -25,6 +25,8 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { EmptyState, LoadingSpinner } from "../feedback";
+import Badge_Status from "../badges/Badge_Status";
 
 export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, requestTypeFilter, setRequestTypeFilter, requestTimeFilter, setRequestTimeFilter, requestsLoading, employees, onRequestAction, loadRequests }) {
   return (
@@ -40,10 +42,10 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
           <div className="component-body-inner">
           {requestsLoading ? (
             <div className="py-1 text-center">
-              <div className="spinner-border text-primary" role="status" />
+              <LoadingSpinner label="Loading employee requests" />
             </div>
           ) : allRequests.length === 0 ? (
-            <p className="py-1 text-center text-muted">No requests found.</p>
+            <EmptyState title="No requests found" className="justify-content-center" />
           ) : (
             <div className="d-flex flex-column gap-2">
               {["approved", "denied", "pending"].map((statusGroup) => {
@@ -88,7 +90,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                                   </button>
                                 </div>
                               )}
-                              {req.status !== "pending" && <span className="badge bg-secondary">{req.status}</span>}
+                              {req.status !== "pending" && <Badge_Status status={req.status} />}
                             </div>
                           </div>
                         </div>

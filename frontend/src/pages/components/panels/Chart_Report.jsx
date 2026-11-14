@@ -25,6 +25,7 @@
 import React from "react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from "chart.js";
 import { Line, Bar, Pie, Doughnut } from "react-chartjs-2";
+import { EmptyState, LoadingSpinner } from "../feedback";
 
 // ─── 1 CHART.JS REGISTRATION ───────────────────────────────────────────────────
 
@@ -48,19 +49,16 @@ const defaultOptions = {
 const Chart_Report = ({ data, type, title, loading }) => {
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+      <div className="align-items-center d-flex h-100 justify-content-center">
+        <LoadingSpinner label="Loading chart" size="lg" />
       </div>
     );
   }
 
   if (!data || !data.datasets || data.datasets.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 text-lg">No data available</p>
-          <p className="text-gray-400 text-sm">Try adjusting your filters</p>
-        </div>
+      <div className="align-items-center d-flex h-100 justify-content-center">
+        <EmptyState title="No data available" description="Try adjusting your filters." className="justify-content-center" />
       </div>
     );
   }

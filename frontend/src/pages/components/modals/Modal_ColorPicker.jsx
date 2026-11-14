@@ -2,6 +2,7 @@ import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
+import { InputColor } from "../Inputs";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const PRESET_COLORS = [
@@ -85,8 +86,7 @@ export default function Modal_ColorPicker({ isOpen, onClose, pendingColor, onPen
               {/* Single color button with value above it (no duplicate display element) */}
               <div className="d-flex flex-column align-items-center gap-1 mt-1">
                 <span className="font-monospace fw-semibold small text-body-emphasis">{normalizedColor}</span>
-                <input
-                  type="color"
+                <InputColor
                   value={pendingColor}
                   onChange={(e) => onPendingColorChange(e.target.value)}
                   className="form-control form-control-color border rounded-circle shadow-sm"

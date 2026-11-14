@@ -18,7 +18,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import api from "../../../services/api";
 import { formatDateTime } from "../../../utils/dateFormatters";
+import Badge_Status from "../badges/Badge_Status";
 import Modal from "../modals/Modal";
+import { InputRadio, InputTextarea } from "../Inputs";
 
 // ─ Main Component ────────────────────────────────────────────────────
 
@@ -81,7 +83,7 @@ export const WorkflowModal = ({ documentId, onClose, onAssigned }) => {
           <div className="space-y-3">
             {workflows.map((wf) => (
               <label key={wf.id} className="border cursor-pointer flex gap-3 hover:bg-gray-50 items-start p-1 rounded-lg">
-                <input type="radio" name="workflow" value={wf.id} checked={selectedWorkflow?.id === wf.id} onChange={() => setSelectedWorkflow(wf)} className="mt-1" />
+                <InputRadio name="workflow" value={wf.id} checked={selectedWorkflow?.id === wf.id} onChange={() => setSelectedWorkflow(wf)} className="mt-1" />
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{wf.name}</h3>
                   <p className="text-gray-600 text-sm">{wf.description}</p>
@@ -126,7 +128,7 @@ export const WorkflowStatusTracker = ({ documentId, currentUserId, onWorkflowUpd
     <div className="space-y-4">
       <div className="bg-blue-50 flex items-center justify-between p-1 rounded-lg">
         <h3 className="font-semibold text-gray-900">Workflow Progress</h3>
-        <span className="bg-blue-100 font-medium px-1 py-1 rounded-full text-blue-700 text-sm">{workflow.status}</span>
+        <Badge_Status status={workflow.status} />
       </div>
 
       <div className="space-y-3">
@@ -246,7 +248,7 @@ export const ApprovalActions = ({ stepId, onApprovalComplete }) => {
           }
         >
           <div className="p-1">
-            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason for rejection..." className="border border-gray-300 form-control mb-2 rounded-lg w-full" rows={6} />
+            <InputTextarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Reason for rejection..." className="border border-gray-300 form-control mb-2 rounded-lg w-full" rows={6} />
           </div>
         </Modal>
       )}

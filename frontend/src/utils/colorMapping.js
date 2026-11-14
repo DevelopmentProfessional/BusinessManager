@@ -22,11 +22,13 @@ export function tierVariant(tier) {
 }
 
 export function statusVariant(status) {
-  const s = (status || "").toLowerCase();
+  const s = (status || "").toLowerCase().replace(/[\s-]+/g, "_");
   if (s === "active" || s === "approved" || s === "completed" || s === "paid") return "green";
-  if (s === "inactive" || s === "cancelled" || s === "rejected") return "gray";
-  if (s === "pending") return "blue";
-  if (s === "overdue" || s === "low") return "red";
+  if (s === "inactive" || s === "cancelled" || s === "rejected" || s === "denied" || s === "archived") return "gray";
+  if (s === "pending" || s === "in_progress" || s === "scheduled" || s === "draft" || s === "payment_pending" || s === "ordered" || s === "processing" || s === "ready_for_pickup") return "blue";
+  if (s === "delivered" || s === "picked_up") return "teal";
+  if (s === "overdue" || s === "low" || s === "unpaid" || s === "failed") return "red";
+  if (s === "refunded" || s === "out_for_delivery") return "teal";
   return "gray";
 }
 
