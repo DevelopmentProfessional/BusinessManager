@@ -67,6 +67,7 @@ import Panel_Database from "./components/panels/Panel_Database";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Panel_Profile_Information from "./components/panels/Panel_Profile_Information";
 import Panel_Profile_TimeOff from "./components/panels/Panel_Profile_TimeOff";
+import Badge_Status from "./components/badges/Badge_Status";
 import Modal_Profile_LeaveRequest from "./components/modals/Modal_Profile_LeaveRequest";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
@@ -137,14 +138,6 @@ const DB_ENVIRONMENTS = {
   production: { name: "Production", description: "Live production database" },
 };
 
-const statusColor = (status) => {
-  const s = String(status || "").toLowerCase();
-  if (s === "approved") return "success";
-  if (s === "rejected") return "danger";
-  if (s === "pending") return "warning";
-  return "secondary";
-};
-
 const sortLeaveRequestsDesc = (requests) =>
   [...requests].sort((a, b) => {
     const ta = Date.parse(a.start_date || "") || 0;
@@ -176,9 +169,7 @@ function LeaveRequestsTable({ requests, emptyMessage }) {
               <td>{req.end_date}</td>
               <td>{req.days_requested ?? "—"}</td>
               <td>
-                <span className={`badge bg-${statusColor(req.status)}`} style={{ fontSize: "0.7rem" }}>
-                  {req.status}
-                </span>
+                <Badge_Status status={req.status} />
               </td>
             </tr>
           ))}

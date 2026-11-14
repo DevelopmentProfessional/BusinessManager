@@ -32,6 +32,7 @@ import { XMarkIcon, CalculatorIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon, Ar
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
+import { InputCheckbox, InputNumber, InputText } from "../Inputs";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from "chart.js";
 
@@ -1066,15 +1067,15 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                     </div>
                     <div className="col-md-4">
                       <label className="form-label ui-form-label-xs">Revenue Growth Rate (%)</label>
-                      <input type="number" step="0.1" value={revenueGrowthRate} onChange={(e) => setRevenueGrowthRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                      <InputNumber step="0.1" value={revenueGrowthRate} onChange={(e) => setRevenueGrowthRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label ui-form-label-xs">Discount Rate (% for NPV)</label>
-                      <input type="number" step="0.1" value={discountRate} onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                      <InputNumber step="0.1" value={discountRate} onChange={(e) => setDiscountRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label ui-form-label-xs">Initial Investment ($)</label>
-                      <input type="number" step="100" value={initialInvestment} onChange={(e) => setInitialInvestment(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                      <InputNumber step="100" value={initialInvestment} onChange={(e) => setInitialInvestment(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                     </div>
                   </div>
                 </div>
@@ -1092,19 +1093,19 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       <div className="row ui-row-g2">
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Product Price ($)</label>
-                          <input type="number" step="0.01" value={productPrice} onChange={(e) => setProductPrice(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.01" value={productPrice} onChange={(e) => setProductPrice(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Units Sold per Period</label>
-                          <input type="number" value={unitsPerPeriod} onChange={(e) => setUnitsPerPeriod(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={unitsPerPeriod} onChange={(e) => setUnitsPerPeriod(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Service Revenue ($)</label>
-                          <input type="number" value={serviceRevenue} onChange={(e) => setServiceRevenue(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={serviceRevenue} onChange={(e) => setServiceRevenue(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Recurring Revenue ($)</label>
-                          <input type="number" value={recurringRevenue} onChange={(e) => setRecurringRevenue(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={recurringRevenue} onChange={(e) => setRecurringRevenue(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                       <div className="dark:text-gray-400 mt-2 text-gray-600 text-xs">Total: ${(productPrice * unitsPerPeriod + serviceRevenue + recurringRevenue).toLocaleString()}</div>
@@ -1125,19 +1126,19 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       <div className="row ui-row-g2">
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">COGS per Unit ($)</label>
-                          <input type="number" step="0.01" value={cogsPerUnit} onChange={(e) => setCogsPerUnit(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.01" value={cogsPerUnit} onChange={(e) => setCogsPerUnit(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Units per Batch</label>
-                          <input type="number" value={unitsPerBatch} onChange={(e) => setUnitsPerBatch(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={unitsPerBatch} onChange={(e) => setUnitsPerBatch(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Shipping per Batch ($)</label>
-                          <input type="number" value={shippingPerBatch} onChange={(e) => setShippingPerBatch(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={shippingPerBatch} onChange={(e) => setShippingPerBatch(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Batches per Period</label>
-                          <input type="number" value={batchFrequency} onChange={(e) => setBatchFrequency(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={batchFrequency} onChange={(e) => setBatchFrequency(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1157,19 +1158,19 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       <div className="row ui-row-g2">
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Marketing Budget/Period ($)</label>
-                          <input type="number" value={marketingBudget} onChange={(e) => setMarketingBudget(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={marketingBudget} onChange={(e) => setMarketingBudget(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Cost per 1000 Views ($)</label>
-                          <input type="number" step="0.1" value={costPerThousandViews} onChange={(e) => setCostPerThousandViews(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={costPerThousandViews} onChange={(e) => setCostPerThousandViews(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Engagement → Sale Rate (%)</label>
-                          <input type="number" step="0.1" value={engagementToSaleRate} onChange={(e) => setEngagementToSaleRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={engagementToSaleRate} onChange={(e) => setEngagementToSaleRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Avg Revenue per Sale ($)</label>
-                          <input type="number" value={avgRevenuePerSale} onChange={(e) => setAvgRevenuePerSale(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={avgRevenuePerSale} onChange={(e) => setAvgRevenuePerSale(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1189,23 +1190,23 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       <div className="row ui-row-g2">
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Walk-in Customers/Period</label>
-                          <input type="number" value={walkInCustomersPerPeriod} onChange={(e) => setWalkInCustomersPerPeriod(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber value={walkInCustomersPerPeriod} onChange={(e) => setWalkInCustomersPerPeriod(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-3">
                           <label className="form-label ui-form-label-xs">Walk-in Conversion Rate (%)</label>
-                          <input type="number" step="0.1" value={walkInConversionRate} onChange={(e) => setWalkInConversionRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={walkInConversionRate} onChange={(e) => setWalkInConversionRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-2">
                           <label className="form-label ui-form-label-xs">Buy-back Rate (%)</label>
-                          <input type="number" step="0.1" value={customerBuyBackRate} onChange={(e) => setCustomerBuyBackRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={customerBuyBackRate} onChange={(e) => setCustomerBuyBackRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-2">
                           <label className="form-label ui-form-label-xs">Buy-back Frequency</label>
-                          <input type="number" value={buyBackFrequency} onChange={(e) => setBuyBackFrequency(parseFloat(e.target.value) || 1)} className="form-control ui-control-sm" placeholder="periods" />
+                          <InputNumber value={buyBackFrequency} onChange={(e) => setBuyBackFrequency(parseFloat(e.target.value) || 1)} className="form-control ui-control-sm" placeholder="periods" />
                         </div>
                         <div className="col-md-2">
                           <label className="form-label ui-form-label-xs">Retention Rate (%)</label>
-                          <input type="number" step="0.1" value={customerRetentionRate} onChange={(e) => setCustomerRetentionRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={customerRetentionRate} onChange={(e) => setCustomerRetentionRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1225,11 +1226,11 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       <div className="row ui-row-g2">
                         <div className="col-md-6">
                           <label className="form-label ui-form-label-xs">Inflation Rate (% per year)</label>
-                          <input type="number" step="0.1" value={inflationRate} onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={inflationRate} onChange={(e) => setInflationRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-6">
                           <label className="form-label ui-form-label-xs">Depreciation Rate (% per year)</label>
-                          <input type="number" step="0.1" value={depreciationRate} onChange={(e) => setDepreciationRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={depreciationRate} onChange={(e) => setDepreciationRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                       </div>
                     </div>
@@ -1249,7 +1250,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       {/* Fixed Monthly Costs */}
                       <div className="mb-3">
                         <label className="form-label ui-form-label-xs">Fixed Monthly Costs ($)</label>
-                        <input type="number" value={fixedMonthlyCosts} onChange={(e) => setFixedMonthlyCosts(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" placeholder="Rent, utilities, salaries..." />
+                        <InputNumber value={fixedMonthlyCosts} onChange={(e) => setFixedMonthlyCosts(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" placeholder="Rent, utilities, salaries..." />
                       </div>
 
                       {/* One-time Payments */}
@@ -1257,13 +1258,13 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         <label className="form-label fw-bold mb-1 text-xs">One-Time Payments</label>
                         <div className="g-2 mb-2 row">
                           <div className="col-md-4">
-                            <input type="text" value={newOneTimeLabel} onChange={(e) => setNewOneTimeLabel(e.target.value)} className="form-control ui-control-sm" placeholder="Label (e.g., Equipment)" />
+                            <InputText value={newOneTimeLabel} onChange={(e) => setNewOneTimeLabel(e.target.value)} className="form-control ui-control-sm" placeholder="Label (e.g., Equipment)" />
                           </div>
                           <div className="col-md-3">
-                            <input type="number" value={newOneTimeAmount} onChange={(e) => setNewOneTimeAmount(e.target.value)} className="form-control ui-control-sm" placeholder="Amount" />
+                            <InputNumber value={newOneTimeAmount} onChange={(e) => setNewOneTimeAmount(e.target.value)} className="form-control ui-control-sm" placeholder="Amount" />
                           </div>
                           <div className="col-md-3">
-                            <input type="number" value={newOneTimePeriod} onChange={(e) => setNewOneTimePeriod(e.target.value)} className="form-control ui-control-sm" placeholder="Period #" />
+                            <InputNumber value={newOneTimePeriod} onChange={(e) => setNewOneTimePeriod(e.target.value)} className="form-control ui-control-sm" placeholder="Period #" />
                           </div>
                           <div className="col-md-2">
                             <button onClick={addOneTimePayment} className="align-items-center btn btn-primary btn-sm d-flex gap-1 justify-content-center w-100">
@@ -1293,13 +1294,13 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         <label className="form-label fw-bold mb-1 text-xs">Recurring Payments</label>
                         <div className="g-2 mb-2 row">
                           <div className="col-md-5">
-                            <input type="text" value={newRecurringLabel} onChange={(e) => setNewRecurringLabel(e.target.value)} className="form-control ui-control-sm" placeholder="Label (e.g., Software License)" />
+                            <InputText value={newRecurringLabel} onChange={(e) => setNewRecurringLabel(e.target.value)} className="form-control ui-control-sm" placeholder="Label (e.g., Software License)" />
                           </div>
                           <div className="col-md-3">
-                            <input type="number" value={newRecurringAmount} onChange={(e) => setNewRecurringAmount(e.target.value)} className="form-control ui-control-sm" placeholder="Amount" />
+                            <InputNumber value={newRecurringAmount} onChange={(e) => setNewRecurringAmount(e.target.value)} className="form-control ui-control-sm" placeholder="Amount" />
                           </div>
                           <div className="col-md-2">
-                            <input type="number" value={newRecurringFreq} onChange={(e) => setNewRecurringFreq(e.target.value)} className="form-control ui-control-sm" placeholder="Every N" />
+                            <InputNumber value={newRecurringFreq} onChange={(e) => setNewRecurringFreq(e.target.value)} className="form-control ui-control-sm" placeholder="Every N" />
                           </div>
                           <div className="col-md-2">
                             <button onClick={addRecurringPayment} className="align-items-center btn btn-primary btn-sm d-flex gap-1 justify-content-center w-100">
@@ -1341,7 +1342,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {/* Seasonality */}
                         <div className="col-12">
                           <div className="form-check mb-2">
-                            <input type="checkbox" checked={seasonalityEnabled} onChange={(e) => setSeasonalityEnabled(e.target.checked)} className="form-check-input" id="seasonalityCheck" />
+                            <InputCheckbox checked={seasonalityEnabled} onChange={(e) => setSeasonalityEnabled(e.target.checked)} id="seasonalityCheck" />
                             <label className="form-check-label text-xs" htmlFor="seasonalityCheck">
                               Enable Seasonality (Monthly Multipliers)
                             </label>
@@ -1353,7 +1354,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                             <label className="form-label ui-form-label-xs">Monthly Multipliers (Jan-Dec)</label>
                             <div className="d-flex flex-wrap gap-1">
                               {seasonalityMultipliers.map((mult, idx) => (
-                                <input
+                                <InputNumber
                                   key={idx}
                                   type="number"
                                   step="0.1"
@@ -1375,11 +1376,11 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {/* CAC & LTV */}
                         <div className="col-md-4">
                           <label className="form-label ui-form-label-xs">Customer Acquisition Cost (CAC $)</label>
-                          <input type="number" step="1" value={cac} onChange={(e) => setCac(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="1" value={cac} onChange={(e) => setCac(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-4">
                           <label className="form-label ui-form-label-xs">Avg Customer Lifetime (months)</label>
-                          <input type="number" step="1" value={avgCustomerLifetimeMonths} onChange={(e) => setAvgCustomerLifetimeMonths(parseFloat(e.target.value) || 12)} className="form-control ui-control-sm" />
+                          <InputNumber step="1" value={avgCustomerLifetimeMonths} onChange={(e) => setAvgCustomerLifetimeMonths(parseFloat(e.target.value) || 12)} className="form-control ui-control-sm" />
                         </div>
                         <div className="col-md-4">
                           <label className="form-label ui-form-label-xs">LTV Estimate</label>
@@ -1389,13 +1390,13 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {/* Churn Rate */}
                         <div className="col-md-6">
                           <label className="form-label ui-form-label-xs">Churn Rate (% per period)</label>
-                          <input type="number" step="0.1" value={churnRate} onChange={(e) => setChurnRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={churnRate} onChange={(e) => setChurnRate(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
 
                         {/* Variable Labor Cost */}
                         <div className="col-md-6">
                           <label className="form-label ui-form-label-xs">Variable Labor Cost (% of Revenue)</label>
-                          <input type="number" step="0.1" value={variableLaborCostPercent} onChange={(e) => setVariableLaborCostPercent(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
+                          <InputNumber step="0.1" value={variableLaborCostPercent} onChange={(e) => setVariableLaborCostPercent(parseFloat(e.target.value) || 0)} className="form-control ui-control-sm" />
                         </div>
 
                         {/* CapEx Manager */}
@@ -1403,16 +1404,16 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                           <label className="form-label fw-bold mb-2 text-xs">Capital Expenditures (CapEx)</label>
                           <div className="g-2 mb-2 row">
                             <div className="col-md-3">
-                              <input type="number" placeholder="Amount ($)" value={newCapexAmount} onChange={(e) => setNewCapexAmount(e.target.value)} className="form-control ui-control-sm" />
+                              <InputNumber placeholder="Amount ($)" value={newCapexAmount} onChange={(e) => setNewCapexAmount(e.target.value)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-2">
-                              <input type="number" placeholder="Period" value={newCapexPeriod} onChange={(e) => setNewCapexPeriod(parseInt(e.target.value) || 0)} className="form-control ui-control-sm" />
+                              <InputNumber placeholder="Period" value={newCapexPeriod} onChange={(e) => setNewCapexPeriod(parseInt(e.target.value) || 0)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-2">
-                              <input type="number" placeholder="Dep. Years" value={newCapexDepYears} onChange={(e) => setNewCapexDepYears(parseInt(e.target.value) || 5)} className="form-control ui-control-sm" />
+                              <InputNumber placeholder="Dep. Years" value={newCapexDepYears} onChange={(e) => setNewCapexDepYears(parseInt(e.target.value) || 5)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-3">
-                              <input type="text" placeholder="Label" value={newCapexLabel} onChange={(e) => setNewCapexLabel(e.target.value)} className="form-control ui-control-sm" />
+                              <InputText placeholder="Label" value={newCapexLabel} onChange={(e) => setNewCapexLabel(e.target.value)} className="form-control ui-control-sm" />
                             </div>
                             <div className="col-md-2">
                               <button
@@ -1479,7 +1480,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {/* Scenario Bands */}
                         <div className="col-12">
                           <div className="form-check mb-2">
-                            <input type="checkbox" checked={scenarioEnabled} onChange={(e) => setScenarioEnabled(e.target.checked)} className="form-check-input" id="scenarioCheck" />
+                            <InputCheckbox checked={scenarioEnabled} onChange={(e) => setScenarioEnabled(e.target.checked)} id="scenarioCheck" />
                             <label className="form-check-label text-xs" htmlFor="scenarioCheck">
                               Enable Best/Worst Case Scenarios
                             </label>
@@ -1489,14 +1490,14 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {scenarioEnabled && (
                           <div className="col-md-6">
                             <label className="form-label ui-form-label-xs">Variance (±%)</label>
-                            <input type="number" step="1" value={variancePercent} onChange={(e) => setVariancePercent(parseFloat(e.target.value) || 20)} className="form-control ui-control-sm" />
+                            <InputNumber step="1" value={variancePercent} onChange={(e) => setVariancePercent(parseFloat(e.target.value) || 20)} className="form-control ui-control-sm" />
                           </div>
                         )}
 
                         {/* Monte Carlo Simulation */}
                         <div className="col-12">
                           <div className="form-check mb-2">
-                            <input type="checkbox" checked={monteCarloEnabled} onChange={(e) => setMonteCarloEnabled(e.target.checked)} className="form-check-input" id="monteCarloCheck" />
+                            <InputCheckbox checked={monteCarloEnabled} onChange={(e) => setMonteCarloEnabled(e.target.checked)} id="monteCarloCheck" />
                             <label className="form-check-label text-xs" htmlFor="monteCarloCheck">
                               Run Monte Carlo Simulation
                             </label>
@@ -1507,7 +1508,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                           <>
                             <div className="col-md-6">
                               <label className="form-label ui-form-label-xs">Simulation Runs</label>
-                              <input type="number" step="10" value={monteCarloRuns} onChange={(e) => setMonteCarloRuns(parseInt(e.target.value) || 100)} className="form-control ui-control-sm" />
+                              <InputNumber step="10" value={monteCarloRuns} onChange={(e) => setMonteCarloRuns(parseInt(e.target.value) || 100)} className="form-control ui-control-sm" />
                             </div>
                             {monteCarloResults && (
                               <div className="col-12">
@@ -1530,7 +1531,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                         {/* Sensitivity Analysis */}
                         <div className="col-12">
                           <div className="form-check mb-2">
-                            <input type="checkbox" checked={sensitivityEnabled} onChange={(e) => setSensitivityEnabled(e.target.checked)} className="form-check-input" id="sensitivityCheck" />
+                            <InputCheckbox checked={sensitivityEnabled} onChange={(e) => setSensitivityEnabled(e.target.checked)} id="sensitivityCheck" />
                             <label className="form-check-label text-xs" htmlFor="sensitivityCheck">
                               Show Sensitivity Analysis
                             </label>
@@ -1573,7 +1574,7 @@ export default function Modal_ForecastCalculator({ isOpen, onClose }) {
                       <div className="row ui-row-g2">
                         <div className="col-md-6">
                           <label className="form-label ui-form-label-xs">Scenario Name</label>
-                          <input type="text" value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} className="form-control ui-control-sm" />
+                          <InputText value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} className="form-control ui-control-sm" />
                         </div>
                         <div className="align-items-end col-md-6 d-flex gap-2">
                           <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" onClick={exportForecastCsv}>

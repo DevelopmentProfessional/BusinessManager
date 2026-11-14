@@ -15,6 +15,8 @@ import { payrollAPI } from "../../../services/api";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputCheckbox, InputDate, InputNumber, InputText, InputTextarea } from "../Inputs";
+import { LoadingSpinner } from "../feedback";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -637,7 +639,7 @@ function CalendarTab({ calYear, setCalYear, calMonth, setCalMonth, calPeriods, s
 
       {scheduleLoading || slipsLoading ? (
         <div className="d-flex justify-content-center py-1">
-          <div className="spinner-border spinner-border-sm text-primary" role="status" />
+          <LoadingSpinner label="Loading wage data" size="sm" />
         </div>
       ) : (
         <>
@@ -872,7 +874,7 @@ function ProcessTab({
   if (scheduleLoading || slipsLoading) {
     return (
       <div className="d-flex justify-content-center py-1">
-        <div className="spinner-border spinner-border-sm text-primary" role="status" />
+        <LoadingSpinner label="Loading wage history" size="sm" />
       </div>
     );
   }
@@ -951,7 +953,7 @@ function ProcessTab({
         {/* Select-all row */}
         {unpaidEmps.length > 0 && (
           <div className="align-items-center d-flex gap-2 mt-1">
-            <input type="checkbox" className="form-check-input mt-0" checked={allUnpaidSelected} onChange={toggleAllUnpaid} id="chk-all-unpaid" />
+            <InputCheckbox className="mt-0" checked={allUnpaidSelected} onChange={toggleAllUnpaid} id="chk-all-unpaid" />
             <label htmlFor="chk-all-unpaid" className="form-check-label small" style={{ fontSize: "0.78rem" }}>
               Select all unpaid ({unpaidEmps.length})
             </label>
@@ -1045,8 +1047,7 @@ function ProcessTab({
                     <div className="col-6">
                       <label className="form-label fw-semibold mb-1 small">{isH ? "Hours Worked" : "Gross Amount"}</label>
                       <div className="input-group input-group-sm">
-                        {!isH && <span className="input-group-text">$</span>}
-                        <input type="number" min="0" step={isH ? "0.25" : "0.01"} className="form-control" value={isH ? (form.hours_worked ?? "") : (form.gross_amount ?? "")} onChange={(e) => updateForm(emp.id, isH ? "hours_worked" : "gross_amount", e.target.value)} />
+                        <InputNumber min="0" step={isH ? "0.25" : "0.01"} className="form-control ui-control-sm" value={isH ? (form.hours_worked ?? "") : (form.gross_amount ?? "")} onChange={(e) => updateForm(emp.id, isH ? "hours_worked" : "gross_amount", e.target.value)} />
                         {isH && <span className="input-group-text">hrs</span>}
                       </div>
                       {isH && emp.hourly_rate && (
@@ -1059,12 +1060,12 @@ function ProcessTab({
                       <label className="form-label fw-semibold mb-1 small">Deductions</label>
                       <div className="input-group input-group-sm">
                         <span className="input-group-text">$</span>
-                        <input type="number" min="0" step="0.01" className="form-control" value={form.other_deductions ?? "0"} onChange={(e) => updateForm(emp.id, "other_deductions", e.target.value)} />
+                        <InputNumber min="0" step="0.01" className="form-control" value={form.other_deductions ?? "0"} onChange={(e) => updateForm(emp.id, "other_deductions", e.target.value)} />
                       </div>
                     </div>
                     <div className="col-12">
                       <label className="form-label fw-semibold mb-1 small">Notes</label>
-                      <input type="text" className="form-control ui-control-sm" placeholder="Optional" value={form.notes ?? ""} onChange={(e) => updateForm(emp.id, "notes", e.target.value)} />
+                      <InputTextarea className="form-control ui-control-sm" rows={2} placeholder="Optional" value={form.notes ?? ""} onChange={(e) => updateForm(emp.id, "notes", e.target.value)} />
                     </div>
                   </div>
                   <div className="d-flex gap-2 justify-content-end mt-2">
@@ -1159,21 +1160,24 @@ function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit 
 
       <div className="g-2 mb-3 row">
         <div className="col-6">
-          <label className="form-label fw-semibold mb-1 small">Amount</label>
-          <div className="input-group input-group-sm">
-            <span className="input-group-text">$</span>
-            <input type="number" min="0" step="0.01" className="form-control" placeholder="0.00" value={ot.amount} onChange={(e) => setOt((p) => ({ ...p, amount: e.target.value }))} />
+          <div className="form-floating">
+            <InputNumber id="one-time-amount" min="0" step="0.01" placeholder="0.00" value={ot.amount} onChange={(e) => setOt((p) => ({ ...p, amount: e.target.value }))} />
+            <label htmlFor="one-time-amount">Amount</label>
           </div>
         </div>
         <div className="col-6">
-          <label className="form-label fw-semibold mb-1 small">Date</label>
-          <input type="date" className="form-control ui-control-sm" value={ot.date} onChange={(e) => setOt((p) => ({ ...p, date: e.target.value }))} />
+          <div className="form-floating">
+            <InputDate id="one-time-date" value={ot.date} onChange={(e) => setOt((p) => ({ ...p, date: e.target.value }))} />
+            <label htmlFor="one-time-date">Date</label>
+          </div>
         </div>
       </div>
 
       <div className="mb-3">
-        <label className="form-label fw-semibold mb-1 small">Notes (optional)</label>
-        <input type="text" className="form-control ui-control-sm" placeholder="e.g. Year-end bonus, Q1 commission…" value={ot.notes} onChange={(e) => setOt((p) => ({ ...p, notes: e.target.value }))} />
+        <div className="form-floating">
+          <InputTextarea id="one-time-notes" rows={2} placeholder="e.g. Year-end bonus, Q1 commission…" value={ot.notes} onChange={(e) => setOt((p) => ({ ...p, notes: e.target.value }))} />
+          <label htmlFor="one-time-notes">Notes (optional)</label>
+        </div>
       </div>
 
       <button type="button" onClick={handleOtSubmit} disabled={otLoading || !ot.employee_id || !ot.amount || !ot.date} className="align-items-center btn btn-outline-secondary d-flex gap-2 justify-content-center w-100">
@@ -1199,12 +1203,12 @@ function HistoryTab({ slipsLoading, filteredHistory, histSearch, setHistSearch, 
   return (
     <>
       <div className="bg-white border-bottom border-gray-100 dark:bg-gray-800 dark:border-gray-700 px-1 py-0" style={{ position: "sticky", top: 0, zIndex: 5 }}>
-        <input type="text" placeholder="Search by employee or notes…" className="form-control ui-control-sm" value={histSearch} onChange={(e) => setHistSearch(e.target.value)} />
+        <InputText placeholder="Search by employee or notes…" className="form-control ui-control-sm" value={histSearch} onChange={(e) => setHistSearch(e.target.value)} />
       </div>
 
       {slipsLoading ? (
         <div className="d-flex justify-content-center py-1">
-          <div className="spinner-border spinner-border-sm text-primary" role="status" />
+          <LoadingSpinner label="Loading wage records" size="sm" />
         </div>
       ) : filteredHistory.length === 0 ? (
         <div className="py-1 small text-center text-muted">No pay history yet.</div>

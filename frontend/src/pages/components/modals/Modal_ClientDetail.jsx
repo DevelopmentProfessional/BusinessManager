@@ -30,7 +30,7 @@
  *   2026-09-11 | GitHub Copilot | Fixed hook dependencies and re-mounted service history modal usage
  * ============================================================
  */
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { XMarkIcon, CheckIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
@@ -39,9 +39,13 @@ import Footer_Actions from "../footers/Footer_Actions";
 import { showConfirm } from "../../../services/showConfirm";
 import { clientsAPI, servicesAPI, clientCartAPI, clientOrdersAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Filter_Menu from "../dropdowns/Filter_Menu";
+import { InputCheckbox, InputDate, InputNumber, InputText, InputTextarea } from "../Inputs";
 import Modal_ClientCart from "./Modal_ClientCart";
 import Modal_TemplateUse from "./Modal_TemplateUse";
 import { formatDate, formatDateTime } from "../../../utils/dateFormatters";
+import { EmptyState, LoadingSpinner } from "../feedback";
+import Badge_Status from "../badges/Badge_Status";
 
 // ─── 1 HELPER CONSTANTS & UTILITIES ────────────────────────────────────────
 const getTierAvatarColor = (membershipCount) => {
@@ -74,18 +78,6 @@ const PORTAL_STATUS_LABELS = {
   picked_up: "Picked Up",
   cancelled: "Cancelled",
   refunded: "Refunded",
-};
-
-const PORTAL_STATUS_CLASSES = {
-  payment_pending: "bg-warning-subtle text-warning",
-  ordered: "bg-primary-subtle text-primary",
-  processing: "bg-info-subtle text-info",
-  ready_for_pickup: "bg-secondary-subtle text-secondary",
-  out_for_delivery: "bg-dark text-white",
-  delivered: "bg-success-subtle text-success",
-  picked_up: "bg-success-subtle text-success",
-  cancelled: "bg-danger-subtle text-danger",
-  refunded: "bg-info-subtle text-info",
 };
 
 const NEXT_PORTAL_STATUSES = {
@@ -162,7 +154,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
           <div className="ui-small-muted">{formatDateTime(schedule.appointment_date)}</div>
           {schedule.notes && <div className="small text-muted text-truncate">{schedule.notes}</div>}
         </div>
-        <span className={`badge rounded-pill flex-shrink-0 ${isUpcoming ? "bg-primary" : "bg-secondary"}`}>{schedule.status || "scheduled"}</span>
+        <Badge_Status status={schedule.status || "scheduled"} />
       </>
     );
 
@@ -192,7 +184,7 @@ function ServiceHistoryModal({ isOpen, onClose, client, onEditSchedule }) {
       <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
         {loading && (
           <div className="d-flex justify-content-center py-1">
-            <div className="spinner-border spinner-border-sm text-primary" role="status" />
+            <LoadingSpinner label="Loading client details" size="sm" />
           </div>
         )}
         {error && <div className="alert alert-danger mx-3 py-0 small">{error}</div>}
@@ -257,68 +249,31 @@ function matchesPurchasePeriod(createdAt, periodFilter) {
   return d.getFullYear() === periodFilter.year && d.getMonth() === periodFilter.month;
 }
 
-/** Month/year filter dropup — bottom-left of purchase history footer. */
+/** Month/year filter using the shared filter menu. */
 function PurchasePeriodFilterDropup({ periods, value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
-    };
-    if (open) document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
-
-  const activeLabel = value ? periods.find((p) => p.year === value.year && p.month === value.month)?.label : "All";
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedValue = value ? `${value.year}-${value.month}` : "";
+  const options = [{ value: "", label: "All periods" }, ...periods.map((period) => ({ value: `${period.year}-${period.month}`, label: period.label }))];
 
   return (
-    <div ref={rootRef} className="position-relative purchase-period-filter-dropup">
-      <button type="button" onClick={() => setOpen((v) => !v)} className={`app-menu-trigger btn btn-sm d-inline-flex align-items-center gap-1 ${value ? "btn-primary" : "btn-outline-secondary"}`} aria-expanded={open} aria-haspopup="listbox" title="Filter by month">
-        <FunnelIcon className="flex-shrink-0 h-4 w-4" />
-        <span className="text-nowrap">{activeLabel}</span>
-      </button>
-      {open && (
-        <div role="listbox" className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-1 overflow-auto position-absolute rounded-3 shadow-sm start-0" style={{ zIndex: 30, width: "14rem", maxWidth: "90vw", maxHeight: "16rem", margin: 0 }}>
-          <div
-            role="option"
-            tabIndex={0}
-            aria-selected={!value}
-            onClick={() => {
-              onChange(null);
-              setOpen(false);
-            }}
-            className={`app-menu-item py-0 px-1${!value ? " bg-primary text-white" : " text-body"}`}
-            style={{ cursor: "pointer", width: "100%", margin: 0 }}
-          >
-            All periods
-          </div>
-          {periods.length === 0 ? (
-            <div className="app-menu-empty px-1 py-0 text-muted">No dated transactions</div>
-          ) : (
-            periods.map((period) => {
-              const isActive = value?.year === period.year && value?.month === period.month;
-              return (
-                <div
-                  key={`${period.year}-${period.month}`}
-                  role="option"
-                  tabIndex={0}
-                  aria-selected={isActive}
-                  onClick={() => {
-                    onChange({ year: period.year, month: period.month });
-                    setOpen(false);
-                  }}
-                  className={`app-menu-item py-0 px-1${isActive ? " bg-primary text-white" : " text-body"}`}
-                  style={{ cursor: "pointer", width: "100%", margin: 0 }}
-                >
-                  {period.label}
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
+    <Filter_Menu
+      icon={FunnelIcon}
+      label="Period"
+      title="Filter by month"
+      value={selectedValue}
+      onChange={(nextValue) => {
+        if (!nextValue) {
+          onChange(null);
+          return;
+        }
+        const [year, month] = nextValue.split("-").map(Number);
+        onChange({ year, month });
+      }}
+      options={options}
+      isOpen={isOpen}
+      setIsOpen={setIsOpen}
+      showHelp={false}
+    />
   );
 }
 
@@ -507,7 +462,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
       <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
           {loading && (
             <div className="d-flex justify-content-center py-1">
-              <div className="spinner-border spinner-border-sm text-primary" role="status" />
+              <LoadingSpinner label="Loading client activity" size="sm" />
             </div>
           )}
 
@@ -550,7 +505,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                   {expandedId === tx.id && (
                     <div className="pb-0 px-1">
                       {(items[tx.id] || []).length === 0 ? (
-                        <div className="ui-small-muted">No items found</div>
+                        <EmptyState title="No items found" />
                       ) : (
                         <table className="mb-0 table table-borderless table-sm">
                           <tbody>
@@ -599,7 +554,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                         <div className="ui-small-muted">{formatDate(order.created_at)}</div>
                       </div>
                       <div className="ui-flex-center-gap-2">
-                        <span className={`badge ${PORTAL_STATUS_CLASSES[order.status] || "bg-secondary-subtle text-secondary"}`}>{PORTAL_STATUS_LABELS[order.status] || order.status || "Payment Pending"}</span>
+                        <Badge_Status status={order.status || "payment_pending"} />
                         <span className="ui-small-muted">{expandedId === order.id ? "▲" : "▼"}</span>
                       </div>
                     </button>
@@ -623,7 +578,7 @@ function PurchaseHistoryModal({ isOpen, onClose, client, currentUser, appSetting
                         </div>
                       </div>
                       {(portalItems[order.id] || []).length === 0 ? (
-                        <div className="ui-small-muted">No items found</div>
+                        <EmptyState title="No items found" />
                       ) : (
                         <table className="mb-0 table table-borderless table-sm">
                           <tbody>
@@ -855,7 +810,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
 
           {/* ─── 8 EDITABLE FORM FIELDS ──────────────────────────────────── */}
           <div className="form-floating ui-form-floating-mb2">
-            <input type="text" id="dc_name" name="name" value={formData.name} onChange={handleChange} className={`form-control form-control-sm ${fieldErrors.name ? "is-invalid" : ""}`} placeholder="Name" required />
+            <InputText id="dc_name" name="name" value={formData.name} onChange={handleChange} className={`form-control form-control-sm ${fieldErrors.name ? "is-invalid" : ""}`} placeholder="Name" required />
             <label htmlFor="dc_name">Name *</label>
             {fieldErrors.name && <div className="invalid-feedback">{fieldErrors.name}</div>}
           </div>
@@ -885,7 +840,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
                       ) : (
                         memberships.map((membership) => (
                           <label key={membership.id} className="align-items-start d-flex gap-2">
-                            <input type="checkbox" checked={formData.membership_ids.includes(membership.id)} onChange={() => toggleMembership(membership.id)} />
+                            <InputCheckbox checked={formData.membership_ids.includes(membership.id)} onChange={() => toggleMembership(membership.id)} />
                             <span className="small">
                               <span className="fw-semibold">{membership.name}</span>
                               <span className="text-muted"> {`- $${Number(membership.price || 0).toFixed(2)} / ${membership.billing_frequency || "monthly"}`}</span>
@@ -898,19 +853,19 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="number" id="dc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control ui-control-sm" placeholder="0" />
+                    <InputNumber id="dc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control ui-control-sm" placeholder="0" />
                     <label htmlFor="dc_points">Points</label>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="date" id="dc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control ui-control-sm" placeholder="Member Since" />
+                    <InputDate id="dc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control ui-control-sm" placeholder="Member Since" />
                     <label htmlFor="dc_since">Member Since</label>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <input type="date" id="dc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control ui-control-sm" placeholder="Expires" />
+                    <InputDate id="dc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control ui-control-sm" placeholder="Expires" />
                     <label htmlFor="dc_expires">Expires</label>
                   </div>
                 </div>
@@ -933,12 +888,12 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             </div>
           )}
           <div className="form-floating ui-form-floating-mb2">
-            <textarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Address" />
+            <InputTextarea id="dc_address" name="address" value={formData.address} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Address" />
             <label htmlFor="dc_address">Address</label>
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <textarea id="dc_notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
+            <InputTextarea id="dc_notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
             <label htmlFor="dc_notes">Notes</label>
           </div>
         </div>

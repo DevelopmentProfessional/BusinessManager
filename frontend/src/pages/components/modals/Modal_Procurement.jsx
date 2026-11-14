@@ -2,6 +2,7 @@
  * Procurement order management — embedded in supplier accordion (Inventory → Suppliers).
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { InputNumber, InputTextarea, InputDate } from "../Inputs";
 import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "@heroicons/react/24/outline";
 import api, { inventoryAPI, documentsAPI } from "../../../services/api";
 import { formatCurrency } from "../../../utils/formatters";
@@ -203,7 +204,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
       </div>
       <div className="flex-grow-1 min-h-0 overflow-auto pe-1">
         <div className="form-floating ui-form-floating-mb2">
-          <input
+          <InputDate
             type="date"
             id={`po_expected_delivery_${supplierId}`}
             className="form-control ui-control-sm"
@@ -241,10 +242,10 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                     />
                   </td>
                   <td>
-                    <input type="number" min="1" className="form-control ui-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
+                    <InputNumber min="1" className="form-control ui-control-sm" value={item.quantity_ordered} onChange={(e) => handleLineItemChange(idx, "quantity_ordered", e.target.value)} />
                   </td>
                   <td>
-                    <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
+                    <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
                   </td>
                   <td className="fw-medium small text-end">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
                   <td>
@@ -270,7 +271,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                   Import tax
                 </td>
                 <td>
-                  <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
+                  <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
                 </td>
                 <td colSpan={2} />
               </tr>
@@ -279,7 +280,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
                   Shipping
                 </td>
                 <td>
-                  <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
+                  <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
                 </td>
                 <td colSpan={2} />
               </tr>
@@ -300,7 +301,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
         </button>
 
         <div className="form-floating ui-form-floating-mb2">
-          <textarea className="form-control ui-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
+          <InputTextarea className="form-control ui-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
           <label htmlFor={`po_notes_${supplierId}`}>Notes</label>
         </div>
       </div>

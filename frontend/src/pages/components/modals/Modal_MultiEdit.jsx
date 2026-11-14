@@ -22,11 +22,13 @@
  *   saving          : bool
  */
 import React, { useState, useEffect, useMemo } from "react";
+import { InputNumber, InputText } from "../Inputs";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { ErrorState } from "../feedback";
 
 export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], selectedItems = [], onSave, saving = false }) {
   const [formData, setFormData] = useState({});
@@ -119,7 +121,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
           <div className="component-body-inner">
             <p className="mb-3 small text-muted">Leave a field blank to keep it unchanged for all selected items. Only filled-in fields will be applied.</p>
 
-            {saveError && <div className="alert alert-danger py-0 small">{saveError}</div>}
+            {saveError && <ErrorState description={saveError} className="mb-2" />}
 
             {fields.map((field) => {
               const config = fieldConfig[field.key];
@@ -145,7 +147,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                       ]}
                     />
                   ) : field.type === "number" ? (
-                    <input
+                    <InputNumber
                       type="number"
                       className="form-control ui-control-sm"
                       value={formData[field.key] ?? ""}
@@ -156,7 +158,7 @@ export default function Modal_MultiEdit({ isOpen, onClose, title, fields = [], s
                       step={field.step}
                     />
                   ) : (
-                    <input
+                    <InputText
                       type="text"
                       className="form-control ui-control-sm"
                       value={formData[field.key] ?? ""}

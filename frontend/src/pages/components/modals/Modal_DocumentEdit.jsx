@@ -28,6 +28,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { InputDate, InputTextarea, InputText } from "../Inputs";
 import { documentsAPI, documentCategoriesAPI, documentStatusesAPI, employeesAPI, documentTagsAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import Modal from "./Modal";
@@ -367,7 +368,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
 
               {/* ── Description ──────────────────────────────────────────────────── */}
               <div className="form-floating mb-3">
-                <textarea id="doc_description" rows={6} className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+                <InputTextarea id="doc_description" rows={6} className="ui-description-textarea form-control form-control-sm" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
                 <label htmlFor="doc_description">Description</label>
               </div>
 
@@ -388,7 +389,7 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                   placeholder="Select owner"
                 />
                 <div className="form-floating">
-                  <input type="date" id="doc_review_date" className="form-control ui-control-sm" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} placeholder="Review Date" />
+                  <InputDate id="doc_review_date" className="form-control ui-control-sm" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} placeholder="Review Date" />
                   <label htmlFor="doc_review_date">Review Date</label>
                 </div>
               </div>
@@ -434,9 +435,8 @@ export default function Modal_Edit_Document({ isOpen, onClose, document, onSave 
                 <div className="relative">
                   <div className="d-flex align-items-center gap-2">
                     <div className="flex-1 form-floating position-relative">
-                      <input
+                      <InputText
                         ref={tagInputRef}
-                        type="text"
                         id="doc_tag_search"
                         value={tagSearch}
                         onChange={(e) => handleTagSearchChange(e.target.value)}

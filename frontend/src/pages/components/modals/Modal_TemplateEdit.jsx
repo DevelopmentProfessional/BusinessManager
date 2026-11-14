@@ -1,4 +1,5 @@
 import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
+import { InputTextarea, InputText } from "../Inputs";
 import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon, MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "../utils/Utils_TemplateVariables";
 import { documentsAPI } from "../../../services/api";
@@ -242,7 +243,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* ── Zoom Range Bar ─────────────────────────────────────────────────── */}
         <div className="align-items-center bg-gray-50 border-bottom border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 gap-2 px-3 py-1 w-100">
           <MagnifyingGlassIcon className="flex-shrink-0 text-muted ui-icon-4" title="Zoom" />
-          <input
+          <InputText
             type="range"
             min="0.5"
             max="2"
@@ -362,7 +363,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0 w-100">
             <div className="template-editor-meta-group ui-flex-center-gap-1">
               <div className="template-editor-meta-controls ui-flex-center-gap-1">
-                <input
+                <InputText
                   type="text"
                   value={name}
                   onChange={(e) => {
@@ -380,7 +381,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                   {showDescriptionHelp && (
                     <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ width: "280px", zIndex: 100 }}>
                       <label className="form-label ui-form-label-xs">Template description</label>
-                      <textarea
+                      <InputTextarea
                         value={description}
                         onChange={(e) => {
                           setDescription(e.target.value);
@@ -403,6 +404,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 }}
                 className="form-select ui-control-sm"
                 style={{ width: "120px" }}
+                floatingLabel="Template type"
                 options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
               />
 

@@ -8,9 +8,11 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "../dropdowns/Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "../dropdowns/Filter_SourceToggle";
-import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon, UserIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputNumber, InputDate, InputText } from "../Inputs";
+import Badge_Status from "../badges/Badge_Status";
 
 const STATUS_LABELS = {
   payment_pending: "Payment Pending",
@@ -114,10 +116,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
             {/* Client dropup search */}
             <div className="ui-pos-rel" ref={clientRef}>
               <div className="input-group input-group-sm">
-                <span className="input-group-text">
-                  <UserIcon style={{ width: 14, height: 14 }} />
-                </span>
-                <input
+                <InputText
                   type="text"
                   value={clientSearch || local.clientQuery || ""}
                   onChange={(e) => {
@@ -171,10 +170,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
             {/* Employee dropup search */}
             <div className="ui-pos-rel" ref={employeeRef}>
               <div className="input-group input-group-sm">
-                <span className="input-group-text">
-                  <UserCircleIcon style={{ width: 14, height: 14 }} />
-                </span>
-                <input
+                <InputText
                   type="text"
                   value={employeeSearch || local.employeeQuery || ""}
                   onChange={(e) => {
@@ -241,10 +237,10 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
               className="form-select form-select-sm rounded-pill"
               options={[{ value: "", label: "All statuses" }, ...Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => ({ value: statusValue, label: statusLabel }))]}
             />
-            <input type="number" min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="form-control form-control-sm rounded-pill" aria-label="Minimum total" />
-            <input type="number" min="0" step="0.01" value={local.maxPrice} onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))} placeholder="Max $" className="form-control form-control-sm rounded-pill" aria-label="Maximum total" />
-            <input type="date" value={local.startDate} onChange={(e) => setLocal((prev) => ({ ...prev, startDate: e.target.value }))} className="form-control form-control-sm rounded-pill" aria-label="From date" />
-            <input type="date" value={local.endDate} onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))} className="form-control form-control-sm rounded-pill" aria-label="To date" />
+            <InputNumber min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="rounded-pill" aria-label="Minimum total" />
+            <InputNumber min="0" step="0.01" value={local.maxPrice} onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))} placeholder="Max $" className="rounded-pill" aria-label="Maximum total" />
+            <InputDate value={local.startDate} onChange={(e) => setLocal((prev) => ({ ...prev, startDate: e.target.value }))} className="rounded-pill" aria-label="From date" />
+            <InputDate value={local.endDate} onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))} className="rounded-pill" aria-label="To date" />
           </div>
 
           <div className="align-items-center d-flex gap-1 pt-1">
@@ -362,7 +358,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                               {new Date(sale.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} {new Date(sale.date).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                             <span className={`badge rounded-pill ${sale.source === "portal" ? "text-bg-primary" : "text-bg-info"}`}>{sale.source === "portal" ? "Portal" : "POS"}</span>
-                            {effectiveStatus && <span className="badge rounded-pill text-bg-secondary">{STATUS_LABELS[effectiveStatus] || effectiveStatus}</span>}
+                            {effectiveStatus && <Badge_Status status={effectiveStatus} />}
                           </div>
                           <div className="align-items-center d-flex flex-wrap gap-1">
                             {sale.clientName && <span className="fw-medium small text-truncate">{sale.clientName}</span>}

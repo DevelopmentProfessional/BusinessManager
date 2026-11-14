@@ -74,10 +74,11 @@ import Modal_Schedule_Settings from "./components/modals/Modal_Schedule_Settings
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Widget_Attendance from "./components/widgets/Widget_Attendance";
 import useDarkMode from "../services/useDarkMode";
-import Dropup_ScheduleFilter from "./components/dropdowns/Dropup_ScheduleFilter";
+import Dropup_Filter from "./components/dropdowns/Dropup_Filter";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_SettingsSchedule from "./components/modals/Modal_SettingsSchedule";
 import Modal_Schedule_Overlaps from "./components/modals/Modal_Schedule_Overlaps";
+import { LoadingSpinner } from "./components/feedback";
 
 // SVG icon wrappers for schedule view buttons
 const MonthViewIcon = ({ className, size = 16 }) => (
@@ -990,7 +991,11 @@ export default function Schedule() {
 
   // ─── 18 RENDER ───────────────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-1">{S.loading}</div>;
+    return (
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading schedule" size="lg" />
+      </div>
+    );
   }
 
   return (
@@ -1645,12 +1650,9 @@ export default function Schedule() {
           />
         )}
 
-        <Dropup_ScheduleFilter
+        <Dropup_Filter
           isOpen={isFilterOpen}
           onClose={() => setIsFilterOpen(false)}
-          employees={employees}
-          clients={clients}
-          services={services}
           filters={filters}
           onApply={(nextFilters) => setFilters({ ...filters, ...nextFilters })}
           onClear={() =>
@@ -1664,6 +1666,34 @@ export default function Schedule() {
               oooEmployeeIds: [],
             })
           }
+          sections={[
+            {
+              key: "employeeIds",
+              label: "Employees",
+              options: employees.map((employee) => ({ value: employee.id, label: `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username })),
+            },
+            {
+              key: "clientIds",
+              label: "Clients",
+              options: clients.map((client) => ({ value: client.id, label: client.name })),
+            },
+            {
+              key: "serviceIds",
+              label: "Services",
+              options: services.map((service) => ({ value: service.id, label: service.name })),
+            },
+            {
+              key: "showOutOfOffice",
+              type: "checkbox",
+              label: "Show Out of Office",
+            },
+            {
+              key: "oooEmployeeIds",
+              label: "Out of Office Employees",
+              visibleWhen: { key: "showOutOfOffice", value: true },
+              options: employees.map((employee) => ({ value: employee.id, label: `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.username })),
+            },
+          ]}
         />
       </Gate_Permission>
 

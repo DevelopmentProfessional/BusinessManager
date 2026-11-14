@@ -82,6 +82,7 @@ import Modal_Reports_SaveFilter from "./components/modals/Modal_Reports_SaveFilt
 import Modal_Reports_FinancialDashboard from "./components/modals/Modal_Reports_FinancialDashboard";
 import Modal_Reports_Settings from "./components/modals/Modal_Reports_Settings";
 import PageTableFooter from "./components/footers/Page_TableFooter";
+import { LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -1161,8 +1162,8 @@ export default function Reports() {
 
   if (loading && !selectedReport) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading reports" size="lg" />
       </div>
     );
   }

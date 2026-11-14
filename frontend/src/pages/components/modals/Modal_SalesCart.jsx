@@ -22,6 +22,7 @@
  * ============================================================
  */
 import React, { useEffect, useRef, useState } from "react";
+import { InputNumber, InputText } from "../Inputs";
 import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
@@ -285,7 +286,7 @@ export default function Modal_Cart_Sales({
               ) : (
                 <div ref={clientSearchAnchorRef}>
                   <div className="flex gap-1">
-                    <input
+                    <InputText
                       type="text"
                       placeholder="Search customers..."
                       value={clientSearch}
@@ -359,7 +360,7 @@ export default function Modal_Cart_Sales({
                   <span className="dark:text-gray-400 text-gray-500">Tip</span>
                   <div className="ui-flex-items-gap-1">
                     <span className="dark:text-gray-500 text-gray-400 text-sm">$</span>
-                    <input
+                    <InputNumber
                       type="number"
                       min="0"
                       step="0.01"

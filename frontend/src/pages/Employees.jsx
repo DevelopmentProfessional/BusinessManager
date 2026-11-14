@@ -59,7 +59,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
-import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import api, { employeesAPI, rolesAPI, employeeStatusesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, insurancePlansAPI, payrollAPI, chatAPI, settingsAPI, departmentsAPI } from "../services/api";
@@ -83,6 +83,7 @@ import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import { EmptyState, LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 
 export default function Employees() {
@@ -787,7 +788,7 @@ export default function Employees() {
           ...r,
           _requestType: r.leave_type === "vacation" ? "leave_vacation" : "leave_sick",
           _typeLabel: r.leave_type === "vacation" ? "Leave (Vacation)" : "Leave (Sick)",
-          _dateInfo: `${r.start_date} → ${r.end_date}${r.days_requested ? ` (${r.days_requested}d)` : ""}`,
+          _dateInfo: `${r.start_date} â†’ ${r.end_date}${r.days_requested ? ` (${r.days_requested}d)` : ""}`,
         }));
       };
 
@@ -970,7 +971,11 @@ export default function Employees() {
   // Helper function to check if employee has been paid for current pay period
   // ─── [21] LOADING GUARD ─────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-1">{S.loading}</div>;
+    return (
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading employees" size="lg" />
+      </div>
+    );
   }
 
   // ─── [22] RENDER / JSX ──────────────────────────────────────────────────────
@@ -989,7 +994,7 @@ export default function Employees() {
 
       {/* Main upside-down table container */}
       <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
-        {/* Container_Scrollable rows – grow upwards from bottom */}
+        {/* Container_Scrollable rows â€“ grow upwards from bottom */}
         <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {sortedAndFiltered.length > 0 ? (
             <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
@@ -1081,7 +1086,9 @@ export default function Employees() {
               </tbody>
             </table>
           ) : (
-            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+              <EmptyState title="No employees found" description={S.noResults} className="justify-content-center" />
+            </div>
           )}
         </div>
 
@@ -1118,7 +1125,7 @@ export default function Employees() {
           onSort={handleSort}
         />
 
-        {/* Fixed bottom – headers + controls */}
+        {/* Fixed bottom â€“ headers + controls */}
         <PageTableFooter
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
@@ -1169,7 +1176,7 @@ export default function Employees() {
           )}
 
           {/* Role Filter */}
-          <Dropdown_Filter
+          <Filter_Menu
             icon={UserGroupIcon}
             label="Role"
             title="Filter by role"
@@ -1183,7 +1190,7 @@ export default function Employees() {
           />
 
           {/* Status Filter */}
-          <Dropdown_Filter
+          <Filter_Menu
             icon={CheckCircleIcon}
             label="Status"
             title="Filter by status"
@@ -1353,7 +1360,7 @@ export default function Employees() {
                       {apt.client_name} - {apt.service_name}
                     </div>
                     <div className="text-gray-600 text-sm">
-                      {apt.employee_name} • {formatDateTime(apt.appointment_date)} • {apt.status}
+                      {apt.employee_name} â€¢ {formatDateTime(apt.appointment_date)} â€¢ {apt.status}
                     </div>
                   </div>
                 ))}

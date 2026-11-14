@@ -29,6 +29,7 @@ import api from "../../../services/api";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
+import { LoadingSpinner } from "../feedback";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
 export default function Modal_Signature({ isOpen, onClose, userId }) {
@@ -88,10 +89,8 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding>
       <div className="ui-component-shell">
-        <div className="component-header">
+        <div className="app-modal-header component-header">
           <div className="component-header-left">Signature</div>
-          <div className="component-header-center"></div>
-          <div className="component-header-right"></div>
         </div>
 
         <div className="component-body">
@@ -100,9 +99,7 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
 
             {signatureLoading ? (
               <div className="py-1 text-center">
-                <div className="mb-2 spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
+                <LoadingSpinner label="Loading signature" />
                 <div className="text-muted">Loading signature...</div>
               </div>
             ) : showSignaturePad ? (
@@ -119,7 +116,7 @@ export default function Modal_Signature({ isOpen, onClose, userId }) {
           </div>
         </div>
 
-        <div className="component-footer">
+        <div className="app-modal-footer component-footer">
           <Footer_Actions
             start={!showSignaturePad && savedSignature ? <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setShowSignaturePad(true)} className="btn-outline-primary" title="Draw a new signature" /> : null}
             center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}

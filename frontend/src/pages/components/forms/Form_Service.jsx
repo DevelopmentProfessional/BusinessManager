@@ -44,7 +44,7 @@ import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serv
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import FormControl from "../fields/FormControl";
+import { InputText, InputNumber, InputTextarea, InputCheckbox } from "../Inputs";
 import Table from "../tables/Table";
 import useStore from "../../../services/useStore";
 
@@ -480,7 +480,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
       {/* Camera modal */}
       {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onClose={() => setIsCameraOpen(false)} />}
 
-      {/* ── Tab content area – no scroll here, each tab manages its own ── */}
+      {/* ── Tab content area â€“ no scroll here, each tab manages its own ── */}
       <div className="d-flex flex-column flex-grow-1 overflow-hidden">
         {/* Tab error */}
         {tabError && <div className="alert alert-danger flex-shrink-0 mb-0 mt-2 mx-3 px-0 py-1 small">{tabError}</div>}
@@ -547,7 +547,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                         )}
                         {addImageMode === "url" && (
                           <div className="d-flex gap-1">
-                            <input type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
+                            <InputText type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
                             <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">
                               OK
                             </button>
@@ -560,11 +560,11 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   {/* Core fields on the right */}
                   <div className="d-flex flex-column flex-grow-1 gap-1">
                     <div className="form-floating">
-                      <FormControl type="text" id="name" name="name" required value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Service Name" />
+                      <InputText id="name" name="name" required value={formData.name} onChange={handleChange} placeholder="Service Name" />
                       <label htmlFor="name">Name *</label>
                     </div>
                     <div className="form-floating">
-                      <FormControl type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control ui-control-sm" placeholder="Category" list="service-category-options" />
+                      <InputText id="category" name="category" value={formData.category} onChange={handleChange} placeholder="Category" list="service-category-options" />
                       <datalist id="service-category-options">
                         {categoryOptions.map((cat) => (
                           <option key={cat.id} value={cat.name} />
@@ -573,11 +573,11 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       <label htmlFor="category">Category</label>
                     </div>
                     <div className="form-floating">
-                      <FormControl type="number" id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="0.00" />
+                      <InputNumber id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} placeholder="0.00" />
                       <label htmlFor="price">Price *</label>
                     </div>
                     <div className="form-floating">
-                      <FormControl type="number" id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} className="form-control ui-control-sm" placeholder="60" />
+                      <InputNumber id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} placeholder="60" />
                       <label htmlFor="duration_minutes">Duration (min) *</label>
                     </div>
                   </div>
@@ -585,7 +585,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
                 {/* Description at the bottom */}
                 <div className="form-floating ui-form-floating-mb2">
-                  <FormControl as="textarea" id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
+                  <InputTextarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea" placeholder="Description" />
                   <label htmlFor="description">Description</label>
                 </div>
 
@@ -617,13 +617,13 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                           {serviceAddons.map((addon, index) => (
                             <tr key={addon.id || index} className="align-middle">
                               <td>
-                                <input type="text" className="form-control ui-control-sm" value={addon.name} onChange={(e) => updateServiceAddonRow(index, "name", e.target.value)} placeholder="e.g. Broken nail" />
+                                <InputText className="form-control ui-control-sm" value={addon.name} onChange={(e) => updateServiceAddonRow(index, "name", e.target.value)} placeholder="e.g. Broken nail" />
                               </td>
                               <td>
-                                <input type="number" step="0.01" className="form-control ui-control-sm" value={addon.price_delta} onChange={(e) => updateServiceAddonRow(index, "price_delta", e.target.value)} />
+                                <InputNumber step="0.01" className="form-control ui-control-sm" value={addon.price_delta} onChange={(e) => updateServiceAddonRow(index, "price_delta", e.target.value)} />
                               </td>
                               <td>
-                                <input type="number" min="0" step="1" className="form-control ui-control-sm" value={addon.default_quantity} onChange={(e) => updateServiceAddonRow(index, "default_quantity", e.target.value)} />
+                                <InputNumber min="0" step="1" className="form-control ui-control-sm" value={addon.default_quantity} onChange={(e) => updateServiceAddonRow(index, "default_quantity", e.target.value)} />
                               </td>
                               <td>
                                 <Dropdown_Custom
@@ -636,13 +636,13 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                 />
                               </td>
                               <td>
-                                <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={addon.consume_quantity_per_unit || 0} onChange={(e) => updateServiceAddonRow(index, "consume_quantity_per_unit", e.target.value)} />
+                                <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={addon.consume_quantity_per_unit || 0} onChange={(e) => updateServiceAddonRow(index, "consume_quantity_per_unit", e.target.value)} />
                               </td>
                               <td className="text-center">
-                                <input type="checkbox" checked={addon.is_billable !== false} onChange={(e) => updateServiceAddonRow(index, "is_billable", e.target.checked)} />
+                                <InputCheckbox checked={addon.is_billable !== false} onChange={(e) => updateServiceAddonRow(index, "is_billable", e.target.checked)} />
                               </td>
                               <td className="text-center">
-                                <input type="checkbox" checked={Boolean(addon.consume_inventory)} onChange={(e) => updateServiceAddonRow(index, "consume_inventory", e.target.checked)} />
+                                <InputCheckbox checked={Boolean(addon.consume_inventory)} onChange={(e) => updateServiceAddonRow(index, "consume_inventory", e.target.checked)} />
                               </td>
                               <td>
                                 <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => removeServiceAddonRow(index)}>
@@ -665,7 +665,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   <div className="align-items-center bg-light border-bottom d-flex dark:bg-gray-800 justify-content-between px-1 py-0 rounded-top">
                     <span className="dark:text-gray-200 fw-semibold text-gray-800">Recipe / Production</span>
                     <div className="form-check form-switch mb-0">
-                      <input className="form-check-input" type="checkbox" id="recipe-toggle" checked={recipe?.is_produced ?? false} onChange={(e) => handleRecipeToggle(e.target.checked)} />
+                      <InputCheckbox id="recipe-toggle" checked={recipe?.is_produced ?? false} onChange={(e) => handleRecipeToggle(e.target.checked)} />
                       <label className="form-check-label small text-muted" htmlFor="recipe-toggle">
                         {recipe?.is_produced ? "Manufactured" : "Purchased / Delivered"}
                       </label>
@@ -678,11 +678,11 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       <div className="d-flex gap-2 mb-3">
                         <div className="flex-grow-1">
                           <label className="form-label mb-1 small text-muted">Batch Size (units)</label>
-                          <input type="number" min="1" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_size ?? 1} onBlur={(e) => handleRecipeField("batch_size", e.target.value)} />
+                          <InputNumber min="1" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_size ?? 1} onBlur={(e) => handleRecipeField("batch_size", e.target.value)} />
                         </div>
                         <div className="flex-grow-1">
                           <label className="form-label mb-1 small text-muted">Batch Duration (min)</label>
-                          <input type="number" min="0" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleRecipeField("batch_duration_minutes", e.target.value)} />
+                          <InputNumber min="0" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleRecipeField("batch_duration_minutes", e.target.value)} />
                         </div>
                       </div>
 
@@ -706,7 +706,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                     {inventoryName(r.inventory_id)}
                                   </td>
                                   <td>
-                                    <input type="number" min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
+                                    <InputNumber min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
                                   </td>
                                 </tr>
                               ))}
@@ -735,7 +735,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                     {inventoryName(a.inventory_id)}
                                   </td>
                                   <td>
-                                    <input type="number" min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} style={{ width: 80 }} />
+                                    <InputNumber min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} style={{ width: 80 }} />
                                   </td>
                                 </tr>
                               ))}
@@ -784,10 +784,10 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                           {inventoryName(r.inventory_id)}
                         </td>
                         <td>
-                          <input type="number" min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
+                          <InputNumber min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
                         </td>
                         <td>
-                          <input type="number" min="0" max="100" step="0.1" className="form-control ui-control-sm" defaultValue={r.consumption_rate_pct ?? ""} onBlur={(e) => handleUpdateResourceRate(r.id, e.target.value)} placeholder="—" style={{ width: 72 }} />
+                          <InputNumber min="0" max="100" step="0.1" className="form-control ui-control-sm" defaultValue={r.consumption_rate_pct ?? ""} onBlur={(e) => handleUpdateResourceRate(r.id, e.target.value)} placeholder="—" style={{ width: 72 }} />
                         </td>
                       </tr>
                     ))}
@@ -810,8 +810,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   createButtonTitle="Add item"
                   className="flex-grow-1"
                 />
-                <input type="number" min="0.01" step="0.01" className="form-control ui-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
-                <input type="number" min="0" max="100" step="0.1" className="form-control ui-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
+                <InputNumber min="0.01" step="0.01" className="form-control ui-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
+                <InputNumber min="0" max="100" step="0.1" className="form-control ui-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
                 <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddResource}>
                   <PlusIcon style={{ width: 18, height: 18 }} />
                 </button>
@@ -852,7 +852,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                           {inventoryName(a.inventory_id)}
                         </td>
                         <td>
-                          <input type="number" min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} placeholder="—" style={{ width: 80 }} />
+                          <InputNumber min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} placeholder="—" style={{ width: 80 }} />
                         </td>
                       </tr>
                     ))}

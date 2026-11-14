@@ -26,12 +26,14 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { InputDate, InputNumber, InputTextarea } from "../Inputs";
 import { payrollAPI } from "../../../services/api";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { ErrorState, SuccessMessage } from "../feedback";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -309,8 +311,8 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
 
         <div className="component-body">
           <div className="component-body-inner">
-              {payError && <div className="alert alert-danger mb-2 px-0 py-1 small">{payError}</div>}
-              {paySuccess && <div className="alert alert-success mb-2 px-0 py-1 small">{paySuccess}</div>}
+              {payError && <ErrorState description={payError} className="mb-2" />}
+              {paySuccess && <SuccessMessage description={paySuccess} className="mb-2" />}
 
               <div className="mb-2 ui-small-muted">
                 Type: <strong style={{ textTransform: "capitalize" }}>{normalizedEmploymentType || "salary"}</strong>
@@ -382,17 +384,17 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
               ) : normalizedPayFrequency === "daily" ? (
                 <div className="mb-2">
                   <label className="form-label ui-form-label-sm">Payment Date</label>
-                  <input type="date" className="form-control ui-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value, pay_period_end: e.target.value }))} required />
+                  <InputDate className="form-control ui-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value, pay_period_end: e.target.value }))} required />
                 </div>
               ) : (
                 <>
                   <div className="mb-2">
                     <label className="form-label ui-form-label-sm">Pay Period Start</label>
-                    <input type="date" className="form-control ui-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value }))} required />
+                    <InputDate className="form-control ui-control-sm" value={payForm.pay_period_start} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_start: e.target.value }))} required />
                   </div>
                   <div className="mb-2">
                     <label className="form-label ui-form-label-sm">Pay Period End</label>
-                    <input type="date" className="form-control ui-control-sm" value={payForm.pay_period_end} min={payForm.pay_period_start || undefined} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_end: e.target.value }))} required />
+                    <InputDate className="form-control ui-control-sm" value={payForm.pay_period_end} min={payForm.pay_period_start || undefined} onChange={(e) => setPayForm((f) => ({ ...f, pay_period_end: e.target.value }))} required />
                   </div>
                 </>
               )}
@@ -400,30 +402,30 @@ export default function Modal_Pay_Employee({ isOpen, onClose, employee, onPaySuc
               {usesCompensationPlan ? (
                 <div className="mb-2">
                   <label className="form-label ui-form-label-sm">Gross Amount</label>
-                  <input type="number" className="form-control ui-control-sm" value={compensationPreview?.gross_amount ?? ""} readOnly />
+                  <InputNumber className="form-control ui-control-sm" value={compensationPreview?.gross_amount ?? ""} readOnly />
                 </div>
               ) : normalizedEmploymentType === "hourly" ? (
                 <div className="mb-2">
                   <label className="form-label ui-form-label-sm">Hours Worked</label>
-                  <input type="number" className="form-control ui-control-sm" placeholder="0" min="0" step="0.25" value={payForm.hours_worked} onChange={(e) => setPayForm((f) => ({ ...f, hours_worked: e.target.value }))} required />
+                  <InputNumber className="form-control ui-control-sm" placeholder="0" min="0" step="0.25" value={payForm.hours_worked} onChange={(e) => setPayForm((f) => ({ ...f, hours_worked: e.target.value }))} required />
                   {employee.hourly_rate && <div className="mt-1 ui-small-muted">Rate: ${employee.hourly_rate}/hr</div>}
                 </div>
               ) : (
                 <div className="mb-2">
                   <label className="form-label ui-form-label-sm">Gross Amount ($ {salaryFrequencyLabel(normalizedPayFrequency)})</label>
-                  <input type="number" className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.gross_amount} onChange={(e) => setPayForm((f) => ({ ...f, gross_amount: e.target.value }))} />
+                  <InputNumber className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.gross_amount} onChange={(e) => setPayForm((f) => ({ ...f, gross_amount: e.target.value }))} />
                   <div className="mt-1 ui-small-muted">Pre-filled from employee salary using the selected pay frequency.</div>
                 </div>
               )}
 
               <div className="mb-2">
                 <label className="form-label ui-form-label-sm">Other Deductions ($)</label>
-                <input type="number" className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.other_deductions} onChange={(e) => setPayForm((f) => ({ ...f, other_deductions: e.target.value }))} />
+                <InputNumber className="form-control ui-control-sm" placeholder="0.00" min="0" step="0.01" value={payForm.other_deductions} onChange={(e) => setPayForm((f) => ({ ...f, other_deductions: e.target.value }))} />
               </div>
 
               <div className="mb-0">
                 <label className="form-label ui-form-label-sm">Notes (optional)</label>
-                <textarea className="form-control ui-control-sm" rows="2" value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
+                <InputTextarea className="form-control ui-control-sm" rows="2" value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}

@@ -4,6 +4,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
+import { InputText } from "../Inputs";
 
 function getDropdownPortalHost() {
   if (typeof document === "undefined" || !document.body) return null;
@@ -186,9 +187,8 @@ export default function Dropdown_Custom({
     >
       {searchable && !footerSearch ? (
         <div className="relative">
-          <input
+          <InputText
             id={id || undefined}
-            type="text"
             value={isOpen ? searchTerm : displayValue}
             onChange={(e) => {
               if (isOpen) {

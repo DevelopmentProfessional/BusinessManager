@@ -106,9 +106,9 @@
   --app-dropdown-border-radius: 0.75rem;
   --app-dropdown-item-height: 2rem;
   --app-dropdown-item-padding-x: 0.75rem;
-  --app-dropup-z-index: 900;
-  --app-inner-dropdown-z-index: 1300;
-  --app-inner-popover-z-index: 1400;
+  --app-dropup-z-index: 1600;
+  --app-inner-dropdown-z-index: 1700;
+  --app-inner-popover-z-index: 1800;
   --app-dropdown-font-size: var(--app-text-size-small, 0.75rem);
 
   /* Table Footers & Navigation Reserves */
@@ -343,6 +343,37 @@ table::-webkit-scrollbar,
   padding: 0.25rem;
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.12);
   z-index: var(--app-dropup-z-index) !important;
+}
+
+.app-accordion {
+  border-color: var(--bs-border-color) !important;
+  border-radius: var(--app-card-border-radius);
+  background: var(--bs-body-bg);
+}
+
+.app-accordion-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.5rem;
+}
+
+.app-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-accordion-summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 0.5rem;
+  transition: transform 0.15s ease;
+}
+
+.app-accordion[open] > .app-accordion-summary::before {
+  transform: rotate(90deg);
+}
+
+.app-accordion-body {
+  padding: 0 0.5rem 0.5rem;
 }
 
 .app-dropdown-portal-menu {
@@ -904,6 +935,16 @@ table::-webkit-scrollbar,
   overscroll-behavior-y: contain !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+}
+
+/* Modal bodies own the desktop scroll surface; nested shells must not trap it. */
+.app-modal-body > .ui-page-shell,
+.app-modal-content > .ui-page-shell {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 100% !important;
+  overflow: visible !important;
 }
 
 .app-modal-body::-webkit-scrollbar,
@@ -1886,6 +1927,120 @@ div[role="combobox"] {
   font-size: var(--app-input-font-size) !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+}
+
+.app-input-color {
+  width: 2.5rem;
+  height: var(--app-input-height);
+  min-height: var(--app-input-height);
+  padding: 0.2rem;
+  border: 1px solid var(--app-input-border-color, #ced4da);
+  border-radius: var(--app-input-radius, 0.375rem);
+  background: var(--app-input-bg, #fff);
+  cursor: pointer;
+}
+
+.dark .app-input-color {
+  border-color: var(--app-input-border-color-dark, #4b5563);
+  background: var(--app-input-bg-dark, #1f2937);
+}
+
+.app-loading-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-loading-spinner--sm .spinner-border {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.14em;
+}
+
+.app-loading-spinner--lg .spinner-border {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.app-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bs-body-bg, #fff) 78%, transparent);
+}
+
+.app-image-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bs-secondary-bg, #e9ecef);
+}
+
+.app-image-preview__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.app-state-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.5rem;
+  background: var(--bs-body-bg, #fff);
+}
+
+.app-state-message__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+}
+
+.app-state-message__content {
+  min-width: 0;
+}
+
+.app-state-message__title {
+  font-weight: 600;
+}
+
+.app-state-message__description {
+  margin-top: 0.2rem;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.875rem;
+}
+
+.app-state-message__action {
+  margin-top: 0.65rem;
+}
+
+.app-state-message--empty {
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.app-state-message--error {
+  border-color: var(--bs-danger-border-subtle, #f1aeb5);
+  color: var(--bs-danger-text-emphasis, #842029);
+}
+
+.app-state-message--success {
+  border-color: var(--bs-success-border-subtle, #a3cfbb);
+  color: var(--bs-success-text-emphasis, #0f5132);
+}
+
+.app-state-message--warning {
+  border-color: var(--bs-warning-border-subtle, #ffda6a);
+  color: var(--bs-warning-text-emphasis, #664d03);
 }
 
 /* Keep Bootstrap floating labels readable; compact global input sizing makes these overlap. */
@@ -3442,7 +3597,11 @@ textarea.form-control {
   border: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: 0.5rem;
   background-clip: padding-box;
-  z-index:900;
+  z-index: var(--app-dropup-z-index, 1600) !important;
+}
+
+.app-dropdown-portal-menu {
+  z-index: var(--app-inner-dropdown-z-index, 1700) !important;
 }
 
 .app-menu-trigger,

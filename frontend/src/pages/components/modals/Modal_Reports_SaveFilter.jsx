@@ -1,4 +1,5 @@
 import React from "react";
+import { InputText } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
@@ -26,8 +27,7 @@ export default function Modal_Reports_SaveFilter({
     >
       <div className="p-2 d-flex flex-column gap-2">
         <div className="form-floating">
-          <input
-            type="text"
+          <InputText
             id="report_filter_name_input"
             className="form-control ui-control-sm"
             value={filterName}

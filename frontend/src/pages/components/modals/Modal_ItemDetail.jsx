@@ -46,6 +46,8 @@ import Widget_Camera from "../widgets/Widget_Camera";
 import FeatureSection from "../panels/Panel_Features";
 import AssetUnitsPanel from "../panels/Panel_AssetUnits";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputText, InputNumber, InputDate, InputTextarea, InputCheckbox } from "../Inputs";
+import ImagePreview from "../media/ImagePreview";
 
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode
@@ -194,7 +196,7 @@ function ProductionRelationsPanel({ productId }) {
               <div key={r.id} style={rowStyle}>
                 <BeakerIcon style={{ width: 13, height: 13, color: "#6b7280", flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{invMap[r.resource_id]?.name || r.resource_id?.slice(0, 8)}</span>
-                <input type="number" min="0.01" step="0.01" defaultValue={r.quantity_per_batch} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity consumed per batch" />
+                <InputNumber min="0.01" step="0.01" defaultValue={r.quantity_per_batch} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity consumed per batch" />
                 <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>/ batch</span>
                 <button type="button" className={btnDangerClass} onClick={() => handleRemoveResource(r.id)} title="Remove">
                   ×
@@ -210,7 +212,7 @@ function ProductionRelationsPanel({ productId }) {
                   style={{ ...inputSm, flex: 1 }}
                   options={[{ value: "", label: "Select resource…" }, ...resourceItems.filter((i) => !resources.some((r) => r.resource_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
                 />
-                <input type="number" min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
+                <InputNumber min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddResource}>
                   <PlusIcon className="ui-icon-4" />
                   <span>Add</span>
@@ -245,9 +247,9 @@ function ProductionRelationsPanel({ productId }) {
               <div key={a.id} style={rowStyle}>
                 <WrenchScrewdriverIcon style={{ width: 13, height: 13, color: "#6b7280", flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{invMap[a.asset_id]?.name || a.asset_id?.slice(0, 8)}</span>
-                <input type="number" min="1" step="1" defaultValue={a.batch_size} onBlur={(e) => handleUpdateAsset(a.id, { batch_size: parseInt(e.target.value) || 1 })} style={{ ...inputSm, width: 55 }} title="Units produced per batch" />
+                <InputNumber min="1" step="1" defaultValue={a.batch_size} onBlur={(e) => handleUpdateAsset(a.id, { batch_size: parseInt(e.target.value) || 1 })} style={{ ...inputSm, width: 55 }} title="Units produced per batch" />
                 <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>units/batch</span>
-                <input type="number" min="0" step="1" defaultValue={a.duration_minutes ?? ""} onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })} style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
+                <InputNumber min="0" step="1" defaultValue={a.duration_minutes ?? ""} onBlur={(e) => handleUpdateAsset(a.id, { duration_minutes: e.target.value ? parseFloat(e.target.value) : null })} style={{ ...inputSm, width: 55 }} placeholder="min" title="Duration in minutes per batch" />
                 <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>min</span>
                 <button type="button" className={btnDangerClass} onClick={() => handleRemoveAsset(a.id)} title="Remove">
                   ×
@@ -263,8 +265,8 @@ function ProductionRelationsPanel({ productId }) {
                   style={{ ...inputSm, flex: "1 1 120px" }}
                   options={[{ value: "", label: "Select asset…" }, ...assetItems.filter((i) => !assets.some((a) => a.asset_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
                 />
-                <input type="number" min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
-                <input type="number" min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
+                <InputNumber min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
+                <InputNumber min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddAsset}>
                   <PlusIcon className="ui-icon-4" />
                   <span>Add</span>
@@ -430,10 +432,10 @@ function MixSetupPanel({ mixId }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--bs-border-color)" }}>
           <div>
             <div style={s.label}>Total to pick</div>
-            <input type="number" min="1" value={totalQty} onChange={(e) => setTotalQty(e.target.value)} style={{ ...s.input, width: 60 }} title="How many products the client must pick total" />
+            <InputNumber min="1" value={totalQty} onChange={(e) => setTotalQty(e.target.value)} style={{ ...s.input, width: 60 }} title="How many products the client must pick total" />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <input type="checkbox" id="mix-has-max" checked={hasMax} onChange={(e) => setHasMax(e.target.checked)} />
+            <InputCheckbox id="mix-has-max" checked={hasMax} onChange={(e) => setHasMax(e.target.checked)} />
             <label htmlFor="mix-has-max" style={{ ...s.label, fontWeight: 400, cursor: "pointer" }}>
               Max per product
             </label>
@@ -441,7 +443,7 @@ function MixSetupPanel({ mixId }) {
           {hasMax && (
             <div>
               <div style={s.label}>Max each</div>
-              <input type="number" min="1" value={maxPer} onChange={(e) => setMaxPer(e.target.value)} style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
+              <InputNumber min="1" value={maxPer} onChange={(e) => setMaxPer(e.target.value)} style={{ ...s.input, width: 60 }} placeholder="e.g. 3" />
             </div>
           )}
           <button type="button" className={mixBtnPrimary} disabled={configSaving} onClick={handleSaveConfig}>
@@ -459,7 +461,7 @@ function MixSetupPanel({ mixId }) {
             <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>${(invMap[c.component_id]?.cost ?? invMap[c.component_id]?.price ?? 0).toFixed(2)} cost</span>
             <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
             <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>max override:</span>
-            <input type="number" min="1" defaultValue={c.max_quantity ?? ""} onBlur={(e) => handleUpdateMax(c.id, e.target.value)} style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
+            <InputNumber min="1" defaultValue={c.max_quantity ?? ""} onBlur={(e) => handleUpdateMax(c.id, e.target.value)} style={{ ...s.input, width: 50 }} placeholder="—" title="Per-product max (overrides global)" />
             <button type="button" className={mixBtnDanger} onClick={() => handleRemoveComponent(c.id)} title="Remove">
               ×
             </button>
@@ -481,7 +483,7 @@ function MixSetupPanel({ mixId }) {
               style={{ ...s.input, flex: 1 }}
               options={[{ value: "", label: "Select product…" }, ...productItems.filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
             />
-            <input type="number" min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
+            <InputNumber min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
             <button type="button" className={mixBtnPrimary} onClick={handleAddComponent}>
               Add
             </button>
@@ -605,7 +607,7 @@ function BundleComponentsPanel({ bundleId }) {
             <span style={{ flex: 1 }}>{invMap[c.component_id]?.name || c.component_id?.slice(0, 8)}</span>
             <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>${(invMap[c.component_id]?.cost ?? invMap[c.component_id]?.price ?? 0).toFixed(2)} cost</span>
             <span style={{ fontSize: "0.72rem", color: "#6b7280" }}>${(invMap[c.component_id]?.price ?? 0).toFixed(2)} sell</span>
-            <input type="number" min="0.01" step="0.01" defaultValue={c.quantity} onBlur={(e) => handleUpdateQty(c.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity per bundle unit" />
+            <InputNumber min="0.01" step="0.01" defaultValue={c.quantity} onBlur={(e) => handleUpdateQty(c.id, e.target.value)} style={{ ...inputSm, width: 60 }} title="Quantity per bundle unit" />
             <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>× each</span>
             <button type="button" className={btnDangerClass} onClick={() => handleRemove(c.id)} title="Remove">
               ×
@@ -628,7 +630,7 @@ function BundleComponentsPanel({ bundleId }) {
               style={{ ...inputSm, flex: 1 }}
               options={[{ value: "", label: "Select product…" }, ...productItems.filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
             />
-            <input type="number" min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
+            <InputNumber min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
             <button type="button" className={btnPrimaryClass} onClick={handleAdd}>
               Add
             </button>
@@ -1058,33 +1060,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   // Reusable image display with navigation
   const renderImage = (containerStyle = {}) => (
     <div className="ui-pos-rel" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", ...containerStyle }}>
-      {displayImage ? (
-        <img
-          src={displayImage}
-          alt={formData.name}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          onError={(e) => {
-            e.target.style.display = "none";
-            const placeholder = e.target.nextElementSibling;
-            if (placeholder) placeholder.style.display = "flex";
-          }}
-        />
-      ) : null}
-      <div
-        style={{
-          display: displayImage ? "none" : "flex",
-          width: "100%",
-          height: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#adb5bd",
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-      >
-        {getTypeIcon()}
-      </div>
+      <ImagePreview src={displayImage} alt={formData.name} fallback={getTypeIcon()} />
 
       {hasImages && images.length > 1 && (
         <>
@@ -1118,21 +1094,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         {isSalesMode && (
           <div className="flex-shrink-0 position-relative">
             <div className="square-image-container">
-              {displayImage ? (
-                <img
-                  src={displayImage}
-                  alt={formData.name}
-                  className="square-image"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    const placeholder = e.target.nextElementSibling;
-                    if (placeholder) placeholder.style.display = "flex";
-                  }}
-                />
-              ) : null}
-              <div className="square-image-placeholder" style={{ display: displayImage ? "none" : "flex" }}>
-                {getTypeIcon()}
-              </div>
+              <ImagePreview src={displayImage} alt={formData.name} fallback={getTypeIcon()} className="square-image" />
             </div>
 
             {hasImages && images.length > 1 && (
@@ -1268,7 +1230,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                         {addImageMode === "url" && (
                           <div className="d-flex gap-1">
-                            <input type="url" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddImageUrl()} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
+                            <InputText type="url" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddImageUrl()} placeholder="https://..." style={{ fontSize: "0.8rem" }} />
                             <button type="button" onClick={handleAddImageUrl} className="btn btn-primary btn-sm flex-shrink-0">
                               Add
                             </button>
@@ -1289,30 +1251,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     <div className="align-items-center d-flex flex-wrap gap-1" style={{ minHeight: "44px" }}>
                       {images.map((img, idx) => (
                         <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
-                          <div onClick={() => setCurrentImageIndex(idx)}>
-                            <img
-                              src={getImageSrc(img)}
-                              alt=""
-                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                                const placeholder = e.currentTarget.nextElementSibling;
-                                if (placeholder) placeholder.style.display = "flex";
-                              }}
-                            />
-                            <div
-                              style={{
-                                display: "none",
-                                width: "100%",
-                                height: "100%",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#9ca3af",
-                              }}
-                            >
-                              <CubeIcon style={{ width: 14, height: 14 }} />
-                            </div>
-                          </div>
+                          <button type="button" onClick={() => setCurrentImageIndex(idx)} className="border-0 p-0" style={{ width: "44px", height: "44px" }} aria-label={`Select image ${idx + 1}`}>
+                            <ImagePreview src={getImageSrc(img)} alt="" fallback={<CubeIcon style={{ width: 14, height: 14 }} />} />
+                          </button>
                           {/* Delete button — top right */}
                           <button
                             type="button"
@@ -1408,7 +1349,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                           </button>
                         </div>
                         <div className="d-flex gap-1">
-                          <input type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} autoFocus />
+                          <InputText type="url" value={editingImageUrl} onChange={(e) => setEditingImageUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveEditImageUrl()} placeholder="https://..." style={{ fontSize: "0.8rem" }} autoFocus />
                           <button type="button" onClick={handleSaveEditImageUrl} className="btn btn-sm btn-warning flex-shrink-0">
                             Save
                           </button>
@@ -1448,22 +1389,22 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   <div className={inventoryRowClass}>
                     {!isLocation && !isAsset && (
                       <div className="form-floating position-relative" style={equalFieldStyle}>
-                        <input type="number" id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} className="form-control ui-control-sm" placeholder="Min Count" min="0" />
+                        <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder="Min Count" min="0" />
                         <label htmlFor="min_stock_level">Min Count</label>
                       </div>
                     )}
                     {!isLocation && !isAsset && (
                       <div className="form-floating" style={equalFieldStyle}>
-                        <input type="number" id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} className="form-control ui-control-sm" placeholder="Current Count" min="0" />
+                        <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Current Count" min="0" />
                         <label htmlFor="quantity">Current Count</label>
                       </div>
                     )}
                     <div className="form-floating" style={equalFieldStyle}>
-                      <input type="number" id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} className="form-control ui-control-sm" placeholder="Cost" step="0.01" min="0" />
+                      <InputNumber id="detail_cost" name="cost" value={formData.cost} onChange={handleChange} placeholder="Cost" step="0.01" min="0" />
                       <label htmlFor="detail_cost">Cost</label>
                     </div>
                     <div className="form-floating" style={equalFieldStyle}>
-                      <input type="number" id="detail_price" name="price" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="Price" step="0.01" min="0" />
+                      <InputNumber id="detail_price" name="price" value={formData.price} onChange={handleChange} placeholder="Price" step="0.01" min="0" />
                       <label htmlFor="detail_price">Price</label>
                     </div>
                   </div>
@@ -1485,7 +1426,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       ]}
                     />
                     <div className="form-floating" style={equalFieldStyle}>
-                      <input type="text" id="detail_name" name="name" value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Name" required />
+                      <InputText id="detail_name" name="name" value={formData.name} onChange={handleChange} placeholder="Name" required />
                       <label htmlFor="detail_name">Name *</label>
                     </div>
                   </div>
@@ -1503,7 +1444,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       />
 
                       <div className="form-floating position-relative" style={equalFieldStyle}>
-                        <input type="text" id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} className="form-control ui-control-sm" placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "2.5rem" } : undefined} />
+                        <InputText id="detail_sku" name="sku" value={formData.sku} onChange={handleChange} placeholder="Serial Number" style={!isSalesMode ? { paddingRight: "2.5rem" } : undefined} />
                         <label htmlFor="detail_sku">Serial Number</label>
                         {!isSalesMode && (
                           <button type="button" onClick={handleOpenScanner} className="btn btn-link btn-sm m-0 p-0 position-absolute top-50 translate-middle-y app-input-icon-btn" style={{ right: "0.25rem" }} title="Scan Barcode">
@@ -1539,7 +1480,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     ]}
                   />
                   <div className="form-floating" style={equalFieldStyle}>
-                    <input type="date" id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Purchase" />
+                    <InputDate id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} placeholder="Date of Purchase" />
                     <label htmlFor="detail_date_of_purchase">Date of Purchase</label>
                   </div>
                 </div>
@@ -1555,7 +1496,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     options={[{ value: "", label: "— None —" }, ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name }))]}
                   />
                   <div className="form-floating" style={equalFieldStyle}>
-                    <input type="date" id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} className="form-control ui-control-sm" placeholder="Date of Sale" />
+                    <InputDate id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} placeholder="Date of Sale" />
                     <label htmlFor="detail_date_of_sale">Date of Sale</label>
                   </div>
                 </div>
@@ -1592,7 +1533,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
               <hr className="my-2" />
               <div className="border-0 form-floating mb-2">
-                <textarea id="detail_description" name="description" rows={6} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
+                <InputTextarea id="detail_description" name="description" rows={6} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="ui-description-textarea" placeholder="Description" />
                 <label htmlFor="detail_description">Description</label>
               </div>
             </>

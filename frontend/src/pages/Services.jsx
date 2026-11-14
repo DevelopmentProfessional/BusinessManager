@@ -44,7 +44,7 @@ import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import useStore from "../services/useStore";
 import { servicesAPI, serviceCategoriesAPI, getDetailedApiErrorMessage } from "../services/api";
-import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_Service_Form from "./components/modals/Modal_Service_Form";
 import Modal_Services_Settings from "./components/modals/Modal_Services_Settings";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
@@ -52,6 +52,7 @@ import Gate_Permission from "./components/layout/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import { EmptyState, LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -311,15 +312,15 @@ export default function Services() {
   // ─── 9  RENDER / RETURN ───────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading services" size="lg" />
       </div>
     );
   }
 
   return (
     <PageLayout title="Services" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
-      {/* Scrollable rows – grow upwards from bottom */}
+      {/* Scrollable rows â€“ grow upwards from bottom */}
       <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
         {sortedAndFiltered.length > 0 ? (
           <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
@@ -363,7 +364,9 @@ export default function Services() {
             </tbody>
           </table>
         ) : (
-          <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+            <EmptyState title="No services found" description={S.noResults} className="justify-content-center" />
+          </div>
         )}
       </div>
 
@@ -399,7 +402,7 @@ export default function Services() {
         onSort={handleSort}
       />
 
-      {/* Fixed footer – headers + controls */}
+      {/* Fixed footer â€“ headers + controls */}
       <PageTableFooter
         searchTerm={searchTerm}
         onSearch={setSearchTerm}
@@ -418,7 +421,7 @@ export default function Services() {
         {categoryFilter.length > 0 && <Button_Toolbar icon={XMarkIcon} label="Clear" onClick={() => setCategoryFilter([])} className="btn-app-danger" />}
 
         {/* Category Filter */}
-        <Dropdown_Filter
+        <Filter_Menu
           icon={FolderOpenIcon}
           label="Category"
           title="Filter by category"

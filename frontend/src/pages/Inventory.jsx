@@ -48,7 +48,7 @@ import PageTableRow from "./components/tables/Page_TableRow";
 import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
-import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import useStore from "../services/useStore";
@@ -62,6 +62,7 @@ import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settin
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
 import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import { EmptyState, LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -446,7 +447,7 @@ export default function Inventory() {
   const getPriceDisplay = (item) => {
     const s = featureSummary[item.id];
     if (s?.price_min != null && s?.price_max != null) {
-      return s.price_min === s.price_max ? `$${s.price_min.toFixed(2)}` : `$${s.price_min.toFixed(2)}–$${s.price_max.toFixed(2)}`;
+      return s.price_min === s.price_max ? `$${s.price_min.toFixed(2)}` : `$${s.price_min.toFixed(2)}â€“$${s.price_max.toFixed(2)}`;
     }
     const price = Number(item.price);
     if (item.price === undefined || item.price === null || item.price === "" || Number.isNaN(price) || price <= 0) return null;
@@ -603,8 +604,8 @@ export default function Inventory() {
   // ─── 9 RENDER ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading inventory" size="lg" />
       </div>
     );
   }
@@ -612,7 +613,7 @@ export default function Inventory() {
   return (
     <PageLayout title="Inventory" error={error} contentGravity="bottom" headerRight={<Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}>
       <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
-        {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+        {/* Container_Scrollable rows â€“ grow upwards from bottom (header sits above footer, like Employees) */}
         <div ref={scrollRef} className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {sortedAndFiltered.length > 0 ? (
             <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
@@ -648,7 +649,9 @@ export default function Inventory() {
               </tbody>
             </table>
           ) : (
-            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+              <EmptyState title="No inventory items found" description={S.noResults} className="justify-content-center" />
+            </div>
           )}
         </div>
 
@@ -684,7 +687,7 @@ export default function Inventory() {
           onSort={handleSort}
         />
 
-        {/* Fixed bottom – headers + controls */}
+        {/* Fixed bottom â€“ headers + controls */}
         <PageTableFooter
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
@@ -706,7 +709,7 @@ export default function Inventory() {
           </Gate_Permission>
 
           {/* Type Filter */}
-          <Dropdown_Filter
+          <Filter_Menu
             icon={TagIcon}
             label="Type"
             title="Filter by type"
@@ -721,7 +724,7 @@ export default function Inventory() {
           />
 
           {/* Stock Filter */}
-          <Dropdown_Filter
+          <Filter_Menu
             icon={CircleStackIcon}
             label="Stock"
             title="Filter by stock"

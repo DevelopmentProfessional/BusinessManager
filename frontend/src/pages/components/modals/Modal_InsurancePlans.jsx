@@ -11,6 +11,9 @@ import Modal_Viewer_Document from "./Modal_DocumentView";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputText, InputTextarea } from "../Inputs";
+import Field_Floating from "../fields/Field_Floating";
+import { EmptyState, LoadingSpinner } from "../feedback";
 
 export default function Modal_InsurancePlans({
   isOpen,
@@ -96,10 +99,10 @@ export default function Modal_InsurancePlans({
           )}
           {insurancePlansLoading ? (
             <div className="py-1 text-center">
-              <div className="spinner-border spinner-border-sm text-primary" role="status" />
+              <LoadingSpinner label="Loading insurance plans" size="sm" />
             </div>
           ) : insurancePlans.length === 0 ? (
-            <p className="py-1 small text-center text-muted">No insurance plans yet. Add one below.</p>
+            <EmptyState title="No insurance plans yet" description="Add one below." className="justify-content-center" />
           ) : (
             <div className="d-flex flex-column gap-2 pb-0">
               {insurancePlans.map((plan) => (
@@ -146,31 +149,22 @@ export default function Modal_InsurancePlans({
             <div className="fw-semibold small text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
             <div className="row ui-row-g2">
               <div className="col-6">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    id="ins_plan_name"
-                    className="form-control ui-control-sm"
-                    placeholder="Plan name"
+                <Field_Floating id="ins_plan_name" label="Plan Name *">
+                  <InputText
                     value={editingPlan ? editingPlan.name : newPlan.name}
                     onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, name: e.target.value })) : setNewPlan((prev) => ({ ...prev, name: e.target.value })))}
                     required
                   />
-                  <label htmlFor="ins_plan_name">Plan Name *</label>
-                </div>
+                </Field_Floating>
               </div>
               <div className="col-6">
-                <div className="form-floating">
-                  <input
-                    type="text"
-                    id="ins_plan_desc"
-                    className="form-control ui-control-sm"
-                    placeholder="Description"
+                <Field_Floating id="ins_plan_desc" label="Description">
+                  <InputTextarea
                     value={editingPlan ? editingPlan.description || "" : newPlan.description}
                     onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, description: e.target.value })) : setNewPlan((prev) => ({ ...prev, description: e.target.value })))}
+                    rows={2}
                   />
-                  <label htmlFor="ins_plan_desc">Description</label>
-                </div>
+                </Field_Floating>
               </div>
             </div>
 

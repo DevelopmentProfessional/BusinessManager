@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import Manager_DatabaseConnection from "../utils/Manager_DatabaseConnection";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputFile } from "../Inputs";
 
 const Panel_Database = ({
   settingsPanelStyle,
@@ -91,7 +92,7 @@ const Panel_Database = ({
               Upload CSV File <HelpIcon id="csv-upload" text="First row should contain column headers" />
             </label>
             <div className="ui-flex-center-gap-2">
-              <input ref={csvFileInputRef} type="file" accept=".csv" onChange={handleFileSelect} className="flex-1 form-control form-control-sm" />
+              <InputFile ref={csvFileInputRef} accept=".csv" onChange={handleFileSelect} className="flex-1" />
               {csvData && (
                 <button onClick={resetImport} className="btn ui-btn-outline-secondary-sm">
                   Clear

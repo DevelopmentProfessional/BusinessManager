@@ -1,4 +1,5 @@
 import React from "react";
+import { InputDate, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
@@ -54,22 +55,22 @@ export default function Modal_Profile_LeaveRequest({
           <>
             <div className="mb-2">
               <label className="form-label ui-form-label-sm">Start Date</label>
-              <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
+              <InputDate className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} required />
             </div>
             <div className="mb-2">
               <label className="form-label ui-form-label-sm">End Date</label>
-              <input type="date" className="form-control ui-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
+              <InputDate className="form-control ui-control-sm" value={leaveForm.end_date} min={leaveForm.start_date || undefined} onChange={(e) => setLeaveForm((f) => ({ ...f, end_date: e.target.value }))} required />
             </div>
           </>
         ) : (
           <div className="mb-2">
             <label className="form-label ui-form-label-sm">Requested Date (optional)</label>
-            <input type="date" className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
+            <InputDate className="form-control ui-control-sm" value={leaveForm.start_date} onChange={(e) => setLeaveForm((f) => ({ ...f, start_date: e.target.value }))} />
           </div>
         )}
         <div className="mb-0">
           <label className="form-label ui-form-label-sm">Notes (optional)</label>
-          <textarea className="form-control ui-control-sm" rows={6} value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
+          <InputTextarea className="form-control ui-control-sm" rows={6} value={leaveForm.notes} onChange={(e) => setLeaveForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Reason or additional info..." />
         </div>
       </form>
     </Modal>

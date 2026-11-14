@@ -23,11 +23,14 @@
  */
 
 import React from "react";
+import { InputText, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { Accordion } from "../accordions";
+import Field_Floating from "../fields/Field_Floating";
 
 export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, newRole, setNewRole, editingRole, setEditingRole, newRolePermission, setNewRolePermission, onCreateRole, onDeleteRole, onAddRolePermission, onRemoveRolePermission, pages, permissions, isDarkMode, error, success }) {
   return (
@@ -58,15 +61,17 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
             <h5 className={`mb-3 ${isDarkMode ? "text-light" : "text-dark"}`}>Create New Role</h5>
             <div className="g-3 row">
               <div className="col-md-5">
-                <input type="text" value={newRole.name} onChange={(e) => setNewRole({ ...newRole, name: e.target.value })} className="form-control" placeholder="Role Name" required />
+                <Field_Floating id="role_name" label="Role Name">
+                  <InputText value={newRole.name} onChange={(e) => setNewRole({ ...newRole, name: e.target.value })} className="form-control ui-control-sm" required />
+                </Field_Floating>
               </div>
               <div className="col-md-5">
-                <input type="text" value={newRole.description} onChange={(e) => setNewRole({ ...newRole, description: e.target.value })} className="form-control" placeholder="Description (optional)" />
+                <Field_Floating id="role_description" label="Description (optional)">
+                  <InputTextarea value={newRole.description} onChange={(e) => setNewRole({ ...newRole, description: e.target.value })} className="form-control ui-control-sm" rows={1} />
+                </Field_Floating>
               </div>
               <div className="col-md-2">
-                <button type="submit" className="btn btn-primary w-100">
-                  Create
-                </button>
+                <Button_Toolbar type="submit" icon={PlusIcon} label="Create" className="btn-primary" title="Create role" />
               </div>
             </div>
           </form>
@@ -80,8 +85,11 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
             ) : (
               <div className="space-y-4">
                 {availableRoles.map((role) => (
-                  <div key={role.id} className="border p-1 rounded">
-                    <div className="align-items-start d-flex justify-content-between mb-2">
+                  <Accordion
+                    key={role.id}
+                    className="border p-1 rounded"
+                    header={
+                      <div className="align-items-start d-flex justify-content-between mb-2">
                       <div>
                         <h6 className={`mb-1 ${isDarkMode ? "text-light" : "text-dark"}`}>
                           {role.name}
@@ -90,11 +98,13 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                         {role.description && <small className="text-muted">{role.description}</small>}
                       </div>
                       {!role.is_system && (
-                        <button type="button" onClick={() => onDeleteRole(role.id)} className="btn btn-outline-danger btn-sm" title="Delete Role">
-                          Delete
-                        </button>
+                        <span onClick={(event) => event.preventDefault()}>
+                          <Button_Toolbar label="Delete" onClick={() => onDeleteRole(role.id)} className="btn-outline-danger btn-sm" title="Delete role" />
+                        </span>
                       )}
-                    </div>
+                      </div>
+                    }
+                  >
 
                     {/* Role Permissions */}
                     <div className="mt-2">
@@ -148,7 +158,7 @@ export default function Modal_Manage_Roles({ isOpen, onClose, availableRoles, ne
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </Accordion>
                 ))}
               </div>
             )}

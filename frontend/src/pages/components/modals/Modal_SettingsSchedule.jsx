@@ -15,6 +15,7 @@ import { settingsAPI } from "../../../services/api";
 import useDarkMode from "../../../services/useDarkMode";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputCheckbox, InputNumber } from "../Inputs";
 
 const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ userId, HelpIcon, onSaved, onSavingChange, hideFooter = false }, ref) {
   const { isDarkMode } = useDarkMode();
@@ -225,7 +226,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
             {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
           </div>
           <label className="cursor-pointer inline-flex items-center relative">
-            <input type="checkbox" checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="peer sr-only" />
+            <InputCheckbox checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="peer sr-only" />
             <div
               className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
             ></div>
@@ -238,8 +239,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
         <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Appointment Reminder {HelpIcon && <HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" />}</h4>
         <div className="gap-3 grid grid-cols-1 sm:grid-cols-2">
           <div className="form-floating">
-            <input
-              type="number"
+            <InputNumber
               id="reminder_time_minutes"
               min="0"
               max="10080"
@@ -257,7 +257,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
           <div className={`flex items-center justify-between p-1 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
             <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : ""}`}>Send Reminder Notification</span>
             <label className="cursor-pointer inline-flex items-center relative">
-              <input type="checkbox" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="peer sr-only" />
+              <InputCheckbox checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="peer sr-only" />
               <div
                 className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
               ></div>
@@ -273,7 +273,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
             <h4 className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Auto-Accept Client Bookings</h4>
           </div>
           <label className="flex items-center ml-4">
-            <input type="checkbox" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="border-gray-300 focus:ring-blue-500 h-6 rounded text-blue-600 w-6" />
+            <InputCheckbox checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="border-gray-300 focus:ring-blue-500 h-6 rounded text-blue-600 w-6" />
             <span className={`ml-2 text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{formData.auto_accept_client_bookings ? "Enabled" : "Disabled"}</span>
           </label>
         </div>
@@ -284,8 +284,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Grace Period for Pending Requests</label>
             <p className={`text-xs mb-3 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Bookings pending longer than this period will NOT be auto-accepted, requiring manual review. Leave blank for no limit.</p>
             <div className="ui-flex-items-gap-2">
-              <input
-                type="number"
+              <InputNumber
                 min="0"
                 max="168"
                 step="1"

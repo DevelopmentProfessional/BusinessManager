@@ -9,12 +9,14 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { InputText, InputTextarea } from "../Inputs";
 import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import useStore from "../../../services/useStore";
 import { suppliersAPI } from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
 import Modal from "../modals/Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import { EmptyState, LoadingSpinner } from "../feedback";
 import Footer_Actions from "../footers/Footer_Actions";
 import Gate_Permission from "../layout/Gate_Permission";
 import Modal_Procurement from "../modals/Modal_Procurement";
@@ -136,10 +138,12 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
             <SupplierForm supplier={editingSupplier} onSubmit={handleSubmit} onCancel={handleCancelForm} className="flex-grow-1" />
           ) : loading ? (
             <div className="align-items-center d-flex flex-grow-1 justify-content-center">
-              <div className="animate-spin border-b-2 border-primary-600 h-10 rounded-full w-10"></div>
+              <LoadingSpinner label="Loading suppliers" size="lg" />
             </div>
           ) : suppliers.length === 0 ? (
-            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">No suppliers found. Add your first supplier.</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+              <EmptyState title="No suppliers found" description="Add your first supplier to get started." />
+            </div>
           ) : (
             <>
               {suppliers.map((supplier) => {
@@ -237,7 +241,7 @@ function SupplierForm({ supplier, onSubmit, className="" }) {
     <form id="supplier-panel-form" onSubmit={handleSubmit} className={`p-1 d-flex flex-column ${className}`} style={{ minHeight: "100%" }}>
       <div className="mt-auto"></div>
       <div className="form-floating ui-form-floating-mb2">
-        <input type="text" id="sp_name" name="name" value={formData.name} onChange={handleChange} required className="form-control ui-control-sm" placeholder="Name" />
+        <InputText id="sp_name" name="name" value={formData.name} onChange={handleChange} required className="form-control ui-control-sm" placeholder="Name" />
         <label htmlFor="sp_name">Name *</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">
@@ -249,7 +253,7 @@ function SupplierForm({ supplier, onSubmit, className="" }) {
         <label htmlFor="sp_phone">Phone</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">
-        <textarea id="sp_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm min-h-[80px]" placeholder="Address" />
+        <InputTextarea id="sp_address" name="address" value={formData.address} onChange={handleChange} className="form-control form-control-sm min-h-[80px]" placeholder="Address" />
         <label htmlFor="sp_address">Address</label>
       </div>
     </form>

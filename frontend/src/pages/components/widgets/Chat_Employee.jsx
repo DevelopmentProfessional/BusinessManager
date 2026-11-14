@@ -31,6 +31,7 @@
  * ============================================================
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { InputText, InputTextarea } from "../Inputs";
 import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from "@heroicons/react/24/outline";
 import { chatAPI, documentsAPI, settingsAPI } from "../../../services/api";
 import useDarkMode from "../../../services/useDarkMode";
@@ -285,7 +286,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
           <div className={`border-top flex-shrink-0 ${dm ? "bg-dark border-secondary" : "bg-white"}`} style={{ maxHeight: 200, overflowY: "auto", margin: 0 }}>
             <div className="align-items-center d-flex gap-2 pb-1 pt-1 px-2">
               <span className="fw-semibold text-xs text-muted">Attach from Documents library:</span>
-              <input type="text" autoFocus className={`form-control form-control-sm ${dm ? "bg-secondary text-light border-secondary placeholder-light" : ""}`} placeholder="Search documents…" value={docSearch} onChange={(e) => setDocSearch(e.target.value)} />
+              <InputText autoFocus className={`form-control form-control-sm ${dm ? "bg-secondary text-light border-secondary placeholder-light" : ""}`} placeholder="Search documents…" value={docSearch} onChange={(e) => setDocSearch(e.target.value)} />
               <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={() => setShowDocPicker(false)} title="Close document picker">
                 <XMarkIcon style={{ width: 16, height: 16 }} />
               </button>
@@ -362,7 +363,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
             </button>
 
             {/* Message input */}
-            <textarea
+            <InputTextarea
               ref={inputRef}
               rows={1}
               className={`form-control flex-grow-1 rounded-pill ${dm ? "bg-secondary text-light border-secondary" : ""}`}

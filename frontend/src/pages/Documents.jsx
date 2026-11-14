@@ -65,10 +65,11 @@ import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import Modal_Generic from "./components/modals/Modal";
 import { WorkflowModal, WorkflowStatusTracker } from "./components/panels/Panel_Workflow";
-import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import { EmptyState, LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
@@ -651,8 +652,8 @@ export default function Documents() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="animate-spin border-b-2 border-primary-600 h-12 rounded-full w-12"></div>
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading documents" size="lg" />
       </div>
     );
   }
@@ -686,7 +687,7 @@ export default function Documents() {
 
       {/* Main table container */}
       <div className="d-flex flex-column flex-grow-1 min-h-0 overflow-hidden">
-        {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
+        {/* Container_Scrollable rows â€“ grow upwards from bottom (header sits above footer, like Employees) */}
         <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
           {showTemplates ? (
             /* ── Templates list ── */
@@ -759,7 +760,9 @@ export default function Documents() {
                   </tbody>
                 </table>
               ) : (
-                <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{templatesLoading ? S.loading : S.noResults}</div>
+                <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+                  {templatesLoading ? <LoadingSpinner label="Loading templates" /> : <EmptyState title="No templates found" description={S.noResults} />}
+                </div>
               );
             })()
           ) : /* ── Documents: List or Grid View ── */
@@ -853,7 +856,9 @@ export default function Documents() {
               </table>
             )
           ) : (
-            <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+            <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+              <EmptyState title="No documents found" description={S.noResults} className="justify-content-center" />
+            </div>
           )}
         </div>
 
@@ -896,7 +901,7 @@ export default function Documents() {
           onSort={handleSort}
         />
 
-        {/* Fixed bottom – headers + controls */}
+        {/* Fixed bottom â€“ headers + controls */}
         <PageTableFooter
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
@@ -993,7 +998,7 @@ export default function Documents() {
               )}
 
               {/* Categories Filter */}
-              <Dropdown_Filter
+              <Filter_Menu
                 icon={Squares2X2Icon}
                 label="Category"
                 multiSelect
@@ -1006,7 +1011,7 @@ export default function Documents() {
               />
 
               {/* Status Filter */}
-              <Dropdown_Filter
+              <Filter_Menu
                 icon={CheckCircleIcon}
                 label="Status"
                 multiSelect
@@ -1025,7 +1030,7 @@ export default function Documents() {
               />
 
               {/* Type Filter */}
-              <Dropdown_Filter
+              <Filter_Menu
                 icon={TagIcon}
                 label="Type"
                 multiSelect

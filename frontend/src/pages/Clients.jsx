@@ -36,7 +36,8 @@ import { tierVariant } from "../utils/colorMapping";
 import { S } from "../utils/strings";
 import { showConfirm } from "../services/showConfirm";
 import Badge from "./components/badges/Badge";
-import Dropdown_Filter from "./components/dropdowns/Dropdown_Filter";
+import { EmptyState, LoadingSpinner } from "./components/feedback";
+import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import { clientsAPI, membershipsAPI, clientStatusesAPI, settingsAPI } from "../services/api";
 import useFetchOnce from "../services/useFetchOnce";
@@ -511,10 +512,8 @@ export default function Clients() {
   // ─── [8] RENDER ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="align-items-center d-flex justify-content-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+      <div className="align-items-center d-flex justify-content-center p-4">
+        <LoadingSpinner label="Loading clients" size="lg" />
       </div>
     );
   }
@@ -592,7 +591,9 @@ export default function Clients() {
             </tbody>
           </table>
         ) : (
-          <div className="align-items-center d-flex flex-grow-1 justify-content-center text-muted">{S.noResults}</div>
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+            <EmptyState title="No clients found" description={S.noResults} className="justify-content-center" />
+          </div>
         )}
       </div>
 
@@ -658,10 +659,10 @@ export default function Clients() {
         )}
 
         {/* Tier Filter */}
-        <Dropdown_Filter icon={StarIcon} label="Subs" title="Filter by subscription" multiSelect value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
+        <Filter_Menu icon={StarIcon} label="Subs" title="Filter by subscription" multiSelect value={tierFilter} onChange={setTierFilter} isOpen={isTierFilterOpen} setIsOpen={setIsTierFilterOpen} activeClass={getTierFilterButtonClass()} showHelp={isTrainingMode} options={tierFilterOptions} />
 
         {/* Status Filter */}
-        <Dropdown_Filter icon={CheckCircleIcon} label="Status" title="Filter by status" multiSelect value={statusFilter} onChange={setStatusFilter} isOpen={isStatusFilterOpen} setIsOpen={setIsStatusFilterOpen} showHelp={isTrainingMode} options={statusFilterOptions} />
+        <Filter_Menu icon={CheckCircleIcon} label="Status" title="Filter by status" multiSelect value={statusFilter} onChange={setStatusFilter} isOpen={isStatusFilterOpen} setIsOpen={setIsStatusFilterOpen} showHelp={isTrainingMode} options={statusFilterOptions} />
       </PageTableFooter>
 
       {/* Client Detail Modal (for viewing/editing) */}

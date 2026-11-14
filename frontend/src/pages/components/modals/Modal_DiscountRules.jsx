@@ -18,6 +18,7 @@ import Modal from "./Modal";
 
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputCheckbox, InputRadio, InputNumber, InputText } from "../Inputs";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -300,11 +301,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
           Discount Rules
         </span>
       }
-      headerActions={
-        <Button_Toolbar icon={PlusIcon} label="New" onClick={startNew} className="btn-primary" title="New Rule" />
-      }
       footer={
         <div className="d-flex gap-2 justify-content-start align-items-center">
+          <Button_Toolbar icon={PlusIcon} label="New" onClick={startNew} className="btn-primary" title="New Rule" />
           <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       }
@@ -417,12 +416,12 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 <div className="col-6">
                   <label className="form-label mb-0 small">Value</label>
 
-                  <input type="number" min="0" step="0.01" className="form-control ui-control-sm" value={form.discount_value} onChange={(e) => setForm((p) => ({ ...p, discount_value: e.target.value }))} />
+                  <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={form.discount_value} onChange={(e) => setForm((p) => ({ ...p, discount_value: e.target.value }))} />
                 </div>
               </div>
 
               <label className="align-items-center d-flex gap-1 mb-2 small">
-                <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
+                <InputCheckbox checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
                 Active
               </label>
 
@@ -430,24 +429,24 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 <span className="d-block fw-semibold mb-1 small text-muted">Apply to</span>
 
                 <label className="align-items-center d-flex gap-1 me-2 small">
-                  <input type="radio" name="applies_to" value="all" checked={form.applies_to === "all"} onChange={() => setForm((p) => ({ ...p, applies_to: "all", item_ids: [] }))} />
+                  <InputRadio name="applies_to" value="all" checked={form.applies_to === "all"} onChange={() => setForm((p) => ({ ...p, applies_to: "all", item_ids: [] }))} />
                   All
                 </label>
 
                 <label className="align-items-center d-flex gap-1 small">
-                  <input type="radio" name="applies_to" value="selected" checked={form.applies_to === "selected"} onChange={() => setForm((p) => ({ ...p, applies_to: "selected" }))} />
+                  <InputRadio name="applies_to" value="selected" checked={form.applies_to === "selected"} onChange={() => setForm((p) => ({ ...p, applies_to: "selected" }))} />
                   Selected
                 </label>
               </div>
 
               {form.applies_to === "selected" && (
                 <>
-                  <input type="text" className="form-control form-control-sm mb-2" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                  <InputText className="form-control form-control-sm mb-2" placeholder="Search products…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
 
                   <div className="border mb-2 rounded" style={{ maxHeight: "8rem", overflowY: "auto" }}>
                     {filteredInventory.map((item) => (
                       <label key={item.id} className="align-items-center border-bottom d-flex gap-2 mb-0 px-0 py-1 small">
-                        <input type="checkbox" checked={form.item_ids.includes(item.id)} onChange={() => toggleProduct(item.id)} />
+                        <InputCheckbox checked={form.item_ids.includes(item.id)} onChange={() => toggleProduct(item.id)} />
 
                         <span className="flex-grow-1 text-truncate">{item.name}</span>
                       </label>
@@ -469,7 +468,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               </div>
 
               <label className="align-items-center d-flex gap-1 mb-2 small">
-                <input type="checkbox" checked={form.is_recurring} onChange={(e) => setForm((p) => ({ ...p, is_recurring: e.target.checked }))} />
+                <InputCheckbox checked={form.is_recurring} onChange={(e) => setForm((p) => ({ ...p, is_recurring: e.target.checked }))} />
                 Recurring
               </label>
 
