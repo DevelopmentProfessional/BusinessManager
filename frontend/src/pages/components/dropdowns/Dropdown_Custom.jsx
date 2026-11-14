@@ -1,8 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
+
+function getDropdownPortalHost() {
+  if (typeof document === "undefined" || !document.body) return null;
+  let host = document.getElementById("app-dropdown-portal-host");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "app-dropdown-portal-host";
+    document.body.appendChild(host);
+  }
+  return host;
+}
 
 export default function Dropdown_Custom({
   value,
@@ -39,7 +51,14 @@ export default function Dropdown_Custom({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [helpKey, setHelpKey] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const [portalTarget, setPortalTarget] = useState(null);
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    setPortalTarget(getDropdownPortalHost());
+  }, []);
 
   // Call onOpen callback when dropdown opens
   const handleOpen = () => {
@@ -52,7 +71,9 @@ export default function Dropdown_Custom({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const clickedTrigger = dropdownRef.current?.contains(event.target);
+      const clickedMenu = menuRef.current?.contains(event.target);
+      if (!clickedTrigger && !clickedMenu) {
         setIsOpen(false);
       }
     };
@@ -72,6 +93,36 @@ export default function Dropdown_Custom({
       setHelpKey(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !dropdownRef.current) {
+      setMenuPosition(null);
+      return undefined;
+    }
+
+    const updateMenuPosition = () => {
+      const triggerRect = dropdownRef.current.getBoundingClientRect();
+      const gap = 4;
+      const estimatedMenuHeight = 260;
+      const shouldOpenUpward = openUpward && triggerRect.top >= estimatedMenuHeight;
+      setMenuPosition({
+        left: triggerRect.left,
+        top: shouldOpenUpward ? undefined : triggerRect.bottom + gap,
+        bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + gap : undefined,
+        width: triggerRect.width,
+        maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - gap : window.innerHeight - triggerRect.bottom - gap),
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [isOpen, openUpward]);
 
   const sortedOptions = sortOptionsByLabel(options);
   const normalizedValue = multiSelect ? (Array.isArray(value) ? value : value ? [value] : []) : value;
@@ -196,8 +247,20 @@ export default function Dropdown_Custom({
 
       {multiSelect && showSelectionSummary && <div className="dark:text-gray-300 mt-1 text-gray-600 text-xs">{selectedOptions.length > 0 ? selectedOptions.map((option) => option.label).join(", ") : selectionSummaryEmptyLabel}</div>}
 
-      {isOpen && (
-        <div className={`app-menu-panel absolute z-50 w-full shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 flex flex-col ${openUpward ? "bottom-full mb-1" : "mt-1"}`} style={{ minWidth: "100%", left: 0, right: 0 }}>
+      {isOpen && menuPosition && portalTarget &&
+        createPortal(
+        <div
+          ref={menuRef}
+          className="app-dropdown-portal-menu app-menu-panel fixed shadow-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700 flex flex-col"
+          style={{
+            left: `${menuPosition.left}px`,
+            top: menuPosition.top === undefined ? "auto" : `${menuPosition.top}px`,
+            bottom: menuPosition.bottom === undefined ? "auto" : `${menuPosition.bottom}px`,
+            width: `${menuPosition.width}px`,
+            minWidth: `${menuPosition.width}px`,
+            maxHeight: `${menuPosition.maxHeight}px`,
+          }}
+        >
           {searchable && !footerSearch && (
             <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 px-0 py-0">
               <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} autoFocus />
@@ -258,7 +321,8 @@ export default function Dropdown_Custom({
                           >
                             <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
                             <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
-                          </div>
+                          </div>,
+                          portalTarget
                         )}
                       </div>
                     )}
@@ -309,6 +373,8 @@ export default function Dropdown_Custom({
             </div>
           )}
         </div>
+        ,
+        portalTarget
       )}
     </div>
   );

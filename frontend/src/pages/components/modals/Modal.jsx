@@ -101,20 +101,21 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
   }
 
   // Stacking z-index: each nested modal renders on top of its parent modal and any page elements
-  const layerZIndex = 1200 + currentDepth * 20;
+  const layerZIndex = 1200 + currentDepth * 100;
+  const modalContentZIndex = layerZIndex + 10;
 
   // ─── 1 OVERLAY ─────────────────────────────────────────────────────────────
   const Overlay = <div className="app-modal-overlay bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 fixed inset-0 transition-opacity" style={{ zIndex: layerZIndex }} onClick={onClose} />;
 
   // ─── 2 BOTTOM-ANCHORED MODAL SHEET (Global standard: all modals float to bottom and grow upwards) ─────
   const modalElement = (
-    <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex }}>
+    <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex, "--app-modal-content-z-index": modalContentZIndex }}>
       {Overlay}
       <div
         className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full rounded-t-lg ${
           fullScreen ? "max-h-screen max-h-[95vh] app-modal-sheet--fullscreen" : "max-h-[90vh]"
         }`}
-        style={{ zIndex: layerZIndex + 1 }}
+        style={{ zIndex: modalContentZIndex }}
       >
         {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
         <div

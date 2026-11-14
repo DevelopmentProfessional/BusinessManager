@@ -1,6 +1,7 @@
 import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const PRESET_COLORS = [
@@ -109,9 +110,11 @@ export default function Modal_ColorPicker({ isOpen, onClose, pendingColor, onPen
           </div>
         </div>
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save color" />
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} disabled={saving} className="btn-outline-secondary" title="Close" />
+        <div className="component-footer">
+          <Footer_Actions
+            start={<Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save color" />}
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} disabled={saving} className="btn-outline-secondary" title="Close" />}
+          />
         </div>
       </div>
     </Modal>

@@ -14,6 +14,7 @@ import React, { useState, useEffect } from "react";
 import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import { useLocation, useNavigate } from "react-router-dom";
 import { clientCartAPI, clientOrdersAPI, inventoryFeaturesAPI } from "../../../services/api";
 
@@ -394,16 +395,20 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
         </div>
         {/* /component-body */}
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          {!orderCreated && (
-            <>
-              <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
-              {cartItems.length > 0 && (
-                <Button_Toolbar icon={CheckCircleIcon} label={creating ? "…" : "Order"} onClick={handleCreateOrder} disabled={creating} className="btn-success" title="Create portal order from cart" />
-              )}
-            </>
-          )}
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
+        <div className="component-footer">
+          <Footer_Actions
+            start={
+              !orderCreated ? (
+                <>
+                  <Button_Toolbar icon={ShoppingCartIcon} label="Sales" onClick={handleGoToSales} className="btn-primary" title="Go to Sales" />
+                  {cartItems.length > 0 && (
+                    <Button_Toolbar icon={CheckCircleIcon} label={creating ? "…" : "Order"} onClick={handleCreateOrder} disabled={creating} className="btn-success" title="Create portal order from cart" />
+                  )}
+                </>
+              ) : null
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
+          />
         </div>
       </div>
     </Modal>

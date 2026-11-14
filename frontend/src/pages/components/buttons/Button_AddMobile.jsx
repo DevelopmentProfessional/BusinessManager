@@ -19,25 +19,24 @@
  */
 import React from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
+import Button_App from "./Button_App";
 
 // ─── 1 BUTTON RENDER ───────────────────────────────────────────────────────────
 
 export default function Button_AddMobile({ onClick, label = "Add", className="" }) {
   return (
-    <button
+    <Button_App
+      icon={PlusIcon}
+      label={label}
       onClick={onClick}
-      title={label}
-      aria-label={label}
+      compact
       className={`
         fixed bottom-24 left-1/2 transform -translate-x-1/2 z-30
         bg-blue-600 hover:bg-blue-700 text-white
-        p-1 rounded-full shadow-lg hover:shadow-xl
-        flex items-center justify-center transition-all
+        shadow-lg hover:shadow-xl transition-all
         md:hidden
         ${className}
       `}
-    >
-      <PlusIcon className="h-6 w-6" />
-    </button>
+    />
   );
 }

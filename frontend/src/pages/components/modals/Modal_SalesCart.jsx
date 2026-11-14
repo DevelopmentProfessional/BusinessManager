@@ -25,6 +25,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import { getDisplayImageUrl } from "../utils/Utils_Image";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "@heroicons/react/24/outline";
 
@@ -380,19 +381,23 @@ export default function Modal_Cart_Sales({
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar
-            icon={CreditCardIcon}
-            label="Pay"
-            title="Checkout"
-            onClick={() => {
-              onClose();
-              handleCheckout();
-            }}
-            className="btn-success text-white"
-            style={{ borderColor: "#059669", backgroundColor: "#059669" }}
+        <div className="component-footer">
+          <Footer_Actions
+            start={
+              <Button_Toolbar
+                icon={CreditCardIcon}
+                label="Pay"
+                title="Checkout"
+                onClick={() => {
+                  onClose();
+                  handleCheckout();
+                }}
+                className="btn-success text-white"
+                style={{ borderColor: "#059669", backgroundColor: "#059669" }}
+              />
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
           />
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
         </div>
       </div>
     </Modal>

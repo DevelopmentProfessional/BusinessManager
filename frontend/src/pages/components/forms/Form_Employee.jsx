@@ -53,6 +53,8 @@ import Widget_Signature from "../widgets/Widget_Signature";
 import Modal_Pay_Employee from "../modals/Modal_EmployeePay";
 import Modal from "../modals/Modal";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import FormControl from "../fields/FormControl";
+import Table from "../tables/Table";
 import useStore from "../../../services/useStore";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
@@ -731,37 +733,37 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
               <div className="row ui-row-g2">
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Username" required />
+                    <FormControl type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Username" required />
                     <label htmlFor="username">Username *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Password" required={!employee} />
+                    <FormControl type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Password" required={!employee} />
                     <label htmlFor="password">{employee ? "Password (blank = keep current)" : "Password *"}</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="First Name" required />
+                    <FormControl type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="First Name" required />
                     <label htmlFor="first_name">First Name *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Last Name" required />
+                    <FormControl type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Last Name" required />
                     <label htmlFor="last_name">Last Name *</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Email" />
+                    <FormControl type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Email" />
                     <label htmlFor="email">Email</label>
                   </div>
                 </div>
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Phone" />
+                    <FormControl type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Phone" />
                     <label htmlFor="phone">Phone</label>
                   </div>
                 </div>
@@ -782,7 +784,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Hire Date" />
+                        <FormControl type="date" id="hire_date" name="hire_date" value={formData.hire_date} onChange={handleInputChange} className="form-control ui-control-sm" placeholder="Hire Date" />
                         <label htmlFor="hire_date">Hire Date</label>
                       </div>
                     </div>
@@ -1578,7 +1580,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     <p className="py-1 small text-center text-muted">No pay slips on record.</p>
                   ) : (
                     <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                      <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
+                      <Table className="table-hover table-sm" responsive={false} style={{ fontSize: "0.8rem" }}>
                         <thead className="table-light">
                           <tr>
                             <th>Period</th>
@@ -1603,7 +1605,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                      </Table>
                     </div>
                   )}
                 </>

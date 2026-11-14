@@ -29,6 +29,7 @@ import { XMarkIcon, CheckIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outli
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
+import FormControl from "../fields/FormControl";
 
 // ─── 2 STATE & EFFECTS ─────────────────────────────────────────────────────────
 export default function Form_Client({ client, initialName = "", onSubmit, onCancel, error = null, onBulkImport = null, memberships = [] }) {
@@ -147,18 +148,18 @@ export default function Form_Client({ client, initialName = "", onSubmit, onCanc
       <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
         <form id="client-form" onSubmit={handleSubmit}>
           <div className="form-floating ui-form-floating-mb2">
-            <input type="text" id="fc_name" name="name" required value={formData.name} onChange={handleChange} className={`form-control form-control-sm ${fieldErrors.name ? "is-invalid" : ""}`} placeholder="Name" />
+            <FormControl type="text" id="fc_name" name="name" required value={formData.name} onChange={handleChange} className={`form-control form-control-sm ${fieldErrors.name ? "is-invalid" : ""}`} placeholder="Name" />
             <label htmlFor="fc_name">Name *</label>
             {fieldErrors.name && <div className="invalid-feedback">{fieldErrors.name}</div>}
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <input type="email" id="fc_email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
+            <FormControl type="email" id="fc_email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
             <label htmlFor="fc_email">Email</label>
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <input type="tel" id="fc_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control ui-control-sm" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number format: (555) 555-5555" />
+            <FormControl type="tel" id="fc_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control ui-control-sm" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number format: (555) 555-5555" />
             <label htmlFor="fc_phone">Phone</label>
           </div>
 
@@ -189,19 +190,19 @@ export default function Form_Client({ client, initialName = "", onSubmit, onCanc
             </div>
             <div className="col-6">
               <div className="form-floating">
-                <input type="number" id="fc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control ui-control-sm" placeholder="0" />
+                <FormControl type="number" id="fc_points" name="membership_points" min="0" value={formData.membership_points} onChange={handleChange} className="form-control ui-control-sm" placeholder="0" />
                 <label htmlFor="fc_points">Points</label>
               </div>
             </div>
             <div className="col-6">
               <div className="form-floating">
-                <input type="date" id="fc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control ui-control-sm" placeholder="Member Since" />
+                <FormControl type="date" id="fc_since" name="membership_since" value={formData.membership_since} onChange={handleChange} className="form-control ui-control-sm" placeholder="Member Since" />
                 <label htmlFor="fc_since">Member Since</label>
               </div>
             </div>
             <div className="col-6">
               <div className="form-floating">
-                <input type="date" id="fc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control ui-control-sm" placeholder="Expires" />
+                <FormControl type="date" id="fc_expires" name="membership_expires" value={formData.membership_expires} onChange={handleChange} className="form-control ui-control-sm" placeholder="Expires" />
                 <label htmlFor="fc_expires">Expires</label>
               </div>
             </div>
@@ -210,12 +211,12 @@ export default function Form_Client({ client, initialName = "", onSubmit, onCanc
           {/* Address & Notes - border-top above */}
           <hr className="my-2" />
           <div className="form-floating ui-form-floating-mb2">
-            <textarea id="fc_address" name="address" value={formData.address} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Address" />
+            <FormControl as="textarea" id="fc_address" name="address" value={formData.address} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Address" />
             <label htmlFor="fc_address">Address</label>
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <textarea id="fc_notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
+            <FormControl as="textarea" id="fc_notes" name="notes" value={formData.notes} onChange={handleChange} className="border-0 form-control form-control-sm" placeholder="Notes" />
             <label htmlFor="fc_notes">Notes</label>
           </div>
         </form>

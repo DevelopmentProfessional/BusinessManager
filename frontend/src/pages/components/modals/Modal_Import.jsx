@@ -25,6 +25,7 @@ import React, { useState } from "react";
 import { DocumentArrowUpIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { adminAPI } from "../../../services/api";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import Modal from "./Modal";
 
 // ─── 1 STATE INITIALIZATION ────────────────────────────────────────────────
@@ -226,16 +227,20 @@ export default function Modal_Import({ isOpen, onClose, onImportComplete }) {
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar
-            icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
-            label={uploading ? "Importing..." : "Import"}
-            onClick={handleUpload}
-            disabled={!Object.values(files).some((file) => file !== null) || uploading}
-            className="btn-primary"
-            title="Import data"
+        <div className="component-footer">
+          <Footer_Actions
+            start={
+              <Button_Toolbar
+                icon={uploading ? ArrowPathIcon : DocumentArrowUpIcon}
+                label={uploading ? "Importing..." : "Import"}
+                onClick={handleUpload}
+                disabled={!Object.values(files).some((file) => file !== null) || uploading}
+                className="btn-primary"
+                title="Import data"
+              />
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} className="btn-outline-secondary" title="Cancel" />}
           />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} className="btn-outline-secondary" title="Cancel" />
         </div>
       </div>
     </Modal>

@@ -98,7 +98,8 @@
   --app-search-input-padding-x: 0.75rem;
 
   /* Floating Labels */
-  --app-floating-label-font-size: var(--app-input-font-size, 0.75rem);
+  --app-floating-label-font-size: 1rem;
+  --app-floating-label-background: transparent;
 
   /* Dropups & Dropdowns */
   --app-dropdown-min-width: 11rem;
@@ -106,7 +107,9 @@
   --app-dropdown-item-height: 2rem;
   --app-dropdown-item-padding-x: 0.75rem;
   --app-dropup-z-index: 900;
-  --app-dropdown-font-size: var(--app-text-size-tiny, 0.5rem);
+  --app-inner-dropdown-z-index: 1300;
+  --app-inner-popover-z-index: 1400;
+  --app-dropdown-font-size: var(--app-text-size-small, 0.75rem);
 
   /* Table Footers & Navigation Reserves */
   --app-footer-btn-gap: 0.25rem;
@@ -122,6 +125,8 @@
   --app-modal-header-height: 3rem;
   --app-modal-padding: 1rem;
   --app-modal-z-index: 1100;
+  --app-modal-content-z-index: 1200;
+  --app-modal-nested-step: 100;
 
   /* Cards */
   --app-card-border-radius: 0.5rem;
@@ -340,6 +345,10 @@ table::-webkit-scrollbar,
   z-index: var(--app-dropup-z-index) !important;
 }
 
+.app-dropdown-portal-menu {
+  z-index: var(--app-inner-dropdown-z-index, 1300) !important;
+}
+
 /* ─── Question Mark (?) Help Popovers ───
    Anchored near the button on tablet/desktop, centered on viewport on mobile */
 .app-help-popover {
@@ -353,6 +362,21 @@ table::-webkit-scrollbar,
   z-index: 1200 !important;
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
   padding: 0.5rem !important;
+}
+
+/* Inner controls must stack above the modal content that owns them. */
+.app-modal-layer .app-dropdown-root.is-open,
+.app-modal-layer .app-dropdown.is-open,
+.app-modal-layer .app-dropup.is-open {
+  z-index: var(--app-inner-dropdown-z-index) !important;
+}
+
+.app-modal-layer .app-menu-panel {
+  z-index: var(--app-inner-dropdown-z-index) !important;
+}
+
+.app-modal-layer .app-help-popover {
+  z-index: var(--app-inner-popover-z-index) !important;
 }
 
 @media (max-width: 48rem) {
@@ -871,7 +895,7 @@ table::-webkit-scrollbar,
 .app-modal-content,
 .component-body,
 .component-body-inner {
-  flex: 1 1 auto !important;
+  flex: 1 1 0% !important;
   min-height: 0 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -2647,10 +2671,14 @@ input[type="number"],
   top: 0;
   left: 0;
   z-index: 2;
-  height: 100%;
+  height: auto !important;
+  width: auto !important;
   padding-left: 1.25rem !important;
+  padding-right: 0.35rem !important;
   padding-top: 0.35rem;
   font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
+  line-height: 1.1;
+  background-color: var(--app-floating-label-background, transparent);
   transform-origin: 0 0;
   pointer-events: none;
   transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
@@ -2667,7 +2695,7 @@ input[type="number"],
 .form-floating.is-open > label,
 .form-floating.has-value > .app-floating-label,
 .form-floating.is-open > .app-floating-label {
-  transform: scale(0.75) translateY(-0.75rem) !important;
+  transform: scale(0.85) translateY(-1rem) !important;
   opacity: 0.85;
 }
 

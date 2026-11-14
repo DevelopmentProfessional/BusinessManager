@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DocumentIcon, ArrowDownTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
+import FormControl from "../fields/FormControl";
 
 function formatFileSize(bytes) {
   if (!bytes) return "0 B";
@@ -118,7 +119,7 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
         <p className="mb-0 mt-2 small text-muted">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
 
         <div className="form-floating mt-3">
-          <textarea id="documents-upload-description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
+          <FormControl as="textarea" id="documents-upload-description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" disabled={uploading} />
           <label htmlFor="documents-upload-description">Description (optional)</label>
         </div>
 

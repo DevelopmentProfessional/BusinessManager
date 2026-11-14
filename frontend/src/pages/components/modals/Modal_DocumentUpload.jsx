@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { DocumentIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import { documentsAPI } from "../../../services/api";
 
 function formatFileSize(bytes) {
@@ -109,16 +110,20 @@ export default function Modal_DocumentUpload({ isOpen, onClose, entityType, enti
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar
-            type="submit"
-            icon={ArrowDownTrayIcon}
-            label={uploading ? "Uploading…" : "Upload"}
-            className="btn-primary"
-            disabled={uploading || !file}
-            title="Upload file"
+        <div className="component-footer">
+          <Footer_Actions
+            start={
+              <Button_Toolbar
+                type="submit"
+                icon={ArrowDownTrayIcon}
+                label={uploading ? "Uploading…" : "Upload"}
+                className="btn-primary"
+                disabled={uploading || !file}
+                title="Upload file"
+              />
+            }
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} disabled={uploading} className="btn-outline-secondary" title="Cancel" />}
           />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={handleClose} disabled={uploading} className="btn-outline-secondary" title="Cancel" />
         </div>
       </form>
     </Modal>

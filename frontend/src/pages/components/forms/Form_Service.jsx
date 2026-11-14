@@ -44,6 +44,8 @@ import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serv
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import FormControl from "../fields/FormControl";
+import Table from "../tables/Table";
 import useStore from "../../../services/useStore";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
@@ -558,11 +560,11 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   {/* Core fields on the right */}
                   <div className="d-flex flex-column flex-grow-1 gap-1">
                     <div className="form-floating">
-                      <input type="text" id="name" name="name" required value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Service Name" />
+                      <FormControl type="text" id="name" name="name" required value={formData.name} onChange={handleChange} className="form-control ui-control-sm" placeholder="Service Name" />
                       <label htmlFor="name">Name *</label>
                     </div>
                     <div className="form-floating">
-                      <input type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control ui-control-sm" placeholder="Category" list="service-category-options" />
+                      <FormControl type="text" id="category" name="category" value={formData.category} onChange={handleChange} className="form-control ui-control-sm" placeholder="Category" list="service-category-options" />
                       <datalist id="service-category-options">
                         {categoryOptions.map((cat) => (
                           <option key={cat.id} value={cat.name} />
@@ -571,11 +573,11 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       <label htmlFor="category">Category</label>
                     </div>
                     <div className="form-floating">
-                      <input type="number" id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="0.00" />
+                      <FormControl type="number" id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} className="form-control ui-control-sm" placeholder="0.00" />
                       <label htmlFor="price">Price *</label>
                     </div>
                     <div className="form-floating">
-                      <input type="number" id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} className="form-control ui-control-sm" placeholder="60" />
+                      <FormControl type="number" id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} className="form-control ui-control-sm" placeholder="60" />
                       <label htmlFor="duration_minutes">Duration (min) *</label>
                     </div>
                   </div>
@@ -583,7 +585,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
                 {/* Description at the bottom */}
                 <div className="form-floating ui-form-floating-mb2">
-                  <textarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
+                  <FormControl as="textarea" id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea form-control form-control-sm" placeholder="Description" />
                   <label htmlFor="description">Description</label>
                 </div>
 
@@ -598,7 +600,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     {serviceAddons.length === 0 ? (
                       <div className="fst-italic small text-muted">No add-ons yet. Add items like broken nail repair or extra sauce.</div>
                     ) : (
-                      <table className="mb-0 table table-sm">
+                      <Table className="table-sm" responsive={false}>
                         <thead>
                           <tr>
                             <th>Name</th>
@@ -650,7 +652,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                      </Table>
                     )}
                   </div>
                 </div>
