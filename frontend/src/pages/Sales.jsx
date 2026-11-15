@@ -54,6 +54,7 @@ import Modal_History_Sales from "./components/modals/Modal_SalesHistory";
 import Modal_Feature_Select_Sales from "./components/modals/Modal_SalesFeatureSelect";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import { InputDate } from "./components/Inputs";
 import { getDisplayImageUrl } from "./components/utils/Utils_Image";
 import useViewMode from "../services/useViewMode";
 import { sortItemsAlphabetically } from "../utils/displaySort";
@@ -1896,7 +1897,7 @@ export default function Sales() {
 
                     <div>
                       <label className="app-menu-summary d-block mb-1 text-muted">Subscription start date</label>
-                      <input type="date" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} className="form-control ui-control-sm" />
+                      <InputDate value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} />
                     </div>
                   </div>
                 )}

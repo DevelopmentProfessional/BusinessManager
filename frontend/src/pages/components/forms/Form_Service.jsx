@@ -805,7 +805,6 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   options={resourceItems.filter((i) => !linkedResourceIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
                   placeholder="Select item"
                   searchable
-                  footerSearch
                   onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
                   createButtonTitle="Add item"
                   className="flex-grow-1"
@@ -870,7 +869,6 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   options={assetItems.filter((i) => !linkedAssetIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
                   placeholder="Select asset"
                   searchable
-                  footerSearch
                   onCreateFromSearch={handleCreateInventoryFromSearch("asset")}
                   createButtonTitle="Add asset"
                   className="flex-grow-1"
@@ -966,7 +964,6 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   options={locationItems.filter((i) => !linkedLocationIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
                   placeholder="Select location"
                   searchable
-                  footerSearch
                   onCreateFromSearch={handleCreateInventoryFromSearch("location")}
                   createButtonTitle="Add location"
                   className="flex-grow-1"

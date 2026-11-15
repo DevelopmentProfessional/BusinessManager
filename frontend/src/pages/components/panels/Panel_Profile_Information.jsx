@@ -13,7 +13,7 @@ export default function Panel_Profile_Information({
   if (!user) return null;
 
   return (
-    <div className="border rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
+    <div className="rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
       {isOpen && (
         <div className="profile-accordion-body p-3" style={{ maxHeight, overflowY: "auto" }}>
           <div className="row g-2">

@@ -28,7 +28,7 @@ export default function Panel_Profile_TimeOff({
   const historyRequests = allRequests.filter((r) => r.status !== "pending");
 
   return (
-    <div className="border rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
+    <div className="rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
       {isOpen && (
         <div className="profile-accordion-body p-3" style={{ maxHeight, overflowY: "auto" }}>
           <div className="g-2 mb-3 row">

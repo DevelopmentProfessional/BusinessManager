@@ -76,6 +76,7 @@ import Chart_Report from "./components/panels/Chart_Report";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Report_SelectorDropup from "./components/dropdowns/Report_SelectorDropup";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import { InputDate } from "./components/Inputs";
 import useViewMode from "../services/useViewMode";
 import Modal_ForecastCalculator from "./components/modals/Modal_ForecastCalculator";
 import Modal_Reports_SaveFilter from "./components/modals/Modal_Reports_SaveFilter";
@@ -1216,13 +1217,13 @@ export default function Reports() {
                     <label htmlFor="activity-start-date" className="form-label ui-form-label-sm">
                       Start Date
                     </label>
-                    <input id="activity-start-date" type="date" className="form-control ui-control-sm" value={activityStartDate} max={activityEndDate || undefined} onChange={(event) => setActivityStartDate(event.target.value)} />
+                    <InputDate id="activity-start-date" value={activityStartDate} max={activityEndDate || undefined} onChange={(event) => setActivityStartDate(event.target.value)} />
                   </div>
                   <div>
                     <label htmlFor="activity-end-date" className="form-label ui-form-label-sm">
                       End Date
                     </label>
-                    <input id="activity-end-date" type="date" className="form-control ui-control-sm" value={activityEndDate} min={activityStartDate || undefined} onChange={(event) => setActivityEndDate(event.target.value)} />
+                    <InputDate id="activity-end-date" value={activityEndDate} min={activityStartDate || undefined} onChange={(event) => setActivityEndDate(event.target.value)} />
                   </div>
                   <div className="flex-grow-1" style={{ minWidth: "12rem" }}>
                     <label className="form-label ui-form-label-sm">Employee</label>

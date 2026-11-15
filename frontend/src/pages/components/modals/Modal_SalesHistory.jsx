@@ -3,7 +3,7 @@
  * Full-screen sales / payment history with header, scrollable list, and filter footer.
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "../dropdowns/Filter_CatalogCheckboxes";
@@ -11,7 +11,7 @@ import Filter_SourceToggle from "../dropdowns/Filter_SourceToggle";
 import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { InputNumber, InputDate, InputText } from "../Inputs";
+import { InputNumber, InputDate } from "../Inputs";
 import Badge_Status from "../badges/Badge_Status";
 
 const STATUS_LABELS = {
@@ -65,12 +65,6 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
   const [local, setLocal] = useState({ ...EMPTY_HISTORY_FILTERS, ...historyFilters });
   const [clients, setClients] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [clientSearch, setClientSearch] = useState("");
-  const [employeeSearch, setEmployeeSearch] = useState("");
-  const [clientDropupOpen, setClientDropupOpen] = useState(false);
-  const [employeeDropupOpen, setEmployeeDropupOpen] = useState(false);
-  const clientRef = useRef(null);
-  const employeeRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -85,15 +79,6 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
         .catch(() => {});
     }
   }, [isOpen, historyFilters]);
-
-  useEffect(() => {
-    const handleOutside = (e) => {
-      if (clientRef.current && !clientRef.current.contains(e.target)) setClientDropupOpen(false);
-      if (employeeRef.current && !employeeRef.current.contains(e.target)) setEmployeeDropupOpen(false);
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, []);
 
   const handleApply = () => {
     setHistoryFilters({ ...local });
@@ -113,128 +98,35 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
           </div>
 
           <div className="gap-1 sales-history-filter-grid">
-            {/* Client dropup search */}
-            <div className="ui-pos-rel" ref={clientRef}>
-              <div className="input-group input-group-sm">
-                <InputText
-                  type="text"
-                  value={clientSearch || local.clientQuery || ""}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    setClientDropupOpen(true);
-                  }}
-                  onFocus={() => setClientDropupOpen(true)}
-                  placeholder={local.clientQuery ? `\u2713 ${local.clientQuery}` : "Client"}
-                  className="form-control ui-control-sm"
-                  aria-label="Filter by client"
-                />
-                {local.clientQuery && (
-                  <button
-                    className="btn ui-btn-outline-secondary-sm"
-                    type="button"
-                    onClick={() => {
-                      setLocal((p) => ({ ...p, clientQuery: "" }));
-                      setClientSearch("");
-                    }}
-                  >
-                    <XMarkIcon style={{ width: 12, height: 12 }} />
-                  </button>
-                )}
-              </div>
-              {clientDropupOpen && (
-                <div className="app-menu-panel bg-body border bottom-100 mb-1 position-absolute rounded-2 shadow start-0" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
-                  {clients
-                    .filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientSearch.toLowerCase()))
-                    .slice(0, 8)
-                    .map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="app-menu-item bg-transparent border-0 px-0 py-1 text-start w-100"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          setLocal((p) => ({ ...p, clientQuery: c.name }));
-                          setClientSearch("");
-                          setClientDropupOpen(false);
-                        }}
-                      >
-                        <div className="fw-semibold">{c.name}</div>
-                        {c.email && <div className="text-muted">{c.email}</div>}
-                      </button>
-                    ))}
-                  {clients.filter((c) => !clientSearch || c.name?.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && <div className="app-menu-empty px-0 py-1 text-muted">No matches</div>}
-                </div>
-              )}
-            </div>
-
-            {/* Employee dropup search */}
-            <div className="ui-pos-rel" ref={employeeRef}>
-              <div className="input-group input-group-sm">
-                <InputText
-                  type="text"
-                  value={employeeSearch || local.employeeQuery || ""}
-                  onChange={(e) => {
-                    setEmployeeSearch(e.target.value);
-                    setEmployeeDropupOpen(true);
-                  }}
-                  onFocus={() => setEmployeeDropupOpen(true)}
-                  placeholder={local.employeeQuery ? `\u2713 ${local.employeeQuery}` : "Employee"}
-                  className="form-control ui-control-sm"
-                  aria-label="Filter by employee"
-                />
-                {local.employeeQuery && (
-                  <button
-                    className="btn ui-btn-outline-secondary-sm"
-                    type="button"
-                    onClick={() => {
-                      setLocal((p) => ({ ...p, employeeQuery: "" }));
-                      setEmployeeSearch("");
-                    }}
-                  >
-                    <XMarkIcon style={{ width: 12, height: 12 }} />
-                  </button>
-                )}
-              </div>
-              {employeeDropupOpen && (
-                <div className="app-menu-panel bg-body border bottom-100 mb-1 position-absolute rounded-2 shadow start-0" style={{ zIndex: 60, minWidth: "14rem", maxHeight: "13rem", overflowY: "auto" }}>
-                  {employees
-                    .filter((e) => {
-                      if (!employeeSearch) return true;
-                      const name = `${e.first_name || ""} ${e.last_name || ""}`.trim();
-                      return name.toLowerCase().includes(employeeSearch.toLowerCase()) || e.email?.toLowerCase().includes(employeeSearch.toLowerCase());
-                    })
-                    .slice(0, 8)
-                    .map((e) => {
-                      const name = `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.email || `#${e.id}`;
-                      return (
-                        <button
-                          key={e.id}
-                          type="button"
-                          className="bg-transparent border-0 px-0 py-1 small text-start w-100"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            setLocal((p) => ({ ...p, employeeQuery: name }));
-                            setEmployeeSearch("");
-                            setEmployeeDropupOpen(false);
-                          }}
-                        >
-                          <div className="fw-semibold">{name}</div>
-                          {e.email && (
-                            <div className="text-muted" style={{ fontSize: "0.7rem" }}>
-                              {e.email}
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  {employees.length === 0 && <div className="px-0 py-1 small text-muted">No employees loaded</div>}
-                </div>
-              )}
-            </div>
+            <Dropdown_Custom
+              value={local.clientQuery}
+              onChange={(e) => setLocal((prev) => ({ ...prev, clientQuery: e.target.value }))}
+              options={clients.map((client) => ({ value: client.name, label: client.name, searchText: client.email }))}
+              placeholder="Client"
+              searchable
+              showClearButton
+              className="rounded-pill"
+              aria-label="Filter by client"
+            />
+            <Dropdown_Custom
+              value={local.employeeQuery}
+              onChange={(e) => setLocal((prev) => ({ ...prev, employeeQuery: e.target.value }))}
+              options={employees.map((employee) => {
+                const name = `${employee.first_name || ""} ${employee.last_name || ""}`.trim() || employee.email || `#${employee.id}`;
+                return { value: name, label: name, searchText: employee.email };
+              })}
+              placeholder="Employee"
+              searchable
+              showClearButton
+              className="rounded-pill"
+              aria-label="Filter by employee"
+            />
             <Dropdown_Custom
               value={local.status || ""}
               onChange={(e) => setLocal((prev) => ({ ...prev, status: e.target.value }))}
               className="form-select form-select-sm rounded-pill"
+              placeholder="All statuses"
+              floatingLabel="Status"
               options={[{ value: "", label: "All statuses" }, ...Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => ({ value: statusValue, label: statusLabel }))]}
             />
             <InputNumber min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="rounded-pill" aria-label="Minimum total" />

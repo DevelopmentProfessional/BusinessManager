@@ -18,6 +18,7 @@ import Footer_Actions from "../footers/Footer_Actions";
 import { useLocation, useNavigate } from "react-router-dom";
 import { clientCartAPI, clientOrdersAPI, inventoryFeaturesAPI } from "../../../services/api";
 import { LoadingSpinner } from "../feedback";
+import { InputDateTime } from "../Inputs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -334,7 +335,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
                             /* ── Service: appointment date picker ── */
                             <div>
                               <div className="fw-semibold mb-1 small text-muted">Appointment Date &amp; Time</div>
-                              <input type="datetime-local" className="form-control ui-control-sm" value={scheduledDate ? scheduledDate.slice(0, 16) : ""} onChange={(e) => handleSetScheduledDate(item.cartKey, e.target.value || null)} />
+                              <InputDateTime className="form-control ui-control-sm" value={scheduledDate ? scheduledDate.slice(0, 16) : ""} onChange={(e) => handleSetScheduledDate(item.cartKey, e.target.value || null)} />
                               {scheduledDate && (
                                 <button type="button" className="btn btn-link btn-sm mt-1 p-0 text-danger" style={{ fontSize: "0.75rem" }} onClick={() => handleSetScheduledDate(item.cartKey, null)}>
                                   Clear date
