@@ -91,7 +91,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
         <ModalStackContext.Provider value={nextDepth}>
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "" : "p-2"} no-scrollbar`}>
+          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-2" : "p-2"} no-scrollbar`}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
           {footer && <ModalFooter>{footer}</ModalFooter>}
@@ -122,7 +122,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
         <div
           className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${
-            noPadding ? "p-0" : "p-1"
+            noPadding ? "pt-2" : "p-1 pt-2"
           }`}
         >
           {children}

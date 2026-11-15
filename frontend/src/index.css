@@ -973,6 +973,13 @@ table::-webkit-scrollbar,
   overflow: visible !important;
 }
 
+/* Nested modal forms render their own header inside the shared modal body.
+   Keep the first floating-label row clear of that internal header. */
+.app-modal-body > .ui-page-shell > .app-modal-header + div,
+.app-modal-content > .ui-page-shell > .app-modal-header + div {
+  padding-top: 0.5rem !important;
+}
+
 /* Component-shell modals with their own footer still use the modal body as
    the single scroll owner; nested component surfaces must expand naturally. */
 .app-modal-body > .ui-component-shell:has(> .component-footer),
