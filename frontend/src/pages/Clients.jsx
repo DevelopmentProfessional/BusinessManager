@@ -49,6 +49,7 @@ import Modal_Client_Create from "./components/modals/Modal_Client_Create";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_Icon from "./components/buttons/Button_Icon";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
@@ -524,9 +525,7 @@ export default function Clients() {
       error={error}
       contentGravity="bottom"
       headerRight={
-        <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon className="app-icon-18" />
-        </button>
+        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       }
     >
       {/* Container_Scrollable rows – grow upwards from bottom (header sits above footer, like Employees) */}
@@ -603,17 +602,11 @@ export default function Clients() {
             <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
-            <button type="button" className="btn btn-circle btn-primary" title="Edit selected clients" onClick={() => setShowMultiEdit(true)}>
-              <PencilSquareIcon className="app-icon-14" />
-            </button>
+            <Button_Icon icon={PencilSquareIcon} label="Edit selected clients" variant="primary" onClick={() => setShowMultiEdit(true)} />
             <Gate_Permission page="clients" permission="delete">
-              <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected clients" onClick={handleDeleteSelectedClients}>
-                <TrashIcon className="app-icon-14" />
-              </button>
+              <Button_Icon icon={TrashIcon} label="Delete selected clients" variant="outline-danger" onClick={handleDeleteSelectedClients} />
             </Gate_Permission>
-            <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionCl}>
-              <XMarkIcon className="app-icon-14" />
-            </button>
+            <Button_Icon icon={XMarkIcon} label="Clear selection" variant="secondary" onClick={clearSelectionCl} />
           </div>
         </div>
       )}

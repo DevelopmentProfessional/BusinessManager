@@ -7,7 +7,7 @@ import React from "react";
  */
 export default function Table({ children, className = "", responsive = true, ...props }) {
   const table = (
-    <table className={`app-table table mb-0 ${className}`.trim()} {...props}>
+    <table {...props} className={`app-table table mb-0 ${className}`.trim()}>
       {children}
     </table>
   );

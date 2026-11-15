@@ -663,9 +663,7 @@ export default function Documents() {
       {/* Header */}
       <div className="app-page-header align-items-center border-bottom d-flex flex-shrink-0 justify-content-between p-1">
         <h1 className="app-page-title">{showTemplates ? "Templates" : "Documents"}</h1>
-        <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
-          <Cog6ToothIcon className="app-icon-18" />
-        </button>
+        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
       </div>
 
       {/* Error Alert */}

@@ -34,7 +34,7 @@ function adjustTrainingMargins(className) {
     .join(" ");
 }
 
-export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, ...rest }) {
+export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, style, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
   const normalizedTitle = typeof titleProp === "string" ? titleProp.trim().toLowerCase() : "";
@@ -81,7 +81,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
       }
     : undefined;
 
-  const mergedStyle = iconOnlyStyle ? { ...iconOnlyStyle, ...(rest.style || {}) } : rest.style;
+  const mergedStyle = iconOnlyStyle ? { ...(style || {}), ...iconOnlyStyle } : style;
 
   return (
     <InputButton

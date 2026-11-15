@@ -1,8 +1,8 @@
 import React from "react";
 
-export default function InputButton({ className = "", children, ...props }) {
+export default function InputButton({ className = "", children, style, ...props }) {
   return (
-    <button className={`app-input-button ${className}`.trim()} {...props}>
+    <button {...props} className={`app-input-button ${className}`.trim()} style={style}>
       {children}
     </button>
   );

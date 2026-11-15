@@ -41,6 +41,7 @@ export default function Dropup_Filter({ isOpen, onClose, sections = [], filters 
       isOpen={isOpen}
       onClose={onClose}
       title={title}
+      contentWidth
       footer={
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label="Apply" onClick={handleApply} className="btn-outline-secondary" title="Apply filters" />}

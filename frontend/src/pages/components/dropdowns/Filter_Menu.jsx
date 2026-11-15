@@ -75,7 +75,7 @@ export default function Filter_Menu({
         left: triggerRect.left,
         top: shouldOpenUpward ? undefined : triggerRect.bottom + 8,
         bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + 8 : undefined,
-        width: triggerRect.width,
+        minWidth: Math.min(Math.max(triggerRect.width, 176), window.innerWidth - 16),
         maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - 8 : window.innerHeight - triggerRect.bottom - 8),
       });
     };
@@ -128,8 +128,9 @@ export default function Filter_Menu({
             left: `${menuPosition.left}px`,
             top: menuPosition.top === undefined ? "auto" : `${menuPosition.top}px`,
             bottom: menuPosition.bottom === undefined ? "auto" : `${menuPosition.bottom}px`,
-            width: `${menuPosition.width}px`,
-            minWidth: `${menuPosition.width}px`,
+            width: "max-content",
+            minWidth: `${menuPosition.minWidth}px`,
+            maxWidth: "calc(100vw - 1rem)",
             maxHeight: `${menuPosition.maxHeight}px`,
           }}
         >

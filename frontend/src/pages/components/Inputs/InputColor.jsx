@@ -1,7 +1,7 @@
 import React, { forwardRef } from "react";
 
-const InputColor = forwardRef(function InputColor({ className = "", ...props }, ref) {
-  return <input ref={ref} type="color" className={`app-input-color ${className}`.trim()} {...props} />;
+const InputColor = forwardRef(function InputColor({ className = "", style, ...props }, ref) {
+  return <input ref={ref} {...props} type="color" className={`app-input-color ${className}`.trim()} style={style} />;
 });
 
 export default InputColor;

@@ -51,6 +51,7 @@ import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_Icon from "./components/buttons/Button_Icon";
 import useStore from "../services/useStore";
 import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
@@ -661,17 +662,11 @@ export default function Inventory() {
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
-              <button type="button" className="btn btn-circle btn-primary" title="Edit selected items" onClick={() => setShowMultiEdit(true)}>
-                <PencilSquareIcon className="app-icon-14" />
-              </button>
+              <Button_Icon icon={PencilSquareIcon} label="Edit selected items" variant="primary" onClick={() => setShowMultiEdit(true)} />
               <Gate_Permission page="inventory" permission="delete">
-                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected items" onClick={handleDeleteSelectedInv} disabled={multiSaving}>
-                  <TrashIcon className="app-icon-14" />
-                </button>
+                <Button_Icon icon={TrashIcon} label="Delete selected items" variant="outline-danger" onClick={handleDeleteSelectedInv} disabled={multiSaving} />
               </Gate_Permission>
-              <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionInv}>
-                <XMarkIcon className="app-icon-14" />
-              </button>
+              <Button_Icon icon={XMarkIcon} label="Clear selection" variant="secondary" onClick={clearSelectionInv} />
             </div>
           </div>
         )}
