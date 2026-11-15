@@ -48,6 +48,7 @@
  *   2026-07-26 | GitHub Copilot | Added initiate_refunds to assignable permission options for roles
  *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to role and user assignment options
  *   2026-09-11 | GitHub Copilot | Removed unused imports/handlers and dead payroll helper vars to reduce ESLint warnings
+ *   2026-11-15 | GitHub Copilot | Routed employee chat actions through the shared circular icon button
  * ============================================================
  */
 
@@ -1057,10 +1058,19 @@ export default function Employees() {
                     {pageSettings.showChat !== false && (
                       <td className="main-page-table-data p-0 text-center">
                         {employee.id !== currentUser?.id && (
-                          <button
-                            type="button"
-                            className={`btn m-0 d-flex align-items-center justify-content-center position-relative ${unreadCounts[employee.id] ? "btn-primary" : "btn-outline-secondary"}`}
+                          <Button_Icon
+                            icon={ChatBubbleLeftIcon}
+                            label={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ""}`}
                             title={`Chat with ${employee.first_name}${unreadCounts[employee.id] ? ` (${unreadCounts[employee.id]} unread)` : ""}`}
+                            variant={unreadCounts[employee.id] ? "primary" : "secondary"}
+                            className="m-0 position-relative"
+                            badge={
+                              unreadCounts[employee.id] > 0 ? (
+                                <span className="badge bg-danger position-absolute rounded-pill" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
+                                  {unreadCounts[employee.id] > 9 ? "9+" : unreadCounts[employee.id]}
+                                </span>
+                              ) : null
+                            }
                             onClick={(e) => {
                               e.stopPropagation();
                               setChattingEmployee(employee);
@@ -1071,14 +1081,7 @@ export default function Employees() {
                                 return next;
                               });
                             }}
-                          >
-                            <ChatBubbleLeftIcon style={{ width: 22, height: 22 }} />
-                            {unreadCounts[employee.id] > 0 && (
-                              <span className="badge bg-danger position-absolute rounded-pill" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
-                                {unreadCounts[employee.id] > 9 ? "9+" : unreadCounts[employee.id]}
-                              </span>
-                            )}
-                          </button>
+                          />
                         )}
                       </td>
                     )}

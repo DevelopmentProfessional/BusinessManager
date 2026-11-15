@@ -38,12 +38,14 @@
  *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to direct user assignment options
  *   2026-09-11 | GitHub Copilot | Removed unused props/locals and fixed missing effect dependencies
  *   2026-09-11 | GitHub Copilot | Added base pay and service compensation settings
+ *   2026-11-15 | GitHub Copilot | Replaced the inline department toggle with the shared icon button
  * ============================================================
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon, PlusIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Button_Icon from "../buttons/Button_Icon";
 import Footer_Actions from "../footers/Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../../services/api";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
@@ -867,19 +869,18 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                             closeOnSelect
                           />
                         </div>
-                        <button
-                          type="button"
+                        <Button_Icon
+                          icon={showNewDept ? XMarkIcon : PlusIcon}
+                          label={showNewDept ? "Close department form" : "Create a new department"}
                           title={showNewDept ? "Close" : "Create a new department"}
                           onClick={() => {
                             setShowNewDept((v) => !v);
                             setNewDeptName("");
                             setNewDeptDesc("");
                           }}
-                          className="btn btn-outline-secondary btn-sm flex-shrink-0"
-                          style={{ height: "3.2rem", width: "2.6rem", fontSize: "1rem" }}
-                        >
-                          {showNewDept ? "×" : "+"}
-                        </button>
+                          variant="secondary"
+                          className="flex-shrink-0"
+                        />
                       </div>
 
                       {showNewDept && (
