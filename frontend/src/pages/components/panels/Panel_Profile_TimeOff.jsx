@@ -93,7 +93,9 @@ export default function Panel_Profile_TimeOff({
                     <div className="d-flex flex-column gap-1">
                       {pendingRequests.map((r) => (
                         <div key={r.id} className="d-flex justify-content-between align-items-center small p-1 border rounded">
-                          <span>{r.type || "Leave"}: {r.start_date} to {r.end_date}</span>
+                          <span>
+                            {r.type || "Leave"}: {r.start_date} to {r.end_date}
+                          </span>
                           <Badge_Status status={r.status} />
                         </div>
                       ))}
@@ -109,7 +111,9 @@ export default function Panel_Profile_TimeOff({
                     <div className="d-flex flex-column gap-1">
                       {historyRequests.map((r) => (
                         <div key={r.id} className="d-flex justify-content-between align-items-center small p-1 border rounded">
-                          <span>{r.type || "Leave"}: {r.start_date} to {r.end_date}</span>
+                          <span>
+                            {r.type || "Leave"}: {r.start_date} to {r.end_date}
+                          </span>
                           <Badge_Status status={r.status} />
                         </div>
                       ))}
@@ -143,7 +147,7 @@ export default function Panel_Profile_TimeOff({
       >
         <div className="d-flex align-items-center gap-2">
           <CalendarDaysIcon className="app-icon" />
-          <span className="fw-semibold">Time Off</span>
+          <span className="fw-semibold">Benefits</span>
         </div>
         <ChevronUpIcon className="app-icon" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
       </div>
