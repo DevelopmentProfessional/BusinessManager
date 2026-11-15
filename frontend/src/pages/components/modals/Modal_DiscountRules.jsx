@@ -18,7 +18,7 @@ import Modal from "./Modal";
 
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { InputCheckbox, InputRadio, InputNumber, InputText } from "../Inputs";
+import { InputCheckbox, InputRadio, InputNumber, InputText, InputDateTime } from "../Inputs";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -458,12 +458,12 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               <div className="g-2 mb-2 row">
                 <div className="col-12">
                   <label className="form-label mb-0 small">Start</label>
-                  <input type="datetime-local" className="form-control ui-control-sm" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
+                  <InputDateTime value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
                 </div>
                 <div className="col-12">
                   <label className="form-label mb-0 small">End</label>
 
-                  <input type="datetime-local" className="form-control ui-control-sm" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
+                  <InputDateTime value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
                 </div>
               </div>
 

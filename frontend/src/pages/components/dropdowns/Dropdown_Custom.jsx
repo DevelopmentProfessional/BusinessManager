@@ -4,7 +4,6 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
-import { InputText } from "../Inputs";
 
 function getDropdownPortalHost() {
   if (typeof document === "undefined" || !document.body) return null;
@@ -31,7 +30,6 @@ export default function Dropdown_Custom({
   onOpen = null,
   loading = false,
   multiSelect = false,
-  footerSearch = true,
   onCreateFromSearch = null,
   createButtonTitle = "Add",
   openUpward = true,
@@ -177,7 +175,7 @@ export default function Dropdown_Custom({
   };
 
   // Filter options based on search term
-  const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value)) : sortedOptions;
+  const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value, option.searchText)) : sortedOptions;
 
   return (
     <div
@@ -185,59 +183,30 @@ export default function Dropdown_Custom({
       className={`app-dropdown-root relative w-full ${isFloating ? "form-floating app-dropdown-floating" : ""} ${hasValue ? "has-value" : ""} ${isOpen ? "is-open" : ""} ${className}`.trim()}
       style={style}
     >
-      {searchable && !footerSearch ? (
-        <div className="relative">
-          <InputText
-            id={id || undefined}
-            value={isOpen ? searchTerm : displayValue}
-            onChange={(e) => {
-              if (isOpen) {
-                setSearchTerm(e.target.value);
-              }
-            }}
-            onFocus={() => {
-              handleOpen();
-              setSearchTerm("");
-            }}
-            placeholder={isFloating ? " " : placeholder}
-            className={`ui-dropdown-trigger
-              w-full border rounded-lg 
-              focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-              border-gray-300 dark:border-gray-600
-              ${isFloating ? "app-dropdown-floating-trigger form-control form-select ui-control-sm" : "px-1 py-0"}
-              ${disabled ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500"}
-              ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
-            `}
-            style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}
-            disabled={disabled}
-          />
-        </div>
-      ) : (
-        <button
-          id={id || undefined}
-          type="button"
-          onClick={() => {
-            if (disabled) return;
-            if (!isOpen && onOpen) onOpen();
-            setIsOpen(!isOpen);
-          }}
-          className={`ui-dropdown-trigger
-            w-full border rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-            flex items-center justify-start
-            border-gray-300 dark:border-gray-600
-            ${isFloating ? "app-dropdown-floating-trigger form-control form-select ui-control-sm" : "px-1 py-0"}
-            ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
-            ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
-          `}
-          style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}
-          disabled={disabled}
-        >
-          <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`} style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}>
-            {isFloating && !hasValue && !isOpen ? "" : wordSafeDisplayValue}
-          </span>
-        </button>
-      )}
+      <button
+        id={id || undefined}
+        type="button"
+        onClick={() => {
+          if (disabled) return;
+          if (!isOpen && onOpen) onOpen();
+          setIsOpen(!isOpen);
+        }}
+        className={`ui-dropdown-trigger
+          w-full border rounded-pill
+          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+          flex items-center justify-start
+          border-gray-300 dark:border-gray-600
+          ${isFloating ? "app-dropdown-floating-trigger form-control form-select ui-control-sm" : "px-1 py-0"}
+          ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
+          ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
+        `}
+        style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}
+        disabled={disabled}
+      >
+        <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`} style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}>
+          {isFloating && !hasValue && !isOpen ? "" : wordSafeDisplayValue}
+        </span>
+      </button>
 
       {isFloating && (
         <label htmlFor={id || undefined} className="app-floating-label" style={{ fontSize: "var(--app-floating-label-font-size, 0.75rem)" }}>
@@ -262,8 +231,25 @@ export default function Dropdown_Custom({
             maxHeight: `${menuPosition.maxHeight}px`,
           }}
         >
-          {searchable && !footerSearch && (
-            <div className="app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 px-0 py-0">
+          {searchable && (
+            <div className="align-items-center app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 d-flex gap-2 px-0 py-0">
+              {typeof onCreateFromSearch === "function" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!searchTerm.trim()) return;
+                    setIsOpen(false);
+                    onCreateFromSearch(searchTerm.trim());
+                  }}
+                  className="align-items-center btn btn-outline-secondary btn-sm d-inline-flex justify-content-center"
+                  style={{ minWidth: "2rem", minHeight: "2rem", padding: "0.25rem" }}
+                  title={createButtonTitle}
+                  aria-label={createButtonTitle}
+                  disabled={!searchTerm.trim()}
+                >
+                  <PlusIcon className="ui-icon-4" />
+                </button>
+              )}
               <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} autoFocus />
             </div>
           )}
@@ -329,29 +315,6 @@ export default function Dropdown_Custom({
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {searchable && footerSearch && (
-            <div className="align-items-center app-menu-search bg-gray-50 border-gray-200 border-top d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 px-0 py-0">
-              {typeof onCreateFromSearch === "function" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!searchTerm.trim()) return;
-                    setIsOpen(false);
-                    onCreateFromSearch(searchTerm.trim());
-                  }}
-                  className="align-items-center btn btn-outline-secondary btn-sm d-inline-flex justify-content-center"
-                  style={{ minWidth: "2rem", minHeight: "2rem", padding: "0.25rem" }}
-                  title={createButtonTitle}
-                  aria-label={createButtonTitle}
-                  disabled={!searchTerm.trim()}
-                >
-                  <PlusIcon className="ui-icon-4" />
-                </button>
-              )}
-              <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} />
             </div>
           )}
 

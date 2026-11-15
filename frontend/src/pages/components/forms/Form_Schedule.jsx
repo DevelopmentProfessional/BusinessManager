@@ -53,7 +53,7 @@ import { XMarkIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { InputText, InputNumber, InputDate, InputTextarea } from "../Inputs";
+import { InputText, InputNumber, InputDate, InputDateTime, InputTextarea } from "../Inputs";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const APPOINTMENT_TYPES = [
@@ -775,7 +775,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <InputText type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} placeholder="Date and time" />
+                    <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -855,7 +855,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <InputText type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} placeholder="Date and time" />
+                    <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
@@ -949,7 +949,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
                 <div className="col-6">
                   <div className="form-floating">
-                    <InputText type="datetime-local" id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} placeholder="Date and time" />
+                    <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
                     <label htmlFor="appointment_datetime">Date & Time</label>
                   </div>
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
