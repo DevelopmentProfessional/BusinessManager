@@ -19,6 +19,7 @@
 #   2026-03-29 | GitHub Copilot | Removed hardcoded DB fallback and tightened PostgreSQL URL validation
 #   2026-04-08 | Claude  | Removed provider-specific host restrictions to support AWS RDS migration
 #   2026-05-15 | GitHub Copilot | Load backend and repo env files for consistent local AWS database startup
+#   2026-11-15 | GitHub Copilot | Support explicit AWS database URL when DATABASE_URL is not injected
 # ============================================================
 
 """PostgreSQL database configuration for the AWS RDS-backed application."""
@@ -31,7 +32,7 @@ from dotenv import load_dotenv
 _CURRENT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _CURRENT_DIR.parent
 
-load_dotenv(_REPO_ROOT / ".env", override=True)
+load_dotenv(_REPO_ROOT / ".env", override=False)
 load_dotenv(_CURRENT_DIR / ".env", override=False)
 load_dotenv(_CURRENT_DIR / ".env.local", override=True)
 
@@ -45,7 +46,7 @@ def _is_postgres_url(url: str) -> bool:
 # ─── 3 URL RESOLUTION ──────────────────────────────────────────────────────────
 def get_database_url() -> str:
     """Return the PostgreSQL URL supplied by the active environment."""
-    env_url = os.getenv("DATABASE_URL", "").strip()
+    env_url = os.getenv("DATABASE_URL", "").strip() or os.getenv("AWS_DATABASE_URL", "").strip()
     if not env_url:
         raise RuntimeError(
             "DATABASE_URL is not set. Configure it with the AWS RDS PostgreSQL URL."

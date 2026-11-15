@@ -190,9 +190,18 @@ function Ensure-AwsDbTunnel {
 	}
 
 	$rootEnvPath = Join-Path $RootPath ".env"
-	$remoteDatabaseUrl = Get-EnvFileValue -Path $rootEnvPath -Name "DATABASE_URL"
+	$remoteDatabaseUrl = Get-EnvFileValue -Path $rootEnvPath -Name "AWS_DATABASE_URL"
 	if ([string]::IsNullOrWhiteSpace($remoteDatabaseUrl)) {
-		Write-Host "$RoleName expects an AWS tunnel on localhost:$localPort, but the repo root .env does not contain DATABASE_URL." -ForegroundColor Yellow
+		$remoteDatabaseUrl = Get-EnvFileValue -Path $rootEnvPath -Name "DATABASE_URL"
+	}
+	if ([string]::IsNullOrWhiteSpace($remoteDatabaseUrl)) {
+		$remoteDatabaseUrl = $env:AWS_DATABASE_URL
+	}
+	if ([string]::IsNullOrWhiteSpace($remoteDatabaseUrl)) {
+		$remoteDatabaseUrl = $env:DATABASE_URL
+	}
+	if ([string]::IsNullOrWhiteSpace($remoteDatabaseUrl)) {
+		Write-Host "$RoleName expects an AWS tunnel on localhost:$localPort, but the repo root .env does not contain AWS_DATABASE_URL or DATABASE_URL." -ForegroundColor Yellow
 		return $false
 	}
 

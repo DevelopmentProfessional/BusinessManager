@@ -16,10 +16,9 @@ from dotenv import load_dotenv
 _service_dir = Path(__file__).resolve().parent
 _repo_env = _service_dir.parent / ".env"
 _local_env = _service_dir / ".env.local"
+load_dotenv(_repo_env, override=False)
 if _local_env.exists():
     load_dotenv(_local_env, override=True)
-
-load_dotenv(_repo_env, override=True)
 
 def _validate_database_url(url: str) -> str:
     value = (url or "").strip()
@@ -34,4 +33,6 @@ def _validate_database_url(url: str) -> str:
     return value
 
 
-DATABASE_URL = _validate_database_url(os.getenv("DATABASE_URL", ""))
+DATABASE_URL = _validate_database_url(
+    os.getenv("DATABASE_URL", "").strip() or os.getenv("AWS_DATABASE_URL", "").strip()
+)
