@@ -39,7 +39,7 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "../icons";
+import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";

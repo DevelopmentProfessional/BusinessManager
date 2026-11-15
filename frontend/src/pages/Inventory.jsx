@@ -46,7 +46,7 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "../icons";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon, DocumentCurrencyDollarIcon } from "../icons";
 import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";

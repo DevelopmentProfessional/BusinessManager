@@ -3,7 +3,7 @@
  */
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, CheckIcon, PencilSquareIcon, LinkIcon, TrashIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, PencilSquareIcon, LinkIcon, TrashIcon, DocumentTextIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { documentsAPI } from "../../../services/api";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";

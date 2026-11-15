@@ -28,7 +28,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { XMarkIcon, CalculatorIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, CodeBracketIcon } from "../../../icons";
+import { XMarkIcon, CalculatorIcon, ChevronDownIcon, ChevronUpIcon, PlusIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, CodeBracketIcon, DocumentTextIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

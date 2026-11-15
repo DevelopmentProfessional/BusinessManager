@@ -6,6 +6,7 @@ import {
   CircleStackIcon,
   ArrowUpTrayIcon,
   TableCellsIcon,
+  DocumentTextIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "../../../icons";

@@ -34,7 +34,7 @@ import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
-import { XMarkIcon, TagIcon, MagnifyingGlassIcon, CheckIcon } from "../../../icons";
+import { XMarkIcon, TagIcon, MagnifyingGlassIcon, CheckIcon, DocumentTextIcon } from "../../../icons";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
 
 // ─── 1 HELPERS ─────────────────────────────────────────────────────────────────
