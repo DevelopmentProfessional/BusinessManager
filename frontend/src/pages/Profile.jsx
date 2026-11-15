@@ -182,6 +182,8 @@ function LeaveRequestsTable({ requests, emptyMessage }) {
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout, setUser, hasPermission, refetchPermissions, refreshUserPermissions } = useStore();
+  const userRef = useRef(user);
+  userRef.current = user;
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { isTrainingMode, toggleViewMode, buttonTextSize, setButtonTextSize, footerAlign, setFooterAlign, uiScale, setUiScale } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
@@ -944,19 +946,20 @@ const Profile = () => {
 
   // ─── 10 USER SYNC HELPER ─────────────────────────────────────────────────
   const syncCurrentUser = useCallback(async () => {
-    if (!user?.id) return;
+    const currentUser = userRef.current;
+    if (!currentUser?.id) return;
     try {
-      const response = await employeesAPI.getUserData(user.id);
+      const response = await employeesAPI.getUserData(currentUser.id);
       const refreshedUser = response?.data ?? response;
       if (!refreshedUser || typeof refreshedUser !== "object") return;
-      const mergedUser = { ...user, ...refreshedUser };
+      const mergedUser = { ...currentUser, ...refreshedUser };
       setUser(mergedUser);
       if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
       if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
     } catch {
       /* silently degrade */
     }
-  }, [user, setUser]);
+  }, [setUser]);
 
   useEffect(() => {
     if (!user?.id || user?.color) return;
@@ -991,7 +994,6 @@ const Profile = () => {
     const load = async () => {
       setLeaveRequestsLoading(true);
       try {
-        await syncCurrentUser();
         const [vacRes, sickRes] = await Promise.all([leaveRequestsAPI.getByUser(user.id, "vacation"), leaveRequestsAPI.getByUser(user.id, "sick")]);
         if (cancelled) return;
         setVacationRequests(Array.isArray(vacRes?.data) ? vacRes.data : []);
@@ -1006,7 +1008,7 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [meSectionOpen, leaveManagementOpen, user?.id, syncCurrentUser]);
+  }, [meSectionOpen, leaveManagementOpen, user?.id]);
 
   const refreshLeaveRequests = async () => {
     if (!user?.id) return;
