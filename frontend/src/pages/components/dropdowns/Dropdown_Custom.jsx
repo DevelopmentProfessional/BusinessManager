@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
-import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
 
 function getDropdownPortalHost() {
@@ -42,7 +41,6 @@ export default function Dropdown_Custom({
   allowMultiModeToggle = false,
   isMultiModeActive = false,
   onToggleMultiMode = null,
-  wordSafeTruncate = true,
   style,
   label = "",
   floatingLabel = "",
@@ -63,6 +61,7 @@ export default function Dropdown_Custom({
   const handleOpen = () => {
     if (!disabled) {
       setIsOpen(true);
+      setSearchTerm("");
       if (onOpen) onOpen();
     }
   };
@@ -145,7 +144,6 @@ export default function Dropdown_Custom({
       ? selectedOption.label
       : (isFloating ? "" : placeholder);
   const selectedSet = multiSelect ? new Set(normalizedValue) : new Set();
-  const { ref: triggerTextRef, displayLabel: wordSafeDisplayValue } = useWordSafeLabel(displayValue, { enabled: wordSafeTruncate });
 
   const handleSelect = (option) => {
     if (multiSelect) {
@@ -183,13 +181,27 @@ export default function Dropdown_Custom({
       className={`app-dropdown-root relative w-full ${isFloating ? "form-floating app-dropdown-floating" : ""} ${hasValue ? "has-value" : ""} ${isOpen ? "is-open" : ""} ${className}`.trim()}
       style={style}
     >
-      <button
+      <input
         id={id || undefined}
-        type="button"
-        onClick={() => {
+        type="search"
+        value={isOpen ? searchTerm : displayValue}
+        onFocus={() => {
           if (disabled) return;
-          if (!isOpen && onOpen) onOpen();
-          setIsOpen(!isOpen);
+          if (!isOpen) handleOpen();
+        }}
+        onChange={(event) => {
+          if (disabled) return;
+          if (!isOpen) handleOpen();
+          setSearchTerm(event.target.value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setIsOpen(false);
+          } else if (event.key === "ArrowDown" && !isOpen) {
+            event.preventDefault();
+            handleOpen();
+          }
         }}
         className={`ui-dropdown-trigger
           w-full border rounded-pill
@@ -202,11 +214,9 @@ export default function Dropdown_Custom({
         `}
         style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}
         disabled={disabled}
-      >
-        <span ref={triggerTextRef} className={`app-word-safe-label ${(multiSelect ? selectedOptions.length === 0 : !selectedOption) ? "text-gray-500 dark:text-gray-400" : ""}`} style={{ fontSize: "var(--app-dropdown-font-size, 0.5rem)", textAlign: "left" }}>
-          {isFloating && !hasValue && !isOpen ? "" : wordSafeDisplayValue}
-        </span>
-      </button>
+        placeholder={isFloating ? "" : placeholder}
+        aria-label={effectiveFloatingLabel || placeholder || undefined}
+      />
 
       {isFloating && (
         <label htmlFor={id || undefined} className="app-floating-label" style={{ fontSize: "var(--app-floating-label-font-size, 0.75rem)" }}>
@@ -231,29 +241,6 @@ export default function Dropdown_Custom({
             maxHeight: `${menuPosition.maxHeight}px`,
           }}
         >
-          {searchable && (
-            <div className="align-items-center app-menu-search bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-600 d-flex gap-2 px-0 py-0">
-              {typeof onCreateFromSearch === "function" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!searchTerm.trim()) return;
-                    setIsOpen(false);
-                    onCreateFromSearch(searchTerm.trim());
-                  }}
-                  className="align-items-center btn btn-outline-secondary btn-sm d-inline-flex justify-content-center"
-                  style={{ minWidth: "2rem", minHeight: "2rem", padding: "0.25rem" }}
-                  title={createButtonTitle}
-                  aria-label={createButtonTitle}
-                  disabled={!searchTerm.trim()}
-                >
-                  <PlusIcon className="ui-icon-4" />
-                </button>
-              )}
-              <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-control ui-control-sm" placeholder={placeholder ? `Search ${placeholder.toLowerCase()}` : "Search options"} autoFocus />
-            </div>
-          )}
-
           {loading ? (
             <div className="app-menu-empty dark:text-gray-400 flex gap-2 items-center px-1 py-0 text-gray-500">
               <span className="animate-spin border-2 border-gray-400 border-t-transparent h-4 rounded-full w-4" />
@@ -318,8 +305,24 @@ export default function Dropdown_Custom({
             </div>
           )}
 
-          {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle) && (
+          {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle || typeof onCreateFromSearch === "function") && (
             <div className="bg-gray-50 border-gray-200 border-top d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 p-0">
+              {typeof onCreateFromSearch === "function" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!searchTerm.trim()) return;
+                    setIsOpen(false);
+                    onCreateFromSearch(searchTerm.trim());
+                  }}
+                  className="align-items-center app-menu-action btn btn-outline-secondary btn-sm d-flex flex-grow-1 justify-content-center"
+                  title={createButtonTitle}
+                  aria-label={createButtonTitle}
+                  disabled={!searchTerm.trim()}
+                >
+                  <PlusIcon className="ui-icon-4" />
+                </button>
+              )}
               <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1">
                 OK
               </button>
