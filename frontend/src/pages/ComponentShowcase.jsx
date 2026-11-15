@@ -41,8 +41,6 @@ import { InputText, InputNumber, InputDate, InputTextarea, InputButton, InputDro
 
 // Badges
 import Badge from "./components/badges/Badge";
-import Badge_Status from "./components/badges/Badge_Status";
-import Badge_PendingOrder from "./components/badges/Badge_PendingOrder";
 import { EmptyState, ErrorState, LoadingOverlay, LoadingSpinner, SuccessMessage } from "./components/feedback";
 
 // Dropdowns & Selection Filters
@@ -695,14 +693,28 @@ export default function ComponentShowcase() {
               <InputTextarea placeholder="Textarea" defaultValue="Shared textarea primitive" rows={3} aria-label="Textarea" />
               <InputFile aria-label="File input" />
               <InputColor defaultValue="#4f46e5" aria-label="Color input" />
-              <label className="align-items-center d-flex gap-2 small">
-                <InputCheckbox defaultChecked aria-label="Checkbox input" />
-                Checkbox input
-              </label>
-              <label className="align-items-center d-flex gap-2 small">
-                <InputRadio name="showcase-radio" defaultChecked aria-label="Radio input" />
-                Radio input
-              </label>
+              <div className="input-choice-group" aria-label="Checkbox input examples">
+                <span className="small text-muted">Checkbox input</span>
+                <div className="d-flex flex-wrap gap-2">
+                  {["Option one", "Option two", "Option three"].map((option, index) => (
+                    <label key={option} className="btn btn-outline-secondary input-choice">
+                      <InputCheckbox defaultChecked={index === 0} name="showcase-checkbox" value={option} aria-label={option} />
+                      <span>{option}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="input-choice-group" aria-label="Radio input examples">
+                <span className="small text-muted">Radio input</span>
+                <div className="d-flex flex-wrap gap-2">
+                  {["Option one", "Option two", "Option three"].map((option, index) => (
+                    <label key={option} className="btn btn-outline-secondary input-choice">
+                      <InputRadio defaultChecked={index === 0} name="showcase-radio" value={option} aria-label={option} />
+                      <span>{option}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
               <InputDropup
                 value={dropdownValue}
                 onChange={(event) => setDropdownValue(event.target.value)}
@@ -816,40 +828,12 @@ export default function ComponentShowcase() {
         {/* ═══════════════════════════════════════════════════════════════════
             SECTION: BADGES
         ═══════════════════════════════════════════════════════════════════ */}
-        {isCardVisible("Badge.jsx (Variants)", "Badges") && (
-          <ComponentCard title="Badge.jsx (Color Variants)" category="Badges" width="360px">
+        {isCardVisible("Badge.jsx", "Badges") && (
+          <ComponentCard title="Badge.jsx" category="Badges" width="360px">
             <div className="d-flex flex-wrap gap-2 align-items-center">
-              <Badge variant="gray" label="Default Gray" />
-              <Badge variant="green" label="Success Green" />
-              <Badge variant="red" label="Danger Red" />
-              <Badge variant="blue" label="Info Blue" />
-              <Badge variant="yellow" label="Warning Yellow" />
-              <Badge variant="purple" label="Tier Purple" />
-              <Badge variant="cyan" label="Cyan Tag" />
-              <Badge variant="green" pill label="Pill Variant" />
-            </div>
-          </ComponentCard>
-        )}
-
-        {isCardVisible("Badge_Status.jsx", "Badges") && (
-          <ComponentCard title="Badge_Status.jsx" category="Badges" width="360px">
-            <div className="d-flex flex-wrap gap-2 align-items-center">
-              <Badge_Status status="active" />
-              <Badge_Status status="pending" />
-              <Badge_Status status="completed" />
-              <Badge_Status status="cancelled" />
-              <Badge_Status status="in_progress" />
-              <Badge_Status status="paid" />
-              <Badge_Status status="unpaid" />
-            </div>
-          </ComponentCard>
-        )}
-
-        {isCardVisible("Badge_PendingOrder.jsx", "Badges") && (
-          <ComponentCard title="Badge_PendingOrder.jsx" category="Badges" width="320px">
-            <div className="d-flex flex-wrap gap-2">
-              <Badge_PendingOrder count={3} />
-              <Badge_PendingOrder count={12} />
+              <Badge label="Default badge" />
+              <Badge label="Another badge" />
+              <Badge label="Status badge" />
             </div>
           </ComponentCard>
         )}

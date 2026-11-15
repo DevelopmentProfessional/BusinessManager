@@ -115,14 +115,14 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full rounded-t-lg ${
           contentWidth ? "app-modal-dialog--content-width" : ""
         } ${
-          fullScreen ? "max-h-screen max-h-[95vh] app-modal-sheet--fullscreen" : "max-h-[90vh]"
+          fullScreen ? "max-h-screen max-h-[95vh] app-modal-dialog--fullscreen app-modal-sheet--fullscreen" : "max-h-[90vh]"
         }`}
         style={{ zIndex: modalContentZIndex }}
       >
         {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
         <div
-          className={`app-modal-body app-modal-content flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${
-            noPadding ? "pt-2" : "p-1 pt-2"
+          className={`app-modal-body app-modal-content app-modal-scroll-surface flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${
+            noPadding ? "p-0" : "p-1 pt-2"
           }`}
         >
           {children}

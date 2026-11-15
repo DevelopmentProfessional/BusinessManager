@@ -855,11 +855,15 @@ table::-webkit-scrollbar,
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.app-modal-dialog--fullscreen {
+.app-modal-dialog--fullscreen,
+.app-modal-sheet--fullscreen {
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100vh !important;
   max-width: 100% !important;
-  max-height: 90vh !important;
-  border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
-  border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
+  max-height: 100vh !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
   border-top: 0.0625rem solid var(--bs-border-color) !important;
@@ -945,6 +949,20 @@ table::-webkit-scrollbar,
   overscroll-behavior-y: contain !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+}
+
+/* Every modal inherits one scroll surface from the foundation. Direct children
+   must expand naturally so desktop wheel and mobile touch scrolling reach it. */
+.app-modal-scroll-surface {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.app-modal-scroll-surface > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Modal bodies own the desktop scroll surface; nested shells must not trap it. */
@@ -1977,6 +1995,96 @@ div[role="combobox"] {
   font-size: var(--app-input-font-size) !important;
 }
 
+.app-input-file {
+  display: inline-flex;
+  align-items: center;
+  height: var(--app-input-height);
+  min-height: var(--app-input-height);
+}
+
+.app-input-file__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.app-input-file__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--app-input-height);
+  height: var(--app-input-height);
+  min-height: var(--app-input-height);
+  padding: 0;
+  cursor: pointer;
+}
+
+.app-input-file__button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.app-input-file__name {
+  min-width: 0;
+  margin-left: 0.5rem;
+  overflow: hidden;
+  color: var(--bs-secondary-color);
+  font-size: var(--app-input-font-size);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-input-file__input:focus-visible + .app-input-file__button {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.input-choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.input-choice {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+}
+
+.input-choice:has(input:checked) {
+  color: #fff;
+  background-color: var(--app-active-color);
+  border-color: var(--app-active-color);
+}
+
+.input-choice:has(input:checked):hover,
+.input-choice:has(input:checked):focus-visible {
+  color: #fff;
+  background-color: var(--app-active-color-hover);
+  border-color: var(--app-active-color-hover);
+}
+
+.input-choice:has(input:focus-visible) {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.input-choice .form-check-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .app-search-input {
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
@@ -2779,20 +2887,23 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
 
 .sales-history-filter-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
   gap: 0.35rem;
 }
 
-@media (min-width: 36rem) {
-  .sales-history-filter-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+.sales-history-component-footer__left {
+  flex: 1 1 auto !important;
+  min-width: 0;
+  width: 100%;
 }
 
-@media (min-width: 62rem) {
-  .sales-history-filter-grid {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
+.sales-history-component-footer__left > .sales-history-footer {
+  min-width: 0;
+}
+
+.sales-history-filter-grid .sales-history-catalog-filter {
+  width: 100%;
+  min-width: 0 !important;
 }
 
 /* Modal/form footer — Save/Add left, Cancel/Close center, optional actions right */
@@ -4067,6 +4178,7 @@ select.form-select {
 .template-editor-content-shell {
   flex: 1 1 auto !important;
   min-height: 0 !important;
+  min-width: 0 !important;
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
@@ -4075,15 +4187,19 @@ select.form-select {
 .template-editor-richtext-wrap {
   flex: 1 1 auto !important;
   min-height: 0 !important;
+  min-width: 0 !important;
   height: 100% !important;
   width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
+  overflow: auto !important;
 }
 
 .template-editor-richtext-wrap .tiptap-editor {
   flex: 1 1 auto !important;
   min-height: 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
@@ -4092,9 +4208,24 @@ select.form-select {
 .template-editor-richtext-wrap .tiptap-editor .tiptap {
   flex: 1 1 auto !important;
   min-height: 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
   height: 100% !important;
   overflow-y: auto !important;
   padding: 1rem !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.template-editor-richtext-wrap .tiptap-editor .tiptap img {
+  max-width: 100%;
+  height: auto;
+}
+
+.template-editor-richtext-wrap .tiptap-editor .tiptap table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .template-editor-toolbar-shell {
@@ -4106,6 +4237,19 @@ select.form-select {
   z-index: 1;
   display: flex !important;
   justify-content: flex-start !important;
+}
+
+.template-editor-footer.app-form-footer {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.template-editor-footer-row {
+  padding-right: var(--app-footer-padding-x) !important;
+}
+
+.template-editor-actions {
+  padding-right: calc(var(--app-footer-padding-x) + var(--app-footer-nav-reserve)) !important;
 }
 
 .template-editor-meta-row {
@@ -4171,6 +4315,10 @@ select.form-select {
 }
 
 @media (max-width: 40rem) {
+  .template-editor-richtext-wrap .tiptap-editor .tiptap {
+    padding: 0.75rem !important;
+  }
+
   .template-editor-toolbar-shell {
     max-height: 8rem;
     overflow-y: auto;

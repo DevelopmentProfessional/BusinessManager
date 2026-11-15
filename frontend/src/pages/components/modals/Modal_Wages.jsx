@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { BanknotesIcon, XMarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, UserGroupIcon } from "../../../icons";
+import { BanknotesIcon, XMarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon } from "../../../icons";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { payrollAPI } from "../../../services/api";
 import Modal from "./Modal";
@@ -493,92 +493,90 @@ export default function Modal_Wages({ employees = [], onClose }) {
         </span>
       }
       footer={
-        <div className="d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
-        </div>
-      }
-      noPadding
-    >
-      <div className="d-flex flex-column h-100 w-100 overflow-hidden">
-        {/* ── Tabs header ── */}
-        <div className="bg-white border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 pt-1 px-2">
-          <div className="d-flex gap-1" style={{ marginBottom: -1 }}>
+        <div className="d-flex flex-column gap-1 w-100">
+          <div className="d-flex flex-wrap gap-1">
             {[
-              { key: "calendar", label: "Calendar", Icon: CalendarDaysIcon },
-              { key: "process", label: "Process", Icon: BanknotesIcon },
-              { key: "onetime", label: "One-Time", Icon: CheckIcon },
-              { key: "history", label: "History", Icon: UserGroupIcon },
+              { key: "calendar", label: "Calendar" },
+              { key: "process", label: "Process" },
+              { key: "onetime", label: "One-Time" },
+              { key: "history", label: "History" },
             ].map(({ key, label }) => (
-              <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm px-2 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`} style={{ borderRadius: "0.5rem 0.5rem 0 0", borderBottom: "none", fontSize: "0.82rem" }}>
+              <button key={key} type="button" onClick={() => setActiveTab(key)} className={`btn btn-sm px-2 ${activeTab === key ? "btn-secondary" : "btn-outline-secondary"}`} style={{ borderRadius: "0.5rem", fontSize: "0.82rem" }}>
                 {label}
               </button>
             ))}
           </div>
+          <div className="border-top pt-1">
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
+          </div>
         </div>
-
+      }
+      noPadding
+    >
+      <div className="w-100">
         {/* ── Body ── */}
-        <div className="flex-grow-1 min-h-0 no-scrollbar overflow-auto p-1">
-        {/* ═══ CALENDAR TAB ═══ */}
-        {activeTab === "calendar" && (
-          <CalendarTab
-            calYear={calYear}
-            setCalYear={setCalYear}
-            calMonth={calMonth}
-            setCalMonth={setCalMonth}
-            calPeriods={calPeriods}
-            selectedPeriod={selectedPeriod}
-            setSelectedPeriod={setSelectedPeriod}
-            activeEmps={activeEmps}
-            slipMap={slipMap}
-            slipsLoading={slipsLoading}
-            scheduleLoading={scheduleLoading}
-            schedule={schedule}
-            onGoToProcess={(period) => {
-              // Jump to process tab with the correct month/period
-              const d = new Date(period.start + "T00:00:00");
-              setProcYear(d.getFullYear());
-              setProcMonth(d.getMonth());
-              // Index will be set once procPeriods recomputes
-              setActiveTab("process");
-            }}
-          />
-        )}
+        <div className="p-1">
+          {/* ═══ CALENDAR TAB ═══ */}
+          {activeTab === "calendar" && (
+            <CalendarTab
+              calYear={calYear}
+              setCalYear={setCalYear}
+              calMonth={calMonth}
+              setCalMonth={setCalMonth}
+              calPeriods={calPeriods}
+              selectedPeriod={selectedPeriod}
+              setSelectedPeriod={setSelectedPeriod}
+              activeEmps={activeEmps}
+              slipMap={slipMap}
+              slipsLoading={slipsLoading}
+              scheduleLoading={scheduleLoading}
+              schedule={schedule}
+              onGoToProcess={(period) => {
+                // Jump to process tab with the correct month/period
+                const d = new Date(period.start + "T00:00:00");
+                setProcYear(d.getFullYear());
+                setProcMonth(d.getMonth());
+                // Index will be set once procPeriods recomputes
+                setActiveTab("process");
+              }}
+            />
+          )}
 
-        {/* ═══ PROCESS TAB ═══ */}
-        {activeTab === "process" && (
-          <ProcessTab
-            schedule={schedule}
-            scheduleLoading={scheduleLoading}
-            setProcYear={setProcYear}
-            procMonth={procMonth}
-            setProcMonth={setProcMonth}
-            procPeriods={procPeriods}
-            procPeriodIdx={procPeriodIdx}
-            setProcPeriodIdx={setProcPeriodIdx}
-            currentProcPeriod={currentProcPeriod}
-            activeEmps={activeEmps}
-            slipMap={slipMap}
-            slipsLoading={slipsLoading}
-            selectedEmpIds={selectedEmpIds}
-            setSelectedEmpIds={setSelectedEmpIds}
-            expandedId={expandedId}
-            expandForms={expandForms}
-            processingIds={processingIds}
-            rowErrors={rowErrors}
-            batchProgress={batchProgress}
-            setBatchProgress={setBatchProgress}
-            handleExpandEmp={handleExpandEmp}
-            handlePaySingle={handlePaySingle}
-            handlePaySelected={handlePaySelected}
-            updateForm={updateForm}
-          />
-        )}
+          {/* ═══ PROCESS TAB ═══ */}
+          {activeTab === "process" && (
+            <ProcessTab
+              schedule={schedule}
+              scheduleLoading={scheduleLoading}
+              setProcYear={setProcYear}
+              procMonth={procMonth}
+              setProcMonth={setProcMonth}
+              procPeriods={procPeriods}
+              procPeriodIdx={procPeriodIdx}
+              setProcPeriodIdx={setProcPeriodIdx}
+              currentProcPeriod={currentProcPeriod}
+              activeEmps={activeEmps}
+              slipMap={slipMap}
+              slipsLoading={slipsLoading}
+              selectedEmpIds={selectedEmpIds}
+              setSelectedEmpIds={setSelectedEmpIds}
+              expandedId={expandedId}
+              expandForms={expandForms}
+              processingIds={processingIds}
+              rowErrors={rowErrors}
+              batchProgress={batchProgress}
+              setBatchProgress={setBatchProgress}
+              handleExpandEmp={handleExpandEmp}
+              handlePaySingle={handlePaySingle}
+              handlePaySelected={handlePaySelected}
+              updateForm={updateForm}
+            />
+          )}
 
-        {/* ═══ ONE-TIME TAB ═══ */}
-        {activeTab === "onetime" && <OneTimeTab employees={employees} ot={ot} setOt={setOt} otLoading={otLoading} otResult={otResult} handleOtSubmit={handleOtSubmit} />}
+          {/* ═══ ONE-TIME TAB ═══ */}
+          {activeTab === "onetime" && <OneTimeTab employees={employees} ot={ot} setOt={setOt} otLoading={otLoading} otResult={otResult} handleOtSubmit={handleOtSubmit} />}
 
-        {/* ═══ HISTORY TAB ═══ */}
-        {activeTab === "history" && <HistoryTab slipsLoading={slipsLoading} filteredHistory={filteredHistory} histSearch={histSearch} setHistSearch={setHistSearch} empMap={empMap} />}
+          {/* ═══ HISTORY TAB ═══ */}
+          {activeTab === "history" && <HistoryTab slipsLoading={slipsLoading} filteredHistory={filteredHistory} histSearch={histSearch} setHistSearch={setHistSearch} empMap={empMap} />}
         </div>
       </div>
     </Modal>
@@ -1127,7 +1125,7 @@ function ProcessTab({
 
 function OneTimeTab({ employees, ot, setOt, otLoading, otResult, handleOtSubmit }) {
   return (
-    <div className="p-1">
+    <div className="p-1 mb-6">
       <p className="mb-3 small text-muted">Issue a bonus, commission, reimbursement, or any one-off payment. These appear in the employee's pay history and do not affect regular payroll cycles.</p>
 
       {otResult?.ok && (

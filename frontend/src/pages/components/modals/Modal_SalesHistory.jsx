@@ -93,11 +93,11 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
       <div className="app-footer-padding app-standard-footer">
         <div className="d-flex flex-column gap-2 sales-history-filter-panel">
           <div className="align-items-center d-flex flex-wrap gap-2 justify-content-between">
-            <Filter_CatalogCheckboxes legend="" value={local} onChange={(key, checked) => setLocal((prev) => ({ ...prev, [key]: checked }))} />
             <Filter_SourceToggle value={local.saleSource} onChange={(saleSource) => setLocal((prev) => ({ ...prev, saleSource }))} />
           </div>
 
           <div className="gap-1 sales-history-filter-grid">
+            <Filter_CatalogCheckboxes legend="" value={local} onChange={(key, checked) => setLocal((prev) => ({ ...prev, [key]: checked }))} className="sales-history-catalog-filter" />
             <Dropdown_Custom
               value={local.clientQuery}
               onChange={(e) => setLocal((prev) => ({ ...prev, clientQuery: e.target.value }))}
@@ -135,7 +135,7 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
             <InputDate value={local.endDate} onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))} className="rounded-pill" aria-label="To date" />
           </div>
 
-          <div className="align-items-center d-flex gap-1 pt-1">
+          <div className="align-items-center d-flex flex-wrap gap-1 pt-1">
             <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />
             <Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-outline-secondary" />
             <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
@@ -325,8 +325,8 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
         </div>
         {/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
+        <div className="component-footer sales-history-component-footer">
+          <div className="component-footer-left sales-history-component-footer__left">
             <SalesHistoryFilterFooter isOpen={isOpen} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onClose={onClose} />
           </div>
           <div className="component-footer-center"></div>

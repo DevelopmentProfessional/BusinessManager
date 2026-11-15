@@ -1,5 +1,8 @@
 /*
  * Full-screen modal for managing insurance plans and linking shared plan documents.
+ *
+ * CHANGE LOG
+ * 2026-11-15 | GitHub Copilot | Aligned the modal footer with the shared component hierarchy.
  */
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
@@ -212,11 +215,14 @@ export default function Modal_InsurancePlans({
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
-          <Footer_Actions
-            start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-primary" title={editingPlan ? "Save plan" : "Add plan"} />}
-            center={<Button_Toolbar icon={XMarkIcon} label={editingPlan ? "Cancel" : "Close"} onClick={editingPlan ? () => setEditingPlan(null) : onClose} className="btn-outline-secondary" title={editingPlan ? "Cancel edit" : "Close"} />}
-          />
+        <div className="component-footer">
+          <div className="component-footer-left">
+            <Footer_Actions
+              start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-primary" title={editingPlan ? "Save plan" : "Add plan"} />}
+              center={<Button_Toolbar icon={XMarkIcon} label={editingPlan ? "Cancel" : "Close"} onClick={editingPlan ? () => setEditingPlan(null) : onClose} className="btn-outline-secondary" title={editingPlan ? "Cancel edit" : "Close"} />}
+            />
+          </div>
+          <div className="component-footer-right"></div>
         </div>
       </form>
 

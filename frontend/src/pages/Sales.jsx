@@ -106,12 +106,8 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
 
         {/* Item Header: Name & Type Icon */}
         <div className="relative z-10 flex items-start justify-between gap-1 w-full min-w-0">
-          <h3 className="font-semibold line-clamp-2 m-0 text-xs text-gray-900 dark:text-gray-100 leading-tight">
-            {item.name}
-          </h3>
-          <div className="flex-shrink-0 opacity-70">
-            {isService ? <SparklesIcon className="h-3.5 w-3.5 text-primary-500" /> : <CubeIcon className="h-3.5 w-3.5 text-secondary-500" />}
-          </div>
+          <h3 className="font-semibold line-clamp-2 m-0 text-xs text-gray-900 dark:text-gray-100 leading-tight">{item.name}</h3>
+          <div className="flex-shrink-0 opacity-70">{isService ? <SparklesIcon className="h-3.5 w-3.5 text-primary-500" /> : <CubeIcon className="h-3.5 w-3.5 text-secondary-500" />}</div>
         </div>
 
         {/* Item Footer: Price & Cart controls */}
@@ -132,7 +128,10 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
                 </button>
               </div>
             ) : (
-              <button onClick={handleAddToCart} className="bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-1.5 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700 text-gray-700 text-xs transition-colors">
+              <button
+                onClick={handleAddToCart}
+                className="bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-1.5 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700 text-gray-700 text-xs transition-colors"
+              >
                 <ShoppingCartIcon className="h-3 w-3" />
                 Add
               </button>
@@ -462,20 +461,23 @@ export default function Sales() {
   const [checkoutContext, setCheckoutContext] = useState(null);
   const [checkoutReturnTarget, setCheckoutReturnTarget] = useState(null);
 
-  const closeCheckoutModal = useCallback((returnState = null) => {
-    setShowCheckout(false);
+  const closeCheckoutModal = useCallback(
+    (returnState = null) => {
+      setShowCheckout(false);
 
-    if (checkoutReturnTarget?.pathname) {
-      const targetPath = `${checkoutReturnTarget.pathname}${checkoutReturnTarget.search || ""}${checkoutReturnTarget.hash || ""}`;
-      const nextState = returnState ? { ...(checkoutReturnTarget.state || {}), ...returnState } : checkoutReturnTarget.state;
-      const navOptions = nextState ? { state: nextState } : undefined;
+      if (checkoutReturnTarget?.pathname) {
+        const targetPath = `${checkoutReturnTarget.pathname}${checkoutReturnTarget.search || ""}${checkoutReturnTarget.hash || ""}`;
+        const nextState = returnState ? { ...(checkoutReturnTarget.state || {}), ...returnState } : checkoutReturnTarget.state;
+        const navOptions = nextState ? { state: nextState } : undefined;
+        setCheckoutReturnTarget(null);
+        navigate(targetPath || "/", navOptions);
+        return;
+      }
+
       setCheckoutReturnTarget(null);
-      navigate(targetPath || "/", navOptions);
-      return;
-    }
-
-    setCheckoutReturnTarget(null);
-  }, [checkoutReturnTarget, navigate]);
+    },
+    [checkoutReturnTarget, navigate]
+  );
 
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
@@ -772,110 +774,116 @@ export default function Sales() {
     }
   }, [clientsLoaded]);
 
-  const getNextScheduledService = useCallback(async (clientId) => {
-    if (!clientId) return null;
-    try {
-      const res = await clientsAPI.getSchedules(clientId);
-      const schedules = Array.isArray(res?.data) ? res.data : [];
-      const now = new Date();
-      const next = schedules
-        .filter((s) => {
-          const date = new Date(s.appointment_date);
-          const status = String(s.status || "").toLowerCase();
-          return !Number.isNaN(date.getTime()) && date >= now && status !== "cancelled";
-        })
-        .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))[0];
-      if (!next?.service_id) return null;
-      const localService = services.find((svc) => String(svc.id) === String(next.service_id));
-      if (localService) return localService;
-      const svcRes = await servicesAPI.getById(next.service_id);
-      return svcRes?.data ?? svcRes ?? null;
-    } catch {
-      return null;
-    }
-  }, [services]);
+  const getNextScheduledService = useCallback(
+    async (clientId) => {
+      if (!clientId) return null;
+      try {
+        const res = await clientsAPI.getSchedules(clientId);
+        const schedules = Array.isArray(res?.data) ? res.data : [];
+        const now = new Date();
+        const next = schedules
+          .filter((s) => {
+            const date = new Date(s.appointment_date);
+            const status = String(s.status || "").toLowerCase();
+            return !Number.isNaN(date.getTime()) && date >= now && status !== "cancelled";
+          })
+          .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))[0];
+        if (!next?.service_id) return null;
+        const localService = services.find((svc) => String(svc.id) === String(next.service_id));
+        if (localService) return localService;
+        const svcRes = await servicesAPI.getById(next.service_id);
+        return svcRes?.data ?? svcRes ?? null;
+      } catch {
+        return null;
+      }
+    },
+    [services]
+  );
 
   // Select a client, load their saved cart, merge any walk-in items, and include their next scheduled service
-  const handleSelectClient = useCallback(async (client, options = {}) => {
-    // Capture walk-in items before switching — from in-memory state (if no client was selected)
-    // or from localStorage (when navigating to this page fresh with a pre-selected client)
-    let walkInItems = selectedClient == null ? [...cart] : [];
-    if (walkInItems.length === 0) {
+  const handleSelectClient = useCallback(
+    async (client, options = {}) => {
+      // Capture walk-in items before switching — from in-memory state (if no client was selected)
+      // or from localStorage (when navigating to this page fresh with a pre-selected client)
+      let walkInItems = selectedClient == null ? [...cart] : [];
+      if (walkInItems.length === 0) {
+        try {
+          const walkInSaved = localStorage.getItem("walk_in_cart");
+          if (walkInSaved) {
+            const parsed = JSON.parse(walkInSaved);
+            if (Array.isArray(parsed)) walkInItems = parsed;
+          }
+        } catch {}
+      }
+
+      setSelectedClient(client);
+
+      let nextCart = [];
+
+      if (Array.isArray(options.preloadCart) && options.preloadCart.length > 0) {
+        nextCart = options.preloadCart;
+      }
+
       try {
-        const walkInSaved = localStorage.getItem("walk_in_cart");
-        if (walkInSaved) {
-          const parsed = JSON.parse(walkInSaved);
-          if (Array.isArray(parsed)) walkInItems = parsed;
-        }
-      } catch {}
-    }
-
-    setSelectedClient(client);
-
-    let nextCart = [];
-
-    if (Array.isArray(options.preloadCart) && options.preloadCart.length > 0) {
-      nextCart = options.preloadCart;
-    }
-
-    try {
-      if (nextCart.length === 0) {
-        // Load persistent cart from DB (source of truth)
-        const res = await clientCartAPI.getItems(client.id);
-        const dbItems = Array.isArray(res?.data) ? res.data : [];
-        if (dbItems.length > 0) {
-          nextCart = dbItems.map(mapDbItemToCart);
-        } else {
-          // Fallback: migrate from localStorage once if DB is empty
-          const saved = localStorage.getItem(`client_cart_${client.id}`);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              nextCart = parsed;
-              // Migrate to DB
-              parsed.forEach((item) => syncItemToDb(item, client.id));
-              localStorage.removeItem(`client_cart_${client.id}`);
+        if (nextCart.length === 0) {
+          // Load persistent cart from DB (source of truth)
+          const res = await clientCartAPI.getItems(client.id);
+          const dbItems = Array.isArray(res?.data) ? res.data : [];
+          if (dbItems.length > 0) {
+            nextCart = dbItems.map(mapDbItemToCart);
+          } else {
+            // Fallback: migrate from localStorage once if DB is empty
+            const saved = localStorage.getItem(`client_cart_${client.id}`);
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                nextCart = parsed;
+                // Migrate to DB
+                parsed.forEach((item) => syncItemToDb(item, client.id));
+                localStorage.removeItem(`client_cart_${client.id}`);
+              }
             }
           }
         }
-      }
-    } catch {}
-
-    // Merge walk-in items into client cart — add any not already present
-    walkInItems.forEach((item) => {
-      if (!nextCart.some((ci) => ci.cartKey === item.cartKey)) {
-        nextCart = [...nextCart, item];
-      }
-    });
-
-    // Clear walk-in cart now that items have been transferred
-    if (walkInItems.length > 0) {
-      try {
-        localStorage.removeItem("walk_in_cart");
       } catch {}
-    }
 
-    const scheduledService = await getNextScheduledService(client.id);
-    if (scheduledService) {
-      const scheduledCartKey = `service-${scheduledService.id}`;
-      const alreadyInCart = nextCart.some((item) => item.cartKey === scheduledCartKey || (item.itemType === "service" && String(item.id) === String(scheduledService.id)));
-      if (!alreadyInCart) {
-        nextCart = [
-          ...nextCart,
-          {
-            ...scheduledService,
-            cartKey: scheduledCartKey,
-            itemType: "service",
-            quantity: 1,
-            price: scheduledService.price,
-            selectedOptions: [],
-          },
-        ];
+      // Merge walk-in items into client cart — add any not already present
+      walkInItems.forEach((item) => {
+        if (!nextCart.some((ci) => ci.cartKey === item.cartKey)) {
+          nextCart = [...nextCart, item];
+        }
+      });
+
+      // Clear walk-in cart now that items have been transferred
+      if (walkInItems.length > 0) {
+        try {
+          localStorage.removeItem("walk_in_cart");
+        } catch {}
       }
-    }
 
-    setCart(nextCart);
-  }, [cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]);
+      const scheduledService = await getNextScheduledService(client.id);
+      if (scheduledService) {
+        const scheduledCartKey = `service-${scheduledService.id}`;
+        const alreadyInCart = nextCart.some((item) => item.cartKey === scheduledCartKey || (item.itemType === "service" && String(item.id) === String(scheduledService.id)));
+        if (!alreadyInCart) {
+          nextCart = [
+            ...nextCart,
+            {
+              ...scheduledService,
+              cartKey: scheduledCartKey,
+              itemType: "service",
+              quantity: 1,
+              price: scheduledService.price,
+              selectedOptions: [],
+            },
+          ];
+        }
+      }
+
+      setCart(nextCart);
+    },
+    [cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]
+  );
 
   useEffect(() => {
     if (showCartModal) loadClients();
@@ -1332,29 +1340,30 @@ export default function Sales() {
         const addonInventoryDeductions = new Map();
         const allSoldMap = {}; // used only for immediate local UI update
 
-        if (!reusedExisting) checkoutItems.forEach((item) => {
-          if (item.itemType === "product" && item.id) {
-            allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
-            if (item.selectedOptions?.length > 0) {
-              featureDeductions.push({
-                inventory_id: item.id,
-                option_ids: item.selectedOptions.map((opt) => opt.optionId),
-                quantity: item.quantity,
+        if (!reusedExisting)
+          checkoutItems.forEach((item) => {
+            if (item.itemType === "product" && item.id) {
+              allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
+              if (item.selectedOptions?.length > 0) {
+                featureDeductions.push({
+                  inventory_id: item.id,
+                  option_ids: item.selectedOptions.map((opt) => opt.optionId),
+                  quantity: item.quantity,
+                });
+              }
+              return;
+            }
+
+            if (item.itemType === "service") {
+              const serviceUnits = Math.max(0, Number(item.quantity || 0));
+              const addons = parseServiceAddonsForConsumption(item.selectedOptions);
+              addons.forEach((addon) => {
+                const current = addonInventoryDeductions.get(addon.linked_inventory_id) || 0;
+                const consumeAmount = addon.consume_quantity_per_unit * addon.quantity * serviceUnits;
+                addonInventoryDeductions.set(addon.linked_inventory_id, current + consumeAmount);
               });
             }
-            return;
-          }
-
-          if (item.itemType === "service") {
-            const serviceUnits = Math.max(0, Number(item.quantity || 0));
-            const addons = parseServiceAddonsForConsumption(item.selectedOptions);
-            addons.forEach((addon) => {
-              const current = addonInventoryDeductions.get(addon.linked_inventory_id) || 0;
-              const consumeAmount = addon.consume_quantity_per_unit * addon.quantity * serviceUnits;
-              addonInventoryDeductions.set(addon.linked_inventory_id, current + consumeAmount);
-            });
-          }
-        });
+          });
 
         if (featureDeductions.length > 0) {
           await inventoryFeaturesAPI.deductStock(featureDeductions);
@@ -1815,12 +1824,12 @@ export default function Sales() {
               </div>
             )}
 
-            {/* Controls Row 1 - Past + Filter (+ Invoice when relevant) */}
+            {/* Controls Row 1 - Sales history + Filter (+ Invoice when relevant) */}
             <div className={`search-hide-on-focus app-footer-toolbar d-flex align-items-center ${footerJustify}`}>
               {/* Sales History Button */}
               <Button_Toolbar
                 icon={ArrowTrendingUpIcon}
-                label="Past"
+                label="Sales"
                 title="Sales history"
                 onClick={() => {
                   setShowHistoryModal(true);

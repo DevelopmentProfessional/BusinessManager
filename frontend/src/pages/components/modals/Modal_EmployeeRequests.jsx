@@ -15,6 +15,7 @@
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
+ *   2026-11-15 | GitHub Copilot | Replaced request-type filter pills with an upward-opening dropup and renamed the footer dismiss action to Cancel
  *   2026-09-11 | GitHub Copilot | Removed unused toolbar import to satisfy ESLint no-unused-vars
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  * ============================================================
@@ -25,6 +26,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { XMarkIcon } from "../../../icons";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputDropup } from "../Inputs";
 import { EmptyState, LoadingSpinner } from "../feedback";
 import Badge_Status from "../badges/Badge_Status";
 
@@ -107,28 +109,25 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
         {/* ─── 3 FOOTER ───────────────────────────────────────────────────────── */}
         <div className="component-footer" style={{ flexWrap: "wrap", gap: "0.4rem" }}>
           <div className="component-footer-left" style={{ flexWrap: "wrap", gap: "0.3rem" }}>
-            {/* Row 1: Type filter pills */}
-            <div className="d-flex flex-wrap gap-1">
-              {[
-                { key: "all", label: "All" },
-                { key: "leave_vacation", label: "Vacation" },
-                { key: "leave_sick", label: "Sick" },
-                { key: "onboarding", label: "Onboarding" },
-                { key: "offboarding", label: "Offboarding" },
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  className={`btn btn-sm rounded-pill ${requestTypeFilter === key ? "btn-secondary" : "btn-outline-secondary"}`}
-                  onClick={() => {
-                    setRequestTypeFilter(key);
-                    loadRequests(key);
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {/* Row 2: Time filter */}
+            <InputDropup
+              value={requestTypeFilter}
+              onChange={(e) => {
+                setRequestTypeFilter(e.target.value);
+                loadRequests(e.target.value);
+              }}
+              openUpward
+              floatingLabel="Request type"
+              options={[
+                { value: "all", label: "All requests" },
+                { value: "leave_vacation", label: "Vacation" },
+                { value: "leave_sick", label: "Sick" },
+                { value: "onboarding", label: "Onboarding" },
+                { value: "offboarding", label: "Offboarding" },
+              ]}
+              className="requests-filter-dropup"
+              style={{ minWidth: "10rem" }}
+              aria-label="Filter by request type"
+            />
             <Dropdown_Custom
               value={requestTimeFilter}
               onChange={(e) => setRequestTimeFilter(e.target.value)}
@@ -141,7 +140,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, allRequests, 
                 { value: "90d", label: "Last 90 Days" },
               ]}
             />
-            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
           </div>
           <div className="component-footer-right"></div>
         </div>

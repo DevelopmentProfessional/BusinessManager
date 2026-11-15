@@ -365,16 +365,16 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* /component-body */}
 
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
-        <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column p-0" style={{ gap: 0, alignItems: "stretch" }}>
+        <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column p-0 template-editor-footer" style={{ gap: 0, alignItems: "stretch" }}>
           {/* Row 1: editor controls */}
           {!isEditorMinimized && (
-            <div className="template-editor-toolbar-shell w-100">
+            <div className="template-editor-toolbar-shell template-editor-footer-row w-100">
               <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} wrapToolbar />
             </div>
           )}
           {/* Row 2: template metadata + dropups */}
           {!isEditorMinimized && (
-            <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-1 w-100">
+            <div className="template-editor-meta-row template-editor-footer-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-1 w-100">
               <div className="template-editor-meta-group align-items-center d-flex flex-wrap gap-2 w-100">
                 <div className="ui-pos-rel" style={showPagesDropup ? { zIndex: 30 } : undefined}>
                   <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
@@ -443,7 +443,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
           )}
 
           {/* Row 3: save/cancel */}
-          <div className="border-top d-flex align-items-center justify-content-start gap-2 p-1 w-100">
+          <div className="border-top d-flex align-items-center justify-content-start gap-2 p-1 template-editor-actions w-100">
             <Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : isNew ? "Add" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save Template" />
             <Button_Toolbar icon={PencilIcon} label="" onClick={() => setShowTemplateDetails(true)} className="btn-outline-secondary" title="Edit template details" />
             <Button_Toolbar icon={isEditorMinimized ? EyeIcon : EyeSlashIcon} label="" onClick={() => setIsEditorMinimized((previous) => !previous)} className="btn-outline-secondary" title={isEditorMinimized ? "Show rich text editor" : "Hide rich text editor"} aria-expanded={!isEditorMinimized} />
