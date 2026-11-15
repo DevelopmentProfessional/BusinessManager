@@ -1,7 +1,7 @@
 // FILE: Modal_Clients_Settings.jsx
 // Dedicated settings/controls modal for the Clients page
 import React from "react";
-import { TicketIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { TicketIcon, CheckCircleIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";

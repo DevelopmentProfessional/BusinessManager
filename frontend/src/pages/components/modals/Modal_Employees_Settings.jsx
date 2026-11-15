@@ -1,7 +1,7 @@
 // FILE: Modal_Employees_Settings.jsx
 // Dedicated settings/controls modal for the Employees page
 import React from "react";
-import { UserGroupIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, CheckCircleIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";

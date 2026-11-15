@@ -45,7 +45,7 @@ import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useViewMode from "../services/useViewMode";
-import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, DocumentTextIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, PencilSquareIcon, CheckIcon, Squares2X2Icon, CheckCircleIcon, TagIcon, ListBulletIcon, PhotoIcon, ArrowDownTrayIcon, Cog6ToothIcon, TrashIcon } from "../icons";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";

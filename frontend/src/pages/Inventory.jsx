@@ -29,6 +29,7 @@
  *   2026-03-19 | GitHub Copilot | Replaced single-add with spreadsheet-style bulk import modal flow
  *   2026-07-24 | GitHub Copilot | Switched delete to a selection-first bulk action and removed single-item delete from inventory row/edit flows
  *   2026-09-11 | GitHub Copilot | Removed dead inventory delete/UI imports and aligned memo dependencies for ESLint
+ *   2026-11-15 | GitHub Copilot | Moved shared document icons to the application icon boundary
  * ============================================================
  */
 
@@ -45,7 +46,7 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "../icons";
 import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";

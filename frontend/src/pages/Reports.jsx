@@ -66,7 +66,7 @@ import {
   ListBulletIcon,
   EyeIcon,
   EyeSlashIcon,
-} from "@heroicons/react/24/outline";
+} from "../icons";
 
 import useStore from "../services/useStore";
 import { reportsAPI, employeesAPI, servicesAPI, payrollAPI } from "../services/api";

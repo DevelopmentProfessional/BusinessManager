@@ -1,7 +1,7 @@
 import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "../../../icons";
 
 export default function Modal_Schedule_Overlaps({
   isOpen,

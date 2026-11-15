@@ -3,7 +3,7 @@ import { InputText } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon } from "../../../icons";
 
 export default function Modal_Reports_SaveFilter({
   isOpen,

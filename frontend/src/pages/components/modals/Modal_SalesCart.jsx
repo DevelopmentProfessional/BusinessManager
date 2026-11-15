@@ -28,7 +28,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { getDisplayImageUrl } from "../utils/Utils_Image";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "../../../icons";
 
 const CLIENT_DROPUP_Z_INDEX = 1200;
 

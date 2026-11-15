@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-import { XMarkIcon, TagIcon, CheckIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TagIcon, CheckIcon, TrashIcon, PlusIcon } from "../../../icons";
 
 import { discountRulesAPI, inventoryAPI } from "../../../services/api";
 

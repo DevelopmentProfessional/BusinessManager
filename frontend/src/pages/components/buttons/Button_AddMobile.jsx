@@ -18,7 +18,7 @@
  * ============================================================
  */
 import React from "react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "../../../icons";
 import Button_App from "./Button_App";
 
 // ─── 1 BUTTON RENDER ───────────────────────────────────────────────────────────

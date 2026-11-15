@@ -17,7 +17,6 @@ import {
   EyeIcon,
   UserIcon,
   ClockIcon,
-  DocumentTextIcon,
   CurrencyDollarIcon,
   Cog6ToothIcon,
   SunIcon,
@@ -29,7 +28,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   InboxIcon,
-} from "@heroicons/react/24/outline";
+} from "../icons";
 
 // ─── DIRECT COMPONENT REFERENCES (Original .jsx files) ─────────────────────────
 // Buttons

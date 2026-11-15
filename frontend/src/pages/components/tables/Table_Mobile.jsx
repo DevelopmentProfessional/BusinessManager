@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { PencilIcon, XMarkIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, XMarkIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from "../../../icons";
 import Gate_Permission from "../layout/Gate_Permission";
 import Button_Icon from "../buttons/Button_Icon";
 

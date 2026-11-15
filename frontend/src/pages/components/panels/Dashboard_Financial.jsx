@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { CurrencyDollarIcon, ExclamationTriangleIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon, ExclamationTriangleIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from "../../../icons";
 import api from "../../../services/api";
 
 const Dashboard_Financial = () => {

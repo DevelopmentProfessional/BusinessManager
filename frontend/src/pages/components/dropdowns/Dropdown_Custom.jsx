@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "../../../icons";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
 

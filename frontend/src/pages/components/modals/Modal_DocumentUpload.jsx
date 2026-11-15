@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { InputTextarea } from "../Inputs";
-import { DocumentIcon, XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { DocumentIcon, XMarkIcon, ArrowDownTrayIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

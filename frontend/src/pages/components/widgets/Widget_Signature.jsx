@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { ArrowUturnLeftIcon, TrashIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ArrowUturnLeftIcon, TrashIcon, XMarkIcon, CheckIcon } from "../../../icons";
 
 export default function Widget_Signature({ onSave, onCancel, initialSignature, width = 500, height = 200 }) {
   const canvasRef = useRef(null);

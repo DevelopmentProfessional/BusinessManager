@@ -1,7 +1,7 @@
 // FILE: Modal_Services_Settings.jsx
 // Dedicated settings/controls modal for the Services page
 import React from "react";
-import { FolderOpenIcon } from "@heroicons/react/24/outline";
+import { FolderOpenIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";

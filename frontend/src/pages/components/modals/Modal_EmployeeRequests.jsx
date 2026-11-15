@@ -23,7 +23,7 @@
 import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "../../../icons";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { EmptyState, LoadingSpinner } from "../feedback";
 import Badge_Status from "../badges/Badge_Status";

@@ -1,7 +1,7 @@
 // FILE: Modal_Inventory_Settings.jsx
 // Dedicated settings/controls modal for the Inventory page
 import React from "react";
-import { TagIcon } from "@heroicons/react/24/outline";
+import { TagIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";

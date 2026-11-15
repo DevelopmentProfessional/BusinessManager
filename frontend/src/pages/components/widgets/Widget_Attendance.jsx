@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ClockIcon, PlayIcon, StopIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, PlayIcon, StopIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
 import { attendanceAPI } from "../../../services/api";
 

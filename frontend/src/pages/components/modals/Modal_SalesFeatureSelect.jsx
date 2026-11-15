@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon, MinusIcon, ShoppingCartIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

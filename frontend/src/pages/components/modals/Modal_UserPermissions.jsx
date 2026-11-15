@@ -27,7 +27,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { XMarkIcon, CheckCircleIcon, XCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckCircleIcon, XCircleIcon, TrashIcon } from "../../../icons";
 
 const PERMISSION_DESCRIPTIONS = {
   read: "View records and details on this page.",

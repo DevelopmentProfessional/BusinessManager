@@ -22,7 +22,7 @@
  */
 import React, { createContext, useContext } from "react";
 import { createPortal } from "react-dom";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "../../../icons";
 
 export const ModalStackContext = createContext(0);
 export const ModalContainerContext = createContext(null);

@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from "../../../icons";
 import api from "../../../services/api";
 import { formatDateTime } from "../../../utils/dateFormatters";
 import Badge_Status from "../badges/Badge_Status";

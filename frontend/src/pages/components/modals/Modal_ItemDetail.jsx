@@ -31,7 +31,7 @@
  * ============================================================
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { XMarkIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, TagIcon, SparklesIcon, CubeIcon, PlusIcon, MinusIcon, MapPinIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ChevronLeftIcon, ChevronRightIcon, CheckIcon, BeakerIcon } from "../../../icons";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

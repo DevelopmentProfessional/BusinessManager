@@ -31,7 +31,7 @@
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, EyeSlashIcon } from "../icons";
 import { InputCheckbox } from "./components/Inputs";
 import useStore from "../services/useStore";
 import api from "../services/api";

@@ -40,7 +40,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation, useNavigate } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, DocumentTextIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon } from "../icons";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";

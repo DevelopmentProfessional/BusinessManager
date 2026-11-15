@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import { documentsAPI } from "../../../services/api";
 import Modal_Viewer_Document from "../modals/Modal_DocumentView";
 

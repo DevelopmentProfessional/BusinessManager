@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, CheckCircleIcon, ExclamationTriangleIcon } from "../../icons";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";

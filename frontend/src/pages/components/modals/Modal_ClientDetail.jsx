@@ -32,7 +32,7 @@
  */
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { XMarkIcon, CheckIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, ShoppingBagIcon, ClockIcon, SparklesIcon, CheckCircleIcon, ShoppingCartIcon, ArrowTrendingUpIcon, FunnelIcon, TrashIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

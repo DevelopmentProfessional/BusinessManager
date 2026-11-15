@@ -32,7 +32,7 @@
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { InputText, InputTextarea } from "../Inputs";
-import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PaperAirplaneIcon, PaperClipIcon, DocumentIcon } from "../../../icons";
 import { chatAPI, documentsAPI, settingsAPI } from "../../../services/api";
 import useDarkMode from "../../../services/useDarkMode";
 

@@ -23,7 +23,7 @@
  */
 import React, { useState, useEffect, useMemo } from "react";
 import { InputNumber, InputText } from "../Inputs";
-import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

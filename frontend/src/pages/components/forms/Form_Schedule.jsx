@@ -49,7 +49,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import useStore from "../../../services/useStore";
 import { isudAPI, serviceRelationsAPI, inventoryAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../../services/api";
-import { XMarkIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, TrashIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";

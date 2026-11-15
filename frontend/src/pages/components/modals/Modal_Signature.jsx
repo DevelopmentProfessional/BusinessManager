@@ -26,7 +26,7 @@ import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import Widget_Signature from "../widgets/Widget_Signature";
 import api from "../../../services/api";
-import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { LoadingSpinner } from "../feedback";

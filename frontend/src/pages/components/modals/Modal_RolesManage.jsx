@@ -27,7 +27,7 @@ import { InputText, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
-import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon } from "../../../icons";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { Accordion } from "../accordions";
 import Field_Floating from "../fields/Field_Floating";

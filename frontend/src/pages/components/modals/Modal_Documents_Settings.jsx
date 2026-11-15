@@ -1,7 +1,7 @@
 // FILE: Modal_Documents_Settings.jsx
 // Dedicated settings/controls modal for the Documents page
 import React from "react";
-import { TagIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { TagIcon, CheckCircleIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { DocumentIcon, ArrowDownTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { DocumentIcon, ArrowDownTrayIcon, XMarkIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { InputTextarea } from "../Inputs";

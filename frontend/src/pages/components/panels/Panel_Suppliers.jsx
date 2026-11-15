@@ -10,7 +10,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { InputText, InputTextarea } from "../Inputs";
-import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
 import { suppliersAPI } from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";

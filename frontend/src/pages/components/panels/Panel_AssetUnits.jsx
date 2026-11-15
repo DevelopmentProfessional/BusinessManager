@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { InputText } from "../Inputs";
 import { assetUnitsAPI, employeesAPI, inventoryAPI } from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "../../../icons";
 import useViewMode from "../../../services/useViewMode";
 import Toggle_MultiSelectIcon from "../buttons/Toggle_MultiSelectIcon";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";

@@ -2,7 +2,7 @@
 // Static report picker dropup for Reports page footer (not affected by profile align / view mode).
 
 import React, { useEffect, useRef } from "react";
-import { ChartBarIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { ChartBarIcon, CurrencyDollarIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 
 const ITEM_STYLE = {

@@ -1,7 +1,7 @@
 // FILE: Modal_Reports_FinancialDashboard.jsx
 // Dedicated modal wrapping Dashboard_Financial for financial controls
 import React from "react";
-import { CalculatorIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CalculatorIcon, XMarkIcon } from "../../../icons";
 import Modal from "./Modal";
 import Dashboard_Financial from "../panels/Dashboard_Financial";
 import Button_Toolbar from "../buttons/Button_Toolbar";

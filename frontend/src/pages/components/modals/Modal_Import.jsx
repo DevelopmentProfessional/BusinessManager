@@ -22,7 +22,7 @@
  */
 
 import React, { useState } from "react";
-import { DocumentArrowUpIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { DocumentArrowUpIcon, XMarkIcon, ArrowPathIcon } from "../../../icons";
 import { adminAPI } from "../../../services/api";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

@@ -2,7 +2,7 @@
 // unified button replacing Button_Toolbar (icon+label+training mode) and Button_Icon (icon-only+variants)
 // Dimensions: Profile → TextSize + training/compact (frontend/src/constants/buttonTextSize.js)
 import React from "react";
-import { TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, XMarkIcon } from "../../../icons";
 import useViewMode from "../../../services/useViewMode";
 import compactButtonLabel from "../../../utils/compactButtonLabel";
 import InputButton from "../Inputs/InputButton";

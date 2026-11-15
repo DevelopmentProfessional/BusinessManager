@@ -1,6 +1,6 @@
 import React from "react";
 import Badge_Status from "../badges/Badge_Status";
-import { ChevronUpIcon, PlusCircleIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { ChevronUpIcon, PlusCircleIcon, CalendarDaysIcon } from "../../../icons";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
 
 export default function Panel_Profile_TimeOff({

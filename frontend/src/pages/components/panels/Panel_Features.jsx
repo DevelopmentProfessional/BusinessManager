@@ -22,7 +22,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "../../../icons";
 import { featuresAPI, inventoryFeaturesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputCheckbox, InputNumber, InputText } from "../Inputs";

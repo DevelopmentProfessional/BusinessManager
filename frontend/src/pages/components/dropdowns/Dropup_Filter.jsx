@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Modal from "../modals/Modal";

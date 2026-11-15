@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { BanknotesIcon, XMarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, XMarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, UserGroupIcon } from "../../../icons";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { payrollAPI } from "../../../services/api";
 import Modal from "./Modal";

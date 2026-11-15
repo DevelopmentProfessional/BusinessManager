@@ -6,10 +6,9 @@ import {
   CircleStackIcon,
   ArrowUpTrayIcon,
   TableCellsIcon,
-  DocumentTextIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+} from "../../../icons";
 import Manager_DatabaseConnection from "../utils/Manager_DatabaseConnection";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputFile } from "../Inputs";

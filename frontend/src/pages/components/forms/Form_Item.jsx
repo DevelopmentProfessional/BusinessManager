@@ -39,7 +39,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "../modals/Modal";
-import { XMarkIcon, CheckIcon, SparklesIcon, CubeIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ArrowUpTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, SparklesIcon, CubeIcon, WrenchScrewdriverIcon, BuildingOfficeIcon, ArrowUpTrayIcon, PlusIcon } from "../../../icons";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

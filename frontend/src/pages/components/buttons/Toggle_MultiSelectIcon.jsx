@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircleIcon as CheckCircleOutline } from "@heroicons/react/24/outline";
+import { CheckCircleIcon as CheckCircleOutline } from "../../../icons";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import Button_App from "./Button_App";
 

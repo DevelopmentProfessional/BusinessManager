@@ -3,7 +3,7 @@ import { InputDate, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon } from "../../../icons";
 
 export default function Modal_Profile_LeaveRequest({
   isOpen,

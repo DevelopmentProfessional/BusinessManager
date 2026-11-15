@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
+import { ArrowUpIcon, ArrowDownIcon } from "../../../icons";
 
 /**
  * PageTableHeader

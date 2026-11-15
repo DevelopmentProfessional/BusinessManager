@@ -42,7 +42,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../../services/api";

@@ -8,7 +8,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { showConfirm } from "../../../services/showConfirm";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
-import { CheckCircleIcon, XCircleIcon, PencilIcon, XMarkIcon, CheckIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, XCircleIcon, PencilIcon, XMarkIcon, CheckIcon, PlusIcon, TrashIcon } from "../../../icons";
 
 export default function Modal_ManageLookup({
   isOpen,

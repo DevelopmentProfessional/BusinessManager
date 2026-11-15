@@ -57,7 +57,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";

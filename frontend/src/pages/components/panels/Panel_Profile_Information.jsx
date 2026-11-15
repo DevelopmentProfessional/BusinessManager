@@ -1,5 +1,5 @@
 import React from "react";
-import { UserIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { UserIcon, ChevronUpIcon } from "../../../icons";
 
 export default function Panel_Profile_Information({
   user,

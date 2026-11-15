@@ -29,7 +29,7 @@
 // ─── 1 IMPORTS ──────────────────────────────────────────────────────────────
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { DocumentIcon, ArrowLeftIcon, CheckIcon, XMarkIcon, EyeIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import { DocumentIcon, ArrowLeftIcon, CheckIcon, XMarkIcon, EyeIcon, DocumentArrowDownIcon } from "../icons";
 import { documentsAPI } from "../services/api";
 import Editor_OnlyOffice from "./components/editors/Editor_OnlyOffice";
 import useStore from "../services/useStore";

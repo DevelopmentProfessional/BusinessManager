@@ -28,7 +28,7 @@
 import React, { useState, useEffect } from "react";
 import { InputDate, InputNumber, InputTextarea } from "../Inputs";
 import { payrollAPI } from "../../../services/api";
-import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

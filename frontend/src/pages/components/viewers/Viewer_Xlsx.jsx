@@ -35,7 +35,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ExcelJS from "exceljs";
-import { ArrowDownTrayIcon, PencilIcon, TableCellsIcon, PlusIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, PencilIcon, TableCellsIcon, PlusIcon, XMarkIcon, CheckIcon } from "../../../icons";
 import { documentsAPI } from "../../../services/api";
 
 function getCellDisplayValue(value) {

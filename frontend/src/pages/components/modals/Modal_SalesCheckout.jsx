@@ -33,7 +33,7 @@ import { InputCheckbox } from "../Inputs";
 import Modal_TemplateUse from "./Modal_TemplateUse";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { clientsAPI } from "../../../services/api";
-import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ShoppingCartIcon, PrinterIcon, DevicePhoneMobileIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CreditCardIcon, BanknotesIcon, CheckCircleIcon, ShoppingCartIcon, PrinterIcon, DevicePhoneMobileIcon } from "../../../icons";
 import { CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { EmptyState } from "../feedback";
 

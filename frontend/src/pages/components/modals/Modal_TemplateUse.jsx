@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, DocumentTextIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, CheckIcon } from "../../../icons";
 import { templatesAPI, clientsAPI, clientCartAPI } from "../../../services/api";
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";

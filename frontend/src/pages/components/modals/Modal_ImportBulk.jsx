@@ -26,7 +26,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { InputText, InputTextarea } from "../Inputs";
-import { XMarkIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PhotoIcon, CameraIcon, ArrowDownTrayIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Modal from "./Modal";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";

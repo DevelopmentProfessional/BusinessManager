@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import compactButtonLabel from "../../../utils/compactButtonLabel";
-import { TagIcon } from "@heroicons/react/24/outline";
+import { TagIcon } from "../../../icons";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
 
 function getDropdownPortalHost() {

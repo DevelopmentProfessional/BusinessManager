@@ -24,7 +24,7 @@
 
 // ─── [1] IMPORTS ────────────────────────────────────────────────────────────
 import React from "react";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon } from "../icons";
 
 const NotFound = () => {
   // ─── [2] STATE & REFS ───────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import React from "react";
 import { InputFile, InputText } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { ArrowUpTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowUpTrayIcon, XMarkIcon } from "../../../icons";
 import { formatDateTime } from "../../../utils/dateFormatters";
 import { documentsAPI } from "../../../services/api";
 

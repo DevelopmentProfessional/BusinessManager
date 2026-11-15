@@ -8,7 +8,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "../dropdowns/Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "../dropdowns/Filter_SourceToggle";
-import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "../../../icons";
 import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputNumber, InputDate } from "../Inputs";

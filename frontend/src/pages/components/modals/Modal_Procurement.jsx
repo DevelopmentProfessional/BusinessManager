@@ -3,7 +3,7 @@
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { InputNumber, InputTextarea, InputDate } from "../Inputs";
-import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "../../../icons";
 import api, { inventoryAPI, documentsAPI } from "../../../services/api";
 import { formatCurrency } from "../../../utils/formatters";
 import Modal from "./Modal";

@@ -51,7 +51,7 @@ import useViewMode from "../services/useViewMode";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
-import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "../icons";
 import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
 import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
@@ -69,7 +69,7 @@ import Panel_Profile_Information from "./components/panels/Panel_Profile_Informa
 import Panel_Profile_TimeOff from "./components/panels/Panel_Profile_TimeOff";
 import Badge_Status from "./components/badges/Badge_Status";
 import Modal_Profile_LeaveRequest from "./components/modals/Modal_Profile_LeaveRequest";
-import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { QuestionMarkCircleIcon } from "../icons";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
 const AlignLeftIcon = ({ className = "app-icon flex-shrink-0" }) => (

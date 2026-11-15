@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { InputNumber } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon } from "../../../icons";
 import { showConfirm } from "../../../services/showConfirm";
 import StateMessage from "../feedback/StateMessage";
 

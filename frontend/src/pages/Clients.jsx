@@ -47,7 +47,7 @@ import Modal_Detail_Client from "./components/modals/Modal_ClientDetail";
 import Modal_Clients_Settings from "./components/modals/Modal_Clients_Settings";
 import Modal_Client_Create from "./components/modals/Modal_Client_Create";
 import Gate_Permission from "./components/layout/Gate_Permission";
-import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";

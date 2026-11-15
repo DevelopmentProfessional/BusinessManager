@@ -15,7 +15,7 @@ import {
   UsersIcon,
   DocumentIcon,
   ChartBarIcon,
-} from "@heroicons/react/24/outline";
+} from "../../../icons";
 
 export const STARTUP_PAGE_OPTIONS = [
   { value: "schedule", label: "Schedule", description: "Calendar and appointments", icon: CalendarDaysIcon },

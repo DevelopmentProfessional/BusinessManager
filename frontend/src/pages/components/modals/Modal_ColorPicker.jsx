@@ -3,7 +3,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { InputColor } from "../Inputs";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon } from "../../../icons";
 
 const PRESET_COLORS = [
   "#3B82F6", // Blue (default)

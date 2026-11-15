@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import { CheckIcon, ExclamationTriangleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, ExclamationTriangleIcon, ArrowPathIcon } from "../../../icons";
 import { settingsAPI } from "../../../services/api";
 import useDarkMode from "../../../services/useDarkMode";
 import Button_Toolbar from "../buttons/Button_Toolbar";

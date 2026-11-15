@@ -3,7 +3,7 @@
 import React from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon } from "../../../icons";
 import { LoadingSpinner } from "../feedback";
 
 export default function Modal_Document_Sign({

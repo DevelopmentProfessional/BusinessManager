@@ -37,7 +37,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { XMarkIcon, CheckIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serviceCategoriesAPI } from "../../../services/api";

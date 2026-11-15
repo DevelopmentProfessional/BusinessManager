@@ -2,7 +2,7 @@
 // Dedicated modal for managing document categories
 import React from "react";
 import { InputText } from "../Inputs";
-import { CheckIcon, XMarkIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon, PencilSquareIcon, TrashIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

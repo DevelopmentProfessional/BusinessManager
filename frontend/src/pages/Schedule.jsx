@@ -67,7 +67,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, clientCartAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
-import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon, CurrencyDollarIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Modal_Schedule_Appointment from "./components/modals/Modal_Schedule_Appointment";
 import Modal_Schedule_Settings from "./components/modals/Modal_Schedule_Settings";

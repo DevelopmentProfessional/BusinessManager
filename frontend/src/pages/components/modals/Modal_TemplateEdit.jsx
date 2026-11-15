@@ -1,6 +1,6 @@
 import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
 import { InputTextarea, InputText } from "../Inputs";
-import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, DocumentTextIcon, MagnifyingGlassIcon, ArrowPathIcon, EyeIcon, EyeSlashIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, MagnifyingGlassIcon, ArrowPathIcon, EyeIcon, EyeSlashIcon, PencilIcon } from "../../../icons";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "../utils/Utils_TemplateVariables";
 import { documentsAPI } from "../../../services/api";
 import Editor_Toolbar from "../editors/Editor_Toolbar";

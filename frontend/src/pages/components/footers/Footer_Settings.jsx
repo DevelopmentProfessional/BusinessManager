@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon } from "../../../icons";
 import Footer_Actions from "./Footer_Actions";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 

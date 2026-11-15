@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from "../../../icons";
 import { documentsAPI } from "../../../services/api";
 import { renderAsync } from "docx-preview";
 import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from "../editors/documentEditorUtils";

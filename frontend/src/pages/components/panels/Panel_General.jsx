@@ -2,7 +2,7 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon } from "@heroicons/react/24/outline";
+import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon } from "../../../icons";
 import Button_App from "../buttons/Button_App";
 import Modal from "../modals/Modal";
 import { documentsAPI } from "../../../services/api";
