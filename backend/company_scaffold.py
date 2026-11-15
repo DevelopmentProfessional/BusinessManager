@@ -312,6 +312,38 @@ def _load_template_seed_rows() -> list[dict]:
                 "<p>Thanks,<br>{{company.name}}</p>"
             ),
         },
+        {
+            "name": "Service Catalog Card",
+            "template_type": "memo",
+            "accessible_pages": '["services","schedule","clients","sales"]',
+            "description": "Client-facing service card with the mapped service details and image.",
+            "content": (
+                "<div style=\"display:flex;gap:1rem;align-items:flex-start;padding:1rem;"
+                "border:1px solid #e5e7eb;border-radius:8px;\">"
+                "<div style=\"flex:0 0 120px;\">{{service.image}}</div>"
+                "<div><h2>{{service.name}}</h2>"
+                "<p>{{service.description}}</p>"
+                "<p><strong>Category:</strong> {{service.category}}<br>"
+                "<strong>Duration:</strong> {{service.duration}}<br>"
+                "<strong>Price:</strong> {{service.price}}</p></div></div>"
+            ),
+        },
+        {
+            "name": "Inventory Product Card",
+            "template_type": "memo",
+            "accessible_pages": '["inventory","services","clients","sales"]',
+            "description": "Client-facing inventory card with SKU, mapped product details, and primary image.",
+            "content": (
+                "<div style=\"display:flex;gap:1rem;align-items:flex-start;padding:1rem;"
+                "border:1px solid #e5e7eb;border-radius:8px;\">"
+                "<div style=\"flex:0 0 120px;\">{{inventory.image}}</div>"
+                "<div><h2>{{inventory.name}}</h2>"
+                "<p><strong>SKU:</strong> {{inventory.sku}}<br>"
+                "<strong>Category:</strong> {{inventory.category}}</p>"
+                "<p>{{inventory.description}}</p>"
+                "<p><strong>Price:</strong> {{inventory.price}}</p></div></div>"
+            ),
+        },
     ]
 
     by_name: dict[str, dict] = {}

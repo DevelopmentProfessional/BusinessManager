@@ -39,7 +39,7 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, FolderOpenIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
@@ -52,6 +52,7 @@ import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { EmptyState, LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
@@ -59,12 +60,13 @@ import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../ser
 
 // ─── 2  SERVICES PAGE COMPONENT ───────────────────────────────────────────
 export default function Services() {
-  const { services, setServices, addService, updateService, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
+  const { services, setServices, addService, updateService, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user: currentUser } = useStore();
 
   usePagePermission("services");
 
   // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
+  const [templateService, setTemplateService] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState([]);
@@ -330,6 +332,7 @@ export default function Services() {
               <col className="app-col-flex" />
               {pageSettings.showPrice !== false && <col className="app-col-action-80" />}
               {pageSettings.showDuration !== false && <col className="app-col-action-70" />}
+              <col className="app-col-action-50" />
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((service, index) => (
@@ -360,6 +363,9 @@ export default function Services() {
                       <span className="badge bg-info-subtle rounded-pill text-info">{service.duration_minutes || 30}m</span>
                     </td>
                   )}
+                  <td className="main-page-table-data text-center" onClick={(e) => e.stopPropagation()}>
+                    <Button_Icon icon={DocumentTextIcon} label={`Use template for ${service.name}`} variant="ghost" onClick={() => setTemplateService(service)} />
+                  </td>
                 </PageTableRow>
               ))}
             </tbody>
@@ -391,6 +397,7 @@ export default function Services() {
           { label: "Service", className: "app-col-flex", sortKey: "name" },
           ...(pageSettings.showPrice !== false ? [{ label: "Price", className: "app-col-action-80", sortKey: "price" }] : []),
           ...(pageSettings.showDuration !== false ? [{ label: "Duration", className: "app-col-action-70" }] : []),
+          { label: "Template", className: "app-col-action-50" },
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}
@@ -490,6 +497,16 @@ export default function Services() {
         onSubmit={handleSubmitService}
         onBulkImport={handleBulkImportServices}
       />
+      {templateService && (
+        <Modal_TemplateUse
+          page="services"
+          entity={templateService}
+          service={templateService}
+          currentUser={currentUser}
+          settings={{}}
+          onClose={() => setTemplateService(null)}
+        />
+      )}
 
       <Modal_Services_Settings
         isOpen={showPageControls}

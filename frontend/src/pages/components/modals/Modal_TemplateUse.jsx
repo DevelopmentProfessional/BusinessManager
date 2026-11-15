@@ -4,7 +4,7 @@ import { templatesAPI, clientsAPI, clientCartAPI } from "../../../services/api";
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables } from "../utils/Utils_TemplateVariables";
+import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables, buildServiceVariables, buildInventoryVariables } from "../utils/Utils_TemplateVariables";
 
 const TYPE_BADGE_COLOR = {
   email: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
@@ -242,6 +242,8 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     if (page === "employees") return buildEmployeeVariables(entity, currentUser, settings);
     if (page === "sales") return buildSalesVariables(entity, client || entity, currentUser, settings, items);
     if (page === "schedule") return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
+    if (page === "services") return buildServiceVariables(entity, currentUser, settings);
+    if (page === "inventory") return buildInventoryVariables(entity, currentUser, settings);
     return {};
   }, [page, entity, currentUser, settings, items, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal]);
 

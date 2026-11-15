@@ -68,14 +68,39 @@ export const TEMPLATE_VARIABLES = {
     { key: "appointment.notes", label: "Notes", description: "Appointment notes" },
     { key: "appointment.employee_name", label: "Employee Name", description: "Full name of the assigned employee" },
   ],
+  service: [
+    { key: "service.name", label: "Service Name", description: "Name of the service" },
+    { key: "service.description", label: "Service Description", description: "Client-facing service description" },
+    { key: "service.category", label: "Service Category", description: "Service category" },
+    { key: "service.price", label: "Service Price", description: "Formatted service price" },
+    { key: "service.duration", label: "Service Duration", description: "Formatted service duration" },
+    { key: "service.image", label: "Service Image", description: "Service image for catalogs and proposals", isLayout: true },
+  ],
+  inventory: [
+    { key: "inventory.sku", label: "SKU", description: "Inventory item SKU" },
+    { key: "inventory.name", label: "Item Name", description: "Inventory item name" },
+    { key: "inventory.description", label: "Item Description", description: "Client-facing item description" },
+    { key: "inventory.category", label: "Item Category", description: "Inventory category" },
+    { key: "inventory.price", label: "Item Price", description: "Formatted item price" },
+    { key: "inventory.image", label: "Item Image", description: "Primary inventory image for catalogs and proposals", isLayout: true },
+  ],
+  supplier: [
+    { key: "supplier.name", label: "Supplier Name", description: "Supplier name" },
+    { key: "supplier.contact_person", label: "Supplier Contact", description: "Supplier contact person" },
+    { key: "supplier.email", label: "Supplier Email", description: "Supplier email address" },
+    { key: "supplier.phone", label: "Supplier Phone", description: "Supplier phone number" },
+    { key: "supplier.address", label: "Supplier Address", description: "Supplier mailing address" },
+  ],
 };
 
 /** Which variable scopes are available per page context */
 export const PAGE_VARIABLE_SCOPES = {
-  clients: ["system", "company", "sender", "client", "invoice"],
+  clients: ["system", "company", "sender", "client", "service", "inventory", "invoice"],
   employees: ["system", "company", "sender", "employee", "payslip"],
-  sales: ["system", "company", "sender", "client", "invoice"],
-  schedule: ["system", "company", "sender", "client", "appointment"],
+  sales: ["system", "company", "sender", "client", "service", "inventory", "invoice"],
+  schedule: ["system", "company", "sender", "client", "service", "appointment"],
+  services: ["system", "company", "sender", "service", "inventory"],
+  inventory: ["system", "company", "sender", "inventory", "supplier", "service"],
 };
 
 /**
@@ -83,14 +108,17 @@ export const PAGE_VARIABLE_SCOPES = {
  * so the editor can surface this to the user.
  */
 export const SCOPE_PAGE_CONTEXT = {
-  system: { label: "System", pages: ["clients", "employees", "sales", "schedule"], color: "gray" },
-  company: { label: "Company", pages: ["clients", "employees", "sales", "schedule"], color: "gray" },
-  sender: { label: "Sender", pages: ["clients", "employees", "sales", "schedule"], color: "gray" },
+  system: { label: "System", pages: ["clients", "employees", "sales", "schedule", "services", "inventory"], color: "gray" },
+  company: { label: "Company", pages: ["clients", "employees", "sales", "schedule", "services", "inventory"], color: "gray" },
+  sender: { label: "Sender", pages: ["clients", "employees", "sales", "schedule", "services", "inventory"], color: "gray" },
   client: { label: "Client", pages: ["clients", "sales", "schedule"], color: "blue" },
   employee: { label: "Employee", pages: ["employees"], color: "green" },
   payslip: { label: "Pay Slip", pages: ["employees"], color: "green" },
   invoice: { label: "Invoice / Sales", pages: ["clients", "sales"], color: "amber" },
   appointment: { label: "Appointment", pages: ["schedule"], color: "purple" },
+  service: { label: "Service", pages: ["clients", "sales", "schedule", "services"], color: "purple" },
+  inventory: { label: "Inventory / Product", pages: ["clients", "sales", "services", "inventory"], color: "amber" },
+  supplier: { label: "Supplier", pages: ["inventory"], color: "gray" },
 };
 
 /**
@@ -182,6 +210,28 @@ export const LAYOUT_TEMPLATES = [
   <h2 style="margin:0 0 4px;font-size:1.4rem;font-weight:700;">{{company.name}}</h2>
   <p style="margin:0;font-size:0.875rem;color:#6b7280;">{{company.address}}</p>
   <p style="margin:0;font-size:0.875rem;color:#6b7280;">{{company.email}} · {{company.phone}}</p>
+</div>`,
+  },
+  {
+    id: "service_card",
+    label: "Service Card",
+    description: "Service image, description, duration, and price in a reusable card",
+    pages: ["services", "schedule", "clients", "sales"],
+    scopeHint: "service",
+    html: `<div style="display:flex;gap:1rem;align-items:flex-start;padding:1rem;border:1px solid #e5e7eb;border-radius:8px;font-family:inherit;">
+  <div style="flex:0 0 120px;">{{service.image}}</div>
+  <div><h3 style="margin:0 0 0.35rem;">{{service.name}}</h3><p style="margin:0 0 0.5rem;">{{service.description}}</p><div style="color:#6b7280;">{{service.duration}} · {{service.price}}</div></div>
+</div>`,
+  },
+  {
+    id: "inventory_card",
+    label: "Product Card",
+    description: "Inventory image, SKU, description, and price in a reusable card",
+    pages: ["inventory", "services", "clients", "sales"],
+    scopeHint: "inventory",
+    html: `<div style="display:flex;gap:1rem;align-items:flex-start;padding:1rem;border:1px solid #e5e7eb;border-radius:8px;font-family:inherit;">
+  <div style="flex:0 0 120px;">{{inventory.image}}</div>
+  <div><h3 style="margin:0 0 0.35rem;">{{inventory.name}}</h3><div style="color:#6b7280;margin-bottom:0.35rem;">SKU: {{inventory.sku}}</div><p style="margin:0 0 0.5rem;">{{inventory.description}}</p><strong>{{inventory.price}}</strong></div>
 </div>`,
   },
   {
@@ -303,6 +353,71 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function formatMoney(value) {
+  return value == null || value === "" ? "" : `$${Number(value).toFixed(2)}`;
+}
+
+function buildImageHtml(url, alt) {
+  const safeUrl = String(url || "").trim();
+  if (!safeUrl) return "";
+  return `<img src="${escapeHtml(safeUrl)}" alt="${escapeHtml(alt || "Image")}" style="max-width:120px;max-height:120px;object-fit:contain;" />`;
+}
+
+function getPrimaryInventoryImage(inventory) {
+  const images = Array.isArray(inventory?.images) ? inventory.images : [];
+  const primary = images.find((image) => image?.is_primary) || images[0];
+  return primary?.image_url || primary?.file_path || inventory?.image_url || "";
+}
+
+/** Build company, sender, and mapped communication fields for a service. */
+export function buildServiceVariables(service, currentUser, settings) {
+  const now = new Date();
+  return {
+    date: formatDateISO(now),
+    time: formatTime(now),
+    "company.name": settings?.company_name || "",
+    "company.email": settings?.company_email || "",
+    "company.phone": settings?.company_phone || "",
+    "company.address": settings?.company_address || "",
+    "sender.first_name": currentUser?.first_name || "",
+    "sender.last_name": currentUser?.last_name || "",
+    "sender.email": currentUser?.email || "",
+    "service.name": service?.name || "",
+    "service.description": service?.description || "",
+    "service.category": service?.category || "",
+    "service.price": formatMoney(service?.price),
+    "service.duration": formatDuration(service?.duration_minutes),
+    "service.image": buildImageHtml(service?.image_url, service?.name || "Service"),
+  };
+}
+
+/** Build company, sender, and mapped communication fields for an inventory item. */
+export function buildInventoryVariables(inventory, currentUser, settings) {
+  const now = new Date();
+  return {
+    date: formatDateISO(now),
+    time: formatTime(now),
+    "company.name": settings?.company_name || "",
+    "company.email": settings?.company_email || "",
+    "company.phone": settings?.company_phone || "",
+    "company.address": settings?.company_address || "",
+    "sender.first_name": currentUser?.first_name || "",
+    "sender.last_name": currentUser?.last_name || "",
+    "sender.email": currentUser?.email || "",
+    "inventory.sku": inventory?.sku || "",
+    "inventory.name": inventory?.name || "",
+    "inventory.description": inventory?.description || "",
+    "inventory.category": inventory?.category || "",
+    "inventory.price": formatMoney(inventory?.price),
+    "inventory.image": buildImageHtml(getPrimaryInventoryImage(inventory), inventory?.name || "Inventory item"),
+    "supplier.name": inventory?.supplier?.name || "",
+    "supplier.contact_person": inventory?.supplier?.contact_person || "",
+    "supplier.email": inventory?.supplier?.email || "",
+    "supplier.phone": inventory?.supplier?.phone || "",
+    "supplier.address": inventory?.supplier?.address || "",
+  };
 }
 
 function getNormalizedSelectedOptions(item) {
@@ -581,6 +696,12 @@ export function buildScheduleVariables(appointment, client, employee, service, c
     "client.email": client?.email || "",
     "client.phone": client?.phone || "",
     "client.membership_tier": client?.membership_tier || "none",
+    "service.name": service?.name || "",
+    "service.description": service?.description || "",
+    "service.category": service?.category || "",
+    "service.price": formatMoney(service?.price),
+    "service.duration": formatDuration(service?.duration_minutes),
+    "service.image": buildImageHtml(service?.image_url, service?.name || "Service"),
     "appointment.date": apptDate,
     "appointment.time": apptTime,
     "appointment.day": apptDay,

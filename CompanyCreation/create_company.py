@@ -34,7 +34,7 @@ try:
     from dotenv import load_dotenv
     parent_env = os.path.join(os.path.dirname(__file__), '..', '.env')
     if os.path.exists(parent_env):
-        # Force root .env to win over stale shell exports (e.g., old Render DATABASE_URL).
+        # Force the repository database configuration to win over stale shell exports.
         load_dotenv(parent_env, override=True)
         print(f"Loaded environment from {parent_env}")
 except ImportError:

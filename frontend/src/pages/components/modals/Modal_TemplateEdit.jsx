@@ -1,6 +1,6 @@
 import React, { useState, useRef, lazy, Suspense, useCallback, useMemo } from "react";
 import { InputTextarea, InputText } from "../Inputs";
-import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, QuestionMarkCircleIcon, DocumentTextIcon, MagnifyingGlassIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, CheckIcon, PhotoIcon, TableCellsIcon, VariableIcon, DocumentTextIcon, MagnifyingGlassIcon, ArrowPathIcon, EyeIcon, EyeSlashIcon, PencilIcon } from "@heroicons/react/24/outline";
 import { TEMPLATE_VARIABLES, SCOPE_PAGE_CONTEXT, LAYOUT_TEMPLATES } from "../utils/Utils_TemplateVariables";
 import { documentsAPI } from "../../../services/api";
 import Editor_Toolbar from "../editors/Editor_Toolbar";
@@ -28,6 +28,8 @@ const PAGE_OPTIONS = [
   { value: "employees", label: "Employees" },
   { value: "sales", label: "Sales" },
   { value: "schedule", label: "Schedule" },
+  { value: "services", label: "Services" },
+  { value: "inventory", label: "Inventory" },
 ];
 
 // Tailwind colour helpers for scope badges
@@ -39,7 +41,14 @@ const SCOPE_COLORS = {
   purple: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
 
-const PAGE_LABEL = { clients: "Clients", employees: "Employees", sales: "Sales", schedule: "Schedule" };
+const PAGE_LABEL = {
+  clients: "Clients",
+  employees: "Employees",
+  sales: "Sales",
+  schedule: "Schedule",
+  services: "Services",
+  inventory: "Inventory",
+};
 
 // ─── Picker tab IDs ───────────────────────────────────────────────────────────
 const TAB_NONE = null;
@@ -74,11 +83,12 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const [openScope, setOpenScope] = useState(null);
   const [images, setImages] = useState([]);
   const [loadingImgs, setLoadingImgs] = useState(false);
-  const [showDescriptionHelp, setShowDescriptionHelp] = useState(false);
   const [showPagesDropup, setShowPagesDropup] = useState(false);
   const [showInsertDropup, setShowInsertDropup] = useState(false);
+  const [showTemplateDetails, setShowTemplateDetails] = useState(false);
   const [editorInstance, setEditorInstance] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isEditorMinimized, setIsEditorMinimized] = useState(false);
 
   const editorRef = useRef(null);
   const originalPages = useMemo(() => {
@@ -93,6 +103,19 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const sortedPageOptions = useMemo(() => sortItemsAlphabetically(PAGE_OPTIONS, ["label"]), []);
   const sortedLayoutTemplates = useMemo(() => sortItemsAlphabetically(LAYOUT_TEMPLATES, ["label"]), []);
   const sortedImages = useMemo(() => sortItemsAlphabetically(images, ["original_filename", "filename"]), [images]);
+  const visibleScopes = useMemo(
+    () =>
+      Object.keys(TEMPLATE_VARIABLES).filter((scope) => {
+        if (accessiblePages.length === 0) return true;
+        const pages = SCOPE_PAGE_CONTEXT[scope]?.pages || [];
+        return pages.some((page) => accessiblePages.includes(page));
+      }),
+    [accessiblePages]
+  );
+  const visibleLayouts = useMemo(
+    () => sortedLayoutTemplates.filter((layout) => accessiblePages.length === 0 || layout.pages.some((page) => accessiblePages.includes(page))),
+    [accessiblePages, sortedLayoutTemplates]
+  );
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -243,23 +266,11 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* ── Zoom Range Bar ─────────────────────────────────────────────────── */}
         <div className="align-items-center bg-gray-50 border-bottom border-gray-200 d-flex dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 gap-2 px-3 py-1 w-100">
           <MagnifyingGlassIcon className="flex-shrink-0 text-muted ui-icon-4" title="Zoom" />
-          <InputText
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.05"
-            value={zoomLevel}
-            onChange={(e) => setZoomLevel(parseFloat(e.target.value) || 1)}
-            className="flex-grow-1 form-range"
-            title={`${Math.round(zoomLevel * 100)}%`}
-            style={{ cursor: "pointer" }}
-          />
-          <button
-            type="button"
-            onClick={() => setZoomLevel(1)}
-            className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center p-1 rounded-circle"
-            title="Reset zoom to 100%"
-          >
+          <input type="range" min="0.5" max="2" step="0.05" value={zoomLevel} onChange={(e) => setZoomLevel(parseFloat(e.target.value) || 1)} className="flex-grow-1 form-range" title={`${Math.round(zoomLevel * 100)}%`} style={{ cursor: "pointer" }} />
+          <span className="text-muted text-xs" aria-live="polite">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          <button type="button" onClick={() => setZoomLevel(1)} className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center p-1 rounded-circle" title="Reset zoom to 100%">
             <ArrowPathIcon className="ui-icon-4" />
           </button>
         </div>
@@ -279,7 +290,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                     Click a variable to insert it. Coloured badges show which page populates it.
                     <span className="dark:text-amber-400 ml-1 text-amber-600">⊞ table variables</span> render as formatted tables.
                   </p>
-                  <div className="space-y-1">{sortItemsAlphabetically(Object.keys(TEMPLATE_VARIABLES)).map(renderScopeRow)}</div>
+                  <div className="space-y-1">{sortItemsAlphabetically(visibleScopes).map(renderScopeRow)}</div>
                 </div>
               )}
 
@@ -288,7 +299,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   <p className="dark:text-gray-500 mb-1.5 text-[10px] text-gray-400">Pre-built HTML blocks. Click to insert at the cursor. Data is filled when the template is used on the matching page.</p>
                   <div className="gap-1.5 grid grid-cols-2">
-                    {sortedLayoutTemplates.map((layout) => (
+                    {visibleLayouts.map((layout) => (
                       <button key={layout.id} type="button" onClick={() => insertHtml(layout.html)} className="border border-gray-200 dark:border-gray-600 dark:hover:bg-primary-900/20 hover:bg-primary-50 hover:border-primary-400 p-0 rounded text-left transition-colors">
                         <div className="flex gap-1 items-start justify-between">
                           <span className="dark:text-gray-200 font-medium leading-tight text-gray-800 text-xs">{layout.label}</span>
@@ -356,145 +367,144 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
         <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column p-0" style={{ gap: 0, alignItems: "stretch" }}>
           {/* Row 1: editor controls */}
-          <div className="template-editor-toolbar-shell w-100">
-            <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} wrapToolbar />
-          </div>
+          {!isEditorMinimized && (
+            <div className="template-editor-toolbar-shell w-100">
+              <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} wrapToolbar />
+            </div>
+          )}
           {/* Row 2: template metadata + dropups */}
-          <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-0 w-100">
-            <div className="template-editor-meta-group ui-flex-center-gap-1">
-              <div className="template-editor-meta-controls ui-flex-center-gap-1">
-                <InputText
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setSaveStatus("idle");
-                  }}
-                  className="form-control ui-control-sm"
-                  style={{ minWidth: "160px", maxWidth: "260px" }}
-                  placeholder="Template name"
-                />
-                <div className="ui-pos-rel" style={showDescriptionHelp ? { zIndex: 30 } : undefined}>
-                  <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" onClick={() => setShowDescriptionHelp((prev) => !prev)} title="Template description">
-                    <QuestionMarkCircleIcon className="ui-icon-4" />
+          {!isEditorMinimized && (
+            <div className="template-editor-meta-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-1 w-100">
+              <div className="template-editor-meta-group align-items-center d-flex flex-wrap gap-2 w-100">
+                <div className="ui-pos-rel" style={showPagesDropup ? { zIndex: 30 } : undefined}>
+                  <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
+                    Pages
                   </button>
-                  {showDescriptionHelp && (
-                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ width: "280px", zIndex: 100 }}>
-                      <label className="form-label ui-form-label-xs">Template description</label>
-                      <InputTextarea
-                        value={description}
-                        onChange={(e) => {
-                          setDescription(e.target.value);
-                          setSaveStatus("idle");
+                  {showPagesDropup && (
+                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 100 }}>
+                      {sortedPageOptions.map((pg) => (
+                        <label key={pg.value} className="align-items-center app-menu-item d-flex gap-2 py-1">
+                          <input
+                            type="checkbox"
+                            checked={accessiblePages.includes(pg.value)}
+                            onChange={() => {
+                              handlePageToggle(pg.value);
+                              setSaveStatus("idle");
+                            }}
+                          />
+                          <span>{pg.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="ui-pos-rel" style={showInsertDropup ? { zIndex: 30 } : undefined}>
+                  <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
+                    Insert
+                  </button>
+                  {showInsertDropup && (
+                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 100 }}>
+                      <button
+                        type="button"
+                        className="app-menu-item btn btn-sm text-start w-100"
+                        onClick={() => {
+                          handleTabClick(TAB_VARS);
+                          setShowInsertDropup(false);
                         }}
-                        className="form-control ui-control-sm"
-                        rows={6}
-                        placeholder="Describe this template"
-                      />
+                      >
+                        <VariableIcon className="h-3.5 me-1 w-3.5" /> Variables
+                      </button>
+                      <button
+                        type="button"
+                        className="app-menu-item btn btn-sm text-start w-100"
+                        onClick={() => {
+                          handleTabClick(TAB_LAYOUTS);
+                          setShowInsertDropup(false);
+                        }}
+                      >
+                        <TableCellsIcon className="h-3.5 me-1 w-3.5" /> Layouts
+                      </button>
+                      <button
+                        type="button"
+                        className="app-menu-item align-items-center btn btn-sm d-flex gap-1 text-start w-100"
+                        onClick={() => {
+                          handleTabClick(TAB_IMAGES);
+                          setShowInsertDropup(false);
+                        }}
+                      >
+                        <PhotoIcon className="h-3.5 me-1 w-3.5" /> Images
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
-
-              <Dropdown_Custom
-                value={templateType}
-                onChange={(e) => {
-                  setTemplateType(e.target.value);
-                  setSaveStatus("idle");
-                }}
-                className="form-select ui-control-sm"
-                style={{ width: "120px" }}
-                floatingLabel="Template type"
-                options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
-              />
-
-              <div className="ui-pos-rel" style={showPagesDropup ? { zIndex: 30 } : undefined}>
-                <button type="button" className="align-items-center app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowPagesDropup((prev) => !prev)} title="Available pages">
-                  Pages
-                </button>
-                {showPagesDropup && (
-                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 100 }}>
-                    {sortedPageOptions.map((pg) => (
-                      <label key={pg.value} className="align-items-center app-menu-item d-flex gap-2 py-1">
-                        <input
-                          type="checkbox"
-                          checked={accessiblePages.includes(pg.value)}
-                          onChange={() => {
-                            handlePageToggle(pg.value);
-                            setSaveStatus("idle");
-                          }}
-                        />
-                        <span>{pg.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="ui-pos-rel" style={showInsertDropup ? { zIndex: 30 } : undefined}>
-                <button type="button" className="app-menu-trigger btn btn-outline-secondary btn-sm d-flex gap-1" onClick={() => setShowInsertDropup((prev) => !prev)} title="Insert options">
-                  Insert
-                </button>
-                {showInsertDropup && (
-                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-800 dark:border-gray-700 mb-2 p-0 position-absolute rounded shadow start-0" style={{ minWidth: "180px", zIndex: 100 }}>
-                    <button
-                      type="button"
-                      className="app-menu-item btn btn-sm text-start w-100"
-                      onClick={() => {
-                        handleTabClick(TAB_VARS);
-                        setShowInsertDropup(false);
-                      }}
-                    >
-                      <VariableIcon className="h-3.5 me-1 w-3.5" /> Variables
-                    </button>
-                    <button
-                      type="button"
-                      className="app-menu-item btn btn-sm text-start w-100"
-                      onClick={() => {
-                        handleTabClick(TAB_LAYOUTS);
-                        setShowInsertDropup(false);
-                      }}
-                    >
-                      <TableCellsIcon className="h-3.5 me-1 w-3.5" /> Layouts
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm text-start w-100"
-                      onClick={() => {
-                        handleTabClick(TAB_IMAGES);
-                        setShowInsertDropup(false);
-                      }}
-                    >
-                      <PhotoIcon className="h-3.5 me-1 w-3.5" /> Images
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
-          </div>
+          )}
 
           {/* Row 3: save/cancel */}
           <div className="border-top d-flex align-items-center justify-content-start gap-2 p-1 w-100">
-            <Button_Toolbar
-              icon={CheckIcon}
-              label={saving ? "Saving…" : isNew ? "Add" : "Save"}
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-primary"
-              title="Save Template"
-            />
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Cancel"
-              onClick={onClose}
-              disabled={saving}
-              className="btn-outline-secondary"
-              title="Cancel"
-            />
+            <Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : isNew ? "Add" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save Template" />
+            <Button_Toolbar icon={PencilIcon} label="" onClick={() => setShowTemplateDetails(true)} className="btn-outline-secondary" title="Edit template details" />
+            <Button_Toolbar icon={isEditorMinimized ? EyeIcon : EyeSlashIcon} label="" onClick={() => setIsEditorMinimized((previous) => !previous)} className="btn-outline-secondary" title={isEditorMinimized ? "Show rich text editor" : "Hide rich text editor"} aria-expanded={!isEditorMinimized} />
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={saving} className="btn-outline-secondary" title="Cancel" />
           </div>
         </div>
         {/* /component-footer */}
       </div>
+      <Modal
+        isOpen={showTemplateDetails}
+        onClose={() => setShowTemplateDetails(false)}
+        title="Template details"
+        footer={
+          <div className="d-flex gap-2 justify-content-end p-1">
+            <Button_Toolbar icon={CheckIcon} label="Done" onClick={() => setShowTemplateDetails(false)} className="btn-primary" title="Done editing template details" />
+          </div>
+        }
+      >
+        <div className="d-flex flex-column gap-2">
+          <div className="form-floating">
+            <InputText
+              type="text"
+              id="template-details-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setSaveStatus("idle");
+              }}
+              className="form-control ui-control-sm"
+              placeholder="Template name"
+              aria-label="Template name"
+            />
+            <label htmlFor="template-details-name">Template name</label>
+          </div>
+          <Dropdown_Custom
+            value={templateType}
+            onChange={(e) => {
+              setTemplateType(e.target.value);
+              setSaveStatus("idle");
+            }}
+            className="form-select ui-control-sm"
+            floatingLabel="Type"
+            options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
+          />
+          <div className="form-floating">
+            <InputTextarea
+              id="template-details-description"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setSaveStatus("idle");
+              }}
+              className="form-control ui-control-sm"
+              placeholder="Template description"
+              aria-label="Template description"
+              style={{ minHeight: "6rem" }}
+            />
+            <label htmlFor="template-details-description">Template description</label>
+          </div>
+        </div>
+      </Modal>
       {/* /component */}
     </Modal>
   );
