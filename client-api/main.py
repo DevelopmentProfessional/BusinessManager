@@ -2,25 +2,25 @@
 CLIENT API — main.py
 ====================
 Independent FastAPI service for the client-facing portal.
-Deployed on Render as a separate Web Service from the internal API.
+Deployed separately from the internal API.
 
 Shares the same PostgreSQL database but exposes ONLY client-specific
 endpoints. Internal staff JWT tokens are explicitly rejected.
 
 Security features:
   - slowapi rate limiting on every route (per-IP)
-  - CORS restricted to client-portal domain + existing sales page domain
+  - CORS restricted to approved client-portal and application domains
   - JWT with role='client' enforced on all authenticated routes
   - Row-level security in every router (clients see only their own data)
   - No internal admin endpoints exposed
 
-Environment variables (set in Render Dashboard):
+Environment variables (set by the deployment environment):
   DATABASE_URL            — Shared PostgreSQL connection string
   CLIENT_JWT_SECRET       — DIFFERENT secret from internal API (important!)
   STRIPE_SECRET_KEY       — Stripe live/test secret key
   STRIPE_WEBHOOK_SECRET   — From Stripe Dashboard → Webhooks
   ALLOWED_ORIGINS         — Comma-separated extra origins (optional)
-  PORT                    — Injected by Render automatically
+  PORT                    — Optional service port
 """
 
 import os
@@ -83,8 +83,6 @@ _base_origins = [
     "https://clients.vadpivi.com",
     "https://register.vadpivi.com",
     "https://app.vadpivi.com",
-    "https://businessmanager-client-portal.onrender.com",         # client portal (Render default subdomain)
-    "https://businessmanager-reference.onrender.com",             # existing sales page
     "http://localhost:5174",                                       # local dev — client portal
     "http://localhost:5175",
 ]
@@ -152,7 +150,7 @@ def health_db():
         )
 
 
-# Render startup probe hits "/" with HEAD/GET.
+# Deployment health probes use "/" with HEAD/GET.
 @app.get("/", include_in_schema=False)
 def root():
     return {"status": "ok", "service": "client-api"}

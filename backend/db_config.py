@@ -16,26 +16,22 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
-#   2026-03-29 | GitHub Copilot | Removed backend environment switching and enforced Render-only PostgreSQL routing
-#   2026-03-29 | GitHub Copilot | Removed hardcoded DB fallback and tightened Render host validation
-#   2026-04-08 | Claude  | Removed Render-host restriction to support AWS RDS migration
+#   2026-03-29 | GitHub Copilot | Removed hardcoded DB fallback and tightened PostgreSQL URL validation
+#   2026-04-08 | Claude  | Removed provider-specific host restrictions to support AWS RDS migration
 #   2026-05-15 | GitHub Copilot | Load backend and repo env files for consistent local AWS database startup
 # ============================================================
 
-"""PostgreSQL database configuration (supports Render, AWS RDS, and any PostgreSQL host)."""
+"""PostgreSQL database configuration for the AWS RDS-backed application."""
 
 # ─── 1 IMPORTS & CONSTANTS ─────────────────────────────────────────────────────
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-RENDER_ENVIRONMENT_NAME = "render"
-RENDER_DATABASE_URL_ENV_VAR = "DATABASE_URL"
-
 _CURRENT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _CURRENT_DIR.parent
 
-load_dotenv(_REPO_ROOT / ".env", override=False)
+load_dotenv(_REPO_ROOT / ".env", override=True)
 load_dotenv(_CURRENT_DIR / ".env", override=False)
 load_dotenv(_CURRENT_DIR / ".env.local", override=True)
 
@@ -48,11 +44,15 @@ def _is_postgres_url(url: str) -> bool:
 
 # ─── 3 URL RESOLUTION ──────────────────────────────────────────────────────────
 def get_database_url() -> str:
-    """Return the Render PostgreSQL URL used by the backend."""
-    env_url = os.getenv(RENDER_DATABASE_URL_ENV_VAR, "").strip()
+    """Return the PostgreSQL URL supplied by the active environment."""
+    env_url = os.getenv("DATABASE_URL", "").strip()
     if not env_url:
         raise RuntimeError(
-            f"{RENDER_DATABASE_URL_ENV_VAR} is not set. Configure it with a PostgreSQL URL."
+            "DATABASE_URL is not set. Configure it with the AWS RDS PostgreSQL URL."
+        )
+    if ".render.com" in env_url.lower():
+        raise RuntimeError(
+            "Render PostgreSQL URLs are no longer supported. Configure DATABASE_URL with the AWS RDS PostgreSQL URL."
         )
     return env_url
 

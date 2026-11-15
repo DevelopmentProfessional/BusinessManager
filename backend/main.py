@@ -176,9 +176,6 @@ allowed_origins = [
     "http://192.168.4.23:5174",
     # CompanyCreation portal — local dev
     "http://localhost:5175",
-    # Render / production frontend (set in Render env or add your deployed frontend URL)
-    "https://businessmanager-reference.onrender.com",
-    "https://businessmanager-reference-api.onrender.com",
 ]
 
 # Add any additional origins from environment variable

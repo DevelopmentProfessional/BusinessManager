@@ -50,6 +50,7 @@ import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import useStore from "../services/useStore";
@@ -72,7 +73,7 @@ const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
-  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
+  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user: currentUser } = useStore();
 
   // Use the permission refresh hook
 
@@ -80,6 +81,7 @@ export default function Inventory() {
 
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
+  const [templateInventory, setTemplateInventory] = useState(null);
   const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
   const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
   const [showDiscountRules, setShowDiscountRules] = useState(false);
@@ -623,6 +625,7 @@ export default function Inventory() {
                 <col className="app-col-flex" />
                 {pageSettings.showType !== false && <col className="app-col-action-80" />}
                 {pageSettings.showStock !== false && <col className="app-col-action-60" />}
+                <col className="app-col-action-50" />
               </colgroup>
               <tbody>
                 {sortedAndFiltered.map((inv, index) => (
@@ -645,6 +648,9 @@ export default function Inventory() {
                         <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
                       </td>
                     )}
+                    <td className="main-page-table-data text-center" onClick={(e) => e.stopPropagation()}>
+                      <Button_Icon icon={DocumentTextIcon} label={`Use template for ${inv.name}`} variant="ghost" onClick={() => setTemplateInventory(inv)} />
+                    </td>
                   </PageTableRow>
                 ))}
               </tbody>
@@ -676,6 +682,7 @@ export default function Inventory() {
             { label: "Item", className: "app-col-flex", sortKey: "name" },
             ...(pageSettings.showType !== false ? [{ label: "Type", className: "app-col-action-80", sortKey: "type" }] : []),
             ...(pageSettings.showStock !== false ? [{ label: "Count", className: "app-col-action-60", sortKey: "count" }] : []),
+            { label: "Template", className: "app-col-action-50" },
           ]}
           sortColumn={sortColumn}
           sortAsc={sortAsc}
@@ -815,6 +822,16 @@ export default function Inventory() {
         onSave={handleMultiEditSave}
         saving={multiSaving}
       />
+
+      {templateInventory && (
+        <Modal_TemplateUse
+          page="inventory"
+          entity={templateInventory}
+          currentUser={currentUser}
+          settings={{}}
+          onClose={() => setTemplateInventory(null)}
+        />
+      )}
     </PageLayout>
   );
 }
