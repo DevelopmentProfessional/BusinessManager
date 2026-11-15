@@ -868,6 +868,16 @@ table::-webkit-scrollbar,
   border-bottom: none !important;
 }
 
+/* Content-sized filter dropups stay centered and grow to fit their controls. */
+.app-modal-dialog--content-width {
+  left: 50% !important;
+  right: auto !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - 2rem) !important;
+  transform: translateX(-50%) !important;
+}
+
 /* ─── 13. MODAL HEADER (Always stationary at the top, separate from body scroll) ─── */
 .app-modal-header,
 .component-header,
@@ -939,11 +949,50 @@ table::-webkit-scrollbar,
 
 /* Modal bodies own the desktop scroll surface; nested shells must not trap it. */
 .app-modal-body > .ui-page-shell,
-.app-modal-content > .ui-page-shell {
+.app-modal-content > .ui-page-shell,
+.app-modal-body > .ui-component-shell,
+.app-modal-content > .ui-component-shell {
   flex: 0 0 auto !important;
   height: auto !important;
   max-height: none !important;
   min-height: 100% !important;
+  overflow: visible !important;
+}
+
+/* Keep nested modal page shells from trapping desktop wheel events on their
+   own overflow surface; the modal body remains the single scroll owner. */
+.app-modal-body > .ui-page-shell > form,
+.app-modal-content > .ui-page-shell > form,
+.app-modal-body > .ui-page-shell > div.overflow-auto,
+.app-modal-content > .ui-page-shell > div.overflow-auto,
+.app-modal-body > .ui-component-shell > .component-body,
+.app-modal-content > .ui-component-shell > .component-body {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Component-shell modals with their own footer still use the modal body as
+   the single scroll owner; nested component surfaces must expand naturally. */
+.app-modal-body > .ui-component-shell:has(> .component-footer),
+.app-modal-content > .ui-component-shell:has(> .component-footer) {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.app-modal-body > .ui-component-shell:has(> .component-footer) > .component-body,
+.app-modal-content > .ui-component-shell:has(> .component-footer) > .component-body {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.app-modal-body > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner,
+.app-modal-content > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner {
+  height: auto !important;
   overflow: visible !important;
 }
 

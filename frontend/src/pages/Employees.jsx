@@ -59,6 +59,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_Icon from "./components/buttons/Button_Icon";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
@@ -1098,17 +1099,11 @@ export default function Employees() {
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
-              <button type="button" className="btn btn-circle btn-primary" title="Edit selected employees" onClick={() => setShowMultiEdit(true)}>
-                <PencilSquareIcon className="app-icon-14" />
-              </button>
+              <Button_Icon icon={PencilSquareIcon} label="Edit selected employees" variant="primary" onClick={() => setShowMultiEdit(true)} />
               <Gate_Permission page="employees" permission="delete">
-                <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected employees" onClick={handleDeleteSelectedEmployees}>
-                  <TrashIcon className="app-icon-14" />
-                </button>
+                <Button_Icon icon={TrashIcon} label="Delete selected employees" variant="outline-danger" onClick={handleDeleteSelectedEmployees} />
               </Gate_Permission>
-              <button type="button" className="btn btn-circle btn-outline-secondary" title="Clear selection" onClick={clearSelectionEmp}>
-                <XMarkIcon className="app-icon-14" />
-              </button>
+              <Button_Icon icon={XMarkIcon} label="Clear selection" variant="secondary" onClick={clearSelectionEmp} />
             </div>
           </div>
         )}

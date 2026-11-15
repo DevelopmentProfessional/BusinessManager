@@ -1584,9 +1584,7 @@ export default function Sales() {
             )}
           </div>
           <div className="ui-flex-center-gap-2">
-            <button type="button" className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center" title="Page Controls" onClick={() => setShowPageControls(true)}>
-              <Cog6ToothIcon style={{ width: 18, height: 18 }} />
-            </button>
+            <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
           </div>
         </div>
         {error && (

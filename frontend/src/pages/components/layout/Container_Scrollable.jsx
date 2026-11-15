@@ -30,7 +30,7 @@ import React from "react";
 
 export default function Container_Scrollable({ children, className="", as: Tag = "div", ...rest }) {
   return (
-    <Tag className={`overflow-scroll-container ${className}`} {...rest}>
+    <Tag {...rest} className={`overflow-scroll-container ${className}`.trim()}>
       {children}
     </Tag>
   );

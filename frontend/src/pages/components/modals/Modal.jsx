@@ -75,7 +75,7 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, headerActions = null, contentGravity = "top", container = null }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, headerActions = null, contentGravity = "top", container = null, contentWidth = false }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
   const containerContext = useContext(ModalContainerContext);
@@ -113,6 +113,8 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       {Overlay}
       <div
         className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full rounded-t-lg ${
+          contentWidth ? "app-modal-dialog--content-width" : ""
+        } ${
           fullScreen ? "max-h-screen max-h-[95vh] app-modal-sheet--fullscreen" : "max-h-[90vh]"
         }`}
         style={{ zIndex: modalContentZIndex }}

@@ -110,7 +110,7 @@ export default function Dropdown_Custom({
         left: triggerRect.left,
         top: shouldOpenUpward ? undefined : triggerRect.bottom + gap,
         bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + gap : undefined,
-        width: triggerRect.width,
+        minWidth: Math.min(Math.max(triggerRect.width, 176), window.innerWidth - 16),
         maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - gap : window.innerHeight - triggerRect.bottom - gap),
       });
     };
@@ -256,8 +256,9 @@ export default function Dropdown_Custom({
             left: `${menuPosition.left}px`,
             top: menuPosition.top === undefined ? "auto" : `${menuPosition.top}px`,
             bottom: menuPosition.bottom === undefined ? "auto" : `${menuPosition.bottom}px`,
-            width: `${menuPosition.width}px`,
-            minWidth: `${menuPosition.width}px`,
+            width: "max-content",
+            minWidth: `${menuPosition.minWidth}px`,
+            maxWidth: "calc(100vw - 1rem)",
             maxHeight: `${menuPosition.maxHeight}px`,
           }}
         >
@@ -321,8 +322,7 @@ export default function Dropdown_Custom({
                           >
                             <div className="dark:text-gray-100 fw-semibold mb-1 text-gray-900">{option.label}</div>
                             <div className="dark:text-gray-300 small text-gray-700">{option.description}</div>
-                          </div>,
-                          portalTarget
+                          </div>
                         )}
                       </div>
                     )}
