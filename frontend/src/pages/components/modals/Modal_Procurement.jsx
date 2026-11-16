@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { InputNumber, InputTextarea, InputDate, InputText } from "../Inputs";
 import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "../../../icons";
-import api, { inventoryAPI, documentsAPI, supplierProductsAPI } from "../../../services/api";
+import api, { inventoryAPI, inventoryCategoriesAPI, documentsAPI, supplierProductsAPI } from "../../../services/api";
 import { formatCurrency } from "../../../utils/formatters";
 import Modal from "./Modal";
 import Footer_Actions from "../footers/Footer_Actions";
@@ -22,12 +22,30 @@ const num = (v) => {
 const getErrorMessage = (error, fallback) =>
   String(error?.response?.data?.detail || error?.message || fallback);
 
-const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false, onPOCreated }) => {
+const Modal_Procurement = ({
+  supplierId,
+  supplier,
+  supplierName,
+  settings = {},
+  isOpen = true,
+  onClose,
+  embedded = true,
+  initialCreate = false,
+  view: controlledView,
+  onViewChange,
+  onPOCreated,
+}) => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
+  const [inventoryCategories, setInventoryCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showCreate, setShowCreate] = useState(initialCreate);
-  const [showProducts, setShowProducts] = useState(false);
+  const [localView, setLocalView] = useState(initialCreate ? "create" : "orders");
+  const view = controlledView ?? localView;
+  const isViewControlled = controlledView !== undefined;
+  const setView = (nextView) => {
+    if (isViewControlled) onViewChange?.(nextView);
+    else setLocalView(nextView);
+  };
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [catalogForm, setCatalogForm] = useState({
     inventory_id: "",
@@ -50,8 +68,6 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
     line_items: [{ ...EMPTY_LINE }],
     expected_delivery_date: "",
     notes: "",
-    import_tax: "",
-    shipping_cost: "",
   });
 
   const loadPurchaseOrders = useCallback(async () => {
@@ -80,6 +96,18 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
     }
   }, []);
 
+  const loadInventoryCategories = useCallback(async () => {
+    try {
+      const response = await inventoryCategoriesAPI.getAll();
+      const rows = response?.data ?? response ?? [];
+      if (!Array.isArray(rows)) throw new Error("Invalid inventory category data received.");
+      setInventoryCategories(rows);
+    } catch (error) {
+      console.error("Failed to load inventory categories:", error);
+      setProcurementError(getErrorMessage(error, "Failed to load inventory categories."));
+    }
+  }, []);
+
   const loadSupplierProducts = useCallback(async () => {
     try {
       const response = await supplierProductsAPI.getBySupplier(supplierId);
@@ -94,8 +122,9 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
   useEffect(() => {
     loadPurchaseOrders();
     loadInventoryItems();
+    loadInventoryCategories();
     loadSupplierProducts();
-  }, [loadPurchaseOrders, loadInventoryItems, loadSupplierProducts]);
+  }, [loadPurchaseOrders, loadInventoryItems, loadInventoryCategories, loadSupplierProducts]);
 
   const loadDetail = async (poId) => {
     setDetailLoading(true);
@@ -148,7 +177,26 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
     [formData.line_items]
   );
 
-  const orderTotal = useMemo(() => lineSubtotal + num(formData.import_tax) + num(formData.shipping_cost), [lineSubtotal, formData.import_tax, formData.shipping_cost]);
+  const importTaxTotal = useMemo(() => {
+    const categoryRates = new Map(
+      inventoryCategories.map((category) => [
+        `${String(category.item_type || "").trim().toLowerCase()}|${String(category.name || "").trim().toLocaleLowerCase()}`,
+        num(category.import_tax_rate),
+      ])
+    );
+    return formData.line_items.reduce((total, line) => {
+      const inventory = inventoryItems.find((item) => String(item.id) === String(line.inventory_id));
+      const key = `${String(inventory?.type || "").trim().toLowerCase()}|${String(inventory?.category || "").trim().toLocaleLowerCase()}`;
+      return total + num(line.quantity_ordered) * num(line.unit_price) * (categoryRates.get(key) || 0) / 100;
+    }, 0);
+  }, [formData.line_items, inventoryCategories, inventoryItems]);
+
+  const shippingCost = useMemo(() => {
+    const rate = num(supplier?.shipping_rate);
+    return supplier?.shipping_rate_type === "percentage" ? lineSubtotal * rate / 100 : rate;
+  }, [lineSubtotal, supplier?.shipping_rate, supplier?.shipping_rate_type]);
+
+  const orderTotal = lineSubtotal + importTaxTotal + shippingCost;
 
   const inventoryName = (id) => inventoryItems.find((i) => String(i.id) === String(id))?.name || "—";
   const supplierProductLabel = (product) => {
@@ -161,8 +209,6 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
       line_items: [{ ...EMPTY_LINE }],
       expected_delivery_date: "",
       notes: "",
-      import_tax: "",
-      shipping_cost: "",
     });
   };
 
@@ -238,8 +284,6 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
         supplier_id: supplierId,
         expected_delivery_date: formData.expected_delivery_date || null,
         notes: formData.notes || null,
-        import_tax: num(formData.import_tax),
-        shipping_cost: num(formData.shipping_cost),
         items: validLines.map((item) => ({
           supplier_product_id: item.supplier_product_id,
           inventory_id: item.inventory_id,
@@ -254,7 +298,7 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
       } else {
         await loadPurchaseOrders();
       }
-      setShowCreate(false);
+      setView("orders");
       resetCreateForm();
       onPOCreated?.();
     } catch (error) {
@@ -334,10 +378,14 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
     );
     return (
       <div className="d-flex flex-column flex-grow-1 min-h-0">
-        <div className="align-items-center d-flex flex-shrink-0 justify-content-between mb-2">
-          <span className="fw-semibold small text-muted">{editingProduct ? "Edit supplier product" : "Supplier products"}</span>
-          <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setShowProducts(false)}>Done</button>
-        </div>
+        {embedded && (
+          <div className="align-items-center d-flex flex-shrink-0 justify-content-between mb-2">
+            <span className="fw-semibold small text-muted">{editingProduct ? "Edit supplier product" : "Supplier products"}</span>
+            <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" onClick={() => setView("orders")} title="Done" aria-label="Done">
+              <XMarkIcon style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+        )}
         <div className="flex-grow-1 min-h-0 overflow-auto">
           <div className="border mb-2 p-2 rounded">
             <div className="mb-2">
@@ -352,72 +400,90 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
               />
             </div>
             <div className="align-items-end d-flex flex-wrap gap-2">
-              <div className="flex-grow-1" style={{ minWidth: 105 }}>
-                <InputText
-                  aria-label="Purchase unit"
-                  className="form-control ui-control-sm"
-                  value={catalogForm.purchase_unit}
-                  onChange={(e) => setCatalogForm((prev) => ({ ...prev, purchase_unit: e.target.value }))}
-                  placeholder="Purchase unit"
-                />
-              </div>
-              <div style={{ width: 110 }}>
-                <InputNumber
-                  min="1"
-                  step="1"
-                  className="form-control ui-control-sm"
-                  value={catalogForm.units_per_purchase_unit}
-                  onChange={(e) => setCatalogForm((prev) => ({ ...prev, units_per_purchase_unit: e.target.value }))}
-                  aria-label="Stock units per purchase unit"
-                  title="Stock units per purchase unit"
-                />
-              </div>
-              <div style={{ width: 120 }}>
-                <InputNumber
-                  min="0"
-                  step="0.01"
-                  className="form-control ui-control-sm"
-                  value={catalogForm.unit_price}
-                  onChange={(e) => setCatalogForm((prev) => ({ ...prev, unit_price: e.target.value }))}
-                  aria-label="Supplier price per purchase unit"
-                  title="Supplier price per purchase unit"
-                />
-              </div>
-              <button
-                type="button"
-                className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1"
-                onClick={handleSaveCatalogProduct}
-                disabled={savingCatalog || !catalogForm.inventory_id || !catalogForm.purchase_unit.trim()}
-              >
-                <PlusIcon style={{ width: 14, height: 14 }} />
-                <span>{savingCatalog ? "Saving…" : editingProduct ? "Update" : "Add"}</span>
-              </button>
+              {settings.showProductPurchaseUnitField !== false && (
+                <div className="flex-grow-1" style={{ minWidth: 105 }}>
+                  <InputText
+                    aria-label="Purchase unit"
+                    className="form-control ui-control-sm"
+                    value={catalogForm.purchase_unit}
+                    onChange={(e) => setCatalogForm((prev) => ({ ...prev, purchase_unit: e.target.value }))}
+                    placeholder="Purchase unit"
+                  />
+                </div>
+              )}
+              {settings.showProductPackSizeField !== false && (
+                <div style={{ width: 110 }}>
+                  <InputNumber
+                    min="1"
+                    step="1"
+                    className="form-control ui-control-sm"
+                    value={catalogForm.units_per_purchase_unit}
+                    onChange={(e) => setCatalogForm((prev) => ({ ...prev, units_per_purchase_unit: e.target.value }))}
+                    aria-label="Stock units per purchase unit"
+                    title="Stock units per purchase unit"
+                  />
+                </div>
+              )}
+              {settings.showProductPriceField !== false && (
+                <div style={{ width: 120 }}>
+                  <InputNumber
+                    min="0"
+                    step="0.01"
+                    className="form-control ui-control-sm"
+                    value={catalogForm.unit_price}
+                    onChange={(e) => setCatalogForm((prev) => ({ ...prev, unit_price: e.target.value }))}
+                    aria-label="Supplier price per purchase unit"
+                    title="Supplier price per purchase unit"
+                  />
+                </div>
+              )}
+              {embedded && (
+                <button
+                  type="button"
+                  className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1"
+                  onClick={handleSaveCatalogProduct}
+                  disabled={savingCatalog || !catalogForm.inventory_id || !catalogForm.purchase_unit.trim()}
+                >
+                  <PlusIcon style={{ width: 14, height: 14 }} />
+                  <span>{savingCatalog ? "Saving…" : editingProduct ? "Update" : "Add"}</span>
+                </button>
+              )}
             </div>
-            <div className="form-check mt-2">
-              <input
-                className="form-check-input"
-                id={`supplier-preferred-${supplierId}`}
-                type="checkbox"
-                checked={catalogForm.is_preferred}
-                onChange={(e) => setCatalogForm((prev) => ({ ...prev, is_preferred: e.target.checked }))}
-              />
-              <label className="form-check-label small" htmlFor={`supplier-preferred-${supplierId}`}>Preferred supplier for this item</label>
-            </div>
+            {settings.showProductPreferredField !== false && (
+              <div className="form-check mt-2">
+                <input
+                  className="form-check-input"
+                  id={`supplier-preferred-${supplierId}`}
+                  type="checkbox"
+                  checked={catalogForm.is_preferred}
+                  onChange={(e) => setCatalogForm((prev) => ({ ...prev, is_preferred: e.target.checked }))}
+                />
+                <label className="form-check-label small" htmlFor={`supplier-preferred-${supplierId}`}>Preferred supplier for this item</label>
+              </div>
+            )}
           </div>
-          {supplierProducts.length === 0 ? (
+          {settings.showProductsTable === false ? (
+            <p className="small text-center text-muted">The products table is hidden in supplier page settings.</p>
+          ) : supplierProducts.length === 0 ? (
             <p className="small text-center text-muted">No products in this supplier catalog yet.</p>
           ) : (
             <table className="align-middle mb-0 table table-sm">
               <thead className="table-light">
-                <tr><th>Item</th><th>Pack</th><th className="text-end">Price</th><th>Preferred</th><th /></tr>
+                <tr>
+                  <th>Item</th>
+                  {settings.showProductPack !== false && <th>Pack</th>}
+                  {settings.showProductPrice !== false && <th className="text-end">Price</th>}
+                  {settings.showProductPreferred !== false && <th>Preferred</th>}
+                  <th />
+                </tr>
               </thead>
               <tbody>
                 {supplierProducts.map((product) => (
                   <tr key={product.id}>
                     <td>{product.inventory_name}</td>
-                    <td>{product.units_per_purchase_unit} stock units / {product.purchase_unit}</td>
-                    <td className="text-end">{formatCurrency(product.unit_price)}</td>
-                    <td>{product.is_preferred ? "Yes" : "—"}</td>
+                    {settings.showProductPack !== false && <td>{product.units_per_purchase_unit} stock units / {product.purchase_unit}</td>}
+                    {settings.showProductPrice !== false && <td className="text-end">{formatCurrency(product.unit_price)}</td>}
+                    {settings.showProductPreferred !== false && <td>{product.is_preferred ? "Yes" : "—"}</td>}
                     <td className="text-end">
                       <button
                         type="button"
@@ -445,45 +511,54 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
 
   const openDetail = (po) => {
     setDetailPoId(po.id);
-    setShowCreate(false);
+    setView("orders");
   };
 
   const renderCreateForm = () => (
     <div className="d-flex flex-column flex-grow-1 min-h-0">
-      <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-between mb-2">
-        <span className="fw-semibold small text-muted">Create purchase order</span>
-        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }}>
-          Cancel
-        </button>
-      </div>
-      <div className="flex-grow-1 min-h-0 overflow-auto pe-1">
-        <div className="form-floating ui-form-floating-mb2">
-          <InputDate
-            type="date"
-            id={`po_expected_delivery_${supplierId}`}
-            className="form-control ui-control-sm"
-            value={formData.expected_delivery_date}
-            onChange={(e) => setFormData((p) => ({ ...p, expected_delivery_date: e.target.value }))}
-          />
-          <label htmlFor={`po_expected_delivery_${supplierId}`}>Expected delivery date</label>
+      {embedded && (
+        <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-between mb-2">
+          <span className="fw-semibold small text-muted">{supplierName || supplier?.name || "Purchase order"}</span>
+          <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" onClick={() => { setView("orders"); resetCreateForm(); }} title="Cancel" aria-label="Cancel">
+            <XMarkIcon style={{ width: 14, height: 14 }} />
+          </button>
         </div>
+      )}
+      <div className="flex-grow-1 min-h-0 overflow-auto pe-1">
+        {settings.showPODeliveryDate !== false && (
+          <div className="form-floating ui-form-floating-mb2">
+            <InputDate
+              type="date"
+              id={`po_expected_delivery_${supplierId}`}
+              className="form-control ui-control-sm"
+              value={formData.expected_delivery_date}
+              onChange={(e) => setFormData((p) => ({ ...p, expected_delivery_date: e.target.value }))}
+            />
+            <label htmlFor={`po_expected_delivery_${supplierId}`}>Expected delivery date</label>
+          </div>
+        )}
 
         <div className="border mb-2 rounded table-responsive">
           <table className="mb-0 table table-sm">
             <thead className="table-light">
               <tr>
+                <th style={{ width: 36 }} />
                 <th>Item</th>
                 <th style={{ width: 72 }}>Packs</th>
                 <th style={{ width: 96 }}>Pack price</th>
-                <th className="text-end" style={{ width: 80 }}>
-                  Line
-                </th>
-                <th style={{ width: 36 }} />
+                <th className="text-end" style={{ width: 80 }}>Line</th>
               </tr>
             </thead>
             <tbody>
               {formData.line_items.map((item, idx) => (
                 <tr key={idx}>
+                  <td className="text-center">
+                    {formData.line_items.length > 1 && (
+                      <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line" aria-label={`Remove line ${idx + 1}`}>
+                        <XMarkIcon style={{ width: 14, height: 14 }} />
+                      </button>
+                    )}
+                  </td>
                   <td>
                     <Dropdown_Custom
                       className="form-select ui-control-sm"
@@ -502,144 +577,144 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
                     <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={item.unit_price} onChange={(e) => handleLineItemChange(idx, "unit_price", e.target.value)} />
                   </td>
                   <td className="fw-medium small text-end">{formatCurrency(num(item.quantity_ordered) * num(item.unit_price))}</td>
-                  <td>
-                    {formData.line_items.length > 1 && (
-                      <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleRemoveLineItem(idx)} title="Remove line">
-                        <XMarkIcon style={{ width: 14, height: 14 }} />
-                      </button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="small text-end text-muted">
-                  Subtotal
-                </td>
+                <td colSpan={4} className="small text-end text-muted">Subtotal</td>
                 <td className="fw-medium small text-end">{formatCurrency(lineSubtotal)}</td>
-                <td />
               </tr>
-              <tr>
-                <td colSpan={2} className="small text-end">
-                  Import tax
-                </td>
-                <td>
-                  <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={formData.import_tax} onChange={(e) => setFormData((p) => ({ ...p, import_tax: e.target.value }))} placeholder="0" />
-                </td>
-                <td colSpan={2} />
-              </tr>
-              <tr>
-                <td colSpan={2} className="small text-end">
-                  Shipping
-                </td>
-                <td>
-                  <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={formData.shipping_cost} onChange={(e) => setFormData((p) => ({ ...p, shipping_cost: e.target.value }))} placeholder="0" />
-                </td>
-                <td colSpan={2} />
-              </tr>
+              {settings.showPOImportTax !== false && (
+                <tr>
+                  <td colSpan={4} className="small text-end">Import tax</td>
+                  <td className="small text-end">{formatCurrency(importTaxTotal)}</td>
+                </tr>
+              )}
+              {settings.showPOShipping !== false && (
+                <tr>
+                  <td colSpan={4} className="small text-end">
+                    Shipping {supplier?.shipping_rate_type === "percentage" ? `(${num(supplier?.shipping_rate)}%)` : ""}
+                  </td>
+                  <td className="small text-end">{formatCurrency(shippingCost)}</td>
+                </tr>
+              )}
               <tr className="table-light">
-                <td colSpan={3} className="fw-semibold small text-end">
-                  Sum
-                </td>
+                <td colSpan={4} className="fw-semibold small text-end">Sum</td>
                 <td className="fw-bold small text-end">{formatCurrency(orderTotal)}</td>
-                <td />
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <button type="button" onClick={handleAddLineItem} className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1 mb-2">
-          <PlusIcon style={{ width: 14, height: 14 }} />
-          <span>Add line</span>
-        </button>
-
-        <div className="form-floating ui-form-floating-mb2">
-          <InputTextarea className="form-control ui-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
-          <label htmlFor={`po_notes_${supplierId}`}>Notes</label>
-        </div>
+        {settings.showPONotes !== false && (
+          <div className="form-floating ui-form-floating-mb2">
+            <InputTextarea className="form-control ui-control-sm" style={{ minHeight: 64 }} id={`po_notes_${supplierId}`} value={formData.notes} onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes" />
+            <label htmlFor={`po_notes_${supplierId}`}>Notes</label>
+          </div>
+        )}
       </div>
-      <div className="border-top d-flex flex-shrink-0 gap-2 justify-content-start pt-0">
-        <button type="button" className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1" onClick={handleCreatePO} disabled={loading || formData.line_items.every((i) => !i.supplier_product_id)}>
-          <CheckIcon style={{ width: 14, height: 14 }} />
-          <span>{loading ? "Saving…" : "Save"}</span>
-        </button>
-        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => { setShowCreate(false); resetCreateForm(); }} disabled={loading}>
-          Cancel
-        </button>
-      </div>
+      {embedded && (
+        <Footer_Actions
+          start={
+            <button type="button" onClick={handleAddLineItem} className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1">
+              <PlusIcon style={{ width: 14, height: 14 }} />
+              <span>Add line</span>
+            </button>
+          }
+          center={
+            <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" onClick={() => { setView("orders"); resetCreateForm(); }} disabled={loading} title="Cancel" aria-label="Cancel">
+              <XMarkIcon style={{ width: 14, height: 14 }} />
+            </button>
+          }
+          end={
+            <Button_Toolbar
+              icon={CheckIcon}
+              label={loading ? "Saving…" : "Save"}
+              onClick={handleCreatePO}
+              disabled={loading || formData.line_items.every((i) => !i.supplier_product_id)}
+              className="btn-primary"
+              title="Save purchase order"
+            />
+          }
+        />
+      )}
     </div>
   );
 
   const renderPoList = () => (
     <>
-      <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-end mb-2">
-        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setShowProducts(true)}>
-          Products ({supplierProducts.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            resetCreateForm();
-            setShowCreate(true);
-            setDetailPoId(null);
-          }}
-          className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1"
-        >
-          <PlusIcon style={{ width: 14, height: 14 }} />
-          <span>New</span>
-        </button>
-      </div>
+      {!isViewControlled && (
+        <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-end mb-2">
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setView("products")}>
+            Products ({supplierProducts.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetCreateForm();
+              setView("create");
+              setDetailPoId(null);
+            }}
+            className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1"
+          >
+            <PlusIcon style={{ width: 14, height: 14 }} />
+            <span>New</span>
+          </button>
+        </div>
+      )}
 
-      <div className="flex-grow-1 min-h-0 overflow-auto">
-        <table className="align-middle mb-0 table table-hover table-sm">
-          <thead className="sticky-top table-light">
-            <tr>
-              <th className="pe-1 ps-1">PO#</th>
-              <th className="px-1">Date</th>
-              <th className="px-1">Status</th>
-              <th className="px-1 text-end">Sum</th>
-              <th className="pe-1 text-end" style={{ width: 44 }}>
-                <span className="visually-hidden">View</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {purchaseOrders.length === 0 ? (
+      {settings.showPurchaseOrdersTable === false ? (
+        <div className="flex-grow-1 py-3 small text-center text-muted">The purchase-orders table is hidden in supplier page settings.</div>
+      ) : (
+        <div className="flex-grow-1 min-h-0 overflow-auto">
+          <table className="align-middle mb-0 table table-hover table-sm">
+            <thead className="sticky-top table-light">
               <tr>
-                <td colSpan={5} className="ps-1 py-1 small text-center text-muted">
-                  No purchase orders yet.
-                </td>
+                <th className="pe-1 ps-1">PO#</th>
+                {settings.showPODate !== false && <th className="px-1">Date</th>}
+                {settings.showPOStatus !== false && <th className="px-1">Status</th>}
+                {settings.showPOAmount !== false && <th className="px-1 text-end">Sum</th>}
+                <th className="pe-1 text-end" style={{ width: 44 }}><span className="visually-hidden">View</span></th>
               </tr>
-            ) : (
-              purchaseOrders.map((po) => (
-                <tr key={po.id}>
-                  <td className="font-monospace pe-1 ps-1 small">{po.po_number}</td>
-                  <td className="px-1 small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
-                  <td className="px-1 small text-capitalize">{String(po.status || "draft").replaceAll("_", " ")}</td>
-                  <td className="fw-medium px-1 small text-end">{formatCurrency(po.total_amount)}</td>
-                  <td className="pe-1 text-end">
-                    <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" title="View purchase order" onClick={() => openDetail(po)}>
-                      <EyeIcon style={{ width: 14, height: 14 }} />
-                    </button>
+            </thead>
+            <tbody>
+              {purchaseOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={1 + Number(settings.showPODate !== false) + Number(settings.showPOStatus !== false) + Number(settings.showPOAmount !== false) + 1} className="ps-1 py-1 small text-center text-muted">
+                    No purchase orders yet.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                purchaseOrders.map((po) => (
+                  <tr key={po.id}>
+                    <td className="font-monospace pe-1 ps-1 small">{po.po_number}</td>
+                    {settings.showPODate !== false && <td className="px-1 small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>}
+                    {settings.showPOStatus !== false && <td className="px-1 small text-capitalize">{String(po.status || "draft").replaceAll("_", " ")}</td>}
+                    {settings.showPOAmount !== false && <td className="fw-medium px-1 small text-end">{formatCurrency(po.total_amount)}</td>}
+                    <td className="pe-1 text-end">
+                      <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" title="View purchase order" onClick={() => openDetail(po)}>
+                        <EyeIcon style={{ width: 14, height: 14 }} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 
-  return (
+  const content = (
     <div className={`d-flex flex-column min-h-0 h-100 ${embedded ? "procurement-ui--embedded" : ""}`}>
       {procurementError && !detailPoId && (
         <div className="alert alert-danger mb-2 py-1 small" role="alert">
           {procurementError}
         </div>
       )}
-      {showCreate ? renderCreateForm() : showProducts ? renderCatalog() : renderPoList()}
+      {view === "create" ? renderCreateForm() : view === "products" ? renderCatalog() : renderPoList()}
 
       <Modal
         isOpen={!!detailPoId}
@@ -831,6 +906,104 @@ const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false,
         onUploaded={() => detailPoId && loadDetail(detailPoId)}
       />
     </div>
+  );
+
+  if (embedded) return content;
+
+  const cancelButton = (label, onClick) => (
+    <button
+      type="button"
+      className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      disabled={loading || savingCatalog}
+    >
+      <XMarkIcon style={{ width: 14, height: 14 }} />
+    </button>
+  );
+  const modalFooter = view === "create" ? (
+    <Footer_Actions
+      start={
+        <Button_Toolbar
+          icon={PlusIcon}
+          label="Add line"
+          onClick={handleAddLineItem}
+          className="btn-outline-primary"
+          title="Add purchase-order line"
+        />
+      }
+      center={cancelButton("Cancel", () => { setView("orders"); resetCreateForm(); })}
+      end={
+        <Button_Toolbar
+          icon={CheckIcon}
+          label={loading ? "Saving…" : "Save"}
+          onClick={handleCreatePO}
+          disabled={loading || formData.line_items.every((item) => !item.supplier_product_id)}
+          className="btn-primary"
+          title="Save purchase order"
+        />
+      }
+    />
+  ) : view === "products" ? (
+    <Footer_Actions
+      start={
+        <Button_Toolbar
+          icon={savingCatalog ? CheckIcon : PlusIcon}
+          label={savingCatalog ? "Saving…" : supplierProducts.some((product) => String(product.inventory_id) === String(catalogForm.inventory_id)) ? "Update" : "Add"}
+          onClick={handleSaveCatalogProduct}
+          disabled={savingCatalog || !catalogForm.inventory_id || !catalogForm.purchase_unit.trim()}
+          className="btn-primary"
+          title="Save supplier product"
+        />
+      }
+      center={cancelButton("Back to purchase orders", () => setView("orders"))}
+    />
+  ) : (
+    <Footer_Actions
+      start={
+        <>
+          {settings.showProductModal !== false && (
+            <Button_Toolbar
+              icon={DocumentPlusIcon}
+              label={`Products (${supplierProducts.length})`}
+              onClick={() => setView("products")}
+              className="btn-outline-secondary"
+              title={`View products from ${supplierName || supplier?.name || "supplier"}`}
+            />
+          )}
+          {settings.showPurchaseOrderForm !== false && (
+            <Button_Toolbar
+              icon={PlusIcon}
+              label="New"
+              onClick={() => {
+                resetCreateForm();
+                setDetailPoId(null);
+                setView("create");
+              }}
+              className="btn-primary"
+              title="Create a purchase order"
+            />
+          )}
+        </>
+      }
+      center={cancelButton("Close", onClose)}
+    />
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={supplierName || supplier?.name || "Supplier"}
+      fullScreen
+      noPadding
+      contentGravity="bottom"
+      bodyClassName={view === "create" ? "pt-32" : ""}
+      footer={modalFooter}
+    >
+      <div className="d-flex flex-column h-100 min-h-0 p-1">{content}</div>
+    </Modal>
   );
 };
 

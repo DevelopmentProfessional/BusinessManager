@@ -199,53 +199,8 @@ export default function Layout({ children }) {
           {/* Backdrop */}
           <div className="bg-dark bg-opacity-25 h-100 position-absolute start-0 top-0 w-100" onClick={() => setExpandedMenuOpen(false)} />
 
-          {/* Menu positioned bottom-right */}
+          {/* Navigation links remain above the bottom-right toggle. */}
           <div className="app-nav-bottom-menu-panel position-absolute ps-0 rounded-3 d-flex gap-2 align-items-end" style={{ minWidth: "1rem" }}>
-            {/* Left side: Global options */}
-            <div className="app-nav-bottom-global-menu d-flex flex-column gap-2 align-items-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setExpandedMenuOpen(false);
-                  setNotificationsOpen(true);
-                }}
-                className={classNames(
-                  "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
-                  isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
-                )}
-                style={{
-                  backgroundColor: "var(--bs-tertiary-bg)",
-                  color: "var(--bs-body-color)",
-                  borderColor: "var(--bs-border-color)",
-                }}
-                title="Notifications"
-                aria-label="Notifications"
-              >
-                <BellIcon className="app-icon flex-shrink-0" />
-                {isTrainingMode && <span>Notifications</span>}
-              </button>
-              <button
-                type="button"
-                onClick={handleUndo}
-                disabled={undoLoading}
-                className={classNames(
-                  "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
-                  isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
-                )}
-                style={{
-                  backgroundColor: "var(--bs-tertiary-bg)",
-                  color: "var(--bs-body-color)",
-                  borderColor: "var(--bs-border-color)",
-                }}
-                title="Undo previous action"
-                aria-label="Undo"
-              >
-                <ArrowUturnLeftIcon className="app-icon flex-shrink-0" />
-                {isTrainingMode && <span>Undo</span>}
-              </button>
-            </div>
-
-            {/* Right side: Navigation items */}
             <div className="app-nav-bottom-menu d-flex flex-column gap-2">
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
@@ -274,6 +229,50 @@ export default function Layout({ children }) {
                 );
               })}
             </div>
+          </div>
+
+          {/* Global actions float at the far left, separate from the page links. */}
+          <div className="app-nav-bottom-global-menu position-fixed d-flex flex-column gap-2 align-items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setExpandedMenuOpen(false);
+                setNotificationsOpen(true);
+              }}
+              className={classNames(
+                "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
+                isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
+              )}
+              style={{
+                backgroundColor: "var(--bs-tertiary-bg)",
+                color: "var(--bs-body-color)",
+                borderColor: "var(--bs-border-color)",
+              }}
+              title="Notifications"
+              aria-label="Notifications"
+            >
+              <BellIcon className="app-icon flex-shrink-0" />
+              {isTrainingMode && <span>Notifications</span>}
+            </button>
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={undoLoading}
+              className={classNames(
+                "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
+                isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
+              )}
+              style={{
+                backgroundColor: "var(--bs-tertiary-bg)",
+                color: "var(--bs-body-color)",
+                borderColor: "var(--bs-border-color)",
+              }}
+              title="Undo previous action"
+              aria-label="Undo"
+            >
+              <ArrowUturnLeftIcon className="app-icon flex-shrink-0" />
+              {isTrainingMode && <span>Undo</span>}
+            </button>
           </div>
         </div>
       )}

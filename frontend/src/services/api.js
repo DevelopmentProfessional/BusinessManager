@@ -754,6 +754,7 @@ export const inventoryCategoriesAPI = {
     return api.post("/inventory-categories", { item_type: itemTypeOrData, name });
   },
   delete: (id) => api.delete(`/inventory-categories/${id}`),
+  update: (id, data) => api.put(`/inventory-categories/${id}`, data),
 };
 
 export const discountRulesAPI = createISUDApi("discount_rule");

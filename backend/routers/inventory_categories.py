@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
+import math
 
 try:
     from backend.database import get_session
@@ -77,3 +78,25 @@ def delete_inventory_category(
         raise HTTPException(status_code=404, detail="Category not found")
     session.delete(cat)
     safe_commit(session, "delete category")
+
+
+@router.put("/inventory-categories/{category_id}", response_model=InventoryCategoryRead)
+def update_inventory_category(
+    category_id: UUID,
+    payload: dict,
+    session: Session = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    company_id = getattr(current_user, "company_id", None)
+    cat = session.get(InventoryCategory, category_id)
+    if not cat or cat.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Category not found")
+    try:
+        import_tax_rate = float(payload.get("import_tax_rate"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="import_tax_rate must be a non-negative number")
+    if not math.isfinite(import_tax_rate) or import_tax_rate < 0:
+        raise HTTPException(status_code=422, detail="import_tax_rate must be a non-negative number")
+    cat.import_tax_rate = import_tax_rate
+    session.add(cat)
+    return safe_commit_refresh(session, cat, "update category import-tax rate")

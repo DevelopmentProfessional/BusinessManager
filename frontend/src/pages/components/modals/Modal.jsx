@@ -18,11 +18,14 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-26 | GitHub Copilot | Applied shared sticky footer classes for modal footer consistency
+ *   2026-11-16 | GitHub Copilot | Moved the default modal close action from the header to the footer
  * ============================================================
  */
 import React, { createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "../../../icons";
+import Footer_Actions from "../footers/Footer_Actions";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 
 export const ModalStackContext = createContext(0);
 export const ModalContainerContext = createContext(null);
@@ -75,11 +78,26 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = true, headerActions = null, contentGravity = "top", container = null, contentWidth = false }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = false, showFooterClose = true, headerActions = null, contentGravity = "top", container = null, contentWidth = false, bodyClassName = "", bodyStyle }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
   const containerContext = useContext(ModalContainerContext);
   const effectiveContainer = container || containerContext;
+  const resolvedFooter =
+    footer ??
+    (showFooterClose && title && onClose ? (
+      <Footer_Actions
+        center={
+          <Button_Toolbar
+            icon={XMarkIcon}
+            label="Close"
+            onClick={onClose}
+            className="btn-outline-secondary"
+            title="Close"
+          />
+        }
+      />
+    ) : null);
 
   if (!isOpen) return null;
 
@@ -91,10 +109,10 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
         <ModalStackContext.Provider value={nextDepth}>
           {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-2" : "p-2"} no-scrollbar`}>
+          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-2" : "p-2"} no-scrollbar ${bodyClassName}`.trim()} style={bodyStyle}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
-          {footer && <ModalFooter>{footer}</ModalFooter>}
+          {resolvedFooter && <ModalFooter>{resolvedFooter}</ModalFooter>}
         </ModalStackContext.Provider>
       </div>
     );
@@ -121,13 +139,14 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       >
         {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
         <div
-          className={`app-modal-body app-modal-content app-modal-scroll-surface flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${
+          className={`app-modal-body app-modal-content app-modal-scroll-surface flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${bodyClassName} ${
             noPadding ? "p-0" : "p-1 pt-2"
-          }`}
+          }`.trim()}
+          style={bodyStyle}
         >
           {children}
         </div>
-        {footer && <ModalFooter>{footer}</ModalFooter>}
+        {resolvedFooter && <ModalFooter>{resolvedFooter}</ModalFooter>}
       </div>
     </div>
   );

@@ -4,9 +4,10 @@ import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
 import Footer_Actions from "./components/footers/Footer_Actions";
-import { InputText, InputTextarea } from "./components/Inputs";
+import { InputNumber, InputText, InputTextarea } from "./components/Inputs";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Modal from "./components/modals/Modal";
@@ -14,6 +15,7 @@ import Modal_Procurement from "./components/modals/Modal_Procurement";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_Suppliers_Settings from "./components/modals/Modal_Suppliers_Settings";
 import { EmptyState, LoadingSpinner } from "./components/feedback";
+import Badge from "./components/badges/Badge";
 import usePagePermission from "../services/usePagePermission";
 import useStore from "../services/useStore";
 import { getTextSizeStyle, usePageTableSettings } from "../services/useTableSettings";
@@ -50,6 +52,7 @@ export default function Suppliers() {
   const [savingSupplier, setSavingSupplier] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
   const [procurementSupplier, setProcurementSupplier] = useState(null);
+  const [procurementView, setProcurementView] = useState("orders");
   const [communicationSupplier, setCommunicationSupplier] = useState(null);
   const [appSettings, setAppSettings] = useState({});
   const [sortColumn, setSortColumn] = useState("name");
@@ -171,7 +174,8 @@ export default function Suppliers() {
   };
 
   const openProcurement = (supplier, initialCreate = false) => {
-    setProcurementSupplier({ ...supplier, initialCreate });
+    setProcurementView(initialCreate ? "create" : "orders");
+    setProcurementSupplier(supplier);
   };
 
   return (
@@ -194,6 +198,13 @@ export default function Suppliers() {
           <div className="align-items-center d-flex flex-grow-1 justify-content-center">
             <LoadingSpinner label="Loading suppliers" size="lg" />
           </div>
+        ) : pageSettings.showSupplierTable === false ? (
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+            <EmptyState
+              title="Supplier table is hidden"
+              description="Use Supplier Page Controls to show the supplier list."
+            />
+          </div>
         ) : visibleSuppliers.length === 0 ? (
           <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
             <EmptyState
@@ -206,8 +217,6 @@ export default function Suppliers() {
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
-              {pageSettings.showEmail !== false && <col className="app-col-action-120" />}
-              {pageSettings.showPhone !== false && <col className="app-col-action-120" />}
               {pageSettings.showAddress !== false && <col className="app-col-flex" />}
               <col className="app-col-action-120" />
             </colgroup>
@@ -227,17 +236,17 @@ export default function Suppliers() {
                   </td>
                   <td className="main-page-table-data">
                     <div className="fw-medium text-wrap-word">{supplier.name}</div>
+                    {(pageSettings.showPhone !== false && supplier.phone) || (pageSettings.showEmail !== false && supplier.email) ? (
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        {pageSettings.showPhone !== false && supplier.phone && (
+                          <Badge variant="gray" pill label={`Phone: ${supplier.phone}`} className="mw-100 text-truncate" />
+                        )}
+                        {pageSettings.showEmail !== false && supplier.email && (
+                          <Badge variant="gray" pill label={`Email: ${supplier.email}`} className="mw-100 text-truncate" />
+                        )}
+                      </div>
+                    ) : null}
                   </td>
-                  {pageSettings.showEmail !== false && (
-                    <td className="main-page-table-data text-truncate" title={supplier.email || ""}>
-                      {supplier.email || "—"}
-                    </td>
-                  )}
-                  {pageSettings.showPhone !== false && (
-                    <td className="main-page-table-data text-truncate" title={supplier.phone || ""}>
-                      {supplier.phone || "—"}
-                    </td>
-                  )}
                   {pageSettings.showAddress !== false && (
                     <td className="main-page-table-data text-truncate" title={supplier.address || ""}>
                       {supplier.address || "—"}
@@ -274,19 +283,17 @@ export default function Suppliers() {
         )}
       </div>
 
-      <PageTableHeader
+      {pageSettings.showSupplierTable !== false && <PageTableHeader
         columns={[
           { label: "", className: "app-col-select" },
           { label: "Supplier", className: "app-col-flex", sortKey: "name" },
-          ...(pageSettings.showEmail !== false ? [{ label: "Email", className: "app-col-action-120", sortKey: "email" }] : []),
-          ...(pageSettings.showPhone !== false ? [{ label: "Phone", className: "app-col-action-120", sortKey: "phone" }] : []),
           ...(pageSettings.showAddress !== false ? [{ label: "Address", className: "app-col-flex", sortKey: "address" }] : []),
           { label: "Actions", className: "app-col-action-120" },
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}
         onSort={handleSort}
-      />
+      />}
 
       <PageTableFooter
         searchTerm={searchTerm}
@@ -297,40 +304,40 @@ export default function Suppliers() {
             <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => openSupplierForm()} className="btn-app-primary" title="Add supplier" />
           </Gate_Permission>
         }
-        beforeSearch={
+      >
+        <div className="align-items-center d-flex flex-wrap gap-1 w-100">
           <Gate_Permission page="suppliers" permission="write">
             <Button_Toolbar
               icon={DocumentPlusIcon}
               label="Purchase Order"
               onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
-              disabled={!selectedSupplier}
+              disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
               className="btn-app-secondary"
-              title={selectedSupplier ? `Create a purchase order for ${selectedSupplier.name}` : "Select a supplier first"}
+              title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : selectedSupplier ? `Create a purchase order for ${selectedSupplier.name}` : "Select a supplier first"}
             />
           </Gate_Permission>
-        }
-      >
-        {selectedSupplier && (
-          <>
-            <span className="ui-small-muted">Selected: {selectedSupplier.name}</span>
-            <Gate_Permission page="suppliers" permission="delete">
+          {selectedSupplier && (
+            <>
+              <span className="ui-small-muted">Selected: {selectedSupplier.name}</span>
+              <Gate_Permission page="suppliers" permission="delete">
+                <Button_Toolbar
+                  icon={TrashIcon}
+                  label="Delete"
+                  onClick={handleDeleteSelected}
+                  className="btn-app-danger"
+                  title={`Delete ${selectedSupplier.name}`}
+                />
+              </Gate_Permission>
               <Button_Toolbar
-                icon={TrashIcon}
-                label="Delete"
-                onClick={handleDeleteSelected}
-                className="btn-app-danger"
-                title={`Delete ${selectedSupplier.name}`}
+                icon={XMarkIcon}
+                label="Clear"
+                onClick={() => setSelectedSupplierId(null)}
+                className="btn-outline-secondary"
+                title="Clear supplier selection"
               />
-            </Gate_Permission>
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Clear"
-              onClick={() => setSelectedSupplierId(null)}
-              className="btn-outline-secondary"
-              title="Clear supplier selection"
-            />
-          </>
-        )}
+            </>
+          )}
+        </div>
       </PageTableFooter>
 
       <Modal
@@ -350,7 +357,18 @@ export default function Suppliers() {
                 title="Save supplier"
               />
             }
-            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeSupplierForm} disabled={savingSupplier} className="btn-outline-secondary" title="Cancel" />}
+            center={
+              <button
+                type="button"
+                className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0"
+                onClick={closeSupplierForm}
+                disabled={savingSupplier}
+                title="Cancel"
+                aria-label="Cancel"
+              >
+                <XMarkIcon style={{ width: 14, height: 14 }} />
+              </button>
+            }
           />
         }
       >
@@ -363,36 +381,18 @@ export default function Suppliers() {
       </Modal>
 
       {procurementSupplier && (
-        <Modal
+        <Modal_Procurement
           isOpen
           onClose={() => setProcurementSupplier(null)}
-          title={`${procurementSupplier.initialCreate ? "Create Purchase Order" : "Products & Purchase Orders"} — ${procurementSupplier.name}`}
-          fullScreen
-          noPadding
-          contentGravity="bottom"
-          footer={
-            <Footer_Actions
-              center={
-                <Button_Toolbar
-                  icon={XMarkIcon}
-                  label="Close"
-                  onClick={() => setProcurementSupplier(null)}
-                  className="btn-outline-secondary"
-                  title="Close supplier procurement"
-                />
-              }
-            />
-          }
-        >
-          <div className="d-flex flex-column flex-grow-1 h-100 min-h-0 p-1">
-            <Modal_Procurement
-              supplierId={procurementSupplier.id}
-              initialCreate={procurementSupplier.initialCreate}
-              embedded={false}
-              onPOCreated={loadSuppliers}
-            />
-          </div>
-        </Modal>
+          supplier={procurementSupplier}
+          supplierName={procurementSupplier.name}
+          supplierId={procurementSupplier.id}
+          settings={pageSettings}
+          view={procurementView}
+          onViewChange={setProcurementView}
+          embedded={false}
+          onPOCreated={loadSuppliers}
+        />
       )}
 
       {communicationSupplier && (
@@ -424,6 +424,8 @@ function SupplierForm({ supplier, error, onSubmit }) {
     email: supplier?.email || "",
     phone: supplier?.phone || "",
     address: supplier?.address || "",
+    shipping_rate_type: supplier?.shipping_rate_type || "fixed",
+    shipping_rate: supplier?.shipping_rate ?? 0,
   });
 
   const handleChange = (event) => {
@@ -433,7 +435,7 @@ function SupplierForm({ supplier, error, onSubmit }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSubmit(formData);
+    onSubmit({ ...formData, shipping_rate: Number(formData.shipping_rate) || 0 });
   };
 
   return (
@@ -454,6 +456,34 @@ function SupplierForm({ supplier, error, onSubmit }) {
       <div className="form-floating ui-form-floating-mb2">
         <InputTextarea id="supplier-address" name="address" value={formData.address} onChange={handleChange} className="min-h-[80px]" placeholder="Address" />
         <label htmlFor="supplier-address">Address</label>
+      </div>
+      <div className="fw-semibold small">Shipping</div>
+      <div className="form-floating ui-form-floating-mb2">
+        <Dropdown_Custom
+          id="supplier-shipping-rate-type"
+          value={formData.shipping_rate_type}
+          onChange={(event) => setFormData((previous) => ({ ...previous, shipping_rate_type: event.target.value }))}
+          className="form-select ui-control-sm"
+          options={[
+            { value: "fixed", label: "Fixed amount" },
+            { value: "percentage", label: "Percentage of order subtotal" },
+          ]}
+        />
+        <label htmlFor="supplier-shipping-rate-type">Shipping calculation</label>
+      </div>
+      <div className="form-floating ui-form-floating-mb2">
+        <InputNumber
+          id="supplier-shipping-rate"
+          name="shipping_rate"
+          min="0"
+          step="0.01"
+          value={formData.shipping_rate}
+          onChange={handleChange}
+          placeholder={formData.shipping_rate_type === "percentage" ? "Shipping percentage" : "Shipping amount"}
+        />
+        <label htmlFor="supplier-shipping-rate">
+          {formData.shipping_rate_type === "percentage" ? "Shipping (%)" : "Shipping amount"}
+        </label>
       </div>
     </form>
   );

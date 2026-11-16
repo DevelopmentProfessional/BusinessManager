@@ -173,3 +173,93 @@ def test_inventory_creation_links_preferred_supplier_catalog_product():
     assert product.units_per_purchase_unit == 6
     assert product.unit_price == pytest.approx(12.5)
     assert product.is_preferred
+
+
+@pytest.mark.parametrize(
+    ("shipping_rate_type", "shipping_rate", "expected_shipping"),
+    [
+        ("fixed", 3.0, 3.0),
+        ("percentage", 10.0, 4.0),
+    ],
+)
+def test_create_purchase_order_snapshots_supplier_shipping_and_category_tax(
+    monkeypatch,
+    shipping_rate_type,
+    shipping_rate,
+    expected_shipping,
+):
+    supplier_id = uuid4()
+    inventory_id = uuid4()
+    supplier = SimpleNamespace(
+        company_id="company-1",
+        shipping_rate_type=shipping_rate_type,
+        shipping_rate=shipping_rate,
+    )
+    inventory = SimpleNamespace(
+        id=inventory_id,
+        company_id="company-1",
+        type="product",
+        category="Hair care",
+    )
+    category = SimpleNamespace(item_type="product", name="Hair care", import_tax_rate=10.0)
+    supplier_product = SimpleNamespace(
+        id=uuid4(),
+        purchase_unit="case",
+        units_per_purchase_unit=6,
+        unit_price=20.0,
+    )
+
+    class CreateSession:
+        def __init__(self):
+            self.added = []
+            self.committed = False
+
+        def get(self, model, _record_id):
+            if model is financial.Supplier:
+                return supplier
+            if model is financial.Inventory:
+                return inventory
+            return None
+
+        def exec(self, _statement):
+            return Result([category])
+
+        def add(self, value):
+            self.added.append(value)
+
+        def flush(self):
+            return None
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            raise AssertionError("Unexpected rollback")
+
+        def refresh(self, _value):
+            return None
+
+    session = CreateSession()
+    current_user = SimpleNamespace(id=uuid4(), company_id="company-1")
+    monkeypatch.setattr(financial, "_require_procurement_permission", lambda *_args: None)
+    monkeypatch.setattr(
+        financial,
+        "_supplier_product_for_item",
+        lambda *_args: supplier_product,
+    )
+
+    result = financial.create_purchase_order(
+        {
+            "supplier_id": str(supplier_id),
+            "items": [{"inventory_id": str(inventory_id), "quantity": 2}],
+        },
+        session,
+        current_user,
+    )
+
+    assert result["shipping_rate_type"] == shipping_rate_type
+    assert result["shipping_rate"] == pytest.approx(shipping_rate)
+    assert result["import_tax"] == pytest.approx(4.0)
+    assert result["shipping_cost"] == pytest.approx(expected_shipping)
+    assert result["total_amount"] == pytest.approx(44.0 + expected_shipping)
+    assert session.committed

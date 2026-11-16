@@ -14,7 +14,7 @@ try:
     from backend.models import (
         AccountsReceivable, AccountsPayable, GeneralLedgerEntry, GeneralLedgerAccount,
         ProcurementOrder, ProcurementOrderLine, InventoryCost, InventoryCostLayer, SupplierProduct,
-        User, UserRole, Supplier, Inventory
+        User, UserRole, Supplier, Inventory, InventoryCategory
     )
     from backend.routers.auth import get_current_user
     from backend.routers.auth import get_user_permissions_list
@@ -23,7 +23,7 @@ except ImportError:
     from models import (
         AccountsReceivable, AccountsPayable, GeneralLedgerEntry, GeneralLedgerAccount,
         ProcurementOrder, ProcurementOrderLine, InventoryCost, InventoryCostLayer, SupplierProduct,
-        User, UserRole, Supplier, Inventory
+        User, UserRole, Supplier, Inventory, InventoryCategory
     )
     from routers.auth import get_current_user
     from routers.auth import get_user_permissions_list
@@ -286,6 +286,8 @@ def _serialize_po(po: ProcurementOrder, lines: Optional[list] = None) -> dict:
         "total_amount": float(po.total_amount or 0),
         "import_tax": float(getattr(po, "import_tax", None) or 0),
         "shipping_cost": float(getattr(po, "shipping_cost", None) or 0),
+        "shipping_rate_type": getattr(po, "shipping_rate_type", "fixed") or "fixed",
+        "shipping_rate": float(getattr(po, "shipping_rate", None) or 0),
         "status": po.status,
         "notes": po.notes,
         "created_at": getattr(po, "created_at", None),
@@ -486,8 +488,6 @@ def create_purchase_order(
     items = payload.get("items") or []
     if not isinstance(items, list) or not items or any(not isinstance(item, dict) for item in items):
         raise HTTPException(status_code=400, detail="At least one purchase-order item is required")
-    import_tax = _nonnegative_price(payload.get("import_tax") or 0, "import_tax")
-    shipping_cost = _nonnegative_price(payload.get("shipping_cost") or 0, "shipping_cost")
     expected = payload.get("expected_delivery_date")
     expected_dt = None
     if expected:
@@ -510,16 +510,32 @@ def create_purchase_order(
     if supplier.company_id != current_user.company_id:
         raise HTTPException(status_code=403, detail="Supplier does not belong to your company")
 
+    shipping_rate_type = str(getattr(supplier, "shipping_rate_type", "fixed") or "fixed").lower()
+    if shipping_rate_type not in {"fixed", "percentage"}:
+        raise HTTPException(status_code=400, detail="Supplier shipping rate type must be fixed or percentage")
+    shipping_rate = _nonnegative_price(getattr(supplier, "shipping_rate", 0) or 0, "supplier shipping rate")
+    category_tax_rates = {
+        (str(category.item_type or "").strip().lower(), str(category.name or "").strip().casefold()):
+        _nonnegative_price(category.import_tax_rate or 0, "category import-tax rate")
+        for category in session.exec(
+            select(InventoryCategory).where(InventoryCategory.company_id == current_user.company_id)
+        ).all()
+    }
+
     line_models = []
+    subtotal = 0.0
+    import_tax = 0.0
     try:
         po = ProcurementOrder(
             po_number=payload.get("po_number", f"PO-{int(datetime.utcnow().timestamp())}"),
             supplier_id=supplier_id,
             order_date=datetime.utcnow(),
             expected_delivery_date=expected_dt,
-            total_amount=import_tax + shipping_cost,
-            import_tax=import_tax,
-            shipping_cost=shipping_cost,
+            total_amount=0,
+            import_tax=0,
+            shipping_cost=0,
+            shipping_rate_type=shipping_rate_type,
+            shipping_rate=shipping_rate,
             status="draft",
             created_by=current_user.id,
             notes=payload.get("notes"),
@@ -559,7 +575,16 @@ def create_purchase_order(
             )
             session.add(line)
             line_models.append(line)
-            po.total_amount += line.line_total
+            subtotal += line.line_total
+            category_key = (
+                str(inventory.type or "").strip().lower(),
+                str(inventory.category or "").strip().casefold(),
+            )
+            import_tax += line.line_total * category_tax_rates.get(category_key, 0) / 100
+        shipping_cost = shipping_rate if shipping_rate_type == "fixed" else subtotal * shipping_rate / 100
+        po.import_tax = round(import_tax, 2)
+        po.shipping_cost = round(shipping_cost, 2)
+        po.total_amount = round(subtotal + po.import_tax + po.shipping_cost, 2)
 
         session.add(po)
         session.commit()
@@ -647,7 +672,15 @@ def add_purchase_order_items(
         raise HTTPException(status_code=409, detail="Items cannot be added to a completed purchase order")
 
     try:
-        added_total = 0.0
+        categories = session.exec(
+            select(InventoryCategory).where(InventoryCategory.company_id == current_user.company_id)
+        ).all()
+        category_tax_rates = {
+            (str(category.item_type or "").strip().lower(), str(category.name or "").strip().casefold()):
+            _nonnegative_price(category.import_tax_rate or 0, "category import-tax rate")
+            for category in categories
+        }
+        added_import_tax = 0.0
         for item in items:
             try:
                 inventory_id = UUID(str(item.get("inventory_id")))
@@ -676,9 +709,26 @@ def add_purchase_order_items(
                 units_per_purchase_unit=supplier_product.units_per_purchase_unit,
             )
             session.add(line)
-            added_total += line.line_total
+            category_key = (
+                str(inventory.type or "").strip().lower(),
+                str(inventory.category or "").strip().casefold(),
+            )
+            added_import_tax += line.line_total * category_tax_rates.get(category_key, 0) / 100
 
-        po.total_amount = float(po.total_amount or 0) + added_total
+        all_lines = session.exec(
+            select(ProcurementOrderLine).where(ProcurementOrderLine.po_id == po.id)
+        ).all()
+        subtotal = sum(float(line.line_total or 0) for line in all_lines)
+        shipping_rate_type = str(getattr(po, "shipping_rate_type", "fixed") or "fixed").lower()
+        if shipping_rate_type not in {"fixed", "percentage"}:
+            raise HTTPException(status_code=400, detail="Purchase-order shipping rate type is invalid")
+        shipping_rate = _nonnegative_price(getattr(po, "shipping_rate", 0) or 0, "purchase-order shipping rate")
+        po.import_tax = round(float(po.import_tax or 0) + added_import_tax, 2)
+        po.shipping_cost = round(
+            shipping_rate if shipping_rate_type == "fixed" else subtotal * shipping_rate / 100,
+            2,
+        )
+        po.total_amount = round(subtotal + po.import_tax + po.shipping_cost, 2)
         po.updated_at = datetime.utcnow()
         session.add(po)
         session.commit()

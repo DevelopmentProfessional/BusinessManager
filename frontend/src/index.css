@@ -2633,9 +2633,13 @@ body.training-mode .btn.rounded-pill {
 
 /* Bottom-right nav menu (Layout) — same alignment rules as toolbar buttons */
 body.training-mode .app-nav-bottom-menu .btn.rounded-pill,
-body.training-mode .app-nav-bottom-menu a.btn.rounded-pill {
+body.training-mode .app-nav-bottom-menu a.btn.rounded-pill,
+body.training-mode .app-nav-bottom-global-menu .btn.rounded-pill {
   justify-content: flex-start !important;
   text-align: left !important;
+  width: auto !important;
+  min-width: var(--app-btn-width) !important;
+  max-width: none !important;
 }
 
 .app-nav-bottom-menu a.btn.rounded-circle {
@@ -2700,6 +2704,12 @@ body.training-mode .app-nav-bottom-toggle.rounded-pill {
 .app-nav-bottom-global-menu {
   align-items: stretch;
   padding: var(--app-footer-padding-y) 0;
+}
+
+.app-nav-bottom-global-menu.position-fixed {
+  left: calc(var(--app-footer-padding-x) + env(safe-area-inset-left, 0rem));
+  bottom: calc(var(--app-footer-padding-y) + var(--app-btn-nav-width) + var(--app-footer-btn-gap) + env(safe-area-inset-bottom, 0rem));
+  z-index: 1;
 }
 
 .app-nav-bottom-menu .btn,

@@ -436,6 +436,7 @@ class InventoryCategory(BaseModel, table=True):
     __tablename__ = "inventory_category"
     item_type: str = Field(index=True)   # e.g. "product", "resource", "asset"
     name: str
+    import_tax_rate: float = Field(default=0.0)
     company_id: Optional[str] = Field(default=None, index=True)
 
 
@@ -443,6 +444,7 @@ class InventoryCategoryRead(SQLModel):
     id: UUID
     item_type: str
     name: str
+    import_tax_rate: float = 0.0
     company_id: Optional[str] = None
     created_at: Optional[datetime] = None
 
@@ -474,6 +476,8 @@ class Supplier(BaseModel, table=True):
     email: Optional[str] = Field(default=None)
     phone: Optional[str] = Field(default=None)
     address: Optional[str] = Field(default=None)
+    shipping_rate_type: str = Field(default="fixed")
+    shipping_rate: float = Field(default=0.0)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -1198,6 +1202,8 @@ class SupplierRead(SQLModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    shipping_rate_type: str = "fixed"
+    shipping_rate: float = 0.0
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -3078,6 +3084,8 @@ class ProcurementOrder(BaseModel, table=True):
     total_amount: float = Field(default=0.0)
     import_tax: Optional[float] = Field(default=0.0)
     shipping_cost: Optional[float] = Field(default=0.0)
+    shipping_rate_type: str = Field(default="fixed")
+    shipping_rate: float = Field(default=0.0)
     status: str = Field(default="draft")  # "draft", "sent", "confirmed", "received", "invoiced", "closed"
     
     created_by: Optional[UUID] = Field(foreign_key="user.id")

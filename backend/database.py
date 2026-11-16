@@ -78,7 +78,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.16.4"
+CURRENT_SCHEMA_VERSION = "2026.11.16.6"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -225,6 +225,26 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='procurement_order_line' AND column_name='units_per_purchase_unit'"
             )).fetchone()
+            supplier_shipping_rate_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier' AND column_name='shipping_rate_type'"
+            )).fetchone()
+            supplier_shipping_rate_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier' AND column_name='shipping_rate'"
+            )).fetchone()
+            inventory_category_import_tax_rate_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory_category' AND column_name='import_tax_rate'"
+            )).fetchone()
+            procurement_shipping_rate_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='procurement_order' AND column_name='shipping_rate_type'"
+            )).fetchone()
+            procurement_shipping_rate_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='procurement_order' AND column_name='shipping_rate'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -261,6 +281,11 @@ def _required_schema_artifacts_present() -> bool:
                 and procurement_supplier_product_column is not None
                 and procurement_purchase_unit_column is not None
                 and procurement_units_per_purchase_unit_column is not None
+                and supplier_shipping_rate_type_column is not None
+                and supplier_shipping_rate_column is not None
+                and inventory_category_import_tax_rate_column is not None
+                and procurement_shipping_rate_type_column is not None
+                and procurement_shipping_rate_column is not None
             )
     except Exception:
         return False
@@ -1272,6 +1297,69 @@ def _ensure_procurement_order_tax_shipping_if_needed():
                 print(f"  + Added column procurement_order.{col}")
 
 
+def _ensure_supplier_shipping_and_category_tax_columns_if_needed():
+    """Add supplier shipping settings, PO shipping snapshots, and category tax rates."""
+    with engine.begin() as conn:
+        supplier_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='supplier')"
+        )).scalar()
+        if supplier_exists:
+            supplier_columns = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier'"
+            )).fetchall()}
+            for column, sql_type, default in (
+                ("shipping_rate_type", "VARCHAR", "'fixed'"),
+                ("shipping_rate", "DOUBLE PRECISION", "0"),
+            ):
+                if column not in supplier_columns:
+                    conn.execute(text(
+                        f"ALTER TABLE supplier ADD COLUMN {column} {sql_type} NOT NULL DEFAULT {default}"
+                    ))
+                    print(f"  + Added supplier.{column}")
+
+        category_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='inventory_category')"
+        )).scalar()
+        if category_exists:
+            category_columns = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory_category'"
+            )).fetchall()}
+            if "import_tax_rate" not in category_columns:
+                conn.execute(text(
+                    "ALTER TABLE inventory_category "
+                    "ADD COLUMN import_tax_rate DOUBLE PRECISION NOT NULL DEFAULT 0"
+                ))
+                print("  + Added inventory_category.import_tax_rate")
+
+        procurement_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='procurement_order')"
+        )).scalar()
+        if procurement_exists:
+            procurement_columns = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='procurement_order'"
+            )).fetchall()}
+            for column, sql_type, default in (
+                ("shipping_rate_type", "VARCHAR", "'fixed'"),
+                ("shipping_rate", "DOUBLE PRECISION", "0"),
+            ):
+                if column not in procurement_columns:
+                    conn.execute(text(
+                        f"ALTER TABLE procurement_order ADD COLUMN {column} {sql_type} NOT NULL DEFAULT {default}"
+                    ))
+                    print(f"  + Added procurement_order.{column}")
+                    if column == "shipping_rate":
+                        conn.execute(text(
+                            "UPDATE procurement_order SET shipping_rate = shipping_cost "
+                            "WHERE shipping_cost > 0"
+                        ))
+
+
 def _ensure_procurement_catalog_columns_if_needed():
     """Add supplier catalog snapshots to existing purchase-order lines."""
     with engine.begin() as conn:
@@ -1771,6 +1859,7 @@ def create_db_and_tables():
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
     _ensure_procurement_order_tax_shipping_if_needed()
+    _ensure_supplier_shipping_and_category_tax_columns_if_needed()
     _ensure_procurement_catalog_columns_if_needed()
     _ensure_company_registration_columns_if_needed()
     _ensure_client_auth_columns_if_needed()
