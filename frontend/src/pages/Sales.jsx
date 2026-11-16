@@ -426,6 +426,8 @@ export default function Sales() {
   const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   // Invoice template modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceTemplateType, setInvoiceTemplateType] = useState("invoice");
+  const [historyDocument, setHistoryDocument] = useState(null);
   // Receipt settings — persisted in localStorage
   const [receiptSettings, setReceiptSettings] = useState(() => {
     try {
@@ -1856,7 +1858,7 @@ export default function Sales() {
               </div>
 
               {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
-              {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => setShowInvoiceModal(true)} className="btn-outline-secondary" title="Generate invoice for current cart" />}
+              {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => { setInvoiceTemplateType("invoice"); setShowInvoiceModal(true); }} className="btn-outline-secondary" title="Generate invoice for current cart" />}
             </div>
 
             {/* Search Row — Cart button + search input */}
@@ -1899,6 +1901,11 @@ export default function Sales() {
         removeFromCart={removeFromCart}
         setCart={setCart}
         handleCheckout={handleCheckout}
+        onCreateQuote={() => {
+          setInvoiceTemplateType("quote");
+          setShowCartModal(false);
+          setShowInvoiceModal(true);
+        }}
       />
 
       <style>{`
@@ -1952,9 +1959,46 @@ export default function Sales() {
       />
 
       {/* Sales History */}
-      <Modal_History_Sales isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} filteredHistory={filteredHistory} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onPortalOrderUpdated={loadTransactionHistory} />
+      <Modal_History_Sales
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        filteredHistory={filteredHistory}
+        historyFilters={historyFilters}
+        setHistoryFilters={setHistoryFilters}
+        onPortalOrderUpdated={loadTransactionHistory}
+        onCreateDocument={(sale, items) => {
+          setHistoryDocument({
+            entity: {
+              id: sale.id,
+              created_at: sale.date,
+              subtotal: sale.subtotal,
+              tax_amount: sale.tax,
+              total: sale.total,
+              payment_method: sale.paymentMethod,
+            },
+            client: sale.client || { name: sale.clientName },
+            items,
+          });
+          setShowHistoryModal(false);
+        }}
+      />
 
-      {/* Pre-checkout Invoice Generator */}
+      {historyDocument && (
+        <div className="fixed inset-0 z-50">
+          <Modal_TemplateUse
+            page="sales"
+            entity={historyDocument.entity}
+            client={historyDocument.client}
+            items={historyDocument.items}
+            currentUser={user}
+            settings={appSettings}
+            initialTemplateType="invoice"
+            onClose={() => setHistoryDocument(null)}
+          />
+        </div>
+      )}
+
+      {/* Cart Invoice / Quote Generator */}
       {showInvoiceModal && (
         <div className="fixed inset-0 z-50">
           <Modal_TemplateUse
@@ -1977,7 +2021,7 @@ export default function Sales() {
             }))}
             currentUser={user}
             settings={appSettings}
-            filterType="invoice"
+            initialTemplateType={invoiceTemplateType}
             onClose={() => setShowInvoiceModal(false)}
           />
         </div>

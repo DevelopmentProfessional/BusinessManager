@@ -28,7 +28,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import { getDisplayImageUrl } from "../utils/Utils_Image";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon } from "../../../icons";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, DocumentTextIcon } from "../../../icons";
 
 const CLIENT_DROPUP_Z_INDEX = 1200;
 
@@ -197,6 +197,7 @@ export default function Modal_Cart_Sales({
   removeFromCart = () => {},
   setCart = () => {},
   handleCheckout = () => {},
+  onCreateQuote = () => {},
 }) {
   const [tipAmount, setTipAmount] = useState("");
   const clientSearchAnchorRef = useRef(null);
@@ -385,17 +386,27 @@ export default function Modal_Cart_Sales({
         <div className="component-footer">
           <Footer_Actions
             start={
-              <Button_Toolbar
-                icon={CreditCardIcon}
-                label="Pay"
-                title="Checkout"
-                onClick={() => {
-                  onClose();
-                  handleCheckout();
-                }}
-                className="btn-success text-white"
-                style={{ borderColor: "#059669", backgroundColor: "#059669" }}
-              />
+              <div className="align-items-center d-flex flex-wrap gap-2">
+                <Button_Toolbar
+                  icon={DocumentTextIcon}
+                  label="Quote"
+                  title="Create a quote for the selected client"
+                  onClick={onCreateQuote}
+                  disabled={cart.length === 0 || !selectedClient}
+                  className="btn-outline-secondary"
+                />
+                <Button_Toolbar
+                  icon={CreditCardIcon}
+                  label="Pay"
+                  title="Checkout"
+                  onClick={() => {
+                    onClose();
+                    handleCheckout();
+                  }}
+                  className="btn-success text-white"
+                  style={{ borderColor: "#059669", backgroundColor: "#059669" }}
+                />
+              </div>
             }
             center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
           />

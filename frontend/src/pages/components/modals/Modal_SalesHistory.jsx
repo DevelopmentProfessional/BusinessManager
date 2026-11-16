@@ -8,7 +8,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "../dropdowns/Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "../dropdowns/Filter_SourceToggle";
-import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon } from "../../../icons";
+import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon, EyeIcon, EyeSlashIcon, DocumentTextIcon } from "../../../icons";
 import { saleTransactionsAPI, clientOrdersAPI, clientsAPI, employeesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputNumber, InputDate } from "../Inputs";
@@ -146,8 +146,9 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
   );
 }
 
-export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, historyFilters, setHistoryFilters, onPortalOrderUpdated }) {
+export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, historyFilters, setHistoryFilters, onPortalOrderUpdated, onCreateDocument }) {
   const [expandedId, setExpandedId] = useState(null);
+  const [showFilters, setShowFilters] = useState(true);
   const [itemsCache, setItemsCache] = useState({});
   const [loadingId, setLoadingId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
@@ -221,7 +222,18 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
             <span className="badge bg-secondary-subtle fw-normal ms-1 rounded-pill text-secondary-emphasis">{filteredHistory.length}</span>
           </div>
           <div className="component-header-center"></div>
-          <div className="component-header-right"></div>
+          <div className="component-header-right">
+            <Button_Toolbar
+              icon={showFilters ? EyeSlashIcon : EyeIcon}
+              label={showFilters ? "Hide filters" : "Show filters"}
+              compact
+              onClick={() => setShowFilters((visible) => !visible)}
+              title={showFilters ? "Hide filters and clear button" : "Show filters and clear button"}
+              aria-expanded={showFilters}
+              aria-label={showFilters ? "Hide sales history filters" : "Show sales history filters"}
+              className="btn-outline-secondary"
+            />
+          </div>
         </div>
 
         <div className="component-body">
@@ -311,6 +323,17 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                                   <span className="text-muted text-nowrap">{item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : ""}</span>
                                 </div>
                               ))}
+                              {onCreateDocument && (
+                                <div className="border-top mt-2 pt-2">
+                                  <Button_Toolbar
+                                    icon={DocumentTextIcon}
+                                    label="Invoice / receipt"
+                                    onClick={() => onCreateDocument(sale, loadedItems)}
+                                    className="btn-outline-secondary"
+                                    title="Create or email an invoice, receipt, or quote"
+                                  />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -325,13 +348,15 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
         </div>
         {/* /component-body */}
 
-        <div className="component-footer sales-history-component-footer">
-          <div className="component-footer-left sales-history-component-footer__left">
-            <SalesHistoryFilterFooter isOpen={isOpen} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onClose={onClose} />
+        {showFilters && (
+          <div className="component-footer sales-history-component-footer">
+            <div className="component-footer-left sales-history-component-footer__left">
+              <SalesHistoryFilterFooter isOpen={isOpen} historyFilters={historyFilters} setHistoryFilters={setHistoryFilters} onClose={onClose} />
+            </div>
+            <div className="component-footer-center"></div>
+            <div className="component-footer-right"></div>
           </div>
-          <div className="component-footer-center"></div>
-          <div className="component-footer-right"></div>
-        </div>
+        )}
       </div>
     </Modal>
   );

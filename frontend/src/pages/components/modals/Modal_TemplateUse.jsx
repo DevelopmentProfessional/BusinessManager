@@ -38,9 +38,10 @@ const TYPE_BADGE_COLOR = {
  *  employee      – (optional) employee for schedule page
  *  service       – (optional) service for schedule page
  *  filterType    – (optional) only show templates of this type (e.g. 'email', 'invoice')
+ *  initialTemplateType – (optional) select this type first without filtering other templates
  *  onClose       – callback to close this modal
  */
-export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], client, employee, service, filterType = null, onClose }) {
+export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], client, employee, service, filterType = null, initialTemplateType = null, onClose }) {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -576,9 +577,9 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
   useEffect(() => {
     if (!loading && visibleTemplates.length > 0 && !selected) {
-      setSelected(visibleTemplates[0]);
+      setSelected(visibleTemplates.find((template) => template.template_type === initialTemplateType) || visibleTemplates[0]);
     }
-  }, [loading, selected, visibleTemplates]);
+  }, [loading, selected, visibleTemplates, initialTemplateType]);
 
   const handleUseAction = () => {
     if (!selected) return;
