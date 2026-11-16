@@ -17,6 +17,7 @@ import secrets
 import os
 import logging
 import hashlib
+import hmac
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -40,7 +41,9 @@ from models import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 RESET_TOKEN_EXPIRY_MINUTES = int(os.getenv("CLIENT_RESET_TOKEN_EXPIRY_MINUTES", "30"))
-EXPOSE_RESET_TOKEN = os.getenv("CLIENT_EXPOSE_RESET_TOKEN", "true").lower() == "true"
+# Token echo is intended only for local development. Production deployments must
+# deliver reset tokens through a verified out-of-band channel.
+EXPOSE_RESET_TOKEN = os.getenv("CLIENT_EXPOSE_RESET_TOKEN", "false").lower() == "true"
 logger = logging.getLogger(__name__)
 
 
@@ -290,7 +293,7 @@ def request_password_reset(
         )
 
     token = secrets.token_urlsafe(24)
-    client.reset_token = token
+    client.reset_token = hashlib.sha256(token.encode("utf-8")).hexdigest()
     client.reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)
 
     try:
@@ -299,9 +302,8 @@ def request_password_reset(
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to prepare password reset.")
 
-    # In production, wire this to email/SMS; token echo is enabled for now.
     return PasswordResetRequestResponse(
-        message="Password reset token generated.",
+        message="If this account exists, a reset token has been generated.",
         reset_token=token if EXPOSE_RESET_TOKEN else None,
         expires_in_minutes=RESET_TOKEN_EXPIRY_MINUTES,
     )
@@ -323,7 +325,8 @@ def reset_password(
     if not client:
         raise HTTPException(status_code=400, detail="Invalid reset request.")
 
-    if not client.reset_token or client.reset_token != body.reset_token:
+    submitted_token_hash = hashlib.sha256(body.reset_token.encode("utf-8")).hexdigest()
+    if not client.reset_token or not hmac.compare_digest(client.reset_token, submitted_token_hash):
         raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
 
     now = datetime.now(timezone.utc)

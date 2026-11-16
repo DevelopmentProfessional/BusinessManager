@@ -215,7 +215,8 @@ function Ensure-AwsDbTunnel {
 
 	$sshHost = if ([string]::IsNullOrWhiteSpace($env:AWS_DB_TUNNEL_HOST)) { "ec2-34-239-30-179.compute-1.amazonaws.com" } else { $env:AWS_DB_TUNNEL_HOST.Trim() }
 	$sshUser = if ([string]::IsNullOrWhiteSpace($env:AWS_DB_TUNNEL_USER)) { "ec2-user" } else { $env:AWS_DB_TUNNEL_USER.Trim() }
-	$keyPath = if ([string]::IsNullOrWhiteSpace($env:AWS_DB_TUNNEL_KEY_PATH)) { Join-Path $RootPath "businessmanager-key.pem" } else { $env:AWS_DB_TUNNEL_KEY_PATH.Trim() }
+	$defaultKeyPath = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".ssh\businessmanager-key.pem"
+	$keyPath = if ([string]::IsNullOrWhiteSpace($env:AWS_DB_TUNNEL_KEY_PATH)) { $defaultKeyPath } else { $env:AWS_DB_TUNNEL_KEY_PATH.Trim() }
 
 	if (-not (Test-Path $keyPath)) {
 		Write-Host "$RoleName expects an AWS DB tunnel, but the SSH key was not found at $keyPath." -ForegroundColor Yellow

@@ -13,7 +13,7 @@ GET  /orders/{id}/items — Just the line items
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import List
 from urllib.parse import urlparse
 from uuid import UUID
@@ -100,6 +100,47 @@ def _normalize_payment_method(value: str | None) -> str:
     if normalized in {"", "pending", "payment_pending"}:
         return "card"
     return normalized
+
+
+def _resolve_checkout_item(item, company_id: str | None, session: Session) -> dict:
+    item_type = (item.item_type or "").strip().lower()
+    parsed_item_id = _parse_optional_uuid(item.item_id, "item_id", item.item_name)
+    if not parsed_item_id:
+        raise HTTPException(status_code=400, detail=f"Invalid {item_type or 'order'} item.")
+
+    if item_type == "product":
+        catalog_item = session.exec(
+            select(Inventory).where(
+                Inventory.id == parsed_item_id,
+                Inventory.company_id == company_id,
+            )
+        ).first()
+    elif item_type == "service":
+        catalog_item = session.exec(
+            select(Service).where(
+                Service.id == parsed_item_id,
+                Service.company_id == company_id,
+            )
+        ).first()
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported order item type.")
+
+    if not catalog_item:
+        raise HTTPException(status_code=404, detail="Order item is not available.")
+
+    quantity = int(item.quantity)
+    if quantity <= 0 or quantity > 100:
+        raise HTTPException(status_code=400, detail="Item quantity must be between 1 and 100.")
+
+    return {
+        "item_id": parsed_item_id,
+        "item_type": item_type,
+        "item_name": catalog_item.name,
+        "unit_price": float(catalog_item.price or 0),
+        "quantity": quantity,
+        "booking_id": _parse_optional_uuid(item.booking_id, "booking_id", catalog_item.name),
+        "options_json": item.options_json,
+    }
 
 
 def _get_company_stripe_settings(company_id: str | None, session: Session) -> dict:
@@ -452,8 +493,10 @@ def checkout(
     ).first()
     tax_rate = (settings.tax_rate or 0.0) / 100.0 if settings else 0.0
 
-    # Compute totals
-    subtotal = sum(item.unit_price * item.quantity for item in body.items)
+    resolved_items = [_resolve_checkout_item(item, company_id, session) for item in body.items]
+
+    # Compute totals exclusively from current server-side catalog values.
+    subtotal = sum(item["unit_price"] * item["quantity"] for item in resolved_items)
     tax_amount = round(subtotal * tax_rate, 2)
     total = round(subtotal + tax_amount, 2)
 
@@ -470,28 +513,27 @@ def checkout(
         session.add(order)
         session.flush()
 
-        for item in body.items:
-            parsed_item_id = _parse_optional_uuid(item.item_id, "item_id", item.item_name)
-            parsed_booking_id = _parse_optional_uuid(item.booking_id, "booking_id", item.item_name)
+        for item in resolved_items:
+            parsed_booking_id = item["booking_id"]
 
-            if item.item_type == "service":
+            if item["item_type"] == "service":
                 parsed_booking_id = _validate_service_booking_for_checkout(
                     parsed_booking_id,
-                    parsed_item_id,
+                    item["item_id"],
                     current_client,
                     session,
                 )
 
             line = ClientOrderItem(
                 order_id=order.id,
-                item_id=parsed_item_id,
-                item_type=item.item_type,
-                item_name=item.item_name,
-                unit_price=item.unit_price,
-                quantity=item.quantity,
-                line_total=round(item.unit_price * item.quantity, 2),
+                item_id=item["item_id"],
+                item_type=item["item_type"],
+                item_name=item["item_name"],
+                unit_price=item["unit_price"],
+                quantity=item["quantity"],
+                line_total=round(item["unit_price"] * item["quantity"], 2),
                 booking_id=parsed_booking_id,
-                options_json=item.options_json,
+                options_json=item["options_json"],
                 company_id=company_id,
             )
             session.add(line)
@@ -515,7 +557,8 @@ def checkout(
                     detail="Card payments are enabled but Stripe secret key is not configured.",
                 )
             try:
-                session_obj = _create_checkout_session_for_order(order, body.items, stripe_cfg["secret_key"], request)
+                order_items = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)).all()
+                session_obj = _create_checkout_session_for_order(order, order_items, stripe_cfg["secret_key"], request)
                 checkout_url = session_obj.get("url")
                 checkout_session_id = session_obj.get("id")
                 if session_obj.get("payment_intent"):
@@ -597,72 +640,10 @@ def pay_order(
         except stripe.StripeError as exc:
             raise HTTPException(status_code=502, detail=f"Stripe checkout creation failed: {str(exc)}")
 
-    order.status = "ordered"
-    order.paid_at = order.paid_at or _utcnow()
-    order.payment_method = _normalize_payment_method(body.payment_method or order.payment_method)
-    session.add(order)
-    try:
-        _deduct_inventory_for_order(order, session)
-        _reconcile_bookings_for_paid_order(order, current_client.id, session)
-        session.commit()
-        session.refresh(order)
-    except Exception:
-        session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to update order payment.")
-
-    # ── Auto-revoke soft bookings displaced by this hard ("locked") payment ──
-    # For every hard booking in this order, cancel any soft booking that overlaps
-    # the same service + time window for the same company.
-    try:
-        items = session.exec(
-            select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)
-        ).all()
-        for item in items:
-            if not item.booking_id:
-                continue
-            hard_booking = session.exec(
-                select(ClientBooking).where(ClientBooking.id == item.booking_id)
-            ).first()
-            if not hard_booking or hard_booking.booking_mode != "locked":
-                continue
-
-            slot_start = hard_booking.appointment_date
-            slot_end = slot_start + timedelta(minutes=hard_booking.duration_minutes or 60)
-
-            # Find overlapping soft bookings for the same service (excluding this booking)
-            soft_bookings = session.exec(
-                select(ClientBooking).where(
-                    ClientBooking.service_id == hard_booking.service_id,
-                    ClientBooking.company_id == order.company_id,
-                    ClientBooking.booking_mode == "soft",
-                    ClientBooking.status.notin_(["cancelled", "completed"]),
-                    ClientBooking.id != hard_booking.id,
-                )
-            ).all()
-
-            for sb in soft_bookings:
-                sb_end = sb.appointment_date + timedelta(minutes=sb.duration_minutes or 60)
-                # Check time overlap
-                if slot_start < sb_end and slot_end > sb.appointment_date:
-                    sb.status = "cancelled"
-                    session.add(sb)
-                    # Also cancel the linked soft_hold schedule
-                    if sb.schedule_id:
-                        sched = session.exec(
-                            select(Schedule).where(Schedule.id == sb.schedule_id)
-                        ).first()
-                        if sched and sched.status == "soft_hold":
-                            sched.status = "cancelled"
-                            session.add(sched)
-
-        session.commit()
-    except Exception:
-        # Non-fatal: order payment succeeded; log but don't fail the response
-        logger.exception("Failed to cancel overlapping soft bookings after order checkout for order %s", order.id)
-        session.rollback()
-
-    return _order_to_read(order)
-
+    raise HTTPException(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED,
+        detail="Payment must be verified by the configured payment provider before fulfillment.",
+    )
 
 @router.get("", response_model=List[OrderRead])
 @limiter.limit("30/minute")

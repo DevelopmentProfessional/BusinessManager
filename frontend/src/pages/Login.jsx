@@ -15,7 +15,7 @@
  *   [3] Lifecycle Hook — checks for saved credentials in cookies and redirects if already logged in
  *   [4] Form Validation — validates username and password fields before submission
  *   [5] Input Change Handlers — updates form state and clears stale validation errors
- *   [6] Cookie Helpers — reads and writes "remember me" credentials to browser cookies
+ *   [6] Cookie Helpers — reads and writes non-sensitive "remember me" fields to browser cookies
  *   [7] Login Handler — posts credentials to the auth API, stores token, and navigates on success
  *   [8] Password Reset Handler — submits new password to the reset endpoint
  *   [9] Render — login form and password-reset form, conditionally toggled
@@ -24,7 +24,7 @@
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
- *   2026-09-11 | GitHub Copilot | Removed unused icon imports to satisfy ESLint no-unused-vars
+ *   2026-11-15 | GitHub Copilot | Removed plaintext password persistence from remember-me cookies
  * ============================================================
  */
 
@@ -75,16 +75,15 @@ const Login = () => {
     // Check cookies for saved parameters
     const savedRememberMe = getCookie("rememberMe") === "true";
     const savedUsername = getCookie("savedUsername");
-    const savedPassword = getCookie("savedPassword");
     const savedCompanyId = getCookie("savedCompanyId");
 
-    console.log("Saved data found in cookies:", { savedRememberMe, savedUsername, savedPassword, savedCompanyId });
+    console.log("Saved data found in cookies:", { savedRememberMe, savedUsername, savedCompanyId });
 
     // If remember me is true, set the form values
     if (savedRememberMe) {
       setFormData({
         username: savedUsername || "",
-        password: savedPassword || "",
+        password: "",
         company_id: savedCompanyId || "",
         remember_me: true,
       });
@@ -146,7 +145,7 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
-  const saveUserCredentials = (username, password, companyId, rememberMe) => {
+  const saveUserCredentials = (username, companyId, rememberMe) => {
     // (part of [6] COOKIE HELPERS)
     try {
       if (rememberMe) {
@@ -154,14 +153,12 @@ const Login = () => {
         const expireDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
         document.cookie = `rememberMe=true; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedUsername=${encodeURIComponent(username)}; expires=${expireDate}; path=/; secure; samesite=strict`;
-        document.cookie = `savedPassword=${encodeURIComponent(password)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         document.cookie = `savedCompanyId=${encodeURIComponent(companyId)}; expires=${expireDate}; path=/; secure; samesite=strict`;
         console.log("Data saved to cookies");
       } else {
         console.log("Clearing saved credentials");
         document.cookie = "rememberMe=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie = "savedUsername=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "savedPassword=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie = "savedCompanyId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       }
       return true;
@@ -227,7 +224,7 @@ const Login = () => {
         }
 
         // Save credentials if remember me is checked
-        saveUserCredentials(formData.username.trim(), formData.password, companyId, formData.remember_me);
+        saveUserCredentials(formData.username.trim(), companyId, formData.remember_me);
 
         // Show success message briefly
         setSuccess("Login successful! Redirecting...");

@@ -19,7 +19,9 @@ from database import get_session
 from models import Client
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-SECRET_KEY = os.getenv("CLIENT_JWT_SECRET", "change-me-in-production")
+SECRET_KEY = os.getenv("CLIENT_JWT_SECRET")
+if not SECRET_KEY or len(SECRET_KEY) < 32:
+    raise RuntimeError("CLIENT_JWT_SECRET must be configured with at least 32 characters.")
 ALGORITHM  = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 h
 

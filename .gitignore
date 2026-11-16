@@ -81,3 +81,4 @@ simple_migration.py
 /regressiontest/# SSL certificates and keys (local development only)
 ssl/*.pem
 *.pem
+businessmanager-key.pem
