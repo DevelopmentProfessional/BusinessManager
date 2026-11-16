@@ -14,6 +14,7 @@ import {
   ArchiveBoxIcon,
   UsersIcon,
   DocumentIcon,
+  TruckIcon,
   ChartBarIcon,
 } from "../../../icons";
 
@@ -25,6 +26,7 @@ export const STARTUP_PAGE_OPTIONS = [
   { value: "inventory", label: "Inventory", description: "Stock, products, and suppliers", icon: ArchiveBoxIcon },
   { value: "employees", label: "Employees", description: "Staff directory and hours", icon: UsersIcon },
   { value: "documents", label: "Documents", description: "Files, templates, and signing", icon: DocumentIcon },
+  { value: "suppliers", label: "Suppliers", description: "Supplier contacts and purchase orders", icon: TruckIcon },
   { value: "reports", label: "Reports", description: "Analytics, revenue, and KPIs", icon: ChartBarIcon },
 ];
 

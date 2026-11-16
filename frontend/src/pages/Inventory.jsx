@@ -47,7 +47,7 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, TruckIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "../icons";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "../icons";
 import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
@@ -58,7 +58,6 @@ import useStore from "../services/useStore";
 import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI, settingsAPI } from "../services/api";
 import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
 import Gate_Permission from "./components/layout/Gate_Permission";
-import Suppliers_Panel from "./components/panels/Panel_Suppliers";
 import Modal_Bulk_Import_Items from "./components/modals/Modal_ImportItems";
 import Modal_Inventory_AddItem from "./components/modals/Modal_Inventory_AddItem";
 import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settings";
@@ -83,7 +82,6 @@ export default function Inventory() {
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
   const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
-  const [showSuppliersPanel, setShowSuppliersPanel] = useState(false);
   const [showDiscountRules, setShowDiscountRules] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -715,7 +713,6 @@ export default function Inventory() {
           searchPlaceholder="Search by name or SKU..."
           beforeSearch={
             <div className="align-items-center app-footer-toolbar d-flex">
-              <Button_Toolbar icon={TruckIcon} label="Supply" onClick={() => setShowSuppliersPanel(true)} className="btn-app-secondary" title="Suppliers" />
               <Button_Toolbar icon={DocumentCurrencyDollarIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
             </div>
           }
@@ -797,8 +794,6 @@ export default function Inventory() {
       />
 
       <Modal_Bulk_Import_Items isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onImport={handleBulkImportItems} existingSkus={inventory.map((i) => i.sku).filter(Boolean)} />
-
-      <Suppliers_Panel isOpen={showSuppliersPanel} onClose={() => setShowSuppliersPanel(false)} />
 
       <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 

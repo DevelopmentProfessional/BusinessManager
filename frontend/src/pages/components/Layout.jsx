@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, BellIcon, CheckCircleIcon, ExclamationTriangleIcon } from "../../icons";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, TruckIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, BellIcon, CheckCircleIcon, ExclamationTriangleIcon } from "../../icons";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";
@@ -10,7 +10,7 @@ import Modal from "./modals/Modal";
 import Modal_Notifications from "./modals/Modal_Notifications";
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
-// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Sales, Schedule, Settings
+// Order: Profile, Reports, Inventory, Clients, Employees, Documents, Suppliers, Services, Sales, Schedule, Settings
 const allNavigation = [
   { name: "Profile", href: "/profile", icon: UserCircleIcon },
   { name: "Reports", href: "/reports", icon: ChartBarIcon, permission: "reports:read" },
@@ -18,6 +18,7 @@ const allNavigation = [
   { name: "Clients", href: "/clients", icon: UserGroupIcon, permission: "clients:read" },
   { name: "Employees", href: "/employees", icon: UsersIcon, permission: "employees:read" },
   { name: "Documents", href: "/documents", icon: DocumentIcon, permission: "documents:read" },
+  { name: "Suppliers", href: "/suppliers", icon: TruckIcon, permission: "suppliers:read" },
   { name: "Services", href: "/services", icon: SparklesIcon, permission: "services:read" },
   { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "sales:read" },
   { name: "Schedule", href: "/schedule", icon: CalendarDaysIcon, permission: "schedule:read" },

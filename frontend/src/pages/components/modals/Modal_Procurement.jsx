@@ -1,5 +1,5 @@
 /**
- * Procurement order management — embedded in supplier accordion (Inventory → Suppliers).
+ * Supplier product and purchase-order management.
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { InputNumber, InputTextarea, InputDate, InputText } from "../Inputs";
@@ -22,11 +22,11 @@ const num = (v) => {
 const getErrorMessage = (error, fallback) =>
   String(error?.response?.data?.detail || error?.message || fallback);
 
-const Modal_Procurement = ({ supplierId, embedded = true, onPOCreated }) => {
+const Modal_Procurement = ({ supplierId, embedded = true, initialCreate = false, onPOCreated }) => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState(initialCreate);
   const [showProducts, setShowProducts] = useState(false);
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [catalogForm, setCatalogForm] = useState({

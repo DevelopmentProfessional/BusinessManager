@@ -22,6 +22,7 @@ import Dropup_SearchOverlay from "./pages/components/dropdowns/Dropup_SearchOver
 // Lazy load pages - only load when navigating to them
 const Clients = lazy(() => import("./pages/Clients"));
 const Inventory = lazy(() => import("./pages/Inventory"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
 const Services = lazy(() => import("./pages/Services"));
 const Sales = lazy(() => import("./pages/Sales"));
 const Employees = lazy(() => import("./pages/Employees"));
@@ -309,6 +310,18 @@ function App() {
                 <Layout>
                   <PageErrorBoundary>
                     <Documents />
+                  </PageErrorBoundary>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers"
+            element={
+              <ProtectedRoute requiredPermission="suppliers:read">
+                <Layout>
+                  <PageErrorBoundary>
+                    <Suppliers />
                   </PageErrorBoundary>
                 </Layout>
               </ProtectedRoute>

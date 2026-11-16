@@ -8,6 +8,7 @@ export const DEFAULT_PAGE_SETTINGS = {
   employees: { showRole: true, showDepartment: true, showChat: true, textSize: "medium" },
   documents: { showCategory: true, showTags: true, showType: true, showActions: true, textSize: "medium" },
   services: { showCategory: true, showPrice: true, showDuration: true, textSize: "medium" },
+  suppliers: { showEmail: true, showPhone: true, showAddress: true, textSize: "medium" },
   reports: { textSize: "medium" },
 };
 
