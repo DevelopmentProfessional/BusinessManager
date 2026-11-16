@@ -28,6 +28,8 @@ import {
   DocumentPlusIcon,
   DocumentTextIcon,
   EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
   PlusIcon,
   TrashIcon,
   XMarkIcon,
@@ -45,7 +47,8 @@ export default function Suppliers() {
   const [pageError, setPageError] = useState("");
   const [formError, setFormError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSupplierId, setSelectedSupplierId] = useState(null);
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState(() => new Set());
+  const [multiSaving, setMultiSaving] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [supplierFormOpen, setSupplierFormOpen] = useState(false);
   const [savingSupplier, setSavingSupplier] = useState(false);
@@ -71,7 +74,7 @@ export default function Suppliers() {
       if (!Array.isArray(data)) throw new Error("Invalid supplier data received from the server.");
       const sorted = sortItemsAlphabetically(data, ["name", "email"]);
       setSuppliers(sorted);
-      setSelectedSupplierId((current) => (sorted.some((supplier) => supplier.id === current) ? current : null));
+      setSelectedSupplierIds((current) => new Set([...current].filter((id) => sorted.some((supplier) => supplier.id === id))));
       setPageError("");
     } catch (error) {
       setPageError(supplierErrorMessage(error, "Failed to load suppliers."));
@@ -84,22 +87,51 @@ export default function Suppliers() {
     loadSuppliers();
   }, [loadSuppliers]);
 
-  const selectedSupplier = suppliers.find((supplier) => supplier.id === selectedSupplierId) || null;
+  useEffect(() => {
+    if (pageSettings.showHiddenSuppliers !== false) return;
+    const visibleIds = new Set(suppliers.filter((supplier) => !supplier.is_hidden).map((supplier) => supplier.id));
+    setSelectedSupplierIds((current) => new Set([...current].filter((id) => visibleIds.has(id))));
+  }, [pageSettings.showHiddenSuppliers, suppliers]);
+
+  const selectionMode = selectedSupplierIds.size > 0;
+  const selectedSupplier = selectedSupplierIds.size === 1
+    ? suppliers.find((supplier) => supplier.id === [...selectedSupplierIds][0]) || null
+    : null;
 
   const visibleSuppliers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    const filtered = query
-      ? suppliers.filter((supplier) =>
-          [supplier.name, supplier.email, supplier.phone, supplier.address]
-            .some((value) => String(value || "").toLowerCase().includes(query))
-        )
-      : suppliers;
+    const filtered = suppliers.filter((supplier) => {
+      if (pageSettings.showHiddenSuppliers === false && supplier.is_hidden) return false;
+      return !query || [supplier.name, supplier.email, supplier.phone, supplier.address]
+        .some((value) => String(value || "").toLowerCase().includes(query));
+    });
     return [...filtered].sort((a, b) => {
       const left = String(a[sortColumn] || "").toLowerCase();
       const right = String(b[sortColumn] || "").toLowerCase();
       return (left.localeCompare(right) || String(a.name || "").localeCompare(String(b.name || ""))) * (sortAsc ? 1 : -1);
     });
-  }, [searchTerm, sortColumn, sortAsc, suppliers]);
+  }, [pageSettings.showHiddenSuppliers, searchTerm, sortColumn, sortAsc, suppliers]);
+
+  const selectedSuppliers = suppliers.filter((supplier) => selectedSupplierIds.has(supplier.id));
+  const allSelectedHidden = selectedSuppliers.length > 0 && selectedSuppliers.every((supplier) => supplier.is_hidden);
+  const allVisibleSelected = visibleSuppliers.length > 0 && visibleSuppliers.every((supplier) => selectedSupplierIds.has(supplier.id));
+
+  const toggleSupplierSelection = (id) => {
+    setSelectedSupplierIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllSuppliers = () => {
+    setSelectedSupplierIds(
+      allVisibleSelected ? new Set() : new Set(visibleSuppliers.map((supplier) => supplier.id))
+    );
+  };
+
+  const clearSupplierSelection = () => setSelectedSupplierIds(new Set());
 
   const handleSort = (column) => {
     if (sortColumn === column) setSortAsc((current) => !current);
@@ -139,7 +171,7 @@ export default function Suppliers() {
           ["name", "email"]
         )
       );
-      setSelectedSupplierId(savedSupplier.id);
+      setSelectedSupplierIds(new Set([savedSupplier.id]));
       setSupplierFormOpen(false);
       setEditingSupplier(null);
     } catch (error) {
@@ -150,14 +182,44 @@ export default function Suppliers() {
   };
 
   const handleDeleteSelected = async () => {
-    if (!selectedSupplier || !(await showConfirm(`Delete supplier "${selectedSupplier.name}"?`))) return;
+    if (selectedSupplierIds.size === 0) return;
+    if (!(await showConfirm(`Delete ${selectedSupplierIds.size} selected supplier${selectedSupplierIds.size === 1 ? "" : "s"}?`))) return;
+    setMultiSaving(true);
     try {
-      await suppliersAPI.delete(selectedSupplier.id);
-      setSuppliers((previous) => previous.filter((supplier) => supplier.id !== selectedSupplier.id));
-      setSelectedSupplierId(null);
+      await Promise.all([...selectedSupplierIds].map((id) => suppliersAPI.delete(id)));
+      setSuppliers((previous) => previous.filter((supplier) => !selectedSupplierIds.has(supplier.id)));
+      clearSupplierSelection();
       setPageError("");
     } catch (error) {
-      setPageError(supplierErrorMessage(error, "Failed to delete supplier."));
+      const message = supplierErrorMessage(error, "Failed to delete selected suppliers.");
+      await loadSuppliers();
+      setPageError(message);
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleSetSelectedHidden = async () => {
+    if (selectedSuppliers.length === 0) return;
+    const isHidden = !allSelectedHidden;
+    setMultiSaving(true);
+    try {
+      await Promise.all(
+        selectedSuppliers.map((supplier) => suppliersAPI.update(supplier.id, { is_hidden: isHidden }))
+      );
+      setSuppliers((previous) =>
+        previous.map((supplier) =>
+          selectedSupplierIds.has(supplier.id) ? { ...supplier, is_hidden: isHidden } : supplier
+        )
+      );
+      clearSupplierSelection();
+      setPageError("");
+    } catch (error) {
+      const message = supplierErrorMessage(error, `Failed to ${isHidden ? "hide" : "show"} selected suppliers.`);
+      await loadSuppliers();
+      setPageError(message);
+    } finally {
+      setMultiSaving(false);
     }
   };
 
@@ -208,7 +270,13 @@ export default function Suppliers() {
           <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
             <EmptyState
               title={suppliers.length === 0 ? "No suppliers found" : "No matching suppliers"}
-              description={suppliers.length === 0 ? "Add your first supplier to get started." : "Try a different search."}
+              description={
+                suppliers.length === 0
+                  ? "Add your first supplier to get started."
+                  : !pageSettings.showHiddenSuppliers && suppliers.every((supplier) => supplier.is_hidden)
+                    ? "Enable Show hidden suppliers in page settings to restore a supplier."
+                    : "Try a different search."
+              }
             />
           </div>
         ) : (
@@ -223,12 +291,12 @@ export default function Suppliers() {
               {visibleSuppliers.map((supplier) => (
                 <PageTableRow
                   key={supplier.id}
-                  className={`app-supplier-table-row ${selectedSupplierId === supplier.id ? "bg-gray-100 dark:bg-gray-800" : ""}`}
+                  className={`app-supplier-table-row ${selectedSupplierIds.has(supplier.id) ? "bg-gray-100 dark:bg-gray-800" : ""}`}
                 >
-                  <td className="app-col-select app-select-icon-cell">
+                  <td className="app-col-select app-select-icon-cell" onClick={(event) => event.stopPropagation()}>
                     <Toggle_MultiSelectIcon
-                      selected={selectedSupplierId === supplier.id}
-                      onToggle={() => setSelectedSupplierId((current) => (current === supplier.id ? null : supplier.id))}
+                      selected={selectedSupplierIds.has(supplier.id)}
+                      onToggle={() => toggleSupplierSelection(supplier.id)}
                       title={`Select ${supplier.name}`}
                     />
                   </td>
@@ -236,12 +304,13 @@ export default function Suppliers() {
                     <Gate_Permission
                       page="suppliers"
                       permission="write"
-                      fallback={<div className="fw-medium text-wrap-word">{supplier.name}</div>}
+                      fallback={<div className={`fw-medium text-wrap-word ${supplier.is_hidden ? "fst-italic" : ""}`}>{supplier.name}</div>}
                     >
                       <button
                         type="button"
-                        onClick={() => openSupplierForm(supplier)}
-                        className="border-0 btn btn-link dark:text-gray-100 fw-medium p-0 shadow-none text-decoration-none text-gray-900 text-start text-wrap-word"
+                        onClick={() => !selectionMode && openSupplierForm(supplier)}
+                        disabled={selectionMode}
+                        className={`border-0 btn btn-link dark:text-gray-100 fw-medium p-0 shadow-none text-decoration-none text-gray-900 text-start text-wrap-word ${supplier.is_hidden ? "fst-italic" : ""}`}
                       >
                         {supplier.name}
                       </button>
@@ -289,7 +358,10 @@ export default function Suppliers() {
 
       {pageSettings.showSupplierTable !== false && <PageTableHeader
         columns={[
-          { label: "", className: "app-col-select" },
+          {
+            label: <Toggle_MultiSelectIcon selected={allVisibleSelected} onToggle={handleSelectAllSuppliers} title="Select all visible suppliers" />,
+            className: "app-col-select p-0 text-center",
+          },
           { label: "Supplier", className: "app-col-flex", sortKey: "name" },
           ...(pageSettings.showAddress !== false ? [{ label: "Address", className: "app-col-flex", sortKey: "address" }] : []),
           { label: "Actions", className: "app-col-action-120" },
@@ -310,36 +382,62 @@ export default function Suppliers() {
         }
       >
         <div className="align-items-center d-flex flex-wrap gap-1 w-100">
-          <Gate_Permission page="suppliers" permission="write">
-            <Button_Toolbar
-              icon={DocumentPlusIcon}
-              label="Purchase Order"
-              onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
-              disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
-              className="btn-app-secondary"
-              title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : selectedSupplier ? `Create a purchase order for ${selectedSupplier.name}` : "Select a supplier first"}
-            />
-          </Gate_Permission>
-          {selectedSupplier && (
+          {selectedSupplierIds.size > 0 ? (
             <>
-              <span className="ui-small-muted">Selected: {selectedSupplier.name}</span>
+              <span className="ui-small-muted">
+                {selectedSupplierIds.size} selected supplier{selectedSupplierIds.size === 1 ? "" : "s"}
+              </span>
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={allSelectedHidden ? EyeIcon : EyeSlashIcon}
+                  label={allSelectedHidden ? "Show" : "Hide"}
+                  onClick={handleSetSelectedHidden}
+                  disabled={multiSaving}
+                  className="btn-app-secondary"
+                  title={`${allSelectedHidden ? "Show" : "Hide"} selected suppliers`}
+                />
+              </Gate_Permission>
               <Gate_Permission page="suppliers" permission="delete">
                 <Button_Toolbar
                   icon={TrashIcon}
                   label="Delete"
                   onClick={handleDeleteSelected}
+                  disabled={multiSaving}
                   className="btn-app-danger"
-                  title={`Delete ${selectedSupplier.name}`}
+                  title={`Delete ${selectedSupplierIds.size} selected supplier${selectedSupplierIds.size === 1 ? "" : "s"}`}
                 />
               </Gate_Permission>
+              {selectedSupplier && !selectedSupplier.is_hidden && (
+                <Gate_Permission page="suppliers" permission="write">
+                  <Button_Toolbar
+                    icon={DocumentPlusIcon}
+                    label="Purchase Order"
+                    onClick={() => openProcurement(selectedSupplier, true)}
+                    disabled={pageSettings.showPurchaseOrderForm === false}
+                    className="btn-app-secondary"
+                    title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : `Create a purchase order for ${selectedSupplier.name}`}
+                  />
+                </Gate_Permission>
+              )}
               <Button_Toolbar
                 icon={XMarkIcon}
                 label="Clear"
-                onClick={() => setSelectedSupplierId(null)}
+                onClick={clearSupplierSelection}
                 className="btn-outline-secondary"
                 title="Clear supplier selection"
               />
             </>
+          ) : (
+            <Gate_Permission page="suppliers" permission="write">
+              <Button_Toolbar
+                icon={DocumentPlusIcon}
+                label="Purchase Order"
+                onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
+                disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
+                className="btn-app-secondary"
+                title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : "Select a supplier first"}
+              />
+            </Gate_Permission>
           )}
         </div>
       </PageTableFooter>

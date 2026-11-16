@@ -46,6 +46,7 @@ export default function Modal_Suppliers_Settings({ isOpen, onClose, onSave, pend
             { key: "showEmail", label: "Show Email", description: "Display supplier email addresses" },
             { key: "showPhone", label: "Show Phone", description: "Display supplier phone numbers" },
             { key: "showAddress", label: "Show Address", description: "Display supplier mailing addresses" },
+            { key: "showHiddenSuppliers", label: "Show hidden suppliers", description: "Include hidden suppliers in the supplier list so they can be restored." },
           ]}
         />
         <div className="border-top dark:border-gray-700 mt-2 pt-2">

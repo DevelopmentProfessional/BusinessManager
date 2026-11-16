@@ -1298,7 +1298,7 @@ def _ensure_procurement_order_tax_shipping_if_needed():
 
 
 def _ensure_supplier_shipping_and_category_tax_columns_if_needed():
-    """Add supplier shipping settings, PO shipping snapshots, and category tax rates."""
+    """Add supplier visibility/shipping settings, PO shipping snapshots, and category tax rates."""
     with engine.begin() as conn:
         supplier_exists = conn.execute(text(
             "SELECT EXISTS (SELECT FROM information_schema.tables "
@@ -1312,6 +1312,7 @@ def _ensure_supplier_shipping_and_category_tax_columns_if_needed():
             for column, sql_type, default in (
                 ("shipping_rate_type", "VARCHAR", "'fixed'"),
                 ("shipping_rate", "DOUBLE PRECISION", "0"),
+                ("is_hidden", "BOOLEAN", "FALSE"),
             ):
                 if column not in supplier_columns:
                     conn.execute(text(

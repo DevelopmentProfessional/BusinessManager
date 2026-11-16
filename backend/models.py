@@ -478,6 +478,7 @@ class Supplier(BaseModel, table=True):
     address: Optional[str] = Field(default=None)
     shipping_rate_type: str = Field(default="fixed")
     shipping_rate: float = Field(default=0.0)
+    is_hidden: bool = Field(default=False)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -1204,6 +1205,7 @@ class SupplierRead(SQLModel):
     address: Optional[str] = None
     shipping_rate_type: str = "fixed"
     shipping_rate: float = 0.0
+    is_hidden: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

@@ -12,6 +12,7 @@ export const DEFAULT_PAGE_SETTINGS = {
     showEmail: true,
     showPhone: true,
     showAddress: true,
+    showHiddenSuppliers: false,
     showSupplierTable: true,
     showProductsTable: true,
     showPurchaseOrdersTable: true,
