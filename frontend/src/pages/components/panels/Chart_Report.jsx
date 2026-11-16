@@ -20,6 +20,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-11-08 | GitHub Copilot | Left-aligned chart legends for clean layout across mobile and desktop
+ *   2026-11-16 | GitHub Copilot | Added optional filled, borderless chart styling
  * ============================================================
  */
 import React from "react";
@@ -46,7 +47,7 @@ const defaultOptions = {
 
 // ─── 3 COMPONENT LOGIC ─────────────────────────────────────────────────────────
 
-const Chart_Report = ({ data, type, title, loading }) => {
+const Chart_Report = ({ data, type, title, loading, filled = false }) => {
   if (loading) {
     return (
       <div className="align-items-center d-flex h-100 justify-content-center">
@@ -77,6 +78,18 @@ const Chart_Report = ({ data, type, title, loading }) => {
       },
     },
   };
+
+  const chartData = filled
+    ? {
+        ...data,
+        datasets: data.datasets.map((dataset) => ({
+          ...dataset,
+          borderWidth: 0,
+          pointBorderWidth: 0,
+          ...(type === "line" || type === "area" ? { fill: true } : {}),
+        })),
+      }
+    : data;
 
   // Add specific options for different chart types
   switch (type) {
@@ -113,15 +126,15 @@ const Chart_Report = ({ data, type, title, loading }) => {
   const renderChart = () => {
     switch (type) {
       case "line":
-        return <Line data={data} options={chartOptions} />;
+        return <Line data={chartData} options={chartOptions} />;
       case "bar":
-        return <Bar data={data} options={chartOptions} />;
+        return <Bar data={chartData} options={chartOptions} />;
       case "pie":
-        return <Pie data={data} options={chartOptions} />;
+        return <Pie data={chartData} options={chartOptions} />;
       case "doughnut":
-        return <Doughnut data={data} options={chartOptions} />;
+        return <Doughnut data={chartData} options={chartOptions} />;
       default:
-        return <Line data={data} options={chartOptions} />;
+        return <Line data={chartData} options={chartOptions} />;
     }
   };
 

@@ -36,6 +36,7 @@
  *   2026-11-08 | GitHub Copilot | Upgraded report period navigation buttons to Button_Toolbar with labels and floating mobile positioning
  *   2026-11-09 | GitHub Copilot | Floated period navigation toolbar above footer across all viewports below footer dropups
  *   2026-11-09 | GitHub Copilot | Made period navigation buttons circular and conditionally rendered footer beforeSearch to eliminate double-height footer
+ *   2026-11-16 | GitHub Copilot | Rendered report charts with fills and without dataset outlines
  * ============================================================
  */
 
@@ -1376,7 +1377,7 @@ export default function Reports() {
                       </svg>
                     </button>
                   </div>
-                  <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} />
+                  <Chart_Report data={reportData} type={reportFilters.chartType} title={selectedReport.title} loading={loading} filled />
                 </div>
               </div>
             )}
