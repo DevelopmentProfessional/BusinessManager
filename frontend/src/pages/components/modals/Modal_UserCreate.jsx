@@ -9,7 +9,7 @@
  *
  * FUNCTIONAL PARTS:
  *   [1] Modal Shell — Full-screen Modal wrapper with flex column layout
- *   [2] Header — "Create User" title bar with close button
+ *   [2] Header — "Create User" title bar
  *   [3] Scrollable Form Body — Floating-label inputs for all user fields and a role selector
  *   [4] Footer — Cancel (X) and Submit (check) icon buttons
  *

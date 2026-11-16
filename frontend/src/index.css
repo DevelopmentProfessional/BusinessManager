@@ -629,6 +629,10 @@ table::-webkit-scrollbar,
   transition: background-color 0.15s ease;
 }
 
+.app-supplier-table-row {
+  cursor: default;
+}
+
 .app-table-row:hover {
   background-color: var(--bs-tertiary-bg);
 }

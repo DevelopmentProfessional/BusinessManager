@@ -8,7 +8,7 @@
  *   page-level permissions from each role inline.
  *
  * FUNCTIONAL PARTS:
- *   [1] Header — title bar with close button
+ *   [1] Header — title bar
  *   [2] Status Messages — error and success alert banners
  *   [3] Create New Role Form — name and description inputs with submit button
  *   [4] Existing Roles List — per-role card with permissions badges and add-permission selectors

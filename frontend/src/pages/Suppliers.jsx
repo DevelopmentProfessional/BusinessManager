@@ -28,7 +28,6 @@ import {
   DocumentPlusIcon,
   DocumentTextIcon,
   EnvelopeIcon,
-  PencilSquareIcon,
   PlusIcon,
   TrashIcon,
   XMarkIcon,
@@ -224,10 +223,9 @@ export default function Suppliers() {
               {visibleSuppliers.map((supplier) => (
                 <PageTableRow
                   key={supplier.id}
-                  className={selectedSupplierId === supplier.id ? "bg-gray-100 dark:bg-gray-800" : ""}
-                  onClick={() => setSelectedSupplierId((current) => (current === supplier.id ? null : supplier.id))}
+                  className={`app-supplier-table-row ${selectedSupplierId === supplier.id ? "bg-gray-100 dark:bg-gray-800" : ""}`}
                 >
-                  <td className="app-col-select app-select-icon-cell" onClick={(event) => event.stopPropagation()}>
+                  <td className="app-col-select app-select-icon-cell">
                     <Toggle_MultiSelectIcon
                       selected={selectedSupplierId === supplier.id}
                       onToggle={() => setSelectedSupplierId((current) => (current === supplier.id ? null : supplier.id))}
@@ -235,7 +233,19 @@ export default function Suppliers() {
                     />
                   </td>
                   <td className="main-page-table-data">
-                    <div className="fw-medium text-wrap-word">{supplier.name}</div>
+                    <Gate_Permission
+                      page="suppliers"
+                      permission="write"
+                      fallback={<div className="fw-medium text-wrap-word">{supplier.name}</div>}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openSupplierForm(supplier)}
+                        className="border-0 btn btn-link dark:text-gray-100 fw-medium p-0 shadow-none text-decoration-none text-gray-900 text-start text-wrap-word"
+                      >
+                        {supplier.name}
+                      </button>
+                    </Gate_Permission>
                     {(pageSettings.showPhone !== false && supplier.phone) || (pageSettings.showEmail !== false && supplier.email) ? (
                       <div className="d-flex flex-wrap gap-1 mt-1">
                         {pageSettings.showPhone !== false && supplier.phone && (
@@ -266,12 +276,6 @@ export default function Suppliers() {
                           label={`Prepare email to ${supplier.name}`}
                           variant="ghost"
                           onClick={() => handleOpenCommunication(supplier)}
-                        />
-                        <Button_Icon
-                          icon={PencilSquareIcon}
-                          label={`Edit ${supplier.name}`}
-                          variant="ghost"
-                          onClick={() => openSupplierForm(supplier)}
                         />
                       </Gate_Permission>
                     </div>

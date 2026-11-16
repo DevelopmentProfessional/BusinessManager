@@ -517,15 +517,10 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
     <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} contentGravity="top">
       <div className="bg-white dark:bg-gray-800 flex flex-col h-full w-full overflow-hidden">
         {/* Header */}
-        <div className="app-modal-header bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center justify-between px-1 py-0">
+        <div className="app-modal-header bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center px-1 py-0">
           <div className="flex gap-3 items-center min-w-0">
             <DocumentIcon className="flex-shrink-0 h-6 text-gray-400 w-6" />
             <h3 className="app-modal-title truncate">{document.original_filename}</h3>
-          </div>
-          <div className="ui-flex-items-gap-2">
-            <button type="button" onClick={handleClose} className="align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 hover:text-gray-600 justify-content-center p-0 text-gray-400">
-              <XMarkIcon className="h-6 w-6" />
-            </button>
           </div>
         </div>
 

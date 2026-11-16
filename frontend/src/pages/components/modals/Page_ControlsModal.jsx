@@ -17,7 +17,6 @@ export default function PageControlsModal({ isOpen, onClose, title, children, on
       onClose={onClose}
       title={title}
       centered
-      showHeaderClose={false}
       footer={<Footer_Settings onSave={handleSave} onClose={onClose} saveLabel={saveLabel} saving={saving} saveDisabled={saveDisabled} />}
     >
       <div className="d-flex flex-column gap-2">{children}</div>

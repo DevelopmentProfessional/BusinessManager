@@ -390,9 +390,9 @@ export default function Modal_Cart_Sales({
                 <Button_Toolbar
                   icon={DocumentTextIcon}
                   label="Quote"
-                  title="Create a quote for the selected client"
+                  title={selectedClient ? "Create a quote for the selected client" : "Create a quote; select a client to email it"}
                   onClick={onCreateQuote}
-                  disabled={cart.length === 0 || !selectedClient}
+                  disabled={cart.length === 0}
                   className="btn-outline-secondary"
                 />
                 <Button_Toolbar

@@ -2018,9 +2018,11 @@ export default function Sales() {
               quantity: i.quantity,
               unit_price: i.price,
               line_total: i.price * i.quantity,
+              selectedOptions: i.selectedOptions || [],
             }))}
             currentUser={user}
             settings={appSettings}
+            filterType={invoiceTemplateType}
             initialTemplateType={invoiceTemplateType}
             onClose={() => setShowInvoiceModal(false)}
           />

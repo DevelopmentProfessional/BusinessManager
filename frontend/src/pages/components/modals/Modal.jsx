@@ -19,6 +19,7 @@
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-26 | GitHub Copilot | Applied shared sticky footer classes for modal footer consistency
  *   2026-11-16 | GitHub Copilot | Moved the default modal close action from the header to the footer
+ *   2026-11-16 | GitHub Copilot | Removed the shared modal header close control
  * ============================================================
  */
 import React, { createContext, useContext } from "react";
@@ -36,28 +37,17 @@ export const ModalContainerContext = createContext(null);
  * ModalHeader
  *
  * Renders the title bar shared by all three modal variants.
- * Consumers can also use this directly inside noPadding/fullScreen modals
- * when they need a custom header with a close button.
  *
  * Props:
  *   title: string | ReactNode
- *   onClose: () => void
- *   showClose?: boolean — header X button (default true)
- *   actions?: ReactNode — optional action buttons to place before the close button
+ *   actions?: ReactNode — optional action buttons
  *   className?: string  — extra classes for the wrapper div
  */
-export function ModalHeader({ title, onClose, showClose = true, actions = null, className = "" }) {
+export function ModalHeader({ title, actions = null, className = "" }) {
   return (
     <div className={`app-modal-header d-flex justify-content-between align-items-center border-bottom flex-shrink-0 bg-body p-1 ${className}`.trim()}>
       <h3 className="app-modal-title">{title}</h3>
-      <div className="d-flex align-items-center gap-2">
-        {actions}
-        {showClose && onClose ? (
-          <button type="button" onClick={onClose} title="Close" aria-label="Close" className="app-modal-close align-items-center btn btn-outline-secondary d-flex dark:hover:text-gray-300 flex-shrink-0 hover:text-gray-600 justify-content-center p-0 text-gray-400">
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        ) : null}
-      </div>
+      {actions && <div className="d-flex align-items-center gap-2">{actions}</div>}
     </div>
   );
 }
@@ -78,7 +68,7 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showHeaderClose = false, showFooterClose = true, headerActions = null, contentGravity = "top", container = null, contentWidth = false, bodyClassName = "", bodyStyle }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showFooterClose = true, headerActions = null, contentGravity = "top", container = null, contentWidth = false, bodyClassName = "", bodyStyle }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
   const containerContext = useContext(ModalContainerContext);
@@ -108,7 +98,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     return (
       <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
         <ModalStackContext.Provider value={nextDepth}>
-          {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
+          {title && <ModalHeader title={title} actions={headerActions} />}
           <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-2" : "p-2"} no-scrollbar ${bodyClassName}`.trim()} style={bodyStyle}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
@@ -137,7 +127,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         }`}
         style={{ zIndex: modalContentZIndex }}
       >
-        {title && <ModalHeader title={title} onClose={onClose} showClose={showHeaderClose} actions={headerActions} />}
+        {title && <ModalHeader title={title} actions={headerActions} />}
         <div
           className={`app-modal-body app-modal-content app-modal-scroll-surface flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${bodyClassName} ${
             noPadding ? "p-0" : "p-1 pt-2"

@@ -12,7 +12,7 @@
  *   [1] State & Derived Values — Payment form state, subtotal/tax/total calculations
  *   [2] Input Formatters — Card number, expiry, and CVC formatting helpers
  *   [3] Validation & Form Handlers — Card validity check, submit, done, and close handlers
- *   [4] Modal Header — Checkout title bar with item count and close button
+ *   [4] Modal Header — Checkout title bar with item count
  *   [5] Payment Success Screen — Confirmation UI with Print Invoice / Print Receipt actions
  *   [6] Order Summary Panel — Read-only cart list with pricing breakdown
  *   [7] Payment Method Tabs — Card / Cash toggle buttons
@@ -254,9 +254,6 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
               <p className="text-emerald-100 text-sm">{itemCount} items selected</p>
             </div>
           </div>
-          <button onClick={handleClose} disabled={isProcessing} className="disabled:opacity-50 hover:bg-white/20 p-1 rounded-lg transition-colors">
-            <XMarkIcon className="h-5 text-white w-5" />
-          </button>
         </div>
 
         {paymentSuccess ? (

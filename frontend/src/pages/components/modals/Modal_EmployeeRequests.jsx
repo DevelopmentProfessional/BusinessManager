@@ -8,7 +8,7 @@
  *   managers to approve or deny pending requests inline.
  *
  * FUNCTIONAL PARTS:
- *   [1] Header — title bar with close button
+ *   [1] Header — title bar
  *   [2] Scrollable Request List — grouped by status with time-filter applied, approve/deny buttons for pending
  *   [3] Footer — request type filter pills, time-range dropdown, and close button
  *

@@ -16,7 +16,7 @@
  *       transactions with expandable line-item details
  *   [4] Main Component State & Effects — Form data initialisation and cart count sync
  *   [5] Form Handlers — handleChange, handleSubmit, handleDelete
- *   [6] Header — "Client Details" title bar with close button
+ *   [6] Header — "Client Details" title bar
  *   [7] Avatar & Action Buttons — Initials avatar, tier badge, service history,
  *       purchase history, and cart shortcut buttons
  *   [8] Editable Form Fields — Contact info inputs and membership section

@@ -8,7 +8,7 @@
  *   and configuring schedule-specific special permissions (view-all / write-all).
  *
  * FUNCTIONAL PARTS:
- *   [1] Header — title bar with close button
+ *   [1] Header — title bar
  *   [2] Add New Permission Form — page and permission selectors with submit
  *   [3] Schedule Special Permissions — conditional view-all and write-all checkboxes
  *   [4] Current Permissions Table — tabular list with toggle and delete actions per row
