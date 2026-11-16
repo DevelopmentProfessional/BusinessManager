@@ -1,6 +1,16 @@
 #!/bin/bash
 set -e
 
+BACKEND_ENV_FILE="/opt/businessmanager/backend/.env"
+
+if [ ! -f "$BACKEND_ENV_FILE" ] || ! grep -Eq '^PAYMENT_DATA_ENCRYPTION_KEY=[^[:space:]]+$' "$BACKEND_ENV_FILE"; then
+    echo "ERROR: Configure a persistent PAYMENT_DATA_ENCRYPTION_KEY in $BACKEND_ENV_FILE before starting the API."
+    echo "Generate one with: python3.11 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+    exit 1
+fi
+
+chmod 600 "$BACKEND_ENV_FILE"
+
 # Staff API systemd service
 cat > /etc/systemd/system/staff-api.service << 'EOF'
 [Unit]

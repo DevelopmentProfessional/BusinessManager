@@ -47,7 +47,7 @@ import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon, PlusIcon
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Button_Icon from "../buttons/Button_Icon";
 import Footer_Actions from "../footers/Footer_Actions";
-import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI } from "../../../services/api";
+import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI, paymentAccountsAPI } from "../../../services/api";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
 import api from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
@@ -71,6 +71,7 @@ const PAGE_OPTION_GROUPS = [
       { value: "wages", label: "Wages" },
       { value: "benefits", label: "Benefits" },
       { value: "payroll", label: "Payroll" },
+      { value: "payments", label: "Payment methods" },
     ],
   },
   {
@@ -91,7 +92,7 @@ const PAGE_OPTION_GROUPS = [
     ],
   },
 ];
-const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "approve_payments", "initiate_refunds", "admin"];
+const PERMISSION_TYPES = ["read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete", "approve_payments", "manage_payment_methods", "initiate_refunds", "admin"];
 
 const PERMISSION_DESCRIPTIONS = {
   read: "View records and details on this page.",
@@ -102,6 +103,7 @@ const PERMISSION_DESCRIPTIONS = {
   write_self_only: "Create and edit schedule appointments only for yourself.",
   delete: "Delete records from this page.",
   approve_payments: "Approve wage and compensation payout records.",
+  manage_payment_methods: "Manage personal payout methods and allocation percentages.",
   initiate_refunds: "Initiate client payment refunds and reversals.",
   admin: "Full administrative control and configuration for this page.",
 };
@@ -237,6 +239,21 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const [paySlipsLoading, setPaySlipsLoading] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState(null);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
+  const [paymentMethodSaving, setPaymentMethodSaving] = useState(false);
+  const [paymentMethodMessage, setPaymentMethodMessage] = useState("");
+  const [paymentMethodForm, setPaymentMethodForm] = useState({
+    method_type: "bank_account",
+    label: "",
+    account_holder_name: "",
+    bank_name: "",
+    account_number: "",
+    routing_number: "",
+    provider_account_id: "",
+    payout_percentage: "100",
+    is_default: false,
+  });
 
   const [employeePaySchedule, setEmployeePaySchedule] = useState(null);
   const [employeePayScheduleLoading, setEmployeePayScheduleLoading] = useState(false);
@@ -399,6 +416,77 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
       fetchUserPermissions(employee.id);
     }
   }, [activeTab, employee?.id]);
+
+  useEffect(() => {
+    if (activeTab !== "payments" || !employee?.id) return;
+    setPaymentMethodsLoading(true);
+    paymentAccountsAPI
+      .listEmployeeMethods(employee.id)
+      .then((res) => setPaymentMethods(Array.isArray(res?.data) ? res.data : []))
+      .catch((err) => setPaymentMethodMessage(err.response?.data?.detail || "Unable to load payment methods."))
+      .finally(() => setPaymentMethodsLoading(false));
+  }, [activeTab, employee?.id]);
+
+  const handleAddPaymentMethod = async () => {
+    if (!paymentMethodForm.label.trim()) {
+      setPaymentMethodMessage("Add a label for this payment method.");
+      return;
+    }
+    const details =
+      paymentMethodForm.method_type === "bank_account"
+        ? {
+            bank_name: paymentMethodForm.bank_name.trim(),
+            account_number: paymentMethodForm.account_number.trim(),
+            routing_number: paymentMethodForm.routing_number.trim(),
+          }
+        : { provider_account_id: paymentMethodForm.provider_account_id.trim() };
+    if (Object.values(details).some((value) => !value)) {
+      setPaymentMethodMessage("Complete the required payment details.");
+      return;
+    }
+    setPaymentMethodSaving(true);
+    setPaymentMethodMessage("");
+    try {
+      const response = await paymentAccountsAPI.createEmployeeMethod({
+        employee_id: employee.id,
+        method_type: paymentMethodForm.method_type,
+        label: paymentMethodForm.label,
+        account_holder_name: paymentMethodForm.account_holder_name || null,
+        details,
+        payout_percentage: Number(paymentMethodForm.payout_percentage || 0),
+        is_default: paymentMethodForm.is_default,
+      });
+      setPaymentMethods((current) => [...current, response.data]);
+      setPaymentMethodForm((current) => ({ ...current, label: "", account_number: "", routing_number: "", provider_account_id: "", is_default: false }));
+      setPaymentMethodMessage("Payment method added. Verification and live transfers are not enabled yet.");
+    } catch (err) {
+      setPaymentMethodMessage(err.response?.data?.detail || "Unable to add payment method.");
+    } finally {
+      setPaymentMethodSaving(false);
+    }
+  };
+
+  const handleDisablePaymentMethod = async (method) => {
+    try {
+      const response = await paymentAccountsAPI.updateEmployeeMethod(method.id, { status: "disabled", payout_percentage: 0 });
+      setPaymentMethods((current) => current.map((item) => (item.id === method.id ? response.data : item)));
+      setPaymentMethodMessage("Payment method disabled.");
+    } catch (err) {
+      setPaymentMethodMessage(err.response?.data?.detail || "Unable to disable payment method.");
+    }
+  };
+
+  const handleSavePaymentAllocations = async () => {
+    try {
+      const response = await paymentAccountsAPI.updateEmployeeAllocations(
+        employee.id,
+        paymentMethods.filter((method) => method.status !== "disabled").map((method) => ({ method_id: method.id, percentage: Number(method.payout_percentage || 0) })),
+      );
+      setPaymentMethodMessage(response.data?.allocation_complete ? "Payment split saved." : "Payment split is incomplete.");
+    } catch (err) {
+      setPaymentMethodMessage(err.response?.data?.detail || "Payment allocations must total 100%.");
+    }
+  };
 
   // Load signature when switching to signature tab
   useEffect(() => {
@@ -1600,6 +1688,78 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
             <div className="tab-pane">
               {employee ? (
                 <>
+                  <h6 className="mb-0 text-uppercase ui-small-muted">Payout methods</h6>
+                  <hr className="mb-2 mt-1" />
+                  <div className="alert alert-info py-1 small">
+                    Add a bank account or a provider account such as PayPal. Sensitive values are encrypted and only masked details are shown after saving. Live transfers are not enabled.
+                  </div>
+                  {paymentMethodMessage && <div className="alert alert-secondary py-1 small">{paymentMethodMessage}</div>}
+                  {paymentMethodsLoading ? (
+                    <div className="py-1 text-center"><div className="spinner-border spinner-border-sm text-primary" role="status" /></div>
+                  ) : (
+                    <div className="mb-3">
+                      {paymentMethods.length === 0 ? (
+                        <p className="small text-muted">No payout methods configured.</p>
+                      ) : (
+                        paymentMethods.map((method) => (
+                          <div key={method.id} className="align-items-center border-bottom d-flex gap-2 py-1">
+                            <div className="flex-grow-1 small">
+                              <div className="fw-semibold">{method.label} {method.is_default && <span className="badge bg-primary ms-1">Default</span>}</div>
+                              <div className="text-muted">
+                                {method.method_type === "bank_account" ? "Bank account" : method.provider_name || "Provider account"} · {method.last4 ? `•••• ${method.last4}` : "details saved"} · {method.status.replaceAll("_", " ")}
+                              </div>
+                            </div>
+                            <div style={{ width: "82px" }}>
+                              <InputNumber
+                                value={method.payout_percentage}
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                onChange={(event) => setPaymentMethods((current) => current.map((item) => item.id === method.id ? { ...item, payout_percentage: event.target.value } : item))}
+                                disabled={method.status === "disabled"}
+                                aria-label={`${method.label} payout percentage`}
+                              />
+                            </div>
+                            {method.status !== "disabled" && (
+                              <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => handleDisablePaymentMethod(method)}>Disable</button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                      {paymentMethods.some((method) => method.status !== "disabled") && (
+                        <button type="button" className="btn btn-outline-primary btn-sm mt-2" onClick={handleSavePaymentAllocations}>
+                          Save payout split
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="border rounded p-2 mb-3">
+                    <div className="fw-semibold small mb-2">Add payment method</div>
+                    <div className="row ui-row-g2">
+                      <div className="col-md-4">
+                        <Dropdown_Custom
+                          value={paymentMethodForm.method_type}
+                          onChange={(event) => setPaymentMethodForm((current) => ({ ...current, method_type: event.target.value }))}
+                          options={[{ value: "bank_account", label: "Bank account" }, { value: "paypal", label: "PayPal / provider account" }]}
+                          closeOnSelect
+                        />
+                      </div>
+                      <div className="col-md-4"><InputText value={paymentMethodForm.label} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, label: event.target.value }))} placeholder="Label (e.g. Main account)" /></div>
+                      <div className="col-md-4"><InputText value={paymentMethodForm.account_holder_name} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, account_holder_name: event.target.value }))} placeholder="Account holder name" /></div>
+                      {paymentMethodForm.method_type === "bank_account" ? (
+                        <>
+                          <div className="col-md-4"><InputText value={paymentMethodForm.bank_name} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, bank_name: event.target.value }))} placeholder="Bank name" /></div>
+                          <div className="col-md-4"><InputText type="password" value={paymentMethodForm.account_number} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, account_number: event.target.value }))} placeholder="Account number" autoComplete="off" /></div>
+                          <div className="col-md-4"><InputText type="password" value={paymentMethodForm.routing_number} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, routing_number: event.target.value }))} placeholder="Routing number" autoComplete="off" /></div>
+                        </>
+                      ) : (
+                        <div className="col-md-8"><InputText value={paymentMethodForm.provider_account_id} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, provider_account_id: event.target.value }))} placeholder="Provider account ID or email" autoComplete="off" /></div>
+                      )}
+                      <div className="col-md-3"><InputNumber value={paymentMethodForm.payout_percentage} min="0" max="100" step="0.01" onChange={(event) => setPaymentMethodForm((current) => ({ ...current, payout_percentage: event.target.value }))} placeholder="Percent" /></div>
+                      <div className="align-items-center col-md-3 d-flex"><label className="small"><input type="checkbox" className="me-1" checked={paymentMethodForm.is_default} onChange={(event) => setPaymentMethodForm((current) => ({ ...current, is_default: event.target.checked }))} /> Default route</label></div>
+                      <div className="col-12"><button type="button" className="btn btn-primary btn-sm" onClick={handleAddPaymentMethod} disabled={paymentMethodSaving}>{paymentMethodSaving ? "Saving…" : "Add payment method"}</button></div>
+                    </div>
+                  </div>
                   <h6 className="mb-0 text-uppercase ui-small-muted">Wage History</h6>
                   <hr className="mb-2 mt-1" />
                   {paySlipsLoading ? (

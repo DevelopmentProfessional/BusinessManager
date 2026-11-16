@@ -52,7 +52,7 @@ import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "../icons";
-import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI } from "../services/api";
+import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI, paymentAccountsAPI } from "../services/api";
 import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/modals/Modal_Signature";
@@ -378,6 +378,21 @@ const Profile = () => {
   });
   const [stripeSettingsLoading, setStripeSettingsLoading] = useState(false);
   const [stripeTestLoading, setStripeTestLoading] = useState(false);
+  const [companyPaymentAccounts, setCompanyPaymentAccounts] = useState([]);
+  const [companyPaymentAccountsLoading, setCompanyPaymentAccountsLoading] = useState(false);
+  const [companyPaymentAccountSaving, setCompanyPaymentAccountSaving] = useState(false);
+  const [companyPaymentAccountForm, setCompanyPaymentAccountForm] = useState({
+    account_type: "bank_account",
+    purpose: "both",
+    label: "",
+    account_holder_name: "",
+    bank_name: "",
+    account_number: "",
+    routing_number: "",
+    provider_account_id: "",
+    currency: "USD",
+    is_default: false,
+  });
 
   const [portalBranding, setPortalBranding] = useState({
     portal_hero_title: "",
@@ -722,6 +737,61 @@ const Profile = () => {
       setSettingsError(err.response?.data?.detail || "Failed to save Stripe settings");
     } finally {
       setStripeSettingsLoading(false);
+    }
+  };
+
+  const loadCompanyPaymentAccounts = async () => {
+    setCompanyPaymentAccountsLoading(true);
+    try {
+      const response = await paymentAccountsAPI.listCompanyAccounts();
+      setCompanyPaymentAccounts(Array.isArray(response?.data) ? response.data : []);
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Unable to load company payment accounts");
+    } finally {
+      setCompanyPaymentAccountsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (openAccordions.payments && user?.role === "admin") loadCompanyPaymentAccounts();
+  }, [openAccordions.payments, user?.role]);
+
+  const handleAddCompanyPaymentAccount = async () => {
+    const details = companyPaymentAccountForm.account_type === "bank_account"
+      ? { bank_name: companyPaymentAccountForm.bank_name.trim(), account_number: companyPaymentAccountForm.account_number.trim(), routing_number: companyPaymentAccountForm.routing_number.trim() }
+      : { provider_account_id: companyPaymentAccountForm.provider_account_id.trim() };
+    if (!companyPaymentAccountForm.label.trim() || Object.values(details).some((value) => !value)) {
+      setSettingsError("Complete the company payment-account fields.");
+      return;
+    }
+    setCompanyPaymentAccountSaving(true);
+    try {
+      const response = await paymentAccountsAPI.createCompanyAccount({
+        account_type: companyPaymentAccountForm.account_type,
+        purpose: companyPaymentAccountForm.purpose,
+        label: companyPaymentAccountForm.label,
+        account_holder_name: companyPaymentAccountForm.account_holder_name || null,
+        currency: companyPaymentAccountForm.currency,
+        details,
+        is_default: companyPaymentAccountForm.is_default,
+      });
+      setCompanyPaymentAccounts((current) => [...current, response.data]);
+      setCompanyPaymentAccountForm((current) => ({ ...current, label: "", account_number: "", routing_number: "", provider_account_id: "", is_default: false }));
+      setSettingsSuccess("Company payment account saved. Verification and live transfers are not enabled yet.");
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Unable to save company payment account");
+    } finally {
+      setCompanyPaymentAccountSaving(false);
+    }
+  };
+
+  const handleDisableCompanyPaymentAccount = async (account) => {
+    try {
+      const response = await paymentAccountsAPI.updateCompanyAccount(account.id, { status: "disabled" });
+      setCompanyPaymentAccounts((current) => current.map((item) => item.id === account.id ? response.data : item));
+      setSettingsSuccess("Company payment account disabled.");
+    } catch (err) {
+      setSettingsError(err.response?.data?.detail || "Unable to disable company payment account");
     }
   };
 
@@ -1504,6 +1574,13 @@ const Profile = () => {
           handleStripeSettingsChange={handleStripeSettingsChange}
           handleSaveStripeSettings={handleSaveStripeSettings}
           handleStripeTestCheckout={handleStripeTestCheckout}
+          companyPaymentAccounts={companyPaymentAccounts}
+          companyPaymentAccountsLoading={companyPaymentAccountsLoading}
+          companyPaymentAccountSaving={companyPaymentAccountSaving}
+          companyPaymentAccountForm={companyPaymentAccountForm}
+          setCompanyPaymentAccountForm={setCompanyPaymentAccountForm}
+          handleAddCompanyPaymentAccount={handleAddCompanyPaymentAccount}
+          handleDisableCompanyPaymentAccount={handleDisableCompanyPaymentAccount}
           settingsSuccess={settingsSuccess}
           HelpIcon={HelpIcon}
           onCheckStartDatabase={handleCheckStartDatabase}

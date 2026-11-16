@@ -138,6 +138,7 @@ class PermissionType(str, Enum):
     VIEW_ALL = "view_all"  # Schedule page uses this instead of WRITE_ALL
     APPROVE_PAYMENTS = "approve_payments"  # Approve/mark payments for billable schedule events
     INITIATE_REFUNDS = "initiate_refunds"  # Can initiate refund flow for already-paid schedule events
+    MANAGE_PAYMENT_METHODS = "manage_payment_methods"
 
 # ─── 3 BASE MODEL ──────────────────────────────────────────────────────────────
 # Base model with common fields
@@ -733,6 +734,44 @@ class AppSettings(BaseModel, table=True):
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
     
     company_id: Optional[str] = Field(default=None, index=True)
+
+
+# ─── Payment account models ────────────────────────────────────────────────────
+class EmployeePaymentMethod(BaseModel, table=True):
+    """Encrypted, provider-neutral destination for an employee payout."""
+    __tablename__ = "employee_payment_method"
+    employee_id: UUID = Field(foreign_key="user.id", index=True)
+    company_id: str = Field(index=True)
+    method_type: str = Field(index=True)  # bank_account | paypal | card_provider
+    label: str
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: str = Field(default="USD")
+    encrypted_details: str
+    last4: Optional[str] = None
+    status: str = Field(default="pending_verification", index=True)
+    is_default: bool = Field(default=False)
+    payout_percentage: float = Field(default=0.0, ge=0.0, le=100.0)
+    disabled_at: Optional[datetime] = None
+
+
+class CompanyPaymentAccount(BaseModel, table=True):
+    """Encrypted business account used for future funding or receiving flows."""
+    __tablename__ = "company_payment_account"
+    company_id: str = Field(index=True)
+    account_type: str = Field(index=True)  # bank_account | card_provider
+    purpose: str = Field(default="both")  # funding | receiving | both
+    label: str
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: str = Field(default="USD")
+    encrypted_details: str
+    last4: Optional[str] = None
+    status: str = Field(default="pending_verification", index=True)
+    is_default: bool = Field(default=False)
+    disabled_at: Optional[datetime] = None
 
 
 # ─── 11 DOCUMENT MODELS ────────────────────────────────────────────────────────
@@ -1437,6 +1476,98 @@ class UserPermissionRead(SQLModel):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# ─── Payment account schemas ───────────────────────────────────────────────────
+class PaymentMethodCreate(SQLModel):
+    employee_id: Optional[UUID] = None
+    method_type: str
+    label: str
+    details: dict
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: str = "USD"
+    status: str = "pending_verification"
+    is_default: bool = False
+    payout_percentage: float = Field(default=0.0, ge=0.0, le=100.0)
+
+
+class PaymentMethodUpdate(SQLModel):
+    label: Optional[str] = None
+    details: Optional[dict] = None
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: Optional[str] = None
+    status: Optional[str] = None
+    is_default: Optional[bool] = None
+    payout_percentage: Optional[float] = Field(default=None, ge=0.0, le=100.0)
+
+
+class PaymentMethodRead(SQLModel):
+    id: UUID
+    employee_id: UUID
+    method_type: str
+    label: str
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: str
+    last4: Optional[str] = None
+    status: str
+    is_default: bool
+    payout_percentage: float
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    disabled_at: Optional[datetime] = None
+
+
+class CompanyPaymentAccountCreate(SQLModel):
+    account_type: str
+    purpose: str = "both"
+    label: str
+    details: dict
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: str = "USD"
+    status: str = "pending_verification"
+    is_default: bool = False
+
+
+class CompanyPaymentAccountUpdate(SQLModel):
+    purpose: Optional[str] = None
+    label: Optional[str] = None
+    details: Optional[dict] = None
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: Optional[str] = None
+    status: Optional[str] = None
+    is_default: Optional[bool] = None
+
+
+class CompanyPaymentAccountRead(SQLModel):
+    id: UUID
+    company_id: str
+    account_type: str
+    purpose: str
+    label: str
+    provider_name: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    country_code: Optional[str] = None
+    currency: str
+    last4: Optional[str] = None
+    status: str
+    is_default: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    disabled_at: Optional[datetime] = None
+
+
+class PaymentSplitUpdate(SQLModel):
+    allocations: list[dict]
 
 
 # ─── 17h ROLE SCHEMAS ──────────────────────────────────────────────────────────

@@ -48,11 +48,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules
+    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
     if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin", "backend.routers.company_registration", "backend.routers.discount_rules"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules  # type: ignore
+        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules  # type: ignore
     else:
         raise
 
@@ -217,6 +217,7 @@ app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
 app.include_router(leave_requests.router, prefix="/api/v1", tags=["leave-requests"])
 app.include_router(payroll.router, prefix="/api/v1", tags=["payroll"])
+app.include_router(payment_accounts.router, prefix="/api/v1", tags=["payment-accounts"])
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
 app.include_router(features.router, prefix="/api/v1", tags=["features"])

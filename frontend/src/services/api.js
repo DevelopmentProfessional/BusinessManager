@@ -775,6 +775,17 @@ export const payrollAPI = {
     api.get(`/payroll/compensation-preview/${employeeId}`, { params: { period_start: periodStart, period_end: periodEnd } }),
 };
 
+export const paymentAccountsAPI = {
+  listEmployeeMethods: (employeeId) => api.get("/payment-accounts/employee-methods", { params: employeeId ? { employee_id: employeeId } : {} }),
+  createEmployeeMethod: (data) => api.post("/payment-accounts/employee-methods", data),
+  updateEmployeeMethod: (methodId, data) => api.put(`/payment-accounts/employee-methods/${methodId}`, data),
+  updateEmployeeAllocations: (employeeId, allocations) => api.put(`/payment-accounts/employee-methods/${employeeId}/allocations`, { allocations }),
+  getPayrollReadiness: (employeeId) => api.get(`/payment-accounts/payroll-readiness/${employeeId}`),
+  listCompanyAccounts: () => api.get("/payment-accounts/company"),
+  createCompanyAccount: (data) => api.post("/payment-accounts/company", data),
+  updateCompanyAccount: (accountId, data) => api.put(`/payment-accounts/company/${accountId}`, data),
+};
+
 export const chatAPI = {
   getHistory: (otherUserId) => api.get(`/chat/messages/${otherUserId}`),
   sendMessage: (receiverId, data) => api.post(`/chat/messages/${receiverId}`, data),

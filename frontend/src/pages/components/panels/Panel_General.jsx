@@ -72,6 +72,13 @@ const Panel_General = ({
   handleStripeSettingsChange,
   handleSaveStripeSettings,
   handleStripeTestCheckout,
+  companyPaymentAccounts = [],
+  companyPaymentAccountsLoading = false,
+  companyPaymentAccountSaving = false,
+  companyPaymentAccountForm = {},
+  setCompanyPaymentAccountForm = () => {},
+  handleAddCompanyPaymentAccount = () => {},
+  handleDisableCompanyPaymentAccount = () => {},
   settingsSuccess,
   HelpIcon = () => null,
   onCheckStartDatabase,
@@ -353,7 +360,26 @@ const Panel_General = ({
       </SettingsSection>
 
       {user?.role === "admin" && (
-        <SettingsSection open={openAccordions.payments} onToggle={() => toggleAccordion("payments")} icon={CreditCardIcon} iconClassName="text-success" title="Payments (Stripe)">
+        <SettingsSection open={openAccordions.payments} onToggle={() => toggleAccordion("payments")} icon={CreditCardIcon} iconClassName="text-success" title="Payments & bank accounts">
+          <div className="alert alert-secondary mb-2 py-1 small">Bank accounts are stored encrypted and displayed masked. Live transfers and card-provider connections remain disabled until a provider is selected.</div>
+          <div className="border mb-2 p-1 rounded">
+            <div className="fw-semibold mb-2 small">Business funding / receiving accounts</div>
+            {companyPaymentAccountsLoading ? <div className="small text-muted">Loading accounts…</div> : companyPaymentAccounts.map((account) => (
+              <div key={account.id} className="align-items-center border-bottom d-flex gap-2 py-1">
+                <div className="flex-grow-1 small"><div className="fw-semibold">{account.label} {account.is_default && <span className="badge bg-primary ms-1">Default</span>}</div><div className="text-muted">{account.account_type === "bank_account" ? "Bank account" : "Provider account"} · {account.last4 ? `•••• ${account.last4}` : "details saved"} · {account.status.replaceAll("_", " ")}</div></div>
+                {account.status !== "disabled" && <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => handleDisableCompanyPaymentAccount(account)}>Disable</button>}
+              </div>
+            ))}
+            <div className="row ui-row-g2 mt-1">
+              <div className="col-md-3"><Dropdown_Custom value={companyPaymentAccountForm.account_type} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_type: e.target.value }))} options={[{ value: "bank_account", label: "Bank account" }, { value: "card_provider", label: "Provider account" }]} /></div>
+              <div className="col-md-3"><Dropdown_Custom value={companyPaymentAccountForm.purpose} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, purpose: e.target.value }))} options={[{ value: "both", label: "Funding & receiving" }, { value: "funding", label: "Funding" }, { value: "receiving", label: "Receiving" }]} /></div>
+              <div className="col-md-3"><InputText value={companyPaymentAccountForm.label} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, label: e.target.value }))} placeholder="Label" /></div>
+              <div className="col-md-3"><InputText value={companyPaymentAccountForm.account_holder_name} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_holder_name: e.target.value }))} placeholder="Account holder" /></div>
+              {companyPaymentAccountForm.account_type === "bank_account" ? <><div className="col-md-4"><InputText value={companyPaymentAccountForm.bank_name} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, bank_name: e.target.value }))} placeholder="Bank name" /></div><div className="col-md-4"><InputText type="password" value={companyPaymentAccountForm.account_number} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_number: e.target.value }))} placeholder="Account number" autoComplete="off" /></div><div className="col-md-4"><InputText type="password" value={companyPaymentAccountForm.routing_number} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, routing_number: e.target.value }))} placeholder="Routing number" autoComplete="off" /></div></> : <div className="col-md-8"><InputText value={companyPaymentAccountForm.provider_account_id} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, provider_account_id: e.target.value }))} placeholder="Provider account ID" autoComplete="off" /></div>}
+              <div className="align-items-center col-md-3 d-flex"><label className="small"><input type="checkbox" className="me-1" checked={!!companyPaymentAccountForm.is_default} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, is_default: e.target.checked }))} /> Default account</label></div>
+              <div className="col-12"><button type="button" className="btn btn-success btn-sm" onClick={handleAddCompanyPaymentAccount} disabled={companyPaymentAccountSaving}>{companyPaymentAccountSaving ? "Saving…" : "Add business account"}</button></div>
+            </div>
+          </div>
           <div className="alert alert-info mb-2 py-1 small">Configure Stripe card payments here. Stripe checkout has no monthly fee by default; you only pay per successful transaction.</div>
 
           <div className="align-items-center d-flex gap-2 mb-2">

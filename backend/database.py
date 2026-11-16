@@ -75,7 +75,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.11.2"
+CURRENT_SCHEMA_VERSION = "2026.11.11.3"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -174,6 +174,14 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='user' AND column_name='startup_page'"
             )).fetchone()
+            employee_payment_method_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='employee_payment_method'"
+            )).fetchone()
+            company_payment_account_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='company_payment_account'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -198,6 +206,8 @@ def _required_schema_artifacts_present() -> bool:
                 and user_status_id_column is not None
                 and document_status_id_column is not None
                 and user_startup_page_column is not None
+                and employee_payment_method_table is not None
+                and company_payment_account_table is not None
             )
     except Exception:
         return False
