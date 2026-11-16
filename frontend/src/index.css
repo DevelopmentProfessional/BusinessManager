@@ -1435,6 +1435,11 @@ table::-webkit-scrollbar,
   -ms-overflow-style: none !important;
 }
 
+/* Let employee permission controls anchor to the bottom of the modal scroll surface. */
+.app-modal-body > .ui-page-shell.employee-permissions-active > div.overflow-auto {
+  flex: 1 1 auto !important;
+}
+
 .ui-component-shell > .component-body::-webkit-scrollbar,
 .ui-component-shell > .component-body-inner::-webkit-scrollbar,
 .ui-page-shell > .component-body::-webkit-scrollbar,

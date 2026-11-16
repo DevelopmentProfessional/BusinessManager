@@ -39,6 +39,8 @@
  *   2026-09-11 | GitHub Copilot | Removed unused props/locals and fixed missing effect dependencies
  *   2026-09-11 | GitHub Copilot | Added base pay and service compensation settings
  *   2026-11-15 | GitHub Copilot | Replaced the inline department toggle with the shared icon button
+ *   2026-11-16 | GitHub Copilot | Added Suppliers to employee permission options
+ *   2026-11-16 | GitHub Copilot | Anchored employee permission controls at the bottom of the tab
  * ============================================================
  */
 
@@ -79,6 +81,7 @@ const PAGE_OPTION_GROUPS = [
     options: [
       { value: "clients", label: "Clients" },
       { value: "inventory", label: "Inventory" },
+      { value: "suppliers", label: "Suppliers" },
       { value: "sales", label: "Sales" },
       { value: "services", label: "Services" },
       { value: "employees", label: "Employees" },
@@ -807,7 +810,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   ];
 
   return (
-    <div className="ui-page-shell">
+    <div className={`ui-page-shell ${activeTab === "permissions" ? "employee-permissions-active" : ""}`}>
       {/* Header */}
       <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
         <h6 className="app-modal-title ui-heading-strong">{employee ? "Edit Employee" : "Add Employee"}</h6>
@@ -815,8 +818,8 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
       {/* ─── 9 RENDER: TAB PANES ────────────────────────────────────────────────── */}
       {/* Scrollable Body */}
-      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
-        <form id="employee-form" onSubmit={handleSubmit}>
+      <div className={`bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900 ${activeTab === "permissions" ? "d-flex flex-column" : ""}`}>
+        <form id="employee-form" onSubmit={handleSubmit} className={activeTab === "permissions" ? "d-flex flex-column flex-grow-1 min-h-0" : ""}>
           {/* ===== DETAILS TAB ===== */}
           {activeTab === "details" && (
             <div className="tab-pane">
@@ -1169,10 +1172,81 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
           {/* ===== PERMISSIONS TAB ===== */}
           {activeTab === "permissions" && (
-            <div className="tab-pane">
+            <div className="tab-pane d-flex flex-column flex-grow-1 min-h-0">
               {employee ? (
-                <>
-                  <div className="mb-2">
+                <div className="d-flex flex-column flex-grow-1 min-h-0">
+                  <div className="d-flex flex-column flex-grow-1 min-h-0">
+                    <div className="mt-auto">
+                      {/* Current Permissions Table */}
+                      {userPermissions.length > 0 ? (
+                        <div className="table-responsive">
+                          <table className="mb-0 table table-sm">
+                            <thead>
+                              <tr>
+                                <th style={{ width: "70px" }}>Actions</th>
+                                <th>Page</th>
+                                <th>Permission</th>
+                                <th>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {userPermissions.map((perm) => (
+                                <tr key={perm.id}>
+                                  <td>
+                                    <div className="d-flex align-items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeletePermission(perm.id)}
+                                        className="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0"
+                                        style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                                        title="Delete permission"
+                                      >
+                                        <XMarkIcon style={{ width: 14, height: 14 }} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleTogglePermission(perm.id, !perm.granted)}
+                                        className={`btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`}
+                                        style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
+                                        title={perm.granted ? "Deny permission" : "Grant permission"}
+                                      >
+                                        <i className={`bi ${perm.granted ? "bi-x-circle" : "bi-check-circle"}`} style={{ fontSize: "1rem" }}></i>
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td>{perm.page}</td>
+                                  <td>{perm.permission}</td>
+                                  <td>
+                                    <span className={`badge ${perm.granted ? "bg-success" : "bg-danger"}`}>{perm.granted ? "Granted" : "Denied"}</span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="mb-0 py-0 text-center text-muted">No permissions assigned yet.</p>
+                      )}
+
+                      {/* Role inherited permissions */}
+                      {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
+                        <div className="bg-light border mt-3 p-0 rounded" style={{ fontSize: "0.8rem" }}>
+                          <strong>Inherited from Role:</strong>
+                          <div className="d-flex flex-wrap gap-1 mt-1">
+                            {roles
+                              .find((r) => r.id === formData.role_id)
+                              ?.role_permissions?.map((perm) => (
+                                <span key={perm.id} className="badge bg-secondary">
+                                  {perm.page}:{perm.permission}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-white border-top dark:bg-gray-900 flex-shrink-0 pt-2 position-sticky" style={{ bottom: 0, zIndex: 20 }}>
                     {permError && <div className="alert alert-danger mb-2 py-1 small">{permError}</div>}
                     {permSuccess && <div className="alert alert-success mb-2 py-1 small">{permSuccess}</div>}
                     <div className="align-items-center g-2 row">
@@ -1210,74 +1284,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                       </div>
                     </div>
                   </div>
-
-                  {/* Current Permissions Table */}
-                  {userPermissions.length > 0 ? (
-                    <div className="table-responsive">
-                      <table className="mb-0 table table-sm">
-                        <thead>
-                          <tr>
-                            <th style={{ width: "70px" }}>Actions</th>
-                            <th>Page</th>
-                            <th>Permission</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {userPermissions.map((perm) => (
-                            <tr key={perm.id}>
-                              <td>
-                                <div className="d-flex align-items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeletePermission(perm.id)}
-                                    className="btn btn-outline-danger btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0"
-                                    style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
-                                    title="Delete permission"
-                                  >
-                                    <XMarkIcon style={{ width: 14, height: 14 }} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleTogglePermission(perm.id, !perm.granted)}
-                                    className={`btn btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0 ${perm.granted ? "btn-outline-warning" : "btn-outline-success"}`}
-                                    style={{ width: "2rem", height: "2rem", minWidth: "2rem", minHeight: "2rem" }}
-                                    title={perm.granted ? "Deny permission" : "Grant permission"}
-                                  >
-                                    <i className={`bi ${perm.granted ? "bi-x-circle" : "bi-check-circle"}`} style={{ fontSize: "1rem" }}></i>
-                                  </button>
-                                </div>
-                              </td>
-                              <td>{perm.page}</td>
-                              <td>{perm.permission}</td>
-                              <td>
-                                <span className={`badge ${perm.granted ? "bg-success" : "bg-danger"}`}>{perm.granted ? "Granted" : "Denied"}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="py-0 text-center text-muted">No permissions assigned yet.</p>
-                  )}
-
-                  {/* Role inherited permissions */}
-                  {formData.role_id && roles.find((r) => r.id === formData.role_id)?.role_permissions?.length > 0 && (
-                    <div className="bg-light border mt-3 p-0 rounded" style={{ fontSize: "0.8rem" }}>
-                      <strong>Inherited from Role:</strong>
-                      <div className="d-flex flex-wrap gap-1 mt-1">
-                        {roles
-                          .find((r) => r.id === formData.role_id)
-                          ?.role_permissions?.map((perm) => (
-                            <span key={perm.id} className="badge bg-secondary">
-                              {perm.page}:{perm.permission}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </>
+                </div>
               ) : (
                 <div className="p-1 text-center">
                   <p className="text-muted">Create the employee first, then manage permissions.</p>
