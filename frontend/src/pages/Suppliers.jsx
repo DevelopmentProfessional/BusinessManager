@@ -47,7 +47,7 @@ export default function Suppliers() {
   const [pageError, setPageError] = useState("");
   const [formError, setFormError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSupplierIds, setSelectedSupplierIds] = useState(() => new Set());
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState([]);
   const [multiSaving, setMultiSaving] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [supplierFormOpen, setSupplierFormOpen] = useState(false);
@@ -74,7 +74,7 @@ export default function Suppliers() {
       if (!Array.isArray(data)) throw new Error("Invalid supplier data received from the server.");
       const sorted = sortItemsAlphabetically(data, ["name", "email"]);
       setSuppliers(sorted);
-      setSelectedSupplierIds((current) => new Set([...current].filter((id) => sorted.some((supplier) => supplier.id === id))));
+      setSelectedSupplierIds((current) => current.filter((id) => sorted.some((supplier) => supplier.id === id)));
       setPageError("");
     } catch (error) {
       setPageError(supplierErrorMessage(error, "Failed to load suppliers."));
@@ -90,12 +90,12 @@ export default function Suppliers() {
   useEffect(() => {
     if (pageSettings.showHiddenSuppliers !== false) return;
     const visibleIds = new Set(suppliers.filter((supplier) => !supplier.is_hidden).map((supplier) => supplier.id));
-    setSelectedSupplierIds((current) => new Set([...current].filter((id) => visibleIds.has(id))));
+    setSelectedSupplierIds((current) => current.filter((id) => visibleIds.has(id)));
   }, [pageSettings.showHiddenSuppliers, suppliers]);
 
-  const selectionMode = selectedSupplierIds.size > 0;
-  const selectedSupplier = selectedSupplierIds.size === 1
-    ? suppliers.find((supplier) => supplier.id === [...selectedSupplierIds][0]) || null
+  const selectionMode = selectedSupplierIds.length > 0;
+  const selectedSupplier = selectedSupplierIds.length === 1
+    ? suppliers.find((supplier) => supplier.id === selectedSupplierIds[0]) || null
     : null;
 
   const visibleSuppliers = useMemo(() => {
@@ -112,26 +112,22 @@ export default function Suppliers() {
     });
   }, [pageSettings.showHiddenSuppliers, searchTerm, sortColumn, sortAsc, suppliers]);
 
-  const selectedSuppliers = suppliers.filter((supplier) => selectedSupplierIds.has(supplier.id));
+  const selectedSuppliers = suppliers.filter((supplier) => selectedSupplierIds.includes(supplier.id));
   const allSelectedHidden = selectedSuppliers.length > 0 && selectedSuppliers.every((supplier) => supplier.is_hidden);
-  const allVisibleSelected = visibleSuppliers.length > 0 && visibleSuppliers.every((supplier) => selectedSupplierIds.has(supplier.id));
+  const allVisibleSelected = visibleSuppliers.length > 0 && visibleSuppliers.every((supplier) => selectedSupplierIds.includes(supplier.id));
 
-  const toggleSupplierSelection = (id) => {
-    setSelectedSupplierIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const toggleSupplierSelection = (id) =>
+    setSelectedSupplierIds((current) =>
+      current.includes(id) ? current.filter((selectedId) => selectedId !== id) : [...current, id]
+    );
 
   const handleSelectAllSuppliers = () => {
     setSelectedSupplierIds(
-      allVisibleSelected ? new Set() : new Set(visibleSuppliers.map((supplier) => supplier.id))
+      allVisibleSelected ? [] : visibleSuppliers.map((supplier) => supplier.id)
     );
   };
 
-  const clearSupplierSelection = () => setSelectedSupplierIds(new Set());
+  const clearSupplierSelection = () => setSelectedSupplierIds([]);
 
   const handleSort = (column) => {
     if (sortColumn === column) setSortAsc((current) => !current);
@@ -171,7 +167,7 @@ export default function Suppliers() {
           ["name", "email"]
         )
       );
-      setSelectedSupplierIds(new Set([savedSupplier.id]));
+      setSelectedSupplierIds([savedSupplier.id]);
       setSupplierFormOpen(false);
       setEditingSupplier(null);
     } catch (error) {
@@ -182,12 +178,12 @@ export default function Suppliers() {
   };
 
   const handleDeleteSelected = async () => {
-    if (selectedSupplierIds.size === 0) return;
-    if (!(await showConfirm(`Delete ${selectedSupplierIds.size} selected supplier${selectedSupplierIds.size === 1 ? "" : "s"}?`))) return;
+    if (selectedSupplierIds.length === 0) return;
+    if (!(await showConfirm(`Delete ${selectedSupplierIds.length} selected supplier${selectedSupplierIds.length === 1 ? "" : "s"}?`))) return;
     setMultiSaving(true);
     try {
-      await Promise.all([...selectedSupplierIds].map((id) => suppliersAPI.delete(id)));
-      setSuppliers((previous) => previous.filter((supplier) => !selectedSupplierIds.has(supplier.id)));
+      await Promise.all(selectedSupplierIds.map((id) => suppliersAPI.delete(id)));
+      setSuppliers((previous) => previous.filter((supplier) => !selectedSupplierIds.includes(supplier.id)));
       clearSupplierSelection();
       setPageError("");
     } catch (error) {
@@ -209,7 +205,7 @@ export default function Suppliers() {
       );
       setSuppliers((previous) =>
         previous.map((supplier) =>
-          selectedSupplierIds.has(supplier.id) ? { ...supplier, is_hidden: isHidden } : supplier
+          selectedSupplierIds.includes(supplier.id) ? { ...supplier, is_hidden: isHidden } : supplier
         )
       );
       clearSupplierSelection();
@@ -291,11 +287,11 @@ export default function Suppliers() {
               {visibleSuppliers.map((supplier) => (
                 <PageTableRow
                   key={supplier.id}
-                  className={`app-supplier-table-row ${selectedSupplierIds.has(supplier.id) ? "bg-gray-100 dark:bg-gray-800" : ""}`}
+                  className={`app-supplier-table-row ${selectedSupplierIds.includes(supplier.id) ? "bg-gray-100 dark:bg-gray-800" : ""}`}
                 >
                   <td className="app-col-select app-select-icon-cell" onClick={(event) => event.stopPropagation()}>
                     <Toggle_MultiSelectIcon
-                      selected={selectedSupplierIds.has(supplier.id)}
+                      selected={selectedSupplierIds.includes(supplier.id)}
                       onToggle={() => toggleSupplierSelection(supplier.id)}
                       title={`Select ${supplier.name}`}
                     />
@@ -382,10 +378,10 @@ export default function Suppliers() {
         }
       >
         <div className="align-items-center d-flex flex-wrap gap-1 w-100">
-          {selectedSupplierIds.size > 0 ? (
+          {selectedSupplierIds.length > 0 ? (
             <>
               <span className="ui-small-muted">
-                {selectedSupplierIds.size} selected supplier{selectedSupplierIds.size === 1 ? "" : "s"}
+                {selectedSupplierIds.length} selected supplier{selectedSupplierIds.length === 1 ? "" : "s"}
               </span>
               <Gate_Permission page="suppliers" permission="write">
                 <Button_Toolbar
@@ -404,7 +400,7 @@ export default function Suppliers() {
                   onClick={handleDeleteSelected}
                   disabled={multiSaving}
                   className="btn-app-danger"
-                  title={`Delete ${selectedSupplierIds.size} selected supplier${selectedSupplierIds.size === 1 ? "" : "s"}`}
+                  title={`Delete ${selectedSupplierIds.length} selected supplier${selectedSupplierIds.length === 1 ? "" : "s"}`}
                 />
               </Gate_Permission>
               {selectedSupplier && !selectedSupplier.is_hidden && (
