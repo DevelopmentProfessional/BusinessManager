@@ -80,6 +80,9 @@ STRIPE_KEY_FIELDS = {
     "stripe_live_webhook_secret",
 }
 
+INVENTORY_PO_MODES = {"immediate", "scheduled", "both"}
+INVENTORY_PO_FREQUENCIES = {"daily", "weekly", "monthly", "quarterly", "semiannual", "annual"}
+
 
 def _normalize_stripe_mode(value: str | None) -> str:
     normalized = (value or "").strip().lower()
@@ -376,6 +379,22 @@ def update_schedule_settings(
     if current_user.role != UserRole.ADMIN:
         for field in stripe_fields:
             update_data.pop(field, None)
+        if {"inventory_po_generation_mode", "inventory_po_frequency"} & update_data.keys():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access is required to change inventory automation settings.",
+            )
+
+    if "inventory_po_generation_mode" in update_data:
+        mode = str(update_data["inventory_po_generation_mode"]).strip().lower()
+        if mode not in INVENTORY_PO_MODES:
+            raise HTTPException(status_code=400, detail="Invalid inventory purchase-order generation mode.")
+        update_data["inventory_po_generation_mode"] = mode
+    if "inventory_po_frequency" in update_data:
+        frequency = str(update_data["inventory_po_frequency"]).strip().lower()
+        if frequency not in INVENTORY_PO_FREQUENCIES:
+            raise HTTPException(status_code=400, detail="Invalid inventory purchase-order frequency.")
+        update_data["inventory_po_frequency"] = frequency
 
     if "stripe_mode" in update_data:
         update_data["stripe_mode"] = _normalize_stripe_mode(update_data.get("stripe_mode"))

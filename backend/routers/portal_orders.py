@@ -22,10 +22,12 @@ try:
         Inventory,
         InventoryFeatureCombination,
         InventoryFeatureOptionData,
+        ProductResource,
         User,
     )
     from backend.routers.auth import get_current_user
     from backend.utils.discount_service import get_applicable_discounts, apply_discount_to_cart_item
+    from backend.inventory_costing import consume_inventory_fifo
 except ModuleNotFoundError:
     from database import get_session
     from models import (
@@ -41,10 +43,12 @@ except ModuleNotFoundError:
         Inventory,
         InventoryFeatureCombination,
         InventoryFeatureOptionData,
+        ProductResource,
         User,
     )
     from routers.auth import get_current_user
     from utils.discount_service import get_applicable_discounts, apply_discount_to_cart_item  # type: ignore
+    from inventory_costing import consume_inventory_fifo  # type: ignore
 
 
 router = APIRouter()
@@ -116,9 +120,21 @@ def _deduct_inventory_for_order(session: Session, order: ClientOrder) -> None:
         return
 
     items = session.exec(select(ClientOrderItem).where(ClientOrderItem.order_id == order.id)).all()
+    deductions: dict[UUID, float] = {}
     for item in items:
         if item.item_type != "product" or not item.item_id:
             continue
+
+        deductions[item.item_id] = deductions.get(item.item_id, 0) + max(0, int(item.quantity or 0))
+        product_resources = session.exec(
+            select(ProductResource).where(ProductResource.inventory_id == item.item_id)
+        ).all()
+        for product_resource in product_resources:
+            resource_quantity = float(product_resource.quantity_per_batch) * max(0, int(item.quantity or 0))
+            if resource_quantity > 0:
+                deductions[product_resource.resource_id] = (
+                    deductions.get(product_resource.resource_id, 0) + resource_quantity
+                )
 
         option_ids: List[str] = []
         if item.options_json:
@@ -159,16 +175,19 @@ def _deduct_inventory_for_order(session: Session, order: ClientOrder) -> None:
                 row.quantity = totals.get(row.option_id, 0)
                 session.add(row)
 
-            item_inventory = session.get(Inventory, item.item_id)
-            if item_inventory:
-                item_inventory.quantity = sum(combo_row.quantity for combo_row in combos)
-                session.add(item_inventory)
             continue
 
-        inventory_item = session.get(Inventory, item.item_id)
+    for inventory_id, quantity in deductions.items():
+        inventory_item = session.get(Inventory, inventory_id)
         if inventory_item:
-            inventory_item.quantity = max(0, (inventory_item.quantity or 0) - item.quantity)
-            session.add(inventory_item)
+            consume_inventory_fifo(
+                session,
+                inventory_item,
+                quantity,
+                reference_type="client_order",
+                reference_id=order.id,
+                company_id=order.company_id,
+            )
 
     order.inventory_deducted_at = datetime.utcnow()
     session.add(order)

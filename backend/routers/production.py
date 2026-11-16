@@ -29,6 +29,7 @@ try:
         ProductResource, ProductAsset, ProductLocation, User,
     )
     from backend.routers.auth import get_current_user
+    from backend.inventory_costing import add_inventory_cost_layer, consume_inventory_fifo
 except ModuleNotFoundError:
     from database import get_session           # type: ignore
     from models import (                       # type: ignore
@@ -36,6 +37,7 @@ except ModuleNotFoundError:
         ProductResource, ProductAsset, ProductLocation, User,
     )
     from routers.auth import get_current_user  # type: ignore
+    from inventory_costing import add_inventory_cost_layer, consume_inventory_fifo  # type: ignore
 
 router = APIRouter()
 
@@ -130,12 +132,14 @@ def complete_production_task(schedule_id: UUID, session: Session = Depends(get_s
     schedule = session.get(Schedule, schedule_id)
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
+    if schedule.status == "completed":
+        raise HTTPException(status_code=409, detail="This production task has already been completed")
     if getattr(schedule, "task_type", "service") != "production":
         raise HTTPException(status_code=400, detail="This schedule is not a production task")
     if not schedule.production_item_id:
         raise HTTPException(status_code=400, detail="No production item linked to this task")
 
-    production_qty = schedule.production_quantity or 1
+    production_qty = max(1, int(schedule.production_quantity or 1))
     product_id = schedule.production_item_id
 
     product = _inventory_by_id(session, product_id)
@@ -150,28 +154,58 @@ def complete_production_task(schedule_id: UUID, session: Session = Depends(get_s
     ).all()
 
     low_stock_warnings = []
+    known_input_cost = 0.0
+    all_input_cost_known = bool(resources)
 
     try:
         # 1. Consume resources
         for pr in resources:
             resource_item = _inventory_by_id(session, pr.resource_id)
             if resource_item:
-                consumed = pr.quantity_per_batch * production_qty
-                resource_item.quantity = max(0, (resource_item.quantity or 0) - int(consumed))
-                session.add(resource_item)
-                if resource_item.quantity <= (resource_item.min_stock_level or 0):
+                consumed = float(pr.quantity_per_batch) * production_qty
+                if consumed > 0:
+                    cost_result = consume_inventory_fifo(
+                        session,
+                        resource_item,
+                        consumed,
+                        reference_type="production_task",
+                        reference_id=schedule.id,
+                        company_id=current_user.company_id,
+                    )
+                    known_cost = cost_result["known_cost_amount"]
+                    if known_cost is not None:
+                        known_input_cost += float(known_cost)
+                    if cost_result["unknown_quantity"] or cost_result["short_quantity"]:
+                        all_input_cost_known = False
+                else:
+                    all_input_cost_known = False
+                if (
+                    resource_item.min_stock_level is not None
+                    and resource_item.quantity <= resource_item.min_stock_level
+                ):
                     low_stock_warnings.append({
                         "id": str(resource_item.id),
                         "name": resource_item.name,
                         "quantity": resource_item.quantity,
                         "min_stock_level": resource_item.min_stock_level,
                     })
+            else:
+                all_input_cost_known = False
 
         # 2. Determine units produced (use first asset's batch_size, default 1)
         batch_size = assets[0].batch_size if assets else 1
         units_produced = batch_size * production_qty
         product.quantity = (product.quantity or 0) + units_produced
         session.add(product)
+        add_inventory_cost_layer(
+            session,
+            product,
+            units_produced,
+            known_input_cost / units_produced if all_input_cost_known and units_produced > 0 else None,
+            source_type="production_output",
+            source_reference_id=schedule.id,
+            company_id=current_user.company_id,
+        )
 
         # 3. Mark task completed
         schedule.status = "completed"

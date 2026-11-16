@@ -10,9 +10,9 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { InputText, InputTextarea } from "../Inputs";
-import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon } from "../../../icons";
+import { PlusIcon, XMarkIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon, EnvelopeIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
-import { suppliersAPI } from "../../../services/api";
+import { settingsAPI, suppliersAPI } from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
 import Modal from "../modals/Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
@@ -20,11 +20,14 @@ import { EmptyState, LoadingSpinner } from "../feedback";
 import Footer_Actions from "../footers/Footer_Actions";
 import Gate_Permission from "../layout/Gate_Permission";
 import Modal_Procurement from "../modals/Modal_Procurement";
+import Modal_TemplateUse from "../modals/Modal_TemplateUse";
 
 export default function Suppliers_Panel({ isOpen, onClose }) {
-  const { setError, clearError } = useStore();
+  const { user, setError, clearError } = useStore();
 
   const [suppliers, setSuppliers] = useState([]);
+  const [appSettings, setAppSettings] = useState({});
+  const [communicationSupplier, setCommunicationSupplier] = useState(null);
   const [loading, setLoading] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -58,6 +61,7 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
       setShowForm(false);
       setEditingSupplier(null);
       setExpandedSupplierId(null);
+      setCommunicationSupplier(null);
     }
   }, [isOpen, loadSuppliers]);
 
@@ -119,9 +123,21 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
     setEditingSupplier(null);
   };
 
+  const handleOpenCommunication = async (supplier) => {
+    try {
+      const response = await settingsAPI.getSettings();
+      setAppSettings(response?.data ?? response ?? {});
+      clearError();
+      setCommunicationSupplier(supplier);
+    } catch (error) {
+      setError(error?.response?.data?.detail || error?.message || "Unable to load company settings for the supplier email.");
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity={showForm ? "top" : "bottom"}>
-      <div className="ui-page-shell">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity={showForm ? "top" : "bottom"}>
+        <div className="ui-page-shell">
         <div className="app-modal-header align-items-center bg-white border-bottom d-flex dark:bg-gray-900 flex-shrink-0 gap-2 justify-content-between p-0">
           <h6 className="app-modal-title ui-heading-strong">
             {showForm ? (editingSupplier ? "Edit Supplier" : "Add Supplier") : "Suppliers"}
@@ -178,6 +194,15 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                       <Gate_Permission page="suppliers" permission="write">
                         <button
                           type="button"
+                          onClick={() => handleOpenCommunication(supplier)}
+                          className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                          title="Prepare supplier email"
+                          aria-label={`Prepare email to ${supplier.name}`}
+                        >
+                          <EnvelopeIcon className="ui-icon-5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => toggleProcurement(supplier.id)}
                           className={`btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0 ${isExpanded ? "btn-primary" : "btn-outline-secondary"}`}
                           title={isExpanded ? "Hide purchase orders" : "Purchase orders"}
@@ -214,8 +239,18 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
             )}
           </div>
         </div>
-      </div>
-    </Modal>
+        </div>
+      </Modal>
+      {communicationSupplier && (
+        <Modal_TemplateUse
+          page="suppliers"
+          entity={communicationSupplier}
+          currentUser={user}
+          settings={appSettings}
+          onClose={() => setCommunicationSupplier(null)}
+        />
+      )}
+    </>
   );
 }
 

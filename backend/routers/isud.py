@@ -50,6 +50,7 @@ import logging
 import smtplib
 import ssl
 import json
+import math
 from datetime import datetime
 from urllib.parse import urlparse
 from typing import Type, Dict, Any, Optional
@@ -79,6 +80,12 @@ except ModuleNotFoundError:
 from ..database import get_session
 from ..models import *
 from .auth import get_current_user, get_current_company_id, get_user_permissions_list
+from ..inventory_costing import (
+    add_inventory_cost_layer,
+    consume_inventory_fifo,
+    create_opening_stock_layer,
+    fallback_unit_cost,
+)
 
 # ─── [2] CONSTANTS ─────────────────────────────────────────────────────────────
 # Upload dir for document file cleanup on delete (used when table is "document")
@@ -90,6 +97,22 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Tables without company_id (system tables, never filter by company)
 SYSTEM_TABLES = {"company", "database_connection", "document_blob", "schema_migration"}
 logger = logging.getLogger(__name__)
+
+
+def _guard_managed_inventory_table(model_class: Type[SQLModel]) -> None:
+    if model_class in {InventoryCostLayer, InventoryCostConsumption, InventoryStockAdjustment}:
+        raise HTTPException(
+            status_code=403,
+            detail="Inventory cost and adjustment records are managed by dedicated stock workflows.",
+        )
+
+
+def _require_stock_adjustment_permission(current_user: User, session: Session) -> None:
+    if current_user.role == UserRole.ADMIN:
+        return
+    permissions = set(get_user_permissions_list(current_user, session))
+    if "inventory:write_all" not in permissions and "inventory:admin" not in permissions:
+        raise HTTPException(status_code=403, detail="Missing permission: inventory:write_all")
 
 
 def _render_html_template(template_html: str, variables: dict[str, Any]) -> str:
@@ -272,66 +295,162 @@ def _consume_sale_transaction_inventory(session: Session, sale_transaction_id) -
     items = session.exec(
         sql_select(SaleTransactionItem).where(SaleTransactionItem.sale_transaction_id == sale_transaction_id)
     ).all()
+    deductions: Dict[UUID, float] = {}
+    feature_deductions = []
+
+    def add_deduction(inventory_id, quantity):
+        if not inventory_id or quantity <= 0:
+            return
+        inventory_uuid = UUID(str(inventory_id))
+        deductions[inventory_uuid] = deductions.get(inventory_uuid, 0.0) + float(quantity)
+
+    def add_product_resources(product_id, units_sold):
+        resource_links = session.exec(
+            sql_select(ProductResource).where(ProductResource.inventory_id == product_id)
+        ).all()
+        for resource_link in resource_links:
+            add_deduction(
+                resource_link.resource_id,
+                float(resource_link.quantity_per_batch or 0) * units_sold,
+            )
+
+    def add_service_resources(service_id, units_sold):
+        resource_links = session.exec(
+            sql_select(ServiceResource).where(ServiceResource.service_id == service_id)
+        ).all()
+        for resource_link in resource_links:
+            rate = (
+                float(resource_link.consumption_rate_pct) / 100
+                if resource_link.consumption_rate_pct is not None
+                else 1.0
+            )
+            add_deduction(
+                resource_link.inventory_id,
+                float(resource_link.quantity or 0) * rate * units_sold,
+            )
 
     for sale_item in items:
         item_type = getattr(sale_item, "item_type", None)
         item_id = getattr(sale_item, "item_id", None)
-        qty_sold = getattr(sale_item, "quantity", 1) or 1
-
-        def _consume_resources(product_id, units_sold: float):
-            try:
-                res_links = session.exec(
-                    sql_select(ProductResource).where(ProductResource.inventory_id == product_id)
-                ).all()
-                for pr in res_links:
-                    res_inv = session.get(Inventory, pr.resource_id)
-                    if res_inv is not None:
-                        res_inv.quantity = max(0, (res_inv.quantity or 0) - (pr.quantity_per_batch * units_sold))
-                        session.add(res_inv)
-            except Exception as e:
-                print(f"Warning: resource consumption failed for product {product_id}: {e}")
+        qty_sold = int(getattr(sale_item, "quantity", 1) or 1)
 
         if item_type == 'product' and item_id:
+            add_deduction(item_id, qty_sold)
+            add_product_resources(item_id, qty_sold)
             try:
-                inv = session.get(Inventory, item_id)
-                if inv is not None:
-                    inv.quantity = max(0, inv.quantity - qty_sold)
-                    session.add(inv)
-                _consume_resources(item_id, qty_sold)
-            except Exception as e:
-                print(f"Warning: stock decrement failed for inventory {item_id}: {e}")
+                options = json.loads(getattr(sale_item, "options_json", None) or "[]")
+            except (TypeError, ValueError):
+                options = []
+            if isinstance(options, list) and options:
+                feature_deductions.append((UUID(str(item_id)), options, qty_sold))
 
         elif item_type == 'mix' and item_id:
             try:
-                import json as _json
                 raw = getattr(sale_item, 'mix_selections', None)
-                selections = _json.loads(raw) if raw else []
+                selections = json.loads(raw) if raw else []
                 for sel in selections:
                     pid = sel.get('product_id')
-                    qty = int(sel.get('quantity', 0)) * qty_sold
+                    qty = int(sel.get('quantity', 0) or 0) * qty_sold
+                    add_deduction(pid, qty)
                     if pid and qty > 0:
-                        comp_inv = session.get(Inventory, pid)
-                        if comp_inv is not None:
-                            comp_inv.quantity = max(0, comp_inv.quantity - qty)
-                            session.add(comp_inv)
-                        _consume_resources(pid, qty)
-            except Exception as e:
-                print(f"Warning: mix stock decrement failed for mix {item_id}: {e}")
+                        add_product_resources(pid, qty)
+            except (TypeError, ValueError, AttributeError):
+                logger.exception("Could not parse mix selections for sale item %s", sale_item.id)
 
         elif item_type == 'bundle' and item_id:
+            components = session.exec(
+                sql_select(BundleComponent).where(BundleComponent.bundle_id == item_id)
+            ).all()
+            for component in components:
+                component_inventory = session.get(Inventory, component.component_id)
+                if component_inventory is not None and (component_inventory.type or '').lower() == 'product':
+                    units = int(float(component.quantity or 0) * qty_sold)
+                    add_deduction(component.component_id, units)
+                    add_product_resources(component.component_id, units)
+
+        elif item_type == "service":
+            if item_id:
+                add_service_resources(item_id, qty_sold)
             try:
-                components = session.exec(
-                    sql_select(BundleComponent).where(BundleComponent.bundle_id == item_id)
-                ).all()
-                for comp in components:
-                    comp_inv = session.get(Inventory, comp.component_id)
-                    if comp_inv is not None and (comp_inv.type or '').lower() == 'product':
-                        units = comp.quantity * qty_sold
-                        comp_inv.quantity = max(0, comp_inv.quantity - units)
-                        session.add(comp_inv)
-                        _consume_resources(comp.component_id, units)
-            except Exception as e:
-                print(f"Warning: bundle stock decrement failed for bundle {item_id}: {e}")
+                options = json.loads(getattr(sale_item, "options_json", None) or "[]")
+            except (TypeError, ValueError):
+                options = []
+            if isinstance(options, list):
+                for addon in options:
+                    if not isinstance(addon, dict) or not addon.get("consume_inventory"):
+                        continue
+                    inventory_id = addon.get("linked_inventory_id")
+                    consume_per_unit = float(addon.get("consume_quantity_per_unit") or 0)
+                    addon_quantity = float(addon.get("quantity") or 0)
+                    add_deduction(inventory_id, consume_per_unit * addon_quantity * qty_sold)
+
+    for inventory_id, quantity in deductions.items():
+        inventory = session.get(Inventory, inventory_id)
+        if inventory is not None:
+            consume_inventory_fifo(
+                session,
+                inventory,
+                quantity,
+                "sale",
+                sale.id,
+                sale.company_id,
+            )
+
+    for inventory_id, options, quantity in feature_deductions:
+        combination_key = "|".join(sorted(
+            str(option.get("optionId") or option.get("option_id"))
+            for option in options
+            if isinstance(option, dict) and (option.get("optionId") or option.get("option_id"))
+        ))
+        combination = session.exec(
+            sql_select(InventoryFeatureCombination).where(
+                InventoryFeatureCombination.inventory_id == inventory_id,
+                InventoryFeatureCombination.combination_key == combination_key,
+            )
+        ).first() if combination_key else None
+        if combination is not None:
+            combination.quantity = max(0, combination.quantity - quantity)
+            session.add(combination)
+            combinations = session.exec(
+                sql_select(InventoryFeatureCombination).where(
+                    InventoryFeatureCombination.inventory_id == inventory_id
+                )
+            ).all()
+            totals: dict[UUID, int] = {}
+            for row in combinations:
+                try:
+                    option_ids = json.loads(row.option_ids_json or "[]")
+                except (TypeError, ValueError):
+                    option_ids = []
+                for option_id in option_ids:
+                    option_uuid = UUID(str(option_id))
+                    totals[option_uuid] = totals.get(option_uuid, 0) + row.quantity
+            option_rows = session.exec(
+                sql_select(InventoryFeatureOptionData).where(
+                    InventoryFeatureOptionData.inventory_id == inventory_id
+                )
+            ).all()
+            for row in option_rows:
+                row.quantity = totals.get(row.option_id, 0)
+                session.add(row)
+        else:
+            for option in options:
+                if not isinstance(option, dict):
+                    continue
+                option_id = option.get("optionId") or option.get("option_id")
+                feature_id = option.get("featureId") or option.get("feature_id")
+                if not option_id or not feature_id:
+                    continue
+                option_row = session.exec(
+                    sql_select(InventoryFeatureOptionData).where(
+                        InventoryFeatureOptionData.inventory_id == inventory_id,
+                        InventoryFeatureOptionData.feature_id == UUID(str(feature_id)),
+                        InventoryFeatureOptionData.option_id == UUID(str(option_id)),
+                    )
+                ).first()
+                if option_row is not None:
+                    option_row.quantity = max(0, option_row.quantity - quantity)
+                    session.add(option_row)
 
     sale.inventory_consumed_at = datetime.utcnow()
     session.add(sale)
@@ -966,6 +1085,78 @@ def _sync_client_memberships(
                     )
                 )
 
+
+def _save_inventory_supplier_product(
+    session: Session,
+    inventory: Inventory,
+    data: dict,
+    company_id: str,
+) -> None:
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Supplier product details must be an object")
+
+    try:
+        supplier_id = UUID(str(data.get("supplier_id")))
+        units_per_purchase_unit_value = float(data.get("units_per_purchase_unit", 1))
+        unit_price = float(data.get("unit_price", 0))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Supplier product price and pack conversion must be valid numbers")
+
+    purchase_unit = str(data.get("purchase_unit") or "").strip()
+    try:
+        inventory_supplier_id = UUID(str(inventory.supplier_id))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Inventory item must have a valid preferred supplier")
+    if supplier_id != inventory_supplier_id:
+        raise HTTPException(status_code=400, detail="Supplier product must match the item's preferred supplier")
+    if not purchase_unit or len(purchase_unit) > 80:
+        raise HTTPException(status_code=400, detail="Purchase unit is required and must be 80 characters or fewer")
+    if (
+        not math.isfinite(units_per_purchase_unit_value)
+        or units_per_purchase_unit_value < 1
+        or not units_per_purchase_unit_value.is_integer()
+    ):
+        raise HTTPException(status_code=400, detail="Pack conversion must be a positive whole number")
+    if not math.isfinite(unit_price) or unit_price < 0:
+        raise HTTPException(status_code=400, detail="Supplier price must be a non-negative number")
+
+    supplier = session.get(Supplier, supplier_id)
+    if not supplier or supplier.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    product = session.exec(
+        sql_select(SupplierProduct).where(
+            SupplierProduct.supplier_id == supplier_id,
+            SupplierProduct.inventory_id == inventory.id,
+            SupplierProduct.company_id == company_id,
+        )
+    ).first()
+    if product is None:
+        product = SupplierProduct(
+            supplier_id=supplier_id,
+            inventory_id=inventory.id,
+            company_id=company_id,
+        )
+
+    product.purchase_unit = purchase_unit
+    product.units_per_purchase_unit = int(units_per_purchase_unit_value)
+    product.unit_price = unit_price
+    product.is_preferred = True
+    inventory.supplier_id = supplier_id
+
+    other_products = session.exec(
+        sql_select(SupplierProduct).where(
+            SupplierProduct.inventory_id == inventory.id,
+            SupplierProduct.company_id == company_id,
+            SupplierProduct.id != product.id,
+        )
+    ).all()
+    for other in other_products:
+        other.is_preferred = False
+        session.add(other)
+    session.add(product)
+
+
 # ─── [6] ROUTER DEFINITION ────────────────────────────────────────────────────
 router = APIRouter()
 
@@ -1205,6 +1396,7 @@ async def insert_with_file(
     extracts form fields. Otherwise, it parses JSON body.
     """
     model_class = get_model_class(table_name)
+    _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
     record_data: Dict[str, Any] = {}
 
@@ -1266,6 +1458,7 @@ async def insert_with_file(
 
     is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
     asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
+    supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
 
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
@@ -1281,12 +1474,31 @@ async def insert_with_file(
         record = model_class(**record_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
+    if isinstance(record, Inventory) and str(record.type or "").lower() != "resource":
+        if not float(record.quantity or 0).is_integer():
+            raise HTTPException(status_code=400, detail="Only resource stock quantities may be fractional.")
+        if record.min_stock_level is not None and not float(record.min_stock_level).is_integer():
+            raise HTTPException(status_code=400, detail="Only resource stock thresholds may be fractional.")
 
     session.add(record)
     try:
         session.flush()
+        if isinstance(record, Inventory):
+            create_opening_stock_layer(session, record)
         if is_inventory_table and str(getattr(record, 'type', '') or '').upper() == 'ASSET':
             _create_initial_asset_units_for_inventory(session, record, current_user.company_id or "", asset_units_payload)
+        if is_inventory_table and supplier_product_payload is not None:
+            if not isinstance(record, Inventory):
+                raise HTTPException(status_code=400, detail="Supplier products can only be linked to inventory items")
+            _save_inventory_supplier_product(
+                session,
+                record,
+                supplier_product_payload,
+                current_user.company_id or "",
+            )
+        if isinstance(record, Inventory):
+            from ..inventory_replenishment import maybe_generate_immediate_draft
+            maybe_generate_immediate_draft(session, record)
         session.commit()
     except HTTPException:
         session.rollback()
@@ -1376,6 +1588,40 @@ async def sale_transaction_stripe_webhook(
             raise HTTPException(status_code=500, detail="Failed to persist sale payment status.")
 
     return {"received": True}
+
+
+@router.post("/sale_transaction/{sale_id}/consume-inventory")
+def finalize_sale_inventory(
+    sale_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Consume all sale stock only after its complete set of line items is persisted."""
+    _require_isud_permission(current_user, session, "sale_transaction", "write")
+    sale = session.exec(
+        sql_select(SaleTransaction).where(
+            SaleTransaction.id == sale_id,
+            SaleTransaction.company_id == (current_user.company_id or ""),
+        )
+    ).first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale transaction not found.")
+    if not (sale.paid_at or str(sale.payment_method or "").lower() == "cash"):
+        raise HTTPException(status_code=409, detail="Inventory can only be consumed for a paid sale.")
+
+    try:
+        _consume_sale_transaction_inventory(session, sale_id)
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        logger.exception("Failed to consume stock for sale transaction %s", sale_id)
+        raise HTTPException(status_code=500, detail=f"Failed to consume inventory for sale: {exc}")
+
+    session.refresh(sale)
+    return {
+        "sale_transaction_id": str(sale.id),
+        "inventory_consumed_at": sale.inventory_consumed_at,
+    }
 
 
 @router.post("/schedules/{schedule_id}/initiate-refund")
@@ -1472,6 +1718,7 @@ async def insert(
 ):
     """Standard JSON insert endpoint."""
     model_class = get_model_class(table_name)
+    _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
 
     membership_ids = None
@@ -1479,6 +1726,8 @@ async def insert(
         membership_ids = record_data.pop('membership_ids', None)
 
     is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
+    supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
+
     asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
 
     # Special handling for user table: hash plain password into password_hash
@@ -1571,8 +1820,19 @@ async def insert(
     session.add(record)
     try:
         session.flush()
+        if isinstance(record, Inventory):
+            create_opening_stock_layer(session, record)
         if is_inventory_table and str(getattr(record, 'type', '') or '').upper() == 'ASSET':
             _create_initial_asset_units_for_inventory(session, record, current_user.company_id or "", asset_units_payload)
+        if is_inventory_table and supplier_product_payload is not None:
+            if not isinstance(record, Inventory):
+                raise HTTPException(status_code=400, detail="Supplier products can only be linked to inventory items")
+            _save_inventory_supplier_product(
+                session,
+                record,
+                supplier_product_payload,
+                current_user.company_id or "",
+            )
         session.commit()
     except HTTPException:
         session.rollback()
@@ -1607,20 +1867,6 @@ async def insert(
             raise HTTPException(status_code=500, detail=f"Failed to save client memberships: {str(e)}")
         session.refresh(record)
 
-    # ── P1-E: Decrement inventory stock when a product is sold ────────────────
-    # Runs only for paid sales so tokenized Stripe payments do not deduct stock
-    # until the payment is actually confirmed.
-    if table_name.lower() in ('sale_transaction_item', 'sale_transaction_items'):
-        sale_transaction_id = getattr(record, 'sale_transaction_id', None)
-        sale = session.get(SaleTransaction, sale_transaction_id) if sale_transaction_id else None
-        if sale and (getattr(sale, 'paid_at', None) or str(getattr(sale, 'payment_method', '')).lower() == 'cash'):
-            try:
-                _consume_sale_transaction_inventory(session, sale_transaction_id)
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                print(f"Warning: stock decrement failed for sale transaction {sale_transaction_id}: {e}")
-
     _record_undo_action(
         session=session,
         user_id=current_user.id,
@@ -1648,7 +1894,13 @@ async def update_by_id(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
+    if model_class is Inventory and "quantity" in record_data:
+        raise HTTPException(
+            status_code=409,
+            detail="Inventory quantity must be changed through the audited stock-adjustment workflow.",
+        )
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
@@ -1658,6 +1910,14 @@ async def update_by_id(
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
+    if isinstance(record, Inventory) and "min_stock_level" in record_data:
+        value = record_data["min_stock_level"]
+        if value is not None and str(record.type or "").lower() != "resource":
+            try:
+                if not float(value).is_integer():
+                    raise HTTPException(status_code=400, detail="Only resource stock thresholds may be fractional.")
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="min_stock_level must be a non-negative number.")
 
     before_json = _serialize_row_to_json(record)
     entity_title = _extract_entity_title(record, table_name)
@@ -1689,6 +1949,9 @@ async def update_by_id(
     if table_name.lower() in ('client', 'clients'):
         membership_ids = record_data.pop('membership_ids', None)
 
+    is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
+    supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
+
     if table_name.lower() in ('inventory', 'item', 'items') and 'cost_type' in record_data:
         _normalize_inventory_cost_fields(record_data)
 
@@ -1701,6 +1964,16 @@ async def update_by_id(
     for key, value in record_data.items():
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
             setattr(record, key, value)
+
+    if is_inventory_table and supplier_product_payload is not None:
+        if not isinstance(record, Inventory):
+            raise HTTPException(status_code=400, detail="Supplier products can only be linked to inventory items")
+        _save_inventory_supplier_product(
+            session,
+            record,
+            supplier_product_payload,
+            current_user.company_id or "",
+        )
 
     if hasattr(record, "updated_at"):
         from datetime import datetime
@@ -1757,6 +2030,137 @@ async def get_inventory_locations(
         return {"locations": sorted(locations)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch locations: {str(e)}")
+
+
+@router.get("/inventory/{inventory_id}/adjustments")
+def get_inventory_adjustments(
+    inventory_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    _require_isud_permission(current_user, session, "inventory", "read")
+    inventory = session.exec(
+        sql_select(Inventory).where(
+            Inventory.id == inventory_id,
+            Inventory.company_id == (current_user.company_id or ""),
+        )
+    ).first()
+    if not inventory:
+        raise HTTPException(status_code=404, detail="Inventory item not found.")
+    return session.exec(
+        sql_select(InventoryStockAdjustment)
+        .where(
+            InventoryStockAdjustment.inventory_id == inventory_id,
+            InventoryStockAdjustment.company_id == (current_user.company_id or ""),
+        )
+        .order_by(InventoryStockAdjustment.created_at.desc())
+    ).all()
+
+
+@router.post("/inventory/{inventory_id}/adjustments")
+def adjust_inventory_stock(
+    inventory_id: UUID,
+    payload: Dict[str, Any],
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    _require_stock_adjustment_permission(current_user, session)
+
+    try:
+        raw_delta = payload.get("quantity_delta")
+        quantity_delta = float(raw_delta)
+        if isinstance(raw_delta, bool) or not math.isfinite(quantity_delta):
+            raise ValueError
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="quantity_delta must be a finite number.")
+    if quantity_delta == 0:
+        raise HTTPException(status_code=400, detail="quantity_delta must not be zero.")
+
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="A reason is required for every stock adjustment.")
+    if len(reason) > 1000:
+        raise HTTPException(status_code=400, detail="Adjustment reason must be 1000 characters or fewer.")
+
+    raw_unit_cost = payload.get("unit_cost")
+    try:
+        unit_cost = float(raw_unit_cost) if raw_unit_cost not in (None, "") else None
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="unit_cost must be a non-negative number.")
+    if unit_cost is not None and (not math.isfinite(unit_cost) or unit_cost < 0):
+        raise HTTPException(status_code=400, detail="unit_cost must be a non-negative number.")
+
+    inventory = session.exec(
+        sql_select(Inventory)
+        .where(
+            Inventory.id == inventory_id,
+            Inventory.company_id == (current_user.company_id or ""),
+        )
+        .with_for_update()
+    ).first()
+    if not inventory:
+        raise HTTPException(status_code=404, detail="Inventory item not found.")
+    if str(inventory.type or "").lower() in {"asset", "location"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Assets and locations are managed through their dedicated workflows.",
+        )
+    if str(inventory.type or "").lower() != "resource" and not quantity_delta.is_integer():
+        raise HTTPException(status_code=400, detail="Only resource stock adjustments may be fractional.")
+
+    quantity_before = max(0.0, float(inventory.quantity or 0))
+    quantity_after = quantity_before + quantity_delta
+    if quantity_after < 0:
+        raise HTTPException(status_code=409, detail="An adjustment cannot reduce stock below zero.")
+
+    adjustment = InventoryStockAdjustment(
+        inventory_id=inventory.id,
+        user_id=current_user.id,
+        quantity_before=quantity_before,
+        quantity_delta=quantity_delta,
+        quantity_after=quantity_after,
+        reason=reason,
+        company_id=current_user.company_id,
+    )
+    session.add(adjustment)
+    try:
+        session.flush()
+        if quantity_delta > 0:
+            resolved_unit_cost = unit_cost if unit_cost is not None else fallback_unit_cost(session, inventory)
+            add_inventory_cost_layer(
+                session,
+                inventory,
+                quantity_delta,
+                resolved_unit_cost,
+                "stock_adjustment",
+                adjustment.id,
+                current_user.company_id,
+            )
+            inventory.quantity = quantity_after
+            adjustment.unit_cost = resolved_unit_cost
+            adjustment.extended_cost = resolved_unit_cost * quantity_delta if resolved_unit_cost is not None else None
+            session.add(inventory)
+            session.add(adjustment)
+        else:
+            result = consume_inventory_fifo(
+                session,
+                inventory,
+                -quantity_delta,
+                "stock_adjustment",
+                adjustment.id,
+                current_user.company_id,
+            )
+            adjustment.extended_cost = result["cost_amount"]
+            session.add(adjustment)
+
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        logger.exception("Failed to adjust inventory stock for item %s", inventory_id)
+        raise HTTPException(status_code=500, detail=f"Failed to adjust inventory stock: {exc}")
+
+    session.refresh(adjustment)
+    return adjustment
 
 
 # ===== SYNC CHECK ENDPOINT (lightweight count + max timestamp) =====
@@ -1886,7 +2290,13 @@ async def update(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
+    if model_class is Inventory and "quantity" in record_data:
+        raise HTTPException(
+            status_code=409,
+            detail="Inventory quantity must be changed through the audited stock-adjustment workflow.",
+        )
 
     raw_filters = [(k, v) for k, v in request.query_params.multi_items()]
     if not raw_filters:
@@ -2116,6 +2526,7 @@ async def delete_by_id(
     current_user: User = Depends(get_current_user),
 ):
     model_class = get_model_class(table_name)
+    _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "delete")
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)

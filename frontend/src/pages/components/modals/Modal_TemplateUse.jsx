@@ -1,10 +1,21 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, CheckIcon, DocumentTextIcon } from "../../../icons";
-import { templatesAPI, clientsAPI, clientCartAPI } from "../../../services/api";
+import { templatesAPI, clientsAPI, clientCartAPI, inventoryAPI, purchaseOrdersAPI } from "../../../services/api";
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { renderTemplate, buildClientVariables, buildEmployeeVariables, buildPayslipVariables, buildSalesVariables, buildScheduleVariables, buildServiceVariables, buildInventoryVariables } from "../utils/Utils_TemplateVariables";
+import {
+  renderTemplate,
+  buildClientVariables,
+  buildEmployeeVariables,
+  buildPayslipVariables,
+  buildSalesVariables,
+  buildScheduleVariables,
+  buildServiceVariables,
+  buildInventoryVariables,
+  buildPurchaseOrderVariables,
+} from "../utils/Utils_TemplateVariables";
+import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
 const TYPE_BADGE_COLOR = {
   email: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
@@ -18,7 +29,7 @@ const TYPE_BADGE_COLOR = {
 
 /**
  * Props:
- *  page          – 'clients' | 'employees' | 'sales' | 'schedule'
+ *  page          – 'clients' | 'employees' | 'sales' | 'schedule' | 'suppliers'
  *  entity        – client | employee | transaction | appointment object
  *  currentUser   – logged-in user object
  *  settings      – AppSettings object
@@ -40,6 +51,13 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const [clientInvoiceTx, setClientInvoiceTx] = useState(null);
   const [clientInvoiceItems, setClientInvoiceItems] = useState([]);
   const [clientCartItems, setClientCartItems] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [purchaseOrdersLoading, setPurchaseOrdersLoading] = useState(false);
+  const [selectedPurchaseOrderId, setSelectedPurchaseOrderId] = useState("");
+  const [purchaseOrder, setPurchaseOrder] = useState(null);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [purchaseOrderLoading, setPurchaseOrderLoading] = useState(false);
+  const [purchaseOrderError, setPurchaseOrderError] = useState("");
   const [templateDropupOpen, setTemplateDropupOpen] = useState(false);
   const templateDropupRef = useRef(null);
   const printIframeRef = useRef(null);
@@ -47,6 +65,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || "Invoice";
   const recipientEmail = (client?.email || entity?.email || "").trim();
   const isPayslip = filterType === "payslip";
+  const isPurchaseOrderTemplate = page === "suppliers" && selected?.template_type === "purchase_order";
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -142,6 +161,95 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       cancelled = true;
     };
   }, [page]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (page !== "suppliers" || !entity?.id) {
+      setPurchaseOrders([]);
+      setSelectedPurchaseOrderId("");
+      setPurchaseOrdersLoading(false);
+      return undefined;
+    }
+
+    setPurchaseOrdersLoading(true);
+    setPurchaseOrderError("");
+    purchaseOrdersAPI
+      .getDraftsForSupplier(entity.id)
+      .then((response) => {
+        if (cancelled) return;
+        const rows = Array.isArray(response?.data) ? response.data : [];
+        setPurchaseOrders(rows);
+        setSelectedPurchaseOrderId((current) =>
+          rows.some((order) => String(order.id) === current)
+            ? current
+            : rows.length === 1
+              ? String(rows[0].id)
+              : ""
+        );
+        setPurchaseOrderError("");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setPurchaseOrders([]);
+        setSelectedPurchaseOrderId("");
+        setPurchaseOrderError(error?.response?.data?.detail || error?.message || "Unable to load draft purchase orders.");
+      })
+      .finally(() => {
+        if (!cancelled) setPurchaseOrdersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, entity?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (page !== "suppliers" || !selectedPurchaseOrderId) {
+      setPurchaseOrder(null);
+      setInventoryItems([]);
+      setPurchaseOrderLoading(false);
+      return undefined;
+    }
+
+    setPurchaseOrderLoading(true);
+    setPurchaseOrder(null);
+    setInventoryItems([]);
+    setPurchaseOrderError("");
+    Promise.all([
+      purchaseOrdersAPI.getById(selectedPurchaseOrderId),
+      inventoryAPI.getAll(),
+    ])
+      .then(([orderResponse, inventoryResponse]) => {
+        if (cancelled) return;
+        const order = orderResponse?.data ?? orderResponse;
+        const rows = Array.isArray(inventoryResponse?.data) ? inventoryResponse.data : inventoryResponse;
+        if (!order || String(order.supplier_id) !== String(entity?.id)) {
+          throw new Error("The selected purchase order does not belong to this supplier.");
+        }
+        if (String(order.status || "").toLowerCase() !== "draft") {
+          throw new Error("This purchase order is no longer a draft. Refresh the supplier's purchase orders and choose another.");
+        }
+        if (!Array.isArray(rows)) {
+          throw new Error("Inventory details could not be loaded for the purchase order.");
+        }
+        setPurchaseOrder(order);
+        setInventoryItems(rows);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setPurchaseOrder(null);
+        setInventoryItems([]);
+        setPurchaseOrderError(error?.response?.data?.detail || error?.message || "Unable to load the selected purchase order.");
+      })
+      .finally(() => {
+        if (!cancelled) setPurchaseOrderLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, selectedPurchaseOrderId, entity?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -244,8 +352,9 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     if (page === "schedule") return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
     if (page === "services") return buildServiceVariables(entity, currentUser, settings);
     if (page === "inventory") return buildInventoryVariables(entity, currentUser, settings);
+    if (page === "suppliers") return buildPurchaseOrderVariables(purchaseOrder, entity, currentUser, settings, inventoryItems);
     return {};
-  }, [page, entity, currentUser, settings, items, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal]);
+  }, [page, entity, currentUser, settings, items, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal, purchaseOrder, inventoryItems]);
 
   useEffect(() => {
     if (!selected) {
@@ -263,15 +372,34 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       .trim()
       .replace(/\s+/g, "_")
       .toLowerCase();
-    return `${safeName || "invoice"}.pdf`;
-  }, [selected?.name, companyName]);
+    const purchaseOrderSuffix = isPurchaseOrderTemplate && purchaseOrder?.po_number
+      ? `_${String(purchaseOrder.po_number).replace(/[^a-z0-9\-_]/gi, "")}`
+      : "";
+    return `${safeName || "invoice"}${purchaseOrderSuffix}.pdf`;
+  }, [selected?.name, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number]);
 
-  const emailSubject = useMemo(() => `${selected?.name || "Document"} from ${companyName}`, [selected?.name, companyName]);
+  const emailSubject = useMemo(
+    () => isPurchaseOrderTemplate && purchaseOrder?.po_number
+      ? `Purchase Order ${purchaseOrder.po_number} from ${companyName}`
+      : `${selected?.name || "Document"} from ${companyName}`,
+    [selected?.name, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number]
+  );
 
   const emailBody = useMemo(() => {
+    if (isPurchaseOrderTemplate) {
+      return [
+        `Hello ${entity?.contact_person || entity?.name || "there"},`,
+        "",
+        `Please review the attached purchase order${purchaseOrder?.po_number ? ` ${purchaseOrder.po_number}` : ""}.`,
+        "Please confirm receipt and let us know if any changes are needed.",
+        "",
+        `Thanks,`,
+        companyName,
+      ].join("\n");
+    }
     const customerName = client?.name || entity?.name || "there";
     return [`Hello ${customerName},`, "", `Please find your document from ${companyName} attached.`, "If you have any questions, reply to this email and we will help right away.", "", `Thanks,`, companyName].join("\n");
-  }, [client?.name, entity?.name, companyName]);
+  }, [client?.name, entity?.name, entity?.contact_person, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number]);
 
   // Build the full HTML document for print / preview iframe
   const iframeContent = useMemo(() => {
@@ -385,7 +513,8 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     if (!selected || !iframeContent || isDownloadingPdf) return;
     setIsDownloadingPdf(true);
     try {
-      const cacheKey = selected.id;
+      if (isPurchaseOrderTemplate && (!purchaseOrder || purchaseOrderLoading || purchaseOrderError)) return;
+      const cacheKey = pdfCacheKey;
       let blob = pdfCacheRef.current.get(cacheKey);
       if (!blob) {
         blob = await createPdfBlob(iframeContent);
@@ -402,10 +531,11 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const handleOpenEmailDraft = async () => {
     if (!selected) return;
     try {
-      let blob = pdfCacheRef.current.get(selected.id);
+      if (isPurchaseOrderTemplate && (!purchaseOrder || purchaseOrderLoading || purchaseOrderError)) return;
+      let blob = pdfCacheRef.current.get(pdfCacheKey);
       if (!blob && iframeContent) {
         blob = await createPdfBlob(iframeContent);
-        pdfCacheRef.current.set(selected.id, blob);
+        pdfCacheRef.current.set(pdfCacheKey, blob);
       }
 
       if (blob && navigator.share && navigator.canShare) {
@@ -418,7 +548,13 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
       const to = recipientEmail ? encodeURIComponent(recipientEmail) : "";
       const subject = encodeURIComponent(emailSubject);
-      const body = encodeURIComponent(`${emailBody}\n\nAttachment: ${pdfFileName}`);
+      if (isPurchaseOrderTemplate && blob) {
+        downloadBlob(blob, pdfFileName);
+      }
+      const manualAttachmentNote = isPurchaseOrderTemplate
+        ? `A PDF copy was downloaded as ${pdfFileName}. Attach it before sending.`
+        : `Attachment: ${pdfFileName}`;
+      const body = encodeURIComponent(`${emailBody}\n\n${manualAttachmentNote}`);
       window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_self");
     } catch (error) {
       console.error("Failed to prepare email draft:", error);
@@ -428,7 +564,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const handleSaveTemplate = async (data) => {
     if (!selected?.id) return;
     // Invalidate cached PDF for this template
-    pdfCacheRef.current.delete(selected.id);
+    pdfCacheRef.current.clear();
     const res = await templatesAPI.update(selected.id, data);
     const updated = res?.data ?? res;
     setTemplates((prev) => prev.map((tpl) => (tpl.id === selected.id ? updated : tpl)));
@@ -446,12 +582,18 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
   const handleUseAction = () => {
     if (!selected) return;
-    if (selected.template_type === "email" || recipientEmail) {
+    if (isPurchaseOrderTemplate || selected.template_type === "email" || recipientEmail) {
       setIsEmailPreviewOpen(true);
     } else {
       handlePrint();
     }
   };
+
+  const pdfCacheKey = isPurchaseOrderTemplate && purchaseOrder?.id
+    ? `${selected?.id}:${purchaseOrder.id}`
+    : selected?.id;
+  const purchaseOrderActionDisabled = isPurchaseOrderTemplate
+    && (purchaseOrdersLoading || purchaseOrderLoading || !purchaseOrder || Boolean(purchaseOrderError));
 
   return (
     <>
@@ -475,7 +617,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               label=""
               compact
               onClick={handlePrint}
-              disabled={!selected}
+              disabled={!selected || purchaseOrderActionDisabled}
               className="btn-outline-secondary rounded-circle"
               title="Print"
             />
@@ -484,7 +626,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               label=""
               compact
               onClick={handleDownloadPdf}
-              disabled={!selected || isDownloadingPdf}
+              disabled={!selected || isDownloadingPdf || purchaseOrderActionDisabled}
               className="btn-outline-secondary rounded-circle"
               title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
             />
@@ -564,12 +706,12 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
             {!isPayslip && (
               <Button_Toolbar
-                icon={selected?.template_type === "email" ? EnvelopeIcon : CheckIcon}
-                label={selected?.template_type === "email" ? "Send" : "Use"}
+                icon={selected?.template_type === "email" || isPurchaseOrderTemplate ? EnvelopeIcon : CheckIcon}
+                label={isPurchaseOrderTemplate ? "Prepare email" : selected?.template_type === "email" ? "Send" : "Use"}
                 onClick={handleUseAction}
-                disabled={!selected}
+                disabled={!selected || purchaseOrderActionDisabled}
                 className="btn-primary"
-                title={selected?.template_type === "email" ? "Send message" : "Use template"}
+                title={isPurchaseOrderTemplate ? "Review the purchase order and prepare a manual email draft" : selected?.template_type === "email" ? "Send message" : "Use template"}
               />
             )}
 
@@ -585,6 +727,34 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       >
         {/* Hidden iframe used solely for native window.print() */}
         <iframe ref={printIframeRef} srcDoc={iframeContent} style={{ display: "none" }} title="Print frame" />
+
+        {page === "suppliers" && selected?.template_type === "purchase_order" && (
+          <div className="border-bottom mb-2 pb-2">
+            <label className="form-label fw-medium mb-1" htmlFor="supplier-purchase-order-select">Draft purchase order</label>
+            {purchaseOrdersLoading ? (
+              <div className="small text-muted">Loading draft purchase orders...</div>
+            ) : purchaseOrders.length > 0 ? (
+              <Dropdown_Custom
+                id="supplier-purchase-order-select"
+                value={selectedPurchaseOrderId}
+                onChange={(event) => setSelectedPurchaseOrderId(event.target.value)}
+                options={purchaseOrders.map((order) => ({
+                  value: String(order.id),
+                  label: `${order.po_number || "Purchase order"} · ${Number(order.total_amount || 0).toFixed(2)}`,
+                }))}
+                placeholder="Select a draft purchase order"
+                searchable
+                closeOnSelect
+              />
+            ) : (
+              <div className="small text-muted">No draft purchase orders are available for this supplier.</div>
+            )}
+            {purchaseOrderError && <div className="alert alert-danger mt-2 py-1 small" role="alert">{purchaseOrderError}</div>}
+            {!purchaseOrdersLoading && purchaseOrders.length === 0 && !purchaseOrderError && (
+              <div className="small text-muted mt-1">Create or extend a draft purchase order before preparing a supplier email.</div>
+            )}
+          </div>
+        )}
 
         {/* Natural template preview: content dictates height, expanding modal upward until max-height */}
         <div className="template-use-preview bg-white dark:bg-gray-900 rounded p-2 text-gray-900 dark:text-gray-100" style={{ minHeight: "80px" }}>
@@ -619,13 +789,15 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
           <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
             <div className="bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
               <div className="mb-1 small text-gray-500">To</div>
-              <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No client email available"}</div>
+              <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No recipient email available"}</div>
 
               <div className="mb-1 mt-3 small text-gray-500">Subject</div>
               <div className="dark:text-white text-gray-900 text-sm">{emailSubject}</div>
 
               <div className="mb-1 mt-3 small text-gray-500">Attachment</div>
-              <div className="dark:text-white text-gray-900 text-sm">{pdfFileName} (generated on send)</div>
+              <div className="dark:text-white text-gray-900 text-sm">
+                {isPurchaseOrderTemplate ? `${pdfFileName} (share with attachment or download to attach manually)` : `${pdfFileName} (generated on send)`}
+              </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 px-1 py-1">

@@ -118,6 +118,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [dirty, setDirty] = useState({}); // featureId → bool
   const [combinationDirty, setCombinationDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [stockAdjustmentReason, setStockAdjustmentReason] = useState("");
   const [, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
   const [openFeatureIds, setOpenFeatureIds] = useState({});
@@ -267,7 +268,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                 is_enabled: o.is_enabled,
                 quantity: parseInt(o.quantity) || 0,
                 price: o.price !== "" && o.price != null ? parseFloat(o.price) : null,
-              }))
+              })),
+              stockAdjustmentReason
             )
           )
         );
@@ -279,6 +281,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           });
           return next;
         });
+        setStockAdjustmentReason("");
         setLastSavedAt(Date.now());
       } catch (e) {
         setError(e?.response?.data?.detail?.message ?? e?.response?.data?.detail ?? "Save failed");
@@ -286,7 +289,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         setSaving(false);
       }
     },
-    [inventoryId, itemFeatures]
+    [inventoryId, itemFeatures, stockAdjustmentReason]
   );
 
   const persistCombinations = useCallback(
@@ -295,9 +298,10 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         option_ids: row.option_ids,
         quantity: Math.max(0, parseInt(row.quantity, 10) || 0),
       }));
-      await inventoryFeaturesAPI.saveCombinations(inventoryId, payload);
+      await inventoryFeaturesAPI.saveCombinations(inventoryId, payload, stockAdjustmentReason);
+      setStockAdjustmentReason("");
     },
-    [inventoryId]
+    [inventoryId, stockAdjustmentReason]
   );
 
   const handleSave = async () => {
@@ -609,6 +613,16 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         <div className="align-items-center d-flex gap-2 mb-2">
           <h6 className="fw-semibold mb-0">Feature</h6>
           {priceDisplay && <span className="badge border ms-auto text-bg-light">{priceDisplay}</span>}
+        </div>
+        <div className="mb-2">
+          <label className="form-label mb-1 ui-small-muted" htmlFor={`feature-stock-reason-${inventoryId}`}>Reason for stock change</label>
+          <InputText
+            id={`feature-stock-reason-${inventoryId}`}
+            className="form-control ui-control-sm"
+            value={stockAdjustmentReason}
+            placeholder="Required when changing stock counts"
+            onChange={(e) => setStockAdjustmentReason(e.target.value)}
+          />
         </div>
 
         <div className="d-flex flex-column gap-2 mb-2 position-relative" ref={featureSearchRef}>

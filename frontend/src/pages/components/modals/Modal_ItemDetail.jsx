@@ -657,7 +657,7 @@ function BundleComponentsPanel({ bundleId }) {
 }
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, onUpdateInventory, onDelete: _onDelete, canDelete: _canDelete = false, isDeleting: _isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
+export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, onUpdateInventory, onStockAdjusted, onDelete: _onDelete, canDelete: _canDelete = false, isDeleting: _isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -673,6 +673,12 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [editingImageId, setEditingImageId] = useState(null);
   const [editingImageUrl, setEditingImageUrl] = useState("");
   const [itemCategories, setItemCategories] = useState([]);
+  const [isStockAdjustmentOpen, setIsStockAdjustmentOpen] = useState(false);
+  const [stockAdjustmentDelta, setStockAdjustmentDelta] = useState("");
+  const [stockAdjustmentReason, setStockAdjustmentReason] = useState("");
+  const [stockAdjustmentCost, setStockAdjustmentCost] = useState("");
+  const [stockAdjustmentError, setStockAdjustmentError] = useState("");
+  const [stockAdjustmentSaving, setStockAdjustmentSaving] = useState(false);
   const originalItemTypeRef = useRef("");
   // Feature-derived values (updated by FeatureSection callbacks)
   const [, setFeatureStock] = useState(null); // total qty from features, or null
@@ -689,6 +695,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     description: "",
     quantity: 0,
     min_stock_level: 10,
+    auto_min_stock_level: false,
+    stock_unit: "",
     location: "",
     image_url: "",
     type: "PRODUCT",
@@ -756,7 +764,9 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
         description: item.description || "",
         quantity: item.quantity || 0,
-        min_stock_level: item.min_stock_level || 10,
+        min_stock_level: item.min_stock_level ?? 10,
+        auto_min_stock_level: item.auto_min_stock_level || false,
+        stock_unit: item.stock_unit || "",
         location: item.location || "",
         image_url: item.image_url || "",
         type: (item.type || "PRODUCT").toUpperCase(),
@@ -1032,14 +1042,56 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       date_of_purchase: formData.date_of_purchase || null,
       date_of_sale: formData.date_of_sale || null,
       description: formData.description,
-      quantity: parseInt(formData.quantity) || 0,
-      min_stock_level: parseInt(formData.min_stock_level) || 10,
+      min_stock_level: formData.auto_min_stock_level
+        ? null
+        : Number(formData.min_stock_level || 0),
+      auto_min_stock_level: Boolean(formData.auto_min_stock_level),
+      stock_unit: formData.stock_unit.trim() || null,
       location: formData.location,
       image_url: formData.image_url,
       type: formData.type,
       supplier_id: formData.supplier_id || null,
       category: formData.category || null,
     });
+  };
+
+  const handleStockAdjustment = async (e) => {
+    e?.preventDefault();
+    const delta = Number(stockAdjustmentDelta);
+    if (!Number.isFinite(delta) || delta === 0 || (!isResource && !Number.isInteger(delta))) {
+      setStockAdjustmentError(isResource ? "Enter a non-zero quantity." : "Enter a non-zero whole number of units.");
+      return;
+    }
+    if (!stockAdjustmentReason.trim()) {
+      setStockAdjustmentError("A reason is required.");
+      return;
+    }
+    if (delta > 0 && stockAdjustmentCost !== "" && (!Number.isFinite(Number(stockAdjustmentCost)) || Number(stockAdjustmentCost) < 0)) {
+      setStockAdjustmentError("Unit cost must be a non-negative number.");
+      return;
+    }
+
+    setStockAdjustmentSaving(true);
+    setStockAdjustmentError("");
+    try {
+      const response = await inventoryAPI.adjustStock(item.id, {
+        quantity_delta: delta,
+        reason: stockAdjustmentReason.trim(),
+        ...(delta > 0 && stockAdjustmentCost !== "" ? { unit_cost: Number(stockAdjustmentCost) } : {}),
+      });
+      const adjustment = response?.data ?? response;
+      setFormData((previous) => ({ ...previous, quantity: adjustment.quantity_after }));
+      setIsStockAdjustmentOpen(false);
+      setStockAdjustmentDelta("");
+      setStockAdjustmentReason("");
+      setStockAdjustmentCost("");
+      await onStockAdjusted?.();
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      setStockAdjustmentError(typeof detail === "string" ? detail : error?.message || "Could not adjust stock.");
+    } finally {
+      setStockAdjustmentSaving(false);
+    }
   };
 
   // ─── 6 DISPLAY HELPERS ────────────────────────────────────────────────────
@@ -1055,7 +1107,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   };
 
   const effectiveStock = formData.quantity;
-  const isLowStock = effectiveStock <= formData.min_stock_level;
+  const isLowStock = formData.min_stock_level != null && effectiveStock <= formData.min_stock_level;
 
   // Reusable image display with navigation
   const renderImage = (containerStyle = {}) => (
@@ -1389,13 +1441,13 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   <div className={inventoryRowClass}>
                     {!isLocation && !isAsset && (
                       <div className="form-floating position-relative" style={equalFieldStyle}>
-                        <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder="Min Count" min="0" />
-                        <label htmlFor="min_stock_level">Min Count</label>
+                        <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level ?? ""} onChange={handleChange} placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"} min="0" step={isResource ? "0.01" : "1"} disabled={formData.auto_min_stock_level} />
+                        <label htmlFor="min_stock_level">{isResource ? "Manual Threshold" : "Min Count"}</label>
                       </div>
                     )}
                     {!isLocation && !isAsset && (
                       <div className="form-floating" style={equalFieldStyle}>
-                        <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Current Count" min="0" />
+                        <InputNumber id="quantity" name="quantity" value={formData.quantity} readOnly placeholder="Current Count" min="0" />
                         <label htmlFor="quantity">Current Count</label>
                       </div>
                     )}
@@ -1408,6 +1460,43 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       <label htmlFor="detail_price">Price</label>
                     </div>
                   </div>
+                  {isResource && (
+                    <div className="form-floating mb-2">
+                      <InputText id="detail-stock-unit" name="stock_unit" value={formData.stock_unit} onChange={handleChange} placeholder="Stock unit" />
+                      <label htmlFor="detail-stock-unit">Stock unit</label>
+                    </div>
+                  )}
+                  {!isLocation && !isAsset && (
+                    <div className="form-check mb-2">
+                      <InputCheckbox
+                        id="detail-auto-stock-threshold"
+                        checked={formData.auto_min_stock_level}
+                        onChange={(e) => setFormData((previous) => ({
+                          ...previous,
+                          auto_min_stock_level: e.target.checked,
+                          min_stock_level: e.target.checked ? null : (previous.min_stock_level ?? 10),
+                        }))}
+                      />
+                      <label htmlFor="detail-auto-stock-threshold" className="form-check-label">Set threshold from usage history</label>
+                    </div>
+                  )}
+                  {!isLocation && !isAsset && (
+                    <div className="d-flex justify-content-end mb-2">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={() => {
+                          setStockAdjustmentError("");
+                          setStockAdjustmentDelta("");
+                          setStockAdjustmentReason("");
+                          setStockAdjustmentCost("");
+                          setIsStockAdjustmentOpen(true);
+                        }}
+                      >
+                        Adjust stock
+                      </button>
+                    </div>
+                  )}
                   {featuresPriceRange && (
                     <div className="fw-semibold mb-2 mt-1 small text-primary">{featuresPriceRange.min === featuresPriceRange.max ? `Feature price: $${featuresPriceRange.min.toFixed(2)}` : `From $${featuresPriceRange.min.toFixed(2)} to $${featuresPriceRange.max.toFixed(2)}`}</div>
                   )}
@@ -1563,6 +1652,39 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       </Modal>
 
       {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onCancel={() => setIsCameraOpen(false)} />}
+
+      <Modal
+        isOpen={isStockAdjustmentOpen}
+        onClose={() => {
+          if (!stockAdjustmentSaving) setIsStockAdjustmentOpen(false);
+        }}
+        title="Adjust Stock"
+        centered
+        footer={
+          <Footer_Actions
+            start={<Button_Toolbar icon={CheckIcon} label={stockAdjustmentSaving ? "Applying…" : "Apply adjustment"} onClick={handleStockAdjustment} className="btn-primary" disabled={stockAdjustmentSaving} />}
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={() => setIsStockAdjustmentOpen(false)} className="btn-outline-secondary" disabled={stockAdjustmentSaving} />}
+          />
+        }
+      >
+        <div className="mb-2">
+          <label className="form-label" htmlFor="stock-adjustment-delta">Quantity change (+ or -)</label>
+          <InputNumber id="stock-adjustment-delta" value={stockAdjustmentDelta} onChange={(e) => setStockAdjustmentDelta(e.target.value)} step={isResource ? "0.01" : "1"} />
+          <div className="form-text">Current stock: {formData.quantity}{formData.stock_unit ? ` ${formData.stock_unit}` : ""}. The adjustment cannot reduce stock below zero.</div>
+        </div>
+        {Number(stockAdjustmentDelta) > 0 && (
+          <div className="mb-2">
+            <label className="form-label" htmlFor="stock-adjustment-cost">Unit cost (optional)</label>
+            <InputNumber id="stock-adjustment-cost" value={stockAdjustmentCost} onChange={(e) => setStockAdjustmentCost(e.target.value)} min="0" step="0.01" />
+            <div className="form-text">Leave blank to use the item's current cost, when available.</div>
+          </div>
+        )}
+        <div className="mb-2">
+          <label className="form-label" htmlFor="stock-adjustment-reason">Reason</label>
+          <InputTextarea id="stock-adjustment-reason" rows={3} value={stockAdjustmentReason} onChange={(e) => setStockAdjustmentReason(e.target.value)} maxLength={1000} />
+        </div>
+        {stockAdjustmentError && <div className="alert alert-danger mb-0 py-2">{stockAdjustmentError}</div>}
+      </Modal>
     </Modal>
   );
 }

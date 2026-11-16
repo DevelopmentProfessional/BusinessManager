@@ -17,6 +17,7 @@ from ..models import (
     DescriptiveFeature, FeatureOption, InventoryFeature, InventoryFeatureOptionData,
 )
 from .auth import get_current_user, get_user_permissions_list
+from ..inventory_costing import create_opening_stock_layer
 
 router = APIRouter()
 
@@ -34,8 +35,8 @@ class BulkProductIn(SQLModel):
     name: str
     sku: Optional[str] = None
     price: float = 0
-    quantity: int = 0
-    min_stock_level: int = 10
+    quantity: float = 0
+    min_stock_level: Optional[float] = 10
     type: str = "product"
     category: Optional[str] = None
     description: Optional[str] = None
@@ -135,13 +136,27 @@ def bulk_import_products(
         item_type = (product.type or "product").strip().lower()
         if item_type not in {"product", "resource", "asset", "location", "item", "bundle", "mix"}:
             item_type = "product"
+        if item_type != "resource" and (
+            not float(product.quantity or 0).is_integer()
+            or (
+                product.min_stock_level is not None
+                and not float(product.min_stock_level).is_integer()
+            )
+        ):
+            errors.append(f"Row {idx}: Only resource stock quantities and thresholds may be fractional.")
+            skipped_count += 1
+            continue
 
         item = Inventory(
             name=name,
             sku=sku_value or None,
             price=float(product.price or 0),
-            quantity=int(product.quantity or 0),
-            min_stock_level=int(product.min_stock_level or 10),
+            quantity=float(product.quantity or 0),
+            min_stock_level=(
+                float(product.min_stock_level)
+                if product.min_stock_level is not None
+                else None
+            ),
             type=item_type,
             category=(product.category or "").strip() or None,
             description=(product.description or "").strip() or None,
@@ -244,6 +259,7 @@ def bulk_import_products(
                         company_id=current_user.company_id,
                     ))
 
+        create_opening_stock_layer(session, item)
         imported_count += 1
 
     if imported_count > 0:

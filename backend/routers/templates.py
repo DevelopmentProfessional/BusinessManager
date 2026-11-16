@@ -238,6 +238,23 @@ _STANDARD_TEMPLATES = [
             "<p>Best regards,<br>{{sender.first_name}} {{sender.last_name}}<br>{{company.name}}</p>"
         ),
     },
+    {
+        "name": "Purchase Order",
+        "template_type": "purchase_order",
+        "accessible_pages": '["suppliers"]',
+        "description": "Supplier-facing purchase order populated from a selected draft order.",
+        "content": (
+            "<h2>PURCHASE ORDER</h2>"
+            "<p><strong>Purchase Order #:</strong> {{purchase_order.number}}<br>"
+            "<strong>Order Date:</strong> {{purchase_order.date}}<br>"
+            "<strong>Expected Delivery:</strong> {{purchase_order.expected_delivery}}</p>"
+            "<p><strong>Supplier:</strong><br>{{supplier.name}}<br>{{supplier.address}}<br>{{supplier.email}}</p>"
+            "{{purchase_order.items.table}}"
+            "<p style=\"text-align:right;\"><strong>Total: {{purchase_order.total}}</strong></p>"
+            "<p>Please confirm receipt of this purchase order and advise us of any changes.</p>"
+            "<p>{{company.name}}<br>{{company.email}}<br>{{company.phone}}</p>"
+        ),
+    },
 ]
 
 
@@ -294,8 +311,9 @@ def seed_standard_templates(session: Session) -> None:
         return
     try:
         session.commit()
-    except Exception:
+    except Exception as exc:
         session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to seed standard templates") from exc
 
 
 # ─── 3 RENDER HELPER ───────────────────────────────────────────────────────────
@@ -324,6 +342,9 @@ def list_templates(
     session: Session = Depends(get_session),
 ):
     """List all templates: standard (global) + company-specific ones."""
+    if page == "suppliers":
+        seed_standard_templates(session)
+
     company_id = current_user.company_id or ""
     stmt = select(DocumentTemplate).where(
         DocumentTemplate.is_active == True,

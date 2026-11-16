@@ -17,6 +17,9 @@ export default function Modal_Inventory_Settings({
   assetUnitsPageSizeOptions = [10, 25, 50, 100],
   pendingSettings,
   setPendingSettings,
+  automationSettings,
+  setAutomationSettings,
+  canManageAutomation,
 }) {
   return (
     <PageControlsModal
@@ -27,6 +30,41 @@ export default function Modal_Inventory_Settings({
     >
       <div className="ui-small-muted">Use these controls to manage inventory views and actions.</div>
       <div className="small">Type, stock, search, suppliers, discounts, and insights controls are available.</div>
+      {canManageAutomation && (
+        <section className="border rounded p-3 mt-2">
+          <h6 className="mb-2">Purchase order automation</h6>
+          <div className="small mb-2">Automatically create supplier-grouped draft orders. Review drafts before sending.</div>
+          <label className="form-label" htmlFor="inventory-po-mode">Generation</label>
+          <Dropdown_Custom
+            id="inventory-po-mode"
+            className="ui-control-sm mb-2"
+            value={automationSettings?.inventory_po_generation_mode || "scheduled"}
+            onChange={(e) => setAutomationSettings?.((prev) => ({ ...prev, inventory_po_generation_mode: e.target.value }))}
+            options={[
+              { value: "immediate", label: "When stock reaches threshold" },
+              { value: "scheduled", label: "On a schedule" },
+              { value: "both", label: "Immediate and scheduled" },
+            ]}
+            closeOnSelect
+          />
+          <label className="form-label" htmlFor="inventory-po-frequency">Schedule</label>
+          <Dropdown_Custom
+            id="inventory-po-frequency"
+            className="ui-control-sm"
+            value={automationSettings?.inventory_po_frequency || "monthly"}
+            onChange={(e) => setAutomationSettings?.((prev) => ({ ...prev, inventory_po_frequency: e.target.value }))}
+            options={[
+              { value: "daily", label: "Daily" },
+              { value: "weekly", label: "Weekly" },
+              { value: "monthly", label: "Monthly (default)" },
+              { value: "quarterly", label: "Quarterly" },
+              { value: "semiannual", label: "Every six months" },
+              { value: "annual", label: "Annually" },
+            ]}
+            closeOnSelect
+          />
+        </section>
+      )}
       <div className="page-controls-actions-group">
         <Button_Toolbar
           icon={TagIcon}

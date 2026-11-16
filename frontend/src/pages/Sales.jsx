@@ -44,7 +44,7 @@ import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingG
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, inventoryFeaturesAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
 import { templatesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
@@ -1106,24 +1106,6 @@ export default function Sales() {
 
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
-  const parseServiceAddonsForConsumption = (value) => {
-    if (!value) return [];
-    try {
-      const parsed = typeof value === "string" ? JSON.parse(value) : value;
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map((addon) => ({
-          linked_inventory_id: addon?.linked_inventory_id || null,
-          consume_inventory: Boolean(addon?.consume_inventory),
-          consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
-          quantity: Math.max(0, Number(addon?.quantity || 0)),
-        }))
-        .filter((addon) => addon.linked_inventory_id && addon.consume_inventory && addon.consume_quantity_per_unit > 0 && addon.quantity > 0);
-    } catch {
-      return [];
-    }
-  };
-
   // Calculate invoice totals with discount applied (used for display AND preview)
   const subtotalAfterDiscount = roundCurrency(cartTotal - cartDiscount);
   const invoiceTaxAmount = roundCurrency(subtotalAfterDiscount * (taxRatePercent / 100));
@@ -1298,6 +1280,10 @@ export default function Sales() {
           );
         }
 
+        if (String(paymentMethod || "").toLowerCase() === "cash") {
+          await saleTransactionsAPI.consumeInventory(txId);
+        }
+
         const soldSubscriptions = checkoutItems.filter((item) => item.itemType === "subscription");
 
         const checkoutUrl = txResponse?.data?.checkout_url || txResponse?.checkout_url || null;
@@ -1332,58 +1318,15 @@ export default function Sales() {
           await applySubscriptionsForSale(selectedClient.id, soldSubscriptions);
         }
 
-        // ── Inventory deduction ──────────────────────────────────────────
-        // Plain products: deducted by the backend insert hook automatically.
-        // Feature-option products: call deduct-stock so option quantities and
-        //   the recalculated inventory.quantity are updated correctly.
-        const featureDeductions = [];
-        const addonInventoryDeductions = new Map();
-        const allSoldMap = {}; // used only for immediate local UI update
+        // Stock is finalized by the backend after every sale line is persisted.
+        const allSoldMap = {};
 
         if (!reusedExisting)
           checkoutItems.forEach((item) => {
             if (item.itemType === "product" && item.id) {
               allSoldMap[item.id] = (allSoldMap[item.id] || 0) + item.quantity;
-              if (item.selectedOptions?.length > 0) {
-                featureDeductions.push({
-                  inventory_id: item.id,
-                  option_ids: item.selectedOptions.map((opt) => opt.optionId),
-                  quantity: item.quantity,
-                });
-              }
-              return;
-            }
-
-            if (item.itemType === "service") {
-              const serviceUnits = Math.max(0, Number(item.quantity || 0));
-              const addons = parseServiceAddonsForConsumption(item.selectedOptions);
-              addons.forEach((addon) => {
-                const current = addonInventoryDeductions.get(addon.linked_inventory_id) || 0;
-                const consumeAmount = addon.consume_quantity_per_unit * addon.quantity * serviceUnits;
-                addonInventoryDeductions.set(addon.linked_inventory_id, current + consumeAmount);
-              });
             }
           });
-
-        if (featureDeductions.length > 0) {
-          await inventoryFeaturesAPI.deductStock(featureDeductions);
-        }
-
-        if (addonInventoryDeductions.size > 0) {
-          const deductionEntries = Array.from(addonInventoryDeductions.entries());
-          await Promise.all(
-            deductionEntries.map(async ([inventoryId, deductionQty]) => {
-              const qtyToConsume = Math.max(0, Number(deductionQty || 0));
-              if (!qtyToConsume) return;
-              const invRes = await inventoryAPI.getById(inventoryId);
-              const inv = invRes?.data ?? invRes;
-              const currentQty = Math.max(0, Number(inv?.quantity || 0));
-              await inventoryAPI.update(inventoryId, {
-                quantity: Math.max(0, currentQty - qtyToConsume),
-              });
-            })
-          );
-        }
 
         // Update local product quantities for immediate UI feedback
         if (Object.keys(allSoldMap).length > 0) {

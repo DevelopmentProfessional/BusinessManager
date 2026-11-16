@@ -19,6 +19,7 @@ const TEMPLATE_TYPES = [
   { value: "receipt", label: "Receipt" },
   { value: "memo", label: "Memo" },
   { value: "quote", label: "Quote" },
+  { value: "purchase_order", label: "Purchase Order" },
   { value: "payslip", label: "Payslip" },
   { value: "custom", label: "Custom" },
 ];
@@ -30,6 +31,7 @@ const PAGE_OPTIONS = [
   { value: "schedule", label: "Schedule" },
   { value: "services", label: "Services" },
   { value: "inventory", label: "Inventory" },
+  { value: "suppliers", label: "Suppliers" },
 ];
 
 // Tailwind colour helpers for scope badges
@@ -48,6 +50,7 @@ const PAGE_LABEL = {
   schedule: "Schedule",
   services: "Services",
   inventory: "Inventory",
+  suppliers: "Suppliers",
 };
 
 // ─── Picker tab IDs ───────────────────────────────────────────────────────────

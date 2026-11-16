@@ -33,7 +33,7 @@
 #   2026-03-05 | Claude | Initial implementation
 # ============================================================
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
@@ -49,8 +49,10 @@ try:
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
         InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
+        InventoryStockAdjustment, UserRole,
     )
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, get_user_permissions_list
+    from backend.inventory_costing import add_inventory_cost_layer, consume_inventory_fifo, fallback_unit_cost
 except ModuleNotFoundError:
     from database import get_session
     from models import (
@@ -60,8 +62,10 @@ except ModuleNotFoundError:
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
         InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
+        InventoryStockAdjustment, UserRole,
     )
-    from routers.auth import get_current_user
+    from routers.auth import get_current_user, get_user_permissions_list
+    from inventory_costing import add_inventory_cost_layer, consume_inventory_fifo, fallback_unit_cost
 
 router = APIRouter()
 
@@ -123,7 +127,7 @@ def _get_enabled_feature_ids(session: Session, inventory_id: UUID) -> List[UUID]
     return ordered
 
 
-def _sync_option_quantities_from_combinations(session: Session, inventory_id: UUID) -> None:
+def _sync_option_quantities_from_combinations(session: Session, inventory_id: UUID, commit: bool = True) -> None:
     combos = _get_combination_rows(session, inventory_id)
     if not combos:
         return
@@ -143,10 +147,11 @@ def _sync_option_quantities_from_combinations(session: Session, inventory_id: UU
     for row in data_rows:
         row.quantity = totals.get(row.option_id, 0)
         session.add(row)
-    session.commit()
+    if commit:
+        session.commit()
 
 
-def _remove_invalid_combinations(session: Session, inventory_id: UUID) -> None:
+def _remove_invalid_combinations(session: Session, inventory_id: UUID, commit: bool = True) -> None:
     combos = _get_combination_rows(session, inventory_id)
     if not combos:
         return
@@ -171,7 +176,7 @@ def _remove_invalid_combinations(session: Session, inventory_id: UUID) -> None:
         if any(option_id not in valid_option_ids for option_id in option_ids) or combo_feature_ids != expected_feature_ids:
             session.delete(combo)
             changed = True
-    if changed:
+    if changed and commit:
         session.commit()
 
 
@@ -229,7 +234,7 @@ def _build_combination_reads(session: Session, inventory_id: UUID) -> List[Inven
         ))
     return result
 
-def _recalculate_inventory_stock(session: Session, inventory_id: UUID) -> None:
+def _recalculate_inventory_stock(session: Session, inventory_id: UUID, commit: bool = True) -> None:
     """Recompute total stock from enabled feature option rows and cache on inventory.
 
     When an item has multiple features (e.g. Size AND Color), each feature dimension
@@ -263,7 +268,78 @@ def _recalculate_inventory_stock(session: Session, inventory_id: UUID) -> None:
     if item:
         item.quantity = total
         session.add(item)
-        session.commit()
+        if commit:
+            session.commit()
+
+
+def _record_feature_stock_change(
+    session: Session,
+    inventory: Inventory,
+    quantity_before: int,
+    reason: Optional[str],
+    current_user: User,
+) -> None:
+    session.flush()
+    session.refresh(inventory)
+    quantity_after = max(0, int(inventory.quantity or 0))
+    quantity_delta = quantity_after - quantity_before
+    if quantity_delta == 0:
+        return
+
+    permissions = set(get_user_permissions_list(current_user, session))
+    if current_user.role != UserRole.ADMIN and "inventory:write_all" not in permissions:
+        session.rollback()
+        raise HTTPException(status_code=403, detail="Missing permission: inventory:write_all")
+
+    normalized_reason = (reason or "").strip()
+    if not normalized_reason:
+        session.rollback()
+        raise HTTPException(status_code=400, detail="A reason is required when changing feature stock.")
+    if len(normalized_reason) > 1000:
+        session.rollback()
+        raise HTTPException(status_code=400, detail="Adjustment reason must be 1000 characters or fewer.")
+
+    adjustment = InventoryStockAdjustment(
+        inventory_id=inventory.id,
+        user_id=current_user.id,
+        quantity_before=quantity_before,
+        quantity_delta=quantity_delta,
+        quantity_after=quantity_after,
+        reason=normalized_reason,
+        company_id=current_user.company_id,
+    )
+    session.add(adjustment)
+    session.flush()
+
+    if quantity_delta > 0:
+        unit_cost = fallback_unit_cost(session, inventory)
+        adjustment.unit_cost = unit_cost
+        adjustment.extended_cost = unit_cost * quantity_delta if unit_cost is not None else None
+        add_inventory_cost_layer(
+            session,
+            inventory,
+            quantity_delta,
+            unit_cost,
+            source_type="stock_adjustment",
+            source_reference_id=adjustment.id,
+            company_id=current_user.company_id,
+        )
+    else:
+        inventory.quantity = quantity_before
+        session.add(inventory)
+        result = consume_inventory_fifo(
+            session,
+            inventory,
+            -quantity_delta,
+            reference_type="stock_adjustment",
+            reference_id=adjustment.id,
+            company_id=current_user.company_id,
+        )
+        known_cost = result["known_cost_amount"]
+        if known_cost is not None and not result["unknown_quantity"] and not result["short_quantity"]:
+            adjustment.unit_cost = float(known_cost) / -quantity_delta
+            adjustment.extended_cost = float(known_cost)
+    session.add(adjustment)
 
 
 def _build_feature_read(session: Session, inventory_id: UUID) -> List[InventoryFeatureRead]:
@@ -467,6 +543,7 @@ async def deduct_feature_stock(
     Floors each quantity at 0 and recalculates total inventory stock per affected item.
     """
     affected_inventory_ids = set()
+    quantity_before_by_inventory = {}
     for item in items:
         combination_rows = _get_combination_rows(session, item.inventory_id)
         if combination_rows and item.option_ids:
@@ -478,6 +555,12 @@ async def deduct_feature_stock(
                 )
             ).first()
             if combo:
+                inventory = session.exec(
+                    select(Inventory).where(Inventory.id == item.inventory_id).with_for_update()
+                ).first()
+                if inventory is None:
+                    continue
+                quantity_before_by_inventory.setdefault(item.inventory_id, max(0, int(inventory.quantity or 0)))
                 combo.quantity = max(0, combo.quantity - item.quantity)
                 session.add(combo)
                 affected_inventory_ids.add(item.inventory_id)
@@ -494,13 +577,39 @@ async def deduct_feature_stock(
             )
         ).first()
         if row:
+            inventory = session.exec(
+                select(Inventory).where(Inventory.id == item.inventory_id).with_for_update()
+            ).first()
+            if inventory is None:
+                continue
+            quantity_before_by_inventory.setdefault(item.inventory_id, max(0, int(inventory.quantity or 0)))
             row.quantity = max(0, row.quantity - item.quantity)
             session.add(row)
             affected_inventory_ids.add(item.inventory_id)
-    session.commit()
     for inv_id in affected_inventory_ids:
-        _sync_option_quantities_from_combinations(session, inv_id)
-        _recalculate_inventory_stock(session, inv_id)
+        _sync_option_quantities_from_combinations(session, inv_id, commit=False)
+        _recalculate_inventory_stock(session, inv_id, commit=False)
+        session.flush()
+        inventory = session.get(Inventory, inv_id)
+        if inventory is None:
+            continue
+        quantity_before = quantity_before_by_inventory[inv_id]
+        quantity_after = max(0, int(inventory.quantity or 0))
+        quantity_to_consume = max(0, quantity_before - quantity_after)
+        inventory.quantity = quantity_before
+        if quantity_to_consume:
+            consume_inventory_fifo(
+                session,
+                inventory,
+                quantity_to_consume,
+                reference_type="feature_deduction",
+                reference_id=inv_id,
+                company_id=current_user.company_id,
+            )
+        else:
+            inventory.quantity = quantity_after
+            session.add(inventory)
+    session.commit()
     return {"deducted": len(affected_inventory_ids)}
 
 
@@ -776,12 +885,16 @@ async def get_inventory_feature_combinations(
 async def save_inventory_feature_combinations(
     inventory_id: UUID,
     rows: List[InventoryFeatureCombinationWrite],
+    adjustment_reason: Optional[str] = Query(default=None),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    inv = session.get(Inventory, inventory_id)
+    inv = session.exec(
+        select(Inventory).where(Inventory.id == inventory_id).with_for_update()
+    ).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Inventory item not found.")
+    quantity_before = max(0, int(inv.quantity or 0))
 
     seen_keys = set()
     normalized_rows = []
@@ -796,7 +909,16 @@ async def save_inventory_feature_combinations(
     existing_rows = _get_combination_rows(session, inventory_id)
     for existing in existing_rows:
         session.delete(existing)
-    session.commit()
+
+    if not normalized_rows:
+        option_rows = session.exec(
+            select(InventoryFeatureOptionData).where(
+                InventoryFeatureOptionData.inventory_id == inventory_id
+            )
+        ).all()
+        for option_row in option_rows:
+            option_row.quantity = 0
+            session.add(option_row)
 
     for option_ids, combination_key, quantity in normalized_rows:
         session.add(InventoryFeatureCombination(
@@ -806,10 +928,11 @@ async def save_inventory_feature_combinations(
             quantity=quantity,
             company_id=current_user.company_id,
         ))
-    session.commit()
 
-    _sync_option_quantities_from_combinations(session, inventory_id)
-    _recalculate_inventory_stock(session, inventory_id)
+    _sync_option_quantities_from_combinations(session, inventory_id, commit=False)
+    _recalculate_inventory_stock(session, inventory_id, commit=False)
+    _record_feature_stock_change(session, inv, quantity_before, adjustment_reason, current_user)
+    session.commit()
     return {"saved": True}
 
 
@@ -836,10 +959,17 @@ async def save_option_data(
     inventory_id: UUID,
     feature_id: UUID,
     rows: List[OptionDataRow],
+    adjustment_reason: Optional[str] = Query(default=None),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Bulk-save option data (is_enabled, quantity, price) for one feature on one item."""
+    inv = session.exec(
+        select(Inventory).where(Inventory.id == inventory_id).with_for_update()
+    ).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="Inventory item not found.")
+    quantity_before = max(0, int(inv.quantity or 0))
     for row in rows:
         existing = session.exec(
             select(InventoryFeatureOptionData).where(
@@ -863,8 +993,9 @@ async def save_option_data(
                 company_id=current_user.company_id,
                 price=row.price,
             ))
+    _remove_invalid_combinations(session, inventory_id, commit=False)
+    _sync_option_quantities_from_combinations(session, inventory_id, commit=False)
+    _recalculate_inventory_stock(session, inventory_id, commit=False)
+    _record_feature_stock_change(session, inv, quantity_before, adjustment_reason, current_user)
     session.commit()
-    _remove_invalid_combinations(session, inventory_id)
-    _sync_option_quantities_from_combinations(session, inventory_id)
-    _recalculate_inventory_stock(session, inventory_id)
     return {"saved": True}

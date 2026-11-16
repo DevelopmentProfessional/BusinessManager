@@ -41,6 +41,7 @@
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-07-26 | GitHub Copilot | Added initiate_refunds permission type for manager-approved appointment refund actions
 #   2026-09-11 | GitHub Copilot | Added employee compensation settings and pay-slip calculation snapshots
+#   2026-11-16 | GitHub Copilot | Added supplier catalog and FIFO receipt cost-layer models
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -386,8 +387,10 @@ class Inventory(BaseModel, table=True):
 
     # Inventory-specific fields
     supplier_id: Optional[UUID] = Field(foreign_key="supplier.id", default=None)
-    quantity: int = Field(ge=0, default=0)
-    min_stock_level: int = Field(ge=0, default=10)
+    quantity: float = Field(ge=0, default=0)
+    min_stock_level: Optional[float] = Field(default=10, ge=0)
+    auto_min_stock_level: bool = Field(default=False)
+    stock_unit: Optional[str] = Field(default=None, max_length=32)
     # How many days it takes to receive a restock order from supplier
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = Field(default=None)
@@ -475,6 +478,22 @@ class Supplier(BaseModel, table=True):
 
     # Relationships
     inventory_items: List[Inventory] = Relationship(back_populates="supplier")
+
+
+class SupplierProduct(BaseModel, table=True):
+    """Supplier-specific purchase price and pack conversion for an inventory item."""
+    __tablename__ = "supplier_product"
+    __table_args__ = (
+        UniqueConstraint("supplier_id", "inventory_id", name="uq_supplier_product_supplier_inventory"),
+    )
+
+    supplier_id: UUID = Field(foreign_key="supplier.id", index=True)
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True))
+    purchase_unit: str = Field(default="unit")
+    units_per_purchase_unit: int = Field(default=1, ge=1)
+    unit_price: float = Field(default=0, ge=0)
+    is_preferred: bool = Field(default=False)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 # ─── 6c DESCRIPTIVE FEATURES MODELS ────────────────────────────────────────────
@@ -686,6 +705,9 @@ class AppSettings(BaseModel, table=True):
     attendance_check_in_required: bool = Field(default=False)
     reminder_time_minutes: int = Field(default=30)
     reminder_send_notification: bool = Field(default=True)
+    inventory_po_generation_mode: str = Field(default="scheduled")
+    inventory_po_frequency: str = Field(default="monthly")
+    inventory_po_last_run_at: Optional[datetime] = Field(default=None)
     # Days of operation (True = business operates on this day)
     monday_enabled: bool = Field(default=True)
     tuesday_enabled: bool = Field(default=True)
@@ -1075,8 +1097,10 @@ class InventoryCreate(SQLModel):
     category: Optional[str] = None
     type: Optional[Union[ItemType, str]] = "product"
     image_url: Optional[str] = None
-    quantity: int = 0
-    min_stock_level: int = 10
+    quantity: float = Field(default=0, ge=0)
+    min_stock_level: Optional[float] = Field(default=10, ge=0)
+    auto_min_stock_level: bool = False
+    stock_unit: Optional[str] = Field(default=None, max_length=32)
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     supplier_id: Optional[UUID] = None
@@ -1210,8 +1234,10 @@ class InventoryRead(SQLModel):
     supplier_id: Optional[UUID] = None
     supplier_name: Optional[str] = None  # Joined from Supplier table
     service_id: Optional[UUID] = None
-    quantity: int
-    min_stock_level: int
+    quantity: float
+    min_stock_level: Optional[float] = None
+    auto_min_stock_level: bool = False
+    stock_unit: Optional[str] = None
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     price_type: Optional[str] = "fixed"
@@ -1761,6 +1787,8 @@ class AppSettingsCreate(SQLModel):
     attendance_check_in_required: bool = False
     reminder_time_minutes: int = 30
     reminder_send_notification: bool = True
+    inventory_po_generation_mode: str = "scheduled"
+    inventory_po_frequency: str = "monthly"
     monday_enabled: bool = True
     tuesday_enabled: bool = True
     wednesday_enabled: bool = True
@@ -1787,6 +1815,8 @@ class AppSettingsUpdate(SQLModel):
     attendance_check_in_required: Optional[bool] = None
     reminder_time_minutes: Optional[int] = None
     reminder_send_notification: Optional[bool] = None
+    inventory_po_generation_mode: Optional[str] = None
+    inventory_po_frequency: Optional[str] = None
     monday_enabled: Optional[bool] = None
     tuesday_enabled: Optional[bool] = None
     wednesday_enabled: Optional[bool] = None
@@ -1834,6 +1864,9 @@ class AppSettingsRead(SQLModel):
     attendance_check_in_required: bool
     reminder_time_minutes: int = 30
     reminder_send_notification: bool = True
+    inventory_po_generation_mode: str = "scheduled"
+    inventory_po_frequency: str = "monthly"
+    inventory_po_last_run_at: Optional[datetime] = None
     monday_enabled: bool
     tuesday_enabled: bool
     wednesday_enabled: bool
@@ -1986,6 +2019,7 @@ class Task(BaseModel, table=True):
     priority: Optional[str] = Field(default="medium")  # low, medium, high
     due_date: Optional[datetime] = Field(default=None)
     assigned_to_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
+    action_path: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -2009,6 +2043,7 @@ class TaskRead(SQLModel):
     priority: Optional[str] = None
     due_date: Optional[datetime] = None
     assigned_to_id: Optional[UUID] = None
+    action_path: Optional[str] = None
     linked_task_titles: Optional[List[str]] = None  # Titles of linked tasks
 
 class TaskCreate(SQLModel):
@@ -2018,6 +2053,7 @@ class TaskCreate(SQLModel):
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
     assigned_to_id: Optional[UUID] = None
+    action_path: Optional[str] = None
     linked_task_titles: Optional[List[str]] = None  # List of task titles to link to
 
 class TaskUpdate(SQLModel):
@@ -2027,6 +2063,7 @@ class TaskUpdate(SQLModel):
     priority: Optional[str] = None
     due_date: Optional[datetime] = None
     assigned_to_id: Optional[UUID] = None
+    action_path: Optional[str] = None
     linked_task_titles: Optional[List[str]] = None  # List of task titles to link to
 
 class TaskLinkRead(SQLModel):
@@ -3055,13 +3092,63 @@ class ProcurementOrderLine(BaseModel, table=True):
     
     po_id: UUID = Field(foreign_key="procurement_order.id", index=True)
     inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False))
+    supplier_product_id: Optional[UUID] = Field(default=None, foreign_key="supplier_product.id")
     
     quantity_ordered: int
     quantity_received: int = Field(default=0)
     unit_price: float
     line_total: float
+    purchase_unit: str = Field(default="unit")
+    units_per_purchase_unit: int = Field(default=1, ge=1)
     
     notes: Optional[str] = None
+
+
+class InventoryCostLayer(BaseModel, table=True):
+    """FIFO cost snapshot for received, opening, adjusted, or produced stock."""
+    __tablename__ = "inventory_cost_layer"
+
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True))
+    procurement_order_line_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(ForeignKey("procurement_order_line.id"), nullable=True, index=True),
+    )
+    source_type: str = Field(default="purchase_order", index=True)
+    source_reference_id: Optional[UUID] = Field(default=None, index=True)
+    quantity_received: float = Field(gt=0)
+    quantity_remaining: float = Field(ge=0)
+    unit_cost: Optional[float] = Field(default=None, ge=0)
+    received_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryCostConsumption(BaseModel, table=True):
+    """Historical FIFO cost slices consumed by a sale, order, production run, or adjustment."""
+    __tablename__ = "inventory_cost_consumption"
+
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True))
+    cost_layer_id: Optional[UUID] = Field(default=None, foreign_key="inventory_cost_layer.id", index=True)
+    reference_type: str = Field(index=True)
+    reference_id: UUID = Field(index=True)
+    quantity: float = Field(gt=0)
+    unit_cost: Optional[float] = Field(default=None, ge=0)
+    extended_cost: Optional[float] = Field(default=None, ge=0)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryStockAdjustment(BaseModel, table=True):
+    """Auditable before/after record for a manual inventory stock correction."""
+    __tablename__ = "inventory_stock_adjustment"
+
+    inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True))
+    user_id: UUID = Field(foreign_key="user.id", index=True)
+    quantity_before: float = Field(ge=0)
+    quantity_delta: float
+    quantity_after: float = Field(ge=0)
+    reason: str
+    unit_cost: Optional[float] = Field(default=None, ge=0)
+    extended_cost: Optional[float] = Field(default=None, ge=0)
+    company_id: Optional[str] = Field(default=None, index=True)
 
 
 class InventoryCost(BaseModel, table=True):
@@ -3074,8 +3161,8 @@ class InventoryCost(BaseModel, table=True):
     actual_cost: Optional[float] = None  # Weighted average cost
     acquisition_cost: Optional[float] = None  # Most recent purchase cost
     
-    reorder_quantity: int = Field(default=0)
-    reorder_point: int = Field(default=0)
+    reorder_quantity: float = Field(default=0, ge=0)
+    reorder_point: float = Field(default=0, ge=0)
     lead_time_days: int = Field(default=0)
     
     company_id: Optional[str] = Field(default=None, index=True)

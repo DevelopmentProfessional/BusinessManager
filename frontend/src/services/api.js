@@ -294,6 +294,11 @@ export const inventoryAPI = {
     clearCache("inventory");
     return api.put(`/isud/inventory/${id}`, data);
   },
+  adjustStock: (id, data) => {
+    clearCache("inventory");
+    return api.post(`/isud/inventory/${id}/adjustments`, data);
+  },
+  getStockAdjustments: (id) => api.get(`/isud/inventory/${id}/adjustments`),
   delete: (id) => {
     clearCache("inventory");
     return api.delete(`/isud/inventory/${id}`);
@@ -352,8 +357,8 @@ export const inventoryFeaturesAPI = {
   addFeature: (invId, fid) => api.post(`/inventory/${invId}/features/${fid}`),
   removeFeature: (invId, fid) => api.delete(`/inventory/${invId}/features/${fid}`),
   setAffectsPrice: (invId, data) => api.patch(`/inventory/${invId}/features/affects-price`, data),
-  saveCombinations: (invId, rows) => api.put(`/inventory/${invId}/feature-combinations`, rows),
-  saveOptionData: (invId, fid, rows) => api.put(`/inventory/${invId}/features/${fid}/options`, rows),
+  saveCombinations: (invId, rows, reason) => api.put(`/inventory/${invId}/feature-combinations`, rows, { params: { adjustment_reason: reason || undefined } }),
+  saveOptionData: (invId, fid, rows, reason) => api.put(`/inventory/${invId}/features/${fid}/options`, rows, { params: { adjustment_reason: reason || undefined } }),
 };
 
 export const servicesAPI = {
@@ -449,6 +454,11 @@ export const serviceRecipeAPI = {
 
 export const suppliersAPI = createISUDApi("suppliers");
 
+export const supplierProductsAPI = {
+  getBySupplier: (supplierId) => api.get(`/supplier-products?supplier_id=${supplierId}`),
+  save: (data) => api.post("/supplier-products", data),
+};
+
 export const employeesAPI = {
   ...createISUDApi("users", "employees"),
   getUserData: (userId) => api.get(`/auth/users/${userId}`),
@@ -527,6 +537,7 @@ export const scheduleAttendeesAPI = {
 
 export const tasksAPI = {
   getAll: () => getCachedOrFetch("tasks", () => api.get("/tasks")),
+  getMine: () => api.get("/tasks/mine"),
   getById: (id) => api.get(`/tasks/${id}`),
   getByTitle: (title) => api.get(`/tasks/by-title/${encodeURIComponent(title)}`),
   create: (data) => {
@@ -666,6 +677,17 @@ export const employeeStatusesAPI = createLookupAPI("employee_status", "employee-
 export const documentStatusesAPI = createLookupAPI("document_status", "document-statuses");
 export const serviceCategoriesAPI = createLookupAPI("service_category", "service-categories");
 
+export const notificationsAPI = {
+  getMyRequests: () => api.get("/my-requests"),
+};
+
+export const purchaseOrdersAPI = {
+  getDrafts: () => api.get("/purchase-orders?status=draft"),
+  getDraftsForSupplier: (supplierId) =>
+    api.get("/purchase-orders", { params: { status: "draft", supplier_id: supplierId } }),
+  getById: (purchaseOrderId) => api.get(`/purchase-orders/${purchaseOrderId}`),
+};
+
 export const leaveRequestsAPI = {
   ...createRequestApi("leave_request", "leave-requests"),
   // Override getByUser to support optional leaveType filter
@@ -683,6 +705,7 @@ export const saleTransactionsAPI = {
   },
   createItem: (data) => api.post("/isud/sale_transaction_item", data),
   getItems: (transactionId) => api.get(`/isud/sale_transaction_item?sale_transaction_id=${transactionId}`),
+  consumeInventory: (transactionId) => api.post(`/isud/sale_transaction/${transactionId}/consume-inventory`),
 };
 
 /** Persistent client cart — database-backed, shared across employees/sessions */

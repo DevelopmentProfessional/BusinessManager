@@ -45,6 +45,9 @@
 #   2026-08-09 | GitHub Copilot | Moved add-on column repair ahead of schema fast-path checks
 #   2026-09-11 | GitHub Copilot | Synchronized PostgreSQL permissiontype storage labels before schema fast-path checks
 #   2026-09-11 | GitHub Copilot | Added employee base-pay compensation and pay-slip snapshot columns
+#   2026-11-16 | GitHub Copilot | Added optional task action paths
+#   2026-11-16 | GitHub Copilot | Added supplier catalog and purchase-order line snapshot migrations
+#   2026-11-16 | GitHub Copilot | Added audited stock movement and FIFO consumption schema
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -75,7 +78,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.11.3"
+CURRENT_SCHEMA_VERSION = "2026.11.16.4"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -113,6 +116,10 @@ def _required_schema_artifacts_present() -> bool:
             asset_unit_location_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='asset_unit' AND column_name='location'"
+            )).fetchone()
+            task_action_path_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='task' AND column_name='action_path'"
             )).fetchone()
             descriptive_feature_description_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
@@ -182,6 +189,42 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.tables "
                 "WHERE table_schema='public' AND table_name='company_payment_account'"
             )).fetchone()
+            supplier_product_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='supplier_product'"
+            )).fetchone()
+            inventory_cost_layer_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='inventory_cost_layer'"
+            )).fetchone()
+            inventory_cost_consumption_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='inventory_cost_consumption'"
+            )).fetchone()
+            inventory_stock_adjustment_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='inventory_stock_adjustment'"
+            )).fetchone()
+            inventory_cost_layer_source_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory_cost_layer' AND column_name='source_type'"
+            )).fetchone()
+            inventory_cost_layer_source_reference_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory_cost_layer' AND column_name='source_reference_id'"
+            )).fetchone()
+            procurement_supplier_product_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='procurement_order_line' AND column_name='supplier_product_id'"
+            )).fetchone()
+            procurement_purchase_unit_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='procurement_order_line' AND column_name='purchase_unit'"
+            )).fetchone()
+            procurement_units_per_purchase_unit_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='procurement_order_line' AND column_name='units_per_purchase_unit'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -191,6 +234,7 @@ def _required_schema_artifacts_present() -> bool:
                 and client_email_verified_column is not None
                 and asset_unit_employee_column is not None
                 and asset_unit_location_column is not None
+                and task_action_path_column is not None
                 and descriptive_feature_description_column is not None
                 and schedule_appointment_type_column is not None
                 and schedule_duration_minutes_column is not None
@@ -208,6 +252,15 @@ def _required_schema_artifacts_present() -> bool:
                 and user_startup_page_column is not None
                 and employee_payment_method_table is not None
                 and company_payment_account_table is not None
+                and supplier_product_table is not None
+                and inventory_cost_layer_table is not None
+                and inventory_cost_consumption_table is not None
+                and inventory_stock_adjustment_table is not None
+                and inventory_cost_layer_source_type_column is not None
+                and inventory_cost_layer_source_reference_column is not None
+                and procurement_supplier_product_column is not None
+                and procurement_purchase_unit_column is not None
+                and procurement_units_per_purchase_unit_column is not None
             )
     except Exception:
         return False
@@ -227,6 +280,21 @@ def _ensure_asset_unit_employee_column_if_needed():
                 print("  + Added asset_unit.employee_id")
     except Exception as e:
         print(f"  Warning: Could not ensure asset_unit.employee_id column: {e}")
+
+
+def _ensure_task_action_path_column_if_needed():
+    """Ensure task rows can optionally link to the page where the task is completed."""
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='task' AND column_name='action_path'"
+            )).fetchone()
+            if not exists:
+                conn.execute(text("ALTER TABLE task ADD COLUMN action_path VARCHAR"))
+                print("  + Added task.action_path")
+    except Exception as e:
+        print(f"  Warning: Could not ensure task.action_path column: {e}")
 
 
 def _ensure_asset_unit_location_column_if_needed():
@@ -1204,6 +1272,131 @@ def _ensure_procurement_order_tax_shipping_if_needed():
                 print(f"  + Added column procurement_order.{col}")
 
 
+def _ensure_procurement_catalog_columns_if_needed():
+    """Add supplier catalog snapshots to existing purchase-order lines."""
+    with engine.begin() as conn:
+        table_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='procurement_order_line')"
+        )).scalar()
+        if not table_exists:
+            return
+
+        existing = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='procurement_order_line'"
+        )).fetchall()}
+        additions = (
+            ("supplier_product_id", "UUID REFERENCES supplier_product(id)"),
+            ("purchase_unit", "VARCHAR NOT NULL DEFAULT 'unit'"),
+            ("units_per_purchase_unit", "INTEGER NOT NULL DEFAULT 1"),
+        )
+        for column, definition in additions:
+            if column not in existing:
+                conn.execute(text(
+                    f"ALTER TABLE procurement_order_line ADD COLUMN {column} {definition}"
+                ))
+                print(f"  + Added procurement_order_line.{column}")
+
+
+def _ensure_fifo_stock_movement_schema_if_needed():
+    """Make cost layers support non-PO stock and allow unknown legacy unit costs."""
+    with engine.begin() as conn:
+        table_exists = conn.execute(text(
+            "SELECT EXISTS (SELECT FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name='inventory_cost_layer')"
+        )).scalar()
+        if not table_exists:
+            return
+
+        columns = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='inventory_cost_layer'"
+        )).fetchall()}
+        if "procurement_order_line_id" in columns:
+            conn.execute(text(
+                "ALTER TABLE inventory_cost_layer "
+                "ALTER COLUMN procurement_order_line_id DROP NOT NULL"
+            ))
+        if "source_type" not in columns:
+            conn.execute(text(
+                "ALTER TABLE inventory_cost_layer "
+                "ADD COLUMN source_type VARCHAR NOT NULL DEFAULT 'purchase_order'"
+            ))
+            print("  + Added inventory_cost_layer.source_type")
+        if "source_reference_id" not in columns:
+            conn.execute(text(
+                "ALTER TABLE inventory_cost_layer ADD COLUMN source_reference_id UUID"
+            ))
+            print("  + Added inventory_cost_layer.source_reference_id")
+        conn.execute(text(
+            "ALTER TABLE inventory_cost_layer ALTER COLUMN unit_cost DROP NOT NULL"
+        ))
+
+
+def _ensure_fractional_inventory_schema_if_needed():
+    """Upgrade stock and FIFO quantity columns so resource fractions remain exact."""
+    quantity_columns = {
+        "inventory": ("quantity", "min_stock_level"),
+        "inventory_cost_layer": ("quantity_received", "quantity_remaining"),
+        "inventory_cost_consumption": ("quantity",),
+        "inventory_stock_adjustment": ("quantity_before", "quantity_delta", "quantity_after"),
+        "inventory_cost": ("reorder_quantity", "reorder_point"),
+    }
+    with engine.begin() as conn:
+        for table_name, columns_to_update in quantity_columns.items():
+            exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name=:table_name)"
+            ), {"table_name": table_name}).scalar()
+            if not exists:
+                continue
+            columns = {row[0]: row[1] for row in conn.execute(text(
+                "SELECT column_name, data_type FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=:table_name"
+            ), {"table_name": table_name}).fetchall()}
+            for column_name in columns_to_update:
+                if column_name in columns and columns[column_name] not in {"double precision", "numeric"}:
+                    conn.execute(text(
+                        f'ALTER TABLE "{table_name}" ALTER COLUMN "{column_name}" '
+                        f'TYPE DOUBLE PRECISION USING "{column_name}"::double precision'
+                    ))
+
+        inventory_columns = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='inventory'"
+        )).fetchall()}
+        if inventory_columns:
+            if "auto_min_stock_level" not in inventory_columns:
+                conn.execute(text(
+                    "ALTER TABLE inventory ADD COLUMN auto_min_stock_level BOOLEAN NOT NULL DEFAULT FALSE"
+                ))
+            if "stock_unit" not in inventory_columns:
+                conn.execute(text("ALTER TABLE inventory ADD COLUMN stock_unit VARCHAR(32)"))
+            if "min_stock_level" in inventory_columns:
+                conn.execute(text("ALTER TABLE inventory ALTER COLUMN min_stock_level DROP NOT NULL"))
+
+        settings_columns = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='app_settings'"
+        )).fetchall()}
+        if settings_columns:
+            if "inventory_po_generation_mode" not in settings_columns:
+                conn.execute(text(
+                    "ALTER TABLE app_settings ADD COLUMN inventory_po_generation_mode "
+                    "VARCHAR NOT NULL DEFAULT 'scheduled'"
+                ))
+            if "inventory_po_frequency" not in settings_columns:
+                conn.execute(text(
+                    "ALTER TABLE app_settings ADD COLUMN inventory_po_frequency "
+                    "VARCHAR NOT NULL DEFAULT 'monthly'"
+                ))
+            if "inventory_po_last_run_at" not in settings_columns:
+                conn.execute(text(
+                    "ALTER TABLE app_settings ADD COLUMN inventory_po_last_run_at TIMESTAMP"
+                ))
+
+
 def _ensure_employee_lunch_and_procurement_if_needed():
     """Add lunch_start / lunch_duration_minutes to user;
     procurement_lead_days to inventory."""
@@ -1518,6 +1711,9 @@ def create_db_and_tables():
     _ensure_permissiontype_enum_values_if_needed()
     _ensure_payroll_compensation_columns_if_needed()
     _seed_document_templates_for_existing_companies_if_needed()
+    _ensure_task_action_path_column_if_needed()
+    _ensure_fifo_stock_movement_schema_if_needed()
+    _ensure_fractional_inventory_schema_if_needed()
 
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():
@@ -1575,6 +1771,7 @@ def create_db_and_tables():
     _ensure_department_table_if_needed()
     _ensure_employee_lunch_and_procurement_if_needed()
     _ensure_procurement_order_tax_shipping_if_needed()
+    _ensure_procurement_catalog_columns_if_needed()
     _ensure_company_registration_columns_if_needed()
     _ensure_client_auth_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()

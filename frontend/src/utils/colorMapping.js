@@ -35,5 +35,5 @@ export function statusVariant(status) {
 export function stockVariant(item) {
   const isLocationOrAsset = ["LOCATION", "ASSET"].includes((item.type || "").toUpperCase());
   if (isLocationOrAsset) return "green";
-  return item.quantity <= item.min_stock_level ? "red" : "green";
+  return item.min_stock_level != null && item.quantity <= item.min_stock_level ? "red" : "green";
 }

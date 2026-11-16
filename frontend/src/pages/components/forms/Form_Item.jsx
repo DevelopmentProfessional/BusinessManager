@@ -34,6 +34,7 @@
  *   2026-05-19 | GitHub Copilot | Added cost type/date fields and bundle/mix subtotal summaries
  *   2026-07-24 | GitHub Copilot | Removed type dropdown caret icon and added word-safe trigger label truncation
  *   2026-09-11 | GitHub Copilot | Removed unused locals and fixed photo URL cleanup dependencies
+ *   2026-11-16 | GitHub Copilot | Capture supplier purchase unit and pricing when adding inventory
  * ============================================================
  */
 
@@ -68,6 +69,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     supplier_id: "",
     quantity: 0,
     min_stock_level: 10,
+    auto_min_stock_level: false,
+    stock_unit: "",
     category: "",
     cost_type: "one_time",
     date_of_purchase: "",
@@ -83,6 +86,12 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
   const [availableLocations, setAvailableLocations] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
+  const [isSupplierCreateOpen, setIsSupplierCreateOpen] = useState(false);
+  const [newSupplierData, setNewSupplierData] = useState({ name: "", email: "", phone: "", address: "" });
+  const [newSupplierError, setNewSupplierError] = useState("");
+  const [supplierPurchaseUnit, setSupplierPurchaseUnit] = useState("unit");
+  const [supplierUnitsPerPurchaseUnit, setSupplierUnitsPerPurchaseUnit] = useState(1);
+  const [supplierUnitPrice, setSupplierUnitPrice] = useState(0);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Bundle / Mix state (local — saved after item creation)
@@ -127,12 +136,15 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
         service_id: item.service_id || "",
         supplier_id: item.supplier_id || "",
         quantity: item.quantity || 0,
-        min_stock_level: item.min_stock_level || 10,
+        min_stock_level: item.min_stock_level ?? 10,
+        auto_min_stock_level: item.auto_min_stock_level || false,
+        stock_unit: item.stock_unit || "",
         category: item.category || "",
         cost_type: item.cost_type || "one_time",
         date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
         date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
       });
+      setSupplierUnitPrice(item.cost ?? 0);
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -270,6 +282,35 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     }));
   };
 
+  const handleSupplierChange = (e) => {
+    const supplierId = e.target.value;
+    if (supplierId !== formData.supplier_id) {
+      setSupplierPurchaseUnit("unit");
+      setSupplierUnitsPerPurchaseUnit(1);
+      setSupplierUnitPrice(0);
+    }
+    setFormData((prev) => ({ ...prev, supplier_id: supplierId }));
+  };
+
+  const handleCreateSupplier = async (e) => {
+    e.preventDefault();
+    setNewSupplierError("");
+    try {
+      const response = await suppliersAPI.create(newSupplierData);
+      const supplier = response?.data ?? response;
+      if (!supplier?.id) throw new Error("Supplier was created without an ID");
+      setAvailableSuppliers((previous) => sortItemsAlphabetically([...previous, supplier], ["name", "email"]));
+      setFormData((previous) => ({ ...previous, supplier_id: supplier.id }));
+      setSupplierPurchaseUnit("unit");
+      setSupplierUnitsPerPurchaseUnit(1);
+      setSupplierUnitPrice(0);
+      setNewSupplierData({ name: "", email: "", phone: "", address: "" });
+      setIsSupplierCreateOpen(false);
+    } catch (error) {
+      setNewSupplierError(String(error?.response?.data?.detail || error?.message || "Failed to add supplier"));
+    }
+  };
+
   const handleBarcodeDetected = (code) => {
     const scanned = String(code || "").trim();
     setScanError("");
@@ -299,9 +340,15 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     const description = (formData.description || "").trim();
     const image_url = addImageMode === "url" || !pendingPhotoUrl ? (formData.image_url || "").trim() : "";
     const location = (formData.location || "").trim();
-    const minStockLevel = parseInt(formData.min_stock_level) || 10;
-    const qty = parseInt(formData.quantity) || 0;
+    const minStockLevel = formData.auto_min_stock_level
+      ? null
+      : Number(formData.min_stock_level || 0);
+    const qty = Number(formData.quantity) || 0;
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
+    if (type !== "RESOURCE" && (!Number.isInteger(safeQty) || (minStockLevel !== null && !Number.isInteger(minStockLevel)))) {
+      alert("Only resource stock quantities and thresholds may be fractional.");
+      return;
+    }
     const payload = {
       name,
       sku,
@@ -317,9 +364,19 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       cost_type: formData.cost_type || "one_time",
       quantity: safeQty,
       min_stock_level: minStockLevel,
+      auto_min_stock_level: Boolean(formData.auto_min_stock_level),
+      stock_unit: formData.stock_unit.trim() || undefined,
       date_of_purchase: formData.date_of_purchase || undefined,
       date_of_sale: formData.date_of_sale || undefined,
     };
+    if (formData.supplier_id && (!item || String(formData.supplier_id) !== String(item.supplier_id))) {
+      payload.supplier_product = {
+        supplier_id: formData.supplier_id,
+        purchase_unit: supplierPurchaseUnit.trim() || "unit",
+        units_per_purchase_unit: Math.max(1, parseInt(supplierUnitsPerPurchaseUnit, 10) || 1),
+        unit_price: Math.max(0, parseFloat(supplierUnitPrice) || 0),
+      };
+    }
 
     // Include bundle/mix pricing in payload
     if (type === "BUNDLE") {
@@ -355,7 +412,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
   const isAsset = upperType === "ASSET";
   const isLocation = upperType === "LOCATION";
   const isResource = upperType === "RESOURCE";
-  const isLowStock = formData.quantity <= formData.min_stock_level;
+  const isLowStock = formData.min_stock_level != null && formData.quantity <= formData.min_stock_level;
   const bundleSummary = bundleComponents.reduce(
     (acc, comp) => {
       const qty = parseFloat(comp.quantity) || 0;
@@ -543,13 +600,31 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </div>
                   <div className="d-flex gap-2 mb-1">
                     <div className="flex-grow-1 form-floating">
-                      <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder="Min Count" min="0" />
-                      <label htmlFor="min_stock_level">Min Count</label>
+                      <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"} min="0" step={isResource ? "0.01" : "1"} disabled={formData.auto_min_stock_level} />
+                      <label htmlFor="min_stock_level">{isResource ? "Manual Threshold" : "Min Count"}</label>
                     </div>
                     <div className="flex-grow-1 form-floating">
-                      <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Current Count" min="0" />
+                      <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Current Count" min="0" step={isResource ? "0.01" : "1"} />
                       <label htmlFor="quantity">Current Count</label>
                     </div>
+                  </div>
+                  {isResource && (
+                    <div className="form-floating">
+                      <InputText id="stock_unit" name="stock_unit" value={formData.stock_unit} onChange={handleChange} placeholder="Stock unit (e.g. bottle)" />
+                      <label htmlFor="stock_unit">Stock unit</label>
+                    </div>
+                  )}
+                  <div className="form-check">
+                    <InputCheckbox
+                      id="auto_min_stock_level"
+                      checked={formData.auto_min_stock_level}
+                      onChange={(e) => setFormData((previous) => ({
+                        ...previous,
+                        auto_min_stock_level: e.target.checked,
+                        min_stock_level: e.target.checked ? null : (previous.min_stock_level ?? 10),
+                      }))}
+                    />
+                    <label htmlFor="auto_min_stock_level" className="form-check-label">Set threshold from usage history</label>
                   </div>
 
                   <div className="d-flex gap-2 mb-1">
@@ -678,10 +753,55 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   floatingLabel="Supplier"
                   className="ui-control-sm"
                   value={formData.supplier_id}
-                  onChange={handleChange}
+                  onChange={handleSupplierChange}
                   options={[{ value: "", label: "No supplier" }, ...availableSuppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))]}
                   placeholder="Select supplier"
                   closeOnSelect
+                />
+              </div>
+              <button
+                type="button"
+                className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center"
+                title="Add supplier"
+                aria-label="Add supplier"
+                onClick={() => setIsSupplierCreateOpen(true)}
+              >
+                <PlusIcon className="ui-icon-5" />
+              </button>
+            </div>
+          )}
+
+          {!isLocation && formData.supplier_id && (
+            <div className="align-items-end d-flex flex-wrap gap-2 mb-2">
+              <div className="flex-grow-1" style={{ minWidth: 105 }}>
+                <InputText
+                  className="form-control ui-control-sm"
+                  value={supplierPurchaseUnit}
+                  onChange={(e) => setSupplierPurchaseUnit(e.target.value)}
+                  aria-label="Supplier purchase unit"
+                  placeholder="Purchase unit"
+                />
+              </div>
+              <div style={{ width: 125 }}>
+                <InputNumber
+                  min="1"
+                  step="1"
+                  className="form-control ui-control-sm"
+                  value={supplierUnitsPerPurchaseUnit}
+                  onChange={(e) => setSupplierUnitsPerPurchaseUnit(e.target.value)}
+                  aria-label="Stock units per supplier purchase unit"
+                  title="Stock units per purchase unit"
+                />
+              </div>
+              <div style={{ width: 125 }}>
+                <InputNumber
+                  min="0"
+                  step="0.01"
+                  className="form-control ui-control-sm"
+                  value={supplierUnitPrice}
+                  onChange={(e) => setSupplierUnitPrice(e.target.value)}
+                  aria-label="Supplier price per purchase unit"
+                  title="Supplier price per purchase unit"
                 />
               </div>
             </div>
@@ -920,6 +1040,55 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
       {/* ─── 10 RENDER: MODALS ──────────────────────────────────────────────────── */}
       {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onCancel={() => setIsCameraOpen(false)} />}
+
+      <Modal
+        isOpen={isSupplierCreateOpen}
+        onClose={() => setIsSupplierCreateOpen(false)}
+        title="Add Supplier"
+        contentGravity="top"
+        footer={
+          <Footer_Actions
+            start={<Button_Toolbar icon={CheckIcon} label="Save" type="submit" form="item-new-supplier-form" className="btn-outline-secondary" title="Save supplier" />}
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={() => setIsSupplierCreateOpen(false)} className="btn-outline-secondary" title="Cancel" />}
+          />
+        }
+      >
+        <form id="item-new-supplier-form" onSubmit={handleCreateSupplier} className="p-1">
+          {newSupplierError && <div className="alert alert-danger py-1 small">{newSupplierError}</div>}
+          <div className="form-floating ui-form-floating-mb2">
+            <InputText
+              id="item-new-supplier-name"
+              className="form-control ui-control-sm"
+              value={newSupplierData.name}
+              onChange={(e) => setNewSupplierData((prev) => ({ ...prev, name: e.target.value }))}
+              required
+              placeholder="Supplier name"
+            />
+            <label htmlFor="item-new-supplier-name">Supplier name *</label>
+          </div>
+          <div className="form-floating ui-form-floating-mb2">
+            <InputText
+              id="item-new-supplier-email"
+              type="email"
+              className="form-control ui-control-sm"
+              value={newSupplierData.email}
+              onChange={(e) => setNewSupplierData((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="Email"
+            />
+            <label htmlFor="item-new-supplier-email">Email</label>
+          </div>
+          <div className="form-floating ui-form-floating-mb2">
+            <InputText
+              id="item-new-supplier-phone"
+              className="form-control ui-control-sm"
+              value={newSupplierData.phone}
+              onChange={(e) => setNewSupplierData((prev) => ({ ...prev, phone: e.target.value }))}
+              placeholder="Phone"
+            />
+            <label htmlFor="item-new-supplier-phone">Phone</label>
+          </div>
+        </form>
+      </Modal>
 
       {/* Barcode Scanner Modal */}
       <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true} contentGravity="top">

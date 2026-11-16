@@ -17,6 +17,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-11-16 | Copilot | Added authenticated user's open-task route
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -56,6 +57,19 @@ async def get_tasks(
     """Get all tasks"""
     stmt = select(Task).where(Task.company_id == current_user.company_id)
     return [_build_task_read(t, session) for t in session.exec(stmt).all()]
+
+@router.get("/tasks/mine", response_model=List[TaskRead])
+async def get_my_open_tasks(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Get open tasks assigned to the current user."""
+    stmt = select(Task).where(
+        Task.company_id == (current_user.company_id or ""),
+        Task.assigned_to_id == current_user.id,
+        Task.status.in_(["pending", "in_progress"]),
+    ).order_by(Task.due_date)
+    return [_build_task_read(task, session) for task in session.exec(stmt).all()]
 
 @router.get("/tasks/{task_id}", response_model=TaskRead)
 async def get_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):

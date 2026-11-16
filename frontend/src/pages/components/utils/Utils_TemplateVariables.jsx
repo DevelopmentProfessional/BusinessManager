@@ -91,6 +91,15 @@ export const TEMPLATE_VARIABLES = {
     { key: "supplier.phone", label: "Supplier Phone", description: "Supplier phone number" },
     { key: "supplier.address", label: "Supplier Address", description: "Supplier mailing address" },
   ],
+  purchase_order: [
+    { key: "purchase_order.number", label: "Purchase Order Number", description: "Selected draft purchase order number" },
+    { key: "purchase_order.date", label: "Purchase Order Date", description: "Selected purchase order date" },
+    { key: "purchase_order.expected_delivery", label: "Expected Delivery", description: "Expected supplier delivery date" },
+    { key: "purchase_order.status", label: "Purchase Order Status", description: "Selected purchase order status" },
+    { key: "purchase_order.total", label: "Purchase Order Total", description: "Selected purchase order total" },
+    { key: "purchase_order.items", label: "Purchase Order Items", description: "Item names, quantities, and totals" },
+    { key: "purchase_order.items.table", label: "Purchase Order Items Table", description: "Formatted purchase-order line item table", isLayout: true },
+  ],
 };
 
 /** Which variable scopes are available per page context */
@@ -101,6 +110,7 @@ export const PAGE_VARIABLE_SCOPES = {
   schedule: ["system", "company", "sender", "client", "service", "appointment"],
   services: ["system", "company", "sender", "service", "inventory"],
   inventory: ["system", "company", "sender", "inventory", "supplier", "service"],
+  suppliers: ["system", "company", "sender", "supplier", "purchase_order"],
 };
 
 /**
@@ -108,9 +118,9 @@ export const PAGE_VARIABLE_SCOPES = {
  * so the editor can surface this to the user.
  */
 export const SCOPE_PAGE_CONTEXT = {
-  system: { label: "System", pages: ["clients", "employees", "sales", "schedule", "services", "inventory"], color: "gray" },
-  company: { label: "Company", pages: ["clients", "employees", "sales", "schedule", "services", "inventory"], color: "gray" },
-  sender: { label: "Sender", pages: ["clients", "employees", "sales", "schedule", "services", "inventory"], color: "gray" },
+  system: { label: "System", pages: ["clients", "employees", "sales", "schedule", "services", "inventory", "suppliers"], color: "gray" },
+  company: { label: "Company", pages: ["clients", "employees", "sales", "schedule", "services", "inventory", "suppliers"], color: "gray" },
+  sender: { label: "Sender", pages: ["clients", "employees", "sales", "schedule", "services", "inventory", "suppliers"], color: "gray" },
   client: { label: "Client", pages: ["clients", "sales", "schedule"], color: "blue" },
   employee: { label: "Employee", pages: ["employees"], color: "green" },
   payslip: { label: "Pay Slip", pages: ["employees"], color: "green" },
@@ -118,7 +128,8 @@ export const SCOPE_PAGE_CONTEXT = {
   appointment: { label: "Appointment", pages: ["schedule"], color: "purple" },
   service: { label: "Service", pages: ["clients", "sales", "schedule", "services"], color: "purple" },
   inventory: { label: "Inventory / Product", pages: ["clients", "sales", "services", "inventory"], color: "amber" },
-  supplier: { label: "Supplier", pages: ["inventory"], color: "gray" },
+  supplier: { label: "Supplier", pages: ["inventory", "suppliers"], color: "gray" },
+  purchase_order: { label: "Purchase Order", pages: ["suppliers"], color: "amber" },
 };
 
 /**
@@ -260,6 +271,14 @@ export const LAYOUT_TEMPLATES = [
   <tr><td style="padding:4px 0;font-weight:600;">Employee</td><td style="padding:4px 0;">{{appointment.employee_name}}</td></tr>
   <tr><td style="padding:4px 0;font-weight:600;">Notes</td><td style="padding:4px 0;">{{appointment.notes}}</td></tr>
 </table>`,
+  },
+  {
+    id: "purchase_order_items_table",
+    label: "Purchase Order Line Items Table",
+    description: "Selected draft purchase order items, pack quantities, unit prices, and line totals",
+    pages: ["suppliers"],
+    scopeHint: "purchase_order",
+    html: "{{purchase_order.items.table}}",
   },
 ];
 
@@ -417,6 +436,57 @@ export function buildInventoryVariables(inventory, currentUser, settings) {
     "supplier.email": inventory?.supplier?.email || "",
     "supplier.phone": inventory?.supplier?.phone || "",
     "supplier.address": inventory?.supplier?.address || "",
+  };
+}
+
+/** Build supplier-facing fields and item rows from a selected draft purchase order. */
+export function buildPurchaseOrderVariables(purchaseOrder, supplier, currentUser, settings, inventoryItems = []) {
+  const now = new Date();
+  const inventoryById = new Map(inventoryItems.map((item) => [String(item.id), item]));
+  const lines = Array.isArray(purchaseOrder?.line_items) ? purchaseOrder.line_items : [];
+  const rows = lines.map((line) => {
+    const item = inventoryById.get(String(line.inventory_id));
+    const quantity = Number(line.quantity_ordered) || 0;
+    const unitPrice = Number(line.unit_price) || 0;
+    const lineTotal = Number(line.line_total) || quantity * unitPrice;
+    const itemName = item?.name || "Inventory item";
+    const pack = Number(line.units_per_purchase_unit) || 1;
+    const purchaseUnit = line.purchase_unit || "unit";
+    return {
+      itemName,
+      quantity,
+      purchaseUnit,
+      pack,
+      unitPrice,
+      lineTotal,
+      text: `${itemName} — ${quantity} ${purchaseUnit}${quantity === 1 ? "" : "s"} at ${formatMoney(unitPrice)} each; ${lineTotal.toFixed(2)}`,
+      html: `<tr><td style="padding:6px;border:1px solid #d1d5db;">${escapeHtml(itemName)}</td><td style="padding:6px;border:1px solid #d1d5db;text-align:right;">${quantity} ${escapeHtml(purchaseUnit)}${pack > 1 ? ` (${pack} per unit)` : ""}</td><td style="padding:6px;border:1px solid #d1d5db;text-align:right;">${formatMoney(unitPrice)}</td><td style="padding:6px;border:1px solid #d1d5db;text-align:right;">${formatMoney(lineTotal)}</td></tr>`,
+    };
+  });
+  const table = `<table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:6px;border:1px solid #d1d5db;text-align:left;">Item</th><th style="padding:6px;border:1px solid #d1d5db;text-align:right;">Quantity</th><th style="padding:6px;border:1px solid #d1d5db;text-align:right;">Unit Price</th><th style="padding:6px;border:1px solid #d1d5db;text-align:right;">Total</th></tr></thead><tbody>${rows.map((row) => row.html).join("")}</tbody></table>`;
+
+  return {
+    date: formatDateISO(now),
+    time: formatTime(now),
+    "company.name": settings?.company_name || "",
+    "company.email": settings?.company_email || "",
+    "company.phone": settings?.company_phone || "",
+    "company.address": settings?.company_address || "",
+    "sender.first_name": currentUser?.first_name || "",
+    "sender.last_name": currentUser?.last_name || "",
+    "sender.email": currentUser?.email || "",
+    "supplier.name": supplier?.name || "",
+    "supplier.contact_person": supplier?.contact_person || "",
+    "supplier.email": supplier?.email || "",
+    "supplier.phone": supplier?.phone || "",
+    "supplier.address": supplier?.address || "",
+    "purchase_order.number": purchaseOrder?.po_number || "",
+    "purchase_order.date": purchaseOrder?.order_date ? formatDateISO(purchaseOrder.order_date) : "",
+    "purchase_order.expected_delivery": purchaseOrder?.expected_delivery_date ? formatDateISO(purchaseOrder.expected_delivery_date) : "",
+    "purchase_order.status": purchaseOrder?.status || "",
+    "purchase_order.total": formatMoney(purchaseOrder?.total_amount),
+    "purchase_order.items": rows.map((row) => row.text).join("\n"),
+    "purchase_order.items.table": table,
   };
 }
 

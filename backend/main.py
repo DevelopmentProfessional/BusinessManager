@@ -43,6 +43,8 @@ logging.getLogger("sqlalchemy").propagate = False
 from datetime import datetime
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.background import BackgroundScheduler
+from sqlmodel import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import uvicorn
@@ -57,9 +59,14 @@ except ModuleNotFoundError as e:
         raise
 
 try:
-    from backend.database import create_db_and_tables
+    from backend.database import create_db_and_tables, engine
 except ModuleNotFoundError:
-    from database import create_db_and_tables  # type: ignore
+    from database import create_db_and_tables, engine  # type: ignore
+
+try:
+    from backend.inventory_replenishment import run_scheduled_replenishment
+except ModuleNotFoundError:
+    from inventory_replenishment import run_scheduled_replenishment
 
 # ─── 2 HEALTH LOG FILTER ───────────────────────────────────────────────────────
 # Suppress noisy health check access logs while keeping other access logs
@@ -143,12 +150,47 @@ app = FastAPI(
     version="1.0.0"
 )
 
+_inventory_scheduler: BackgroundScheduler | None = None
+
+
+def _run_inventory_replenishment_job() -> None:
+    try:
+        with Session(engine) as session:
+            generated = run_scheduled_replenishment(session)
+            logging.getLogger(__name__).info(
+                "Inventory replenishment schedule completed; %s draft order(s) changed.",
+                generated,
+            )
+    except Exception:
+        logging.getLogger(__name__).exception("Scheduled inventory replenishment failed.")
+
 
 @app.on_event("startup")
 def ensure_database_ready() -> None:
+    global _inventory_scheduler
     if os.getenv("SKIP_STARTUP_DB_BOOTSTRAP", "").strip().lower() in {"1", "true", "yes", "on"}:
         return
     create_db_and_tables()
+    if _inventory_scheduler is None:
+        _inventory_scheduler = BackgroundScheduler(timezone="UTC")
+        _inventory_scheduler.add_job(
+            _run_inventory_replenishment_job,
+            "interval",
+            hours=1,
+            id="inventory-replenishment",
+            next_run_time=datetime.utcnow(),
+            max_instances=1,
+            coalesce=True,
+        )
+        _inventory_scheduler.start()
+
+
+@app.on_event("shutdown")
+def stop_background_jobs() -> None:
+    global _inventory_scheduler
+    if _inventory_scheduler and _inventory_scheduler.running:
+        _inventory_scheduler.shutdown(wait=False)
+    _inventory_scheduler = None
 
 # Configure CORS with explicit production domains
 allowed_origins = [

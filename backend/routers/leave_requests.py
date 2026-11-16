@@ -16,6 +16,7 @@
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
+#   2026-11-16 | Copilot | Added authenticated user's HR request status endpoint
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException, Body
@@ -27,6 +28,28 @@ from backend.models import LeaveRequest, OnboardingRequest, OffboardingRequest, 
 from backend.routers.auth import get_current_user
 
 router = APIRouter()
+
+# ─── MY REQUEST STATUS UPDATES ─────────────────────────────────────────────────
+
+@router.get("/my-requests")
+def get_my_requests(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Return only the authenticated user's HR requests for their status inbox."""
+
+    def request_query(model):
+        return (
+            select(model)
+            .where(model.user_id == current_user.id)
+            .order_by(model.updated_at.desc())
+        )
+
+    return {
+        "leave_requests": session.exec(request_query(LeaveRequest)).all(),
+        "onboarding_requests": session.exec(request_query(OnboardingRequest)).all(),
+        "offboarding_requests": session.exec(request_query(OffboardingRequest)).all(),
+    }
 
 # ─── HELPERS ───────────────────────────────────────────────────────────────────
 

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, CheckCircleIcon, ExclamationTriangleIcon } from "../../icons";
+import { UserGroupIcon, UsersIcon, CalendarDaysIcon, ArchiveBoxIcon, DocumentIcon, Bars3Icon, XMarkIcon, UserCircleIcon, ChartBarIcon, ShoppingCartIcon, SparklesIcon, ArrowUturnLeftIcon, BellIcon, CheckCircleIcon, ExclamationTriangleIcon } from "../../icons";
 import useStore from "../../services/useStore";
 import useViewMode from "../../services/useViewMode";
 import { applyButtonDimensions } from "../../constants/buttonTextSize";
 import { chatAPI, isudAPI } from "../../services/api";
 import Badge_PendingOrder from "./badges/Badge_PendingOrder";
 import Modal from "./modals/Modal";
+import Modal_Notifications from "./modals/Modal_Notifications";
 
 // All navigation items (shown in bottom-right expandable menu on mobile)
 // Order: Profile, Reports, Inventory, Clients, Employees, Documents, Services, Sales, Schedule, Settings
@@ -34,6 +35,7 @@ export default function Layout({ children }) {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [undoLoading, setUndoLoading] = useState(false);
   const [undoResult, setUndoResult] = useState(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
@@ -202,6 +204,27 @@ export default function Layout({ children }) {
             <div className="app-nav-bottom-global-menu d-flex flex-column gap-2 align-items-center">
               <button
                 type="button"
+                onClick={() => {
+                  setExpandedMenuOpen(false);
+                  setNotificationsOpen(true);
+                }}
+                className={classNames(
+                  "btn btn-outline-secondary d-flex align-items-center text-decoration-none position-relative",
+                  isTrainingMode ? "rounded-pill gap-1 ps-1 pe-1 justify-content-start" : "rounded-circle justify-content-center p-0"
+                )}
+                style={{
+                  backgroundColor: "var(--bs-tertiary-bg)",
+                  color: "var(--bs-body-color)",
+                  borderColor: "var(--bs-border-color)",
+                }}
+                title="Notifications"
+                aria-label="Notifications"
+              >
+                <BellIcon className="app-icon flex-shrink-0" />
+                {isTrainingMode && <span>Notifications</span>}
+              </button>
+              <button
+                type="button"
                 onClick={handleUndo}
                 disabled={undoLoading}
                 className={classNames(
@@ -284,6 +307,9 @@ export default function Layout({ children }) {
         {expandedMenuOpen ? <XMarkIcon className="app-icon flex-shrink-0" /> : <Bars3Icon className="app-icon flex-shrink-0" />}
         <Badge_PendingOrder clientId={user?.client_id} />
       </button>
+
+      {/* Notifications modal */}
+      <Modal_Notifications isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
 
       {/* Undo Result Modal Popup */}
       {undoResult && (

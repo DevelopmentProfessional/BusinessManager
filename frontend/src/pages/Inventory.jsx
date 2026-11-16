@@ -55,7 +55,7 @@ import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import useStore from "../services/useStore";
-import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI } from "../services/api";
+import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI, settingsAPI } from "../services/api";
 import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Suppliers_Panel from "./components/panels/Panel_Suppliers";
@@ -74,7 +74,7 @@ const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
-  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
+  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user } = useStore();
 
   // Use the permission refresh hook
 
@@ -109,6 +109,11 @@ export default function Inventory() {
   const { isTrainingMode } = useViewMode();
   const { settings: pageSettings, savePageSettings } = usePageTableSettings("inventory");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
+  const [automationSettings, setAutomationSettings] = useState({
+    inventory_po_generation_mode: "scheduled",
+    inventory_po_frequency: "monthly",
+  });
+  const canManageAutomation = String(user?.role || "").toLowerCase() === "admin";
 
   useEffect(() => {
     if (showPageControls) {
@@ -242,6 +247,7 @@ export default function Inventory() {
   useFetchOnce(() => {
     loadInventoryData();
     loadInventoryCategories();
+    loadAutomationSettings();
   });
 
   const loadInventoryCategories = async () => {
@@ -250,6 +256,19 @@ export default function Inventory() {
       setInventoryCategories(res?.data || []);
     } catch (err) {
       console.warn("Failed to load inventory categories:", err);
+    }
+  };
+
+  const loadAutomationSettings = async () => {
+    try {
+      const response = await settingsAPI.getScheduleSettings();
+      const settings = response?.data ?? response ?? {};
+      setAutomationSettings({
+        inventory_po_generation_mode: settings.inventory_po_generation_mode || "scheduled",
+        inventory_po_frequency: settings.inventory_po_frequency || "monthly",
+      });
+    } catch (loadError) {
+      setError(loadError?.response?.data?.detail || "Failed to load inventory automation settings.");
     }
   };
 
@@ -426,7 +445,7 @@ export default function Inventory() {
     (item) => {
       // Location and Asset items are always "OK"
       if (isLocationOrAsset(item)) return false;
-      return item.quantity <= item.min_stock_level;
+      return item.min_stock_level != null && item.quantity <= item.min_stock_level;
     },
     [isLocationOrAsset]
   );
@@ -468,6 +487,11 @@ export default function Inventory() {
     },
     [assetUnitCounts]
   );
+  const formatCountDisplay = (item) => {
+    const quantity = getCountDisplay(item);
+    const formatted = Number(quantity).toLocaleString(undefined, { maximumFractionDigits: 4 });
+    return item.stock_unit ? `${formatted} ${item.stock_unit}` : formatted;
+  };
 
   const handleDeleteSelectedInv = async () => {
     if (selectedIds.size === 0) return;
@@ -579,7 +603,7 @@ export default function Inventory() {
     try {
       const coerced = { ...updates };
       if ("min_stock_level" in coerced) {
-        const parsedMinStock = parseInt(coerced.min_stock_level, 10);
+        const parsedMinStock = parseFloat(coerced.min_stock_level);
         if (Number.isNaN(parsedMinStock)) delete coerced.min_stock_level;
         else coerced.min_stock_level = parsedMinStock;
       }
@@ -644,7 +668,7 @@ export default function Inventory() {
                     {/* Count */}
                     {pageSettings.showStock !== false && (
                       <td className="main-page-table-data text-center">
-                        <Badge variant={stockVariant(inv)} pill label={String(getCountDisplay(inv))} />
+                        <Badge variant={stockVariant(inv)} pill label={formatCountDisplay(inv)} />
                       </td>
                     )}
                   </PageTableRow>
@@ -765,6 +789,7 @@ export default function Inventory() {
         itemType={editingInventory?.type || "product"}
         mode="inventory"
         onUpdateInventory={handleSubmitUpdate}
+        onStockAdjusted={loadInventoryData}
         onDelete={null}
         canDelete={false}
         existingSkus={inventory.map((i) => i.sku).filter(Boolean)}
@@ -781,7 +806,15 @@ export default function Inventory() {
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
         onSave={async () => {
-          await savePageSettings("inventory", pendingSettings);
+          try {
+            await savePageSettings("inventory", pendingSettings);
+            if (canManageAutomation) {
+              await settingsAPI.updateScheduleSettings(automationSettings);
+            }
+            setShowPageControls(false);
+          } catch (saveError) {
+            setError(saveError?.response?.data?.detail || "Failed to save inventory settings.");
+          }
         }}
         onOpenCategories={() => setShowCategoryManager(true)}
         assetUnitsPerPage={assetUnitsPerPage}
@@ -789,6 +822,9 @@ export default function Inventory() {
         assetUnitsPageSizeOptions={ASSET_UNITS_PAGE_SIZE_OPTIONS}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
+        automationSettings={automationSettings}
+        setAutomationSettings={setAutomationSettings}
+        canManageAutomation={canManageAutomation}
       />
 
       <Modal_ManageLookup

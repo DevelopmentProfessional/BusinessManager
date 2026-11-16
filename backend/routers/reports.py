@@ -424,7 +424,10 @@ def get_inventory_report(
     items = session.exec(stmt).all()
     labels = [item.name for item in items]
     data = [item.quantity for item in items]
-    low_stock = [item.name for item in items if item.quantity <= item.min_stock_level]
+    low_stock = [
+        item.name for item in items
+        if item.min_stock_level is not None and item.quantity <= item.min_stock_level
+    ]
 
     return {
         "labels": labels,
