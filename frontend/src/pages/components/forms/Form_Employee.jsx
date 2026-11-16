@@ -803,7 +803,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     { key: "permissions", label: "Permissions", disabled: !employee },
     { key: "performance", label: "Performance", disabled: !employee },
     { key: "pay_settings", label: "Pay settings", disabled: !employee },
-    { key: "payments", label: "Payments", disabled: !employee },
+    { key: "payments", label: "Pay Settings", disabled: !employee },
   ];
 
   return (

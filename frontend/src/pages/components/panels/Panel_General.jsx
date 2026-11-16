@@ -360,7 +360,7 @@ const Panel_General = ({
       </SettingsSection>
 
       {user?.role === "admin" && (
-        <SettingsSection open={openAccordions.payments} onToggle={() => toggleAccordion("payments")} icon={CreditCardIcon} iconClassName="text-success" title="Payments & bank accounts">
+        <SettingsSection open={openAccordions.payments} onToggle={() => toggleAccordion("payments")} icon={CreditCardIcon} iconClassName="text-success" title="Pay Settings & bank accounts">
           <div className="alert alert-secondary mb-2 py-1 small">Bank accounts are stored encrypted and displayed masked. Live transfers and card-provider connections remain disabled until a provider is selected.</div>
           <div className="border mb-2 p-1 rounded">
             <div className="fw-semibold mb-2 small">Business funding / receiving accounts</div>
