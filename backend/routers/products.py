@@ -12,11 +12,11 @@ from sqlmodel import Session, SQLModel, select
 
 from ..database import get_session
 from ..models import (
-    Inventory, User, UserRole,
+    Inventory, User,
     AssetUnit, ASSET_UNIT_STATES,
     DescriptiveFeature, FeatureOption, InventoryFeature, InventoryFeatureOptionData,
 )
-from .auth import get_current_user, get_user_permissions_list
+from .auth import get_current_user, require_page_permission
 from ..inventory_costing import create_opening_stock_layer
 
 router = APIRouter()
@@ -59,12 +59,7 @@ class BulkImportResponse(SQLModel):
 
 
 def _ensure_inventory_write_permission(current_user: User, session: Session) -> None:
-    if current_user.role == UserRole.ADMIN:
-        return
-
-    permissions = set(get_user_permissions_list(current_user, session))
-    if "inventory:write" not in permissions and "inventory:admin" not in permissions:
-        raise HTTPException(status_code=403, detail="Missing permission: inventory:write")
+    require_page_permission(current_user, session, "inventory", "write")
 
 
 @router.post("/products/bulk-import", response_model=BulkImportResponse)

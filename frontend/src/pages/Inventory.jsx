@@ -684,7 +684,9 @@ export default function Inventory() {
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
-              <Button_Icon icon={PencilSquareIcon} label="Edit selected items" variant="primary" onClick={() => setShowMultiEdit(true)} />
+              <Gate_Permission page="inventory" permission="write">
+                <Button_Icon icon={PencilSquareIcon} label="Edit selected items" variant="primary" onClick={() => setShowMultiEdit(true)} />
+              </Gate_Permission>
               <Gate_Permission page="inventory" permission="delete">
                 <Button_Icon icon={TrashIcon} label="Delete selected items" variant="outline-danger" onClick={handleDeleteSelectedInv} disabled={multiSaving} />
               </Gate_Permission>

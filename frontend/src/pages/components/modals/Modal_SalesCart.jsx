@@ -26,6 +26,7 @@ import { InputNumber, InputText } from "../Inputs";
 import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Gate_Permission from "../layout/Gate_Permission";
 import Footer_Actions from "../footers/Footer_Actions";
 import { getDisplayImageUrl } from "../utils/Utils_Image";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, DocumentTextIcon } from "../../../icons";
@@ -43,7 +44,7 @@ function getClientDropupStyle(anchorEl) {
 }
 
 /** Client matches rendered in a portal above the cart modal (avoids overflow clipping). */
-function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew }) {
+function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew, canCreateClient = false }) {
   const [panelStyle, setPanelStyle] = useState(null);
 
   useEffect(() => {
@@ -73,10 +74,14 @@ function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew
       style={panelStyle}
     >
       {clients.length === 0 ? (
-        <button type="button" onClick={onAddNew} className="bg-transparent border-0 dark:hover:bg-gray-700 dark:text-primary-400 flex gap-1 hover:bg-gray-50 items-center px-1 py-0 text-left text-primary-600 text-sm w-full">
-          <PlusIcon className="ui-icon-4" />
-          New customer
-        </button>
+        canCreateClient ? (
+          <button type="button" onClick={onAddNew} className="bg-transparent border-0 dark:hover:bg-gray-700 dark:text-primary-400 flex gap-1 hover:bg-gray-50 items-center px-1 py-0 text-left text-primary-600 text-sm w-full">
+            <PlusIcon className="ui-icon-4" />
+            New customer
+          </button>
+        ) : (
+          <div className="dark:text-gray-400 px-1 py-1 text-gray-500 text-sm">No customers found</div>
+        )
       ) : (
         clients.map((c) => (
           <button
@@ -102,7 +107,7 @@ function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew
 }
 
 // ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
-const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove }) => {
+const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove, canEdit = false }) => {
   const isService = item.itemType === "service";
   const isBundle = item.itemType === "bundle";
   const isMix = item.itemType === "mix";
@@ -120,7 +125,7 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove }) => {
   return (
     <div className="bg-gray-50 dark:bg-gray-800 flex gap-1 items-center rounded-lg">
       {/* Delete button — leftmost */}
-      <div className="flex-shrink-0 px-1">
+      {canEdit && <div className="flex-shrink-0 px-1">
         <button
           onClick={() => onRemove(item.cartKey)}
           className="bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/50 flex h-7 hover:bg-red-200 items-center justify-center rounded-full transition-colors w-7"
@@ -128,7 +133,7 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove }) => {
         >
           <XMarkIcon className="dark:text-red-400 h-4 text-red-500 w-4" />
         </button>
-      </div>
+      </div>}
 
       {/* Mini Image/Icon */}
       <div className={`w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden ${isService ? "bg-primary-100 dark:bg-primary-900" : isBundle ? "bg-orange-100 dark:bg-orange-900" : isMix ? "bg-pink-100 dark:bg-pink-900" : "bg-secondary-100 dark:bg-secondary-900"}`}>
@@ -168,15 +173,19 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove }) => {
       </div>
 
       {/* Quantity Controls */}
-      <div className="ui-flex-items-gap-1 flex-shrink-0">
-        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
-          <MinusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
-        </button>
-        <span className="dark:text-white font-medium text-center text-gray-900 text-sm w-7">{item.quantity}</span>
-        <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
-          <PlusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
-        </button>
-      </div>
+      {canEdit ? (
+        <div className="ui-flex-items-gap-1 flex-shrink-0">
+          <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
+            <MinusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
+          </button>
+          <span className="dark:text-white font-medium text-center text-gray-900 text-sm w-7">{item.quantity}</span>
+          <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
+            <PlusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
+          </button>
+        </div>
+      ) : (
+        <span className="dark:text-white font-medium flex-shrink-0 text-center text-gray-900 text-sm w-7">{item.quantity}</span>
+      )}
 
       {/* Total */}
       <div className="flex-shrink-0 text-right ps-1">
@@ -198,6 +207,8 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove }) => {
 export default function Modal_Cart_Sales({
   isOpen,
   onClose,
+  canWriteSales = false,
+  canWriteClients = false,
   cart = [],
   selectedClient = null,
   setSelectedClient = () => {},
@@ -224,7 +235,7 @@ export default function Modal_Cart_Sales({
   setClientsLocal = () => {},
   updateCartQuantity = () => {},
   removeFromCart = () => {},
-  setCart = () => {},
+  clearCart = () => {},
   handleCheckout = () => {},
   onCreateQuote = () => {},
 }) {
@@ -255,13 +266,15 @@ export default function Modal_Cart_Sales({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [showClientDropdown, setShowClientDropdown]);
 
-  const handleAddNewClient = () =>
+  const handleAddNewClient = () => {
+    if (!canWriteSales || !canWriteClients) return;
     openAddClientModal((newClient) => {
       handleSelectClient(newClient);
       setClientsLocal((prev) => [...prev, newClient]);
       setClientSearch("");
       setShowClientDropdown(false);
     });
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} contentGravity="bottom">
@@ -273,9 +286,9 @@ export default function Modal_Cart_Sales({
           </div>
           <div className="component-header-center"></div>
           <div className="component-header-right">
-            {cart.length > 0 && (
+            {canWriteSales && cart.length > 0 && (
               <button
-                onClick={() => setCart([])}
+                onClick={clearCart}
                 className="btn btn-circle btn-outline-danger btn-sm"
                 title="Clear cart"
               >
@@ -299,7 +312,7 @@ export default function Modal_Cart_Sales({
           <>
             {/* ─── 4 CLIENT SELECTION ─────────────────────────────────────── */}
             {/* Client Selection */}
-            <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 p-1">
+            {canWriteSales && <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 p-1">
               <label className="block dark:text-gray-300 font-medium mb-1 text-gray-700 text-sm">
                 <UserIcon className="h-4 inline mr-1 w-4" />
                 Customer (optional)
@@ -334,14 +347,16 @@ export default function Modal_Cart_Sales({
                       aria-expanded={showClientDropdown}
                       aria-haspopup="listbox"
                     />
-                    <button
-                      type="button"
-                      onClick={handleAddNewClient}
-                      className="bg-primary-600 flex flex-shrink-0 h-10 hover:bg-primary-700 items-center justify-center rounded-xl text-white transition-colors w-10"
-                      title="Add new customer"
-                    >
-                      <PlusIcon className="ui-icon-5" />
-                    </button>
+                    {canWriteClients && (
+                      <button
+                        type="button"
+                        onClick={handleAddNewClient}
+                        className="bg-primary-600 flex flex-shrink-0 h-10 hover:bg-primary-700 items-center justify-center rounded-xl text-white transition-colors w-10"
+                        title="Add new customer"
+                      >
+                        <PlusIcon className="ui-icon-5" />
+                      </button>
+                    )}
                   </div>
                   <ClientSearchDropupPortal
                     anchorRef={clientSearchAnchorRef}
@@ -353,10 +368,11 @@ export default function Modal_Cart_Sales({
                       setShowClientDropdown(false);
                     }}
                     onAddNew={handleAddNewClient}
+                    canCreateClient={canWriteSales && canWriteClients}
                   />
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* ─── 5 CART ITEMS LIST ──────────────────────────────────────── */}
             {/* Cart Items */}
@@ -368,6 +384,7 @@ export default function Modal_Cart_Sales({
                   itemDiscount={itemDiscounts[item.cartKey]}
                   onUpdateQuantity={updateCartQuantity}
                   onRemove={removeFromCart}
+                  canEdit={canWriteSales}
                 />
               ))}
             </div>
@@ -382,7 +399,7 @@ export default function Modal_Cart_Sales({
                 </div>
 
                 {/* Selectable cart deals picker (if any selectable deals exist) */}
-                {selectableCartDeals.length > 0 && (
+                {canWriteSales && selectableCartDeals.length > 0 && (
                   <div className="py-1 border-top border-bottom border-gray-200 dark:border-gray-700 my-1">
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <span className="text-xs fw-semibold text-muted">Available Cart Deals</span>
@@ -448,21 +465,23 @@ export default function Modal_Cart_Sales({
                   </div>
                 )}
                 {/* Tip */}
-                <div className="flex gap-2 items-center justify-between text-sm">
-                  <span className="dark:text-gray-400 text-gray-500">Tip</span>
-                  <div className="ui-flex-items-gap-1">
-                    <span className="dark:text-gray-500 text-gray-400 text-sm">$</span>
-                    <InputNumber
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={tipAmount}
-                      onChange={(e) => setTipAmount(e.target.value)}
-                      className="bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 px-0 py-1 rounded-lg text-gray-900 text-right text-sm w-24"
-                    />
+                {canWriteSales && (
+                  <div className="flex gap-2 items-center justify-between text-sm">
+                    <span className="dark:text-gray-400 text-gray-500">Tip</span>
+                    <div className="ui-flex-items-gap-1">
+                      <span className="dark:text-gray-500 text-gray-400 text-sm">$</span>
+                      <InputNumber
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={tipAmount}
+                        onChange={(e) => setTipAmount(e.target.value)}
+                        className="bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 px-0 py-1 rounded-lg text-gray-900 text-right text-sm w-24"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="border-gray-200 border-t dark:border-gray-700 flex font-bold justify-between pt-1 text-lg">
                   <span className="dark:text-white text-gray-900">Total</span>
                   <span className="dark:text-secondary-400 text-secondary-600">${grandTotal.toFixed(2)}</span>
@@ -478,25 +497,29 @@ export default function Modal_Cart_Sales({
           <Footer_Actions
             start={
               <div className="align-items-center d-flex flex-wrap gap-2">
-                <Button_Toolbar
-                  icon={DocumentTextIcon}
-                  label="Quote"
-                  title={selectedClient ? "Create a quote for the selected client" : "Create a quote; select a client to email it"}
-                  onClick={onCreateQuote}
-                  disabled={cart.length === 0}
-                  className="btn-outline-secondary"
-                />
-                <Button_Toolbar
-                  icon={CreditCardIcon}
-                  label="Pay"
-                  title="Checkout"
-                  onClick={() => {
-                    onClose();
-                    handleCheckout();
-                  }}
-                  className="btn-success text-white"
-                  style={{ borderColor: "#059669", backgroundColor: "#059669" }}
-                />
+                {canWriteSales && (
+                  <Button_Toolbar
+                    icon={DocumentTextIcon}
+                    label="Quote"
+                    title={selectedClient ? "Create a quote for the selected client" : "Create a quote; select a client to email it"}
+                    onClick={onCreateQuote}
+                    disabled={cart.length === 0}
+                    className="btn-outline-secondary"
+                  />
+                )}
+                {canWriteSales && <Gate_Permission page="sales" permission="write">
+                  <Button_Toolbar
+                    icon={CreditCardIcon}
+                    label="Pay"
+                    title="Checkout"
+                    onClick={() => {
+                      onClose();
+                      handleCheckout();
+                    }}
+                    className="btn-success text-white"
+                    style={{ borderColor: "#059669", backgroundColor: "#059669" }}
+                  />
+                </Gate_Permission>}
               </div>
             }
             center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}

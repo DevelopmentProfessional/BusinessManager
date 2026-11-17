@@ -240,6 +240,35 @@ def get_user_permissions_list(user: User, session: Session) -> List[str]:
     return list(permission_strings)
 
 
+def has_page_permission(user: User, session: Session, page: str, action: str) -> bool:
+    """Return whether a user has the requested page permission, including implied access."""
+    if str(user.role).lower() == "admin" or user.role == UserRole.ADMIN:
+        return True
+
+    permissions = set(get_user_permissions_list(user, session))
+    if f"{page}:admin" in permissions:
+        return True
+
+    if action == "read":
+        implied = {"read", "read_all", "view_all", "write", "write_self_only", "write_all", "delete"}
+    elif action == "write":
+        implied = {"write", "write_all", "delete"}
+        if page == "schedule":
+            implied.add("write_self_only")
+    elif action == "delete":
+        implied = {"delete"}
+    else:
+        implied = {action}
+
+    return any(f"{page}:{permission}" in permissions for permission in implied)
+
+
+def require_page_permission(user: User, session: Session, page: str, action: str) -> None:
+    """Raise 403 when a user lacks the requested page permission."""
+    if not has_page_permission(user, session, page, action):
+        raise HTTPException(status_code=403, detail=f"Missing permission: {page}:{action}")
+
+
 def require_employee_permission_admin(current_user: User, session: Session) -> None:
     """Require a base admin role or an explicit employees:admin permission."""
     if current_user.role == UserRole.ADMIN:

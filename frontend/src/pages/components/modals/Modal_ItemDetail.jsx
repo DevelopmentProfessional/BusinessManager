@@ -657,7 +657,7 @@ function BundleComponentsPanel({ bundleId }) {
 }
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, onUpdateInventory, onStockAdjusted, onDelete: _onDelete, canDelete: _canDelete = false, isDeleting: _isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
+export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, canAddToCart = true, onUpdateInventory, onStockAdjusted, onDelete: _onDelete, canDelete: _canDelete = false, isDeleting: _isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -1013,6 +1013,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
   // ─── 5 CART & INVENTORY ACTION HANDLERS ───────────────────────────────────
   const handleAddToCart = () => {
+    if (!canAddToCart) return;
     onAddToCart?.(item, itemType, quantity);
     onClose();
   };
@@ -1639,7 +1640,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               />
             ) : (
               <Footer_Actions
-                start={<Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" />}
+                start={canAddToCart ? <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleAddToCart} className="btn-primary" title="Add to cart" /> : null}
                 center={<Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />}
               />
             )}

@@ -13,6 +13,7 @@ import useStore from "./useStore";
  * @param {string} pageName - The permission namespace (e.g. 'inventory')
  */
 export default function usePagePermission(pageName) {
+  const pageNames = Array.isArray(pageName) ? pageName : [pageName];
   const navigate = useNavigate();
   const attemptedRefetch = useRef(false);
   // Read authReady and permissions from the store directly so the effect
@@ -27,7 +28,7 @@ export default function usePagePermission(pageName) {
 
     const checkAccess = async () => {
       if (cancelled) return;
-      if (hasPageAccess(pageName)) {
+      if (pageNames.some((page) => hasPageAccess(page))) {
         if (!cancelled) {
           attemptedRefetch.current = false;
         }
@@ -45,7 +46,7 @@ export default function usePagePermission(pageName) {
           console.error("Failed to refetch permissions in usePagePermission:", error);
         }
         if (cancelled) return;
-        if (useStore.getState().hasPageAccess(pageName)) {
+        if (pageNames.some((page) => useStore.getState().hasPageAccess(page))) {
           return;
         }
       }

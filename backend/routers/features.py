@@ -51,7 +51,7 @@ try:
         InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
         InventoryStockAdjustment, UserRole,
     )
-    from backend.routers.auth import get_current_user, get_user_permissions_list
+    from backend.routers.auth import get_current_user, get_user_permissions_list, has_page_permission, require_page_permission
     from backend.inventory_costing import add_inventory_cost_layer, consume_inventory_fifo, fallback_unit_cost
 except ModuleNotFoundError:
     from database import get_session
@@ -64,10 +64,18 @@ except ModuleNotFoundError:
         InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
         InventoryStockAdjustment, UserRole,
     )
-    from routers.auth import get_current_user, get_user_permissions_list
+    from routers.auth import get_current_user, get_user_permissions_list, has_page_permission, require_page_permission
     from inventory_costing import add_inventory_cost_layer, consume_inventory_fifo, fallback_unit_cost
 
 router = APIRouter()
+
+
+def _require_inventory_read(current_user: User, session: Session) -> None:
+    if not (
+        has_page_permission(current_user, session, "inventory", "read")
+        or has_page_permission(current_user, session, "sales", "read")
+    ):
+        raise HTTPException(status_code=403, detail="Missing permission: inventory:read")
 
 
 # ─── REQUEST BODIES ─────────────────────────────────────────────────────────────
@@ -389,6 +397,7 @@ def _build_feature_read(session: Session, inventory_id: UUID) -> List[InventoryF
 @router.get("/features", response_model=List[DescriptiveFeatureRead])
 async def list_features(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """List all global descriptive features with their options."""
+    _require_inventory_read(current_user, session)
     stmt = select(DescriptiveFeature).where(DescriptiveFeature.company_id == current_user.company_id)
     features = session.exec(stmt).all()
     result = []
@@ -408,6 +417,7 @@ async def list_features(session: Session = Depends(get_session), current_user: U
 @router.post("/features", response_model=DescriptiveFeatureRead)
 async def create_feature(body: FeatureNameBody, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Create a new global descriptive feature."""
+    require_page_permission(current_user, session, "inventory", "write")
     stmt = select(DescriptiveFeature).where(
         DescriptiveFeature.name == body.name.strip(),
         DescriptiveFeature.company_id == current_user.company_id,
@@ -434,6 +444,7 @@ async def rename_feature(
     current_user: User = Depends(get_current_user),
 ):
     """Rename a global descriptive feature (propagates instantly via FK join)."""
+    require_page_permission(current_user, session, "inventory", "write")
     feat = session.get(DescriptiveFeature, feature_id)
     if not feat:
         raise HTTPException(status_code=404, detail="Feature not found.")
@@ -463,6 +474,7 @@ async def rename_feature(
 @router.delete("/features/{feature_id}")
 async def delete_feature(feature_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     """Delete a global feature. Blocked if any inventory item has it added."""
+    require_page_permission(current_user, session, "inventory", "delete")
     feat = session.get(DescriptiveFeature, feature_id)
     if not feat:
         raise HTTPException(status_code=404, detail="Feature not found.")
@@ -497,6 +509,7 @@ async def get_inventory_summary(session: Session = Depends(get_session), current
     Used by inventory list and sales page to avoid N+1 per-row fetches.
     Response: { "<inventory_id>": { feature_names: [], price_min: float|null, price_max: float|null } }
     """
+    _require_inventory_read(current_user, session)
     # Filter by company via the InventoryFeature.company_id
     inv_features = session.exec(
         select(InventoryFeature).where(InventoryFeature.company_id == current_user.company_id)
@@ -542,6 +555,7 @@ async def deduct_feature_stock(
     Decrement feature option quantities after a sale.
     Floors each quantity at 0 and recalculates total inventory stock per affected item.
     """
+    require_page_permission(current_user, session, "sales", "write")
     affected_inventory_ids = set()
     quantity_before_by_inventory = {}
     for item in items:
@@ -623,6 +637,7 @@ async def add_option(
     current_user: User = Depends(get_current_user),
 ):
     """Add a new option to a global feature. Auto-seeds qty=0 rows for all items using this feature."""
+    require_page_permission(current_user, session, "inventory", "write")
     feat = session.get(DescriptiveFeature, feature_id)
     if not feat or (current_user.company_id and feat.company_id != current_user.company_id):
         raise HTTPException(status_code=404, detail="Feature not found.")
@@ -679,6 +694,7 @@ async def rename_option(
     current_user: User = Depends(get_current_user),
 ):
     """Rename a feature option (propagates instantly via FK)."""
+    require_page_permission(current_user, session, "inventory", "write")
     opt = session.get(FeatureOption, option_id)
     if not opt or opt.feature_id != feature_id:
         raise HTTPException(status_code=404, detail="Option not found.")
@@ -706,6 +722,7 @@ async def delete_option(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a feature option. Blocked if any inventory item has quantity > 0 for this option."""
+    require_page_permission(current_user, session, "inventory", "delete")
     opt = session.get(FeatureOption, option_id)
     if not opt or opt.feature_id != feature_id:
         raise HTTPException(status_code=404, detail="Option not found.")
@@ -754,6 +771,7 @@ async def get_inventory_features(
     current_user: User = Depends(get_current_user),
 ):
     """Get all features (with option data) for a specific inventory item."""
+    _require_inventory_read(current_user, session)
     inv = session.get(Inventory, inventory_id)
     if not inv:
         raise HTTPException(status_code=404, detail="Inventory item not found.")
@@ -768,6 +786,7 @@ async def add_feature_to_inventory(
     current_user: User = Depends(get_current_user),
 ):
     """Add a global feature to an inventory item and seed option data rows."""
+    require_page_permission(current_user, session, "inventory", "write")
     inv = session.get(Inventory, inventory_id)
     if not inv:
         raise HTTPException(status_code=404, detail="Inventory item not found.")
@@ -828,6 +847,7 @@ async def remove_feature_from_inventory(
     current_user: User = Depends(get_current_user),
 ):
     """Remove a feature from an inventory item. Blocked if any option has quantity > 0."""
+    require_page_permission(current_user, session, "inventory", "delete")
     inv_feat = session.exec(
         select(InventoryFeature).where(
             InventoryFeature.inventory_id == inventory_id,
@@ -875,6 +895,7 @@ async def get_inventory_feature_combinations(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    _require_inventory_read(current_user, session)
     inv = session.get(Inventory, inventory_id)
     if not inv:
         raise HTTPException(status_code=404, detail="Inventory item not found.")
@@ -889,6 +910,7 @@ async def save_inventory_feature_combinations(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "inventory", "write")
     inv = session.exec(
         select(Inventory).where(Inventory.id == inventory_id).with_for_update()
     ).first()
@@ -944,6 +966,7 @@ async def set_affects_price(
     current_user: User = Depends(get_current_user),
 ):
     """Set which feature (or none) affects price for an inventory item. Clears all others."""
+    require_page_permission(current_user, session, "inventory", "write")
     all_links = session.exec(
         select(InventoryFeature).where(InventoryFeature.inventory_id == inventory_id)
     ).all()
@@ -964,6 +987,7 @@ async def save_option_data(
     current_user: User = Depends(get_current_user),
 ):
     """Bulk-save option data (is_enabled, quantity, price) for one feature on one item."""
+    require_page_permission(current_user, session, "inventory", "write")
     inv = session.exec(
         select(Inventory).where(Inventory.id == inventory_id).with_for_update()
     ).first()

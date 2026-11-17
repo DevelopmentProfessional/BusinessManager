@@ -12,15 +12,23 @@ import math
 try:
     from backend.database import get_session
     from backend.models import InventoryCategory, InventoryCategoryRead
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, has_page_permission, require_page_permission
     from backend.utils.db_helpers import safe_commit, safe_commit_refresh
 except ImportError:
     from database import get_session
     from models import InventoryCategory, InventoryCategoryRead
-    from routers.auth import get_current_user
+    from routers.auth import get_current_user, has_page_permission, require_page_permission
     from utils.db_helpers import safe_commit, safe_commit_refresh
 
 router = APIRouter()
+
+
+def _require_category_permission(current_user, session, action: str, include_suppliers: bool = False) -> None:
+    pages = ("inventory", "suppliers") if include_suppliers else ("inventory",)
+    if any(has_page_permission(current_user, session, page, action) for page in pages):
+        return
+    required = " or ".join(f"{page}:{action}" for page in pages)
+    raise HTTPException(status_code=403, detail=f"Missing permission: {required}")
 
 
 @router.get("/inventory-categories", response_model=List[InventoryCategoryRead])
@@ -29,6 +37,7 @@ def list_inventory_categories(
     session: Session = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
+    _require_category_permission(current_user, session, "read", include_suppliers=True)
     company_id = getattr(current_user, "company_id", None)
     stmt = select(InventoryCategory).where(InventoryCategory.company_id == company_id)
     if item_type:
@@ -43,6 +52,7 @@ def create_inventory_category(
     session: Session = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "inventory", "write")
     company_id = getattr(current_user, "company_id", None)
     name = (payload.get("name") or "").strip()
     item_type = (payload.get("item_type") or "").strip().lower()
@@ -72,6 +82,7 @@ def delete_inventory_category(
     session: Session = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "inventory", "delete")
     company_id = getattr(current_user, "company_id", None)
     cat = session.get(InventoryCategory, category_id)
     if not cat or cat.company_id != company_id:
@@ -87,6 +98,7 @@ def update_inventory_category(
     session: Session = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
+    _require_category_permission(current_user, session, "write", include_suppliers=True)
     company_id = getattr(current_user, "company_id", None)
     cat = session.get(InventoryCategory, category_id)
     if not cat or cat.company_id != company_id:

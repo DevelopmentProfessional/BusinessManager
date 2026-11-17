@@ -79,7 +79,7 @@ except ModuleNotFoundError:
 
 from ..database import get_session
 from ..models import *
-from .auth import get_current_user, get_current_company_id, get_user_permissions_list
+from .auth import get_current_user, get_current_company_id, get_user_permissions_list, has_page_permission
 from ..inventory_costing import (
     add_inventory_cost_layer,
     consume_inventory_fifo,
@@ -712,12 +712,14 @@ def _resolve_permission_pages(table_name: str, action: str = "read") -> set[str]
         pages.add("documents")
     if base in {"supplier", "suppliers", "supplier_product", "supplier_products", "supplier_order", "supplier_orders"}:
         pages.add("suppliers")
-        pages.add("inventory")
+        if action == "read":
+            pages.add("inventory")
     if base in {"service_resource", "service_resources", "service_asset", "service_assets", "service_employee", "service_employees", "service_location", "service_locations", "service_recipe", "service_recipes"}:
         pages.add("services")
     if base in {"inventory_feature", "inventory_features", "descriptive_feature", "descriptive_features", "feature_option", "feature_options", "inventory_feature_option_data"}:
         pages.add("inventory")
-        pages.add("sales")
+        if action == "read":
+            pages.add("sales")
 
     # Read-only cross-workflow resolution:
     # Cashiers (sales) and schedulers (schedule) must be able to view services, inventory, and clients.
@@ -741,19 +743,8 @@ def _require_isud_permission(
     action: str,
 ) -> None:
     """Require page permission for non-admin users on generic ISUD endpoints."""
-    if current_user.role == UserRole.ADMIN:
-        return
-
-    permissions = set(get_user_permissions_list(current_user, session))
     for page in _resolve_permission_pages(table_name, action):
-        if f"{page}:{action}" in permissions or f"{page}:admin" in permissions:
-            return
-        if action == "write" and page == "schedule" and f"{page}:write_self_only" in permissions:
-            return
-        # write/write_all/delete implies read
-        if action == "read" and any(
-            f"{page}:{p}" in permissions for p in ("write", "write_self_only", "write_all", "delete")
-        ):
+        if has_page_permission(current_user, session, page, action):
             return
 
     raise HTTPException(status_code=403, detail=f"Missing permission: {table_name}:{action}")

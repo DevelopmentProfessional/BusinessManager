@@ -21,12 +21,12 @@ from uuid import UUID
 try:
     from backend.database import get_session
     from backend.models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, DiscountRule, User
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, require_page_permission
     from backend.utils.discount_service import get_applicable_discounts
 except ModuleNotFoundError:
     from database import get_session          # type: ignore
     from models import ClientCartItem, ClientCartItemRead, ClientCartItemUpsert, DiscountRule, User  # type: ignore
-    from routers.auth import get_current_user  # type: ignore
+    from routers.auth import get_current_user, require_page_permission  # type: ignore
     from utils.discount_service import get_applicable_discounts  # type: ignore
 
 router = APIRouter()
@@ -34,6 +34,7 @@ router = APIRouter()
 
 @router.get("/client-cart/{client_id}", response_model=list[ClientCartItemRead])
 def get_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    require_page_permission(current_user, session, "sales", "read")
     stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id, ClientCartItem.company_id == current_user.company_id)
     items = session.exec(stmt).all()
     
@@ -85,6 +86,7 @@ def upsert_cart_item(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "sales", "write")
     stmt = select(ClientCartItem).where(
         ClientCartItem.client_id == client_id,
         ClientCartItem.cart_key == data.cart_key,
@@ -127,6 +129,7 @@ def remove_cart_item(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "sales", "write")
     stmt = select(ClientCartItem).where(
         ClientCartItem.client_id == client_id,
         ClientCartItem.cart_key == cart_key,
@@ -146,6 +149,7 @@ def remove_cart_item(
 
 @router.delete("/client-cart/{client_id}")
 def clear_client_cart(client_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    require_page_permission(current_user, session, "sales", "write")
     stmt = select(ClientCartItem).where(ClientCartItem.client_id == client_id, ClientCartItem.company_id == current_user.company_id)
     items = session.exec(stmt).all()
     for item in items:

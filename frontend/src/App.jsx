@@ -70,8 +70,14 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 
   // Check if user has required permission
   if (requiredPermission) {
-    const [page, permission] = requiredPermission.split(":");
-    if (!hasPermission(page, permission)) {
+    const requiredPermissions = Array.isArray(requiredPermission)
+      ? requiredPermission
+      : [requiredPermission];
+    const hasRequiredPermission = requiredPermissions.some((permissionString) => {
+      const [page, permission] = permissionString.split(":");
+      return hasPermission(page, permission);
+    });
+    if (!hasRequiredPermission) {
       return <Navigate to="/profile" replace />;
     }
   }
@@ -306,7 +312,7 @@ function App() {
           <Route
             path="/documents"
             element={
-              <ProtectedRoute requiredPermission="documents:read">
+              <ProtectedRoute requiredPermission={["documents:read", "templates:read"]}>
                 <Layout>
                   <PageErrorBoundary>
                     <Documents />

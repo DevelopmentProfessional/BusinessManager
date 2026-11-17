@@ -4,6 +4,7 @@ import { templatesAPI, clientsAPI, clientCartAPI, inventoryAPI, purchaseOrdersAP
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import useStore from "../../../services/useStore";
 import {
   renderTemplate,
   buildClientVariables,
@@ -42,6 +43,8 @@ const TYPE_BADGE_COLOR = {
  *  onClose       – callback to close this modal
  */
 export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], client, employee, service, filterType = null, initialTemplateType = null, onClose }) {
+  const { hasPermission } = useStore();
+  const canEditTemplates = hasPermission("templates", "write");
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -636,7 +639,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         noPadding={false}
         footer={
           <div className="align-items-center d-flex gap-2 justify-content-start w-100">
-            {!isPayslip && (
+            {!isPayslip && canEditTemplates && !selected?.is_standard && (
               <Button_Toolbar
                 icon={PencilSquareIcon}
                 label="Edit"

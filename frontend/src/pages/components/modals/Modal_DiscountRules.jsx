@@ -10,6 +10,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputCheckbox, InputNumber, InputText, InputDateTime } from "../Inputs";
+import useStore from "../../../services/useStore";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -49,6 +50,9 @@ const chipStyle = (active) => ({
 });
 
 export default function Modal_DiscountRules({ isOpen, onClose }) {
+  const { hasPermission } = useStore();
+  const canWriteDeals = hasPermission("sales", "write");
+  const canDeleteDeals = hasPermission("sales", "delete");
   const [rules, setRules] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [services, setServices] = useState([]);
@@ -97,6 +101,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   }, [isOpen, load]);
 
   const startEdit = (rule) => {
+    if (!canWriteDeals) return;
     setEditPanelOpen(true);
     setEditingId(rule.id);
     setForm({
@@ -133,6 +138,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   };
 
   const startNew = () => {
+    if (!canWriteDeals) return;
     setEditPanelOpen(true);
     setEditingId(null);
     setForm({
@@ -144,6 +150,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
   const handleDelete = async (id, e) => {
     e?.stopPropagation();
+    if (!canDeleteDeals) return;
     if (!(await showConfirm("Delete this discount rule?"))) return;
     try {
       await discountRulesAPI.delete(id);
@@ -169,6 +176,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   };
 
   const handleSave = async () => {
+    if (!canWriteDeals) {
+      setError("You do not have permission to manage deals.");
+      return;
+    }
     if (!form.name.trim()) {
       setError("Rule name is required.");
       return;
@@ -314,13 +325,15 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
             </>
           ) : (
             <>
-              <Button_Toolbar
-                icon={PlusIcon}
-                label="New"
-                onClick={startNew}
-                className="btn-primary"
-                title="New Rule"
-              />
+              {canWriteDeals && (
+                <Button_Toolbar
+                  icon={PlusIcon}
+                  label="New"
+                  onClick={startNew}
+                  className="btn-primary"
+                  title="New Rule"
+                />
+              )}
               <Button_Toolbar
                 icon={XMarkIcon}
                 label="Close"
@@ -365,17 +378,17 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                     return (
                       <tr
                         key={rule.id}
-                        role="button"
-                        tabIndex={0}
+                        role={canWriteDeals ? "button" : undefined}
+                        tabIndex={canWriteDeals ? 0 : -1}
                         className={editingId === rule.id ? "table-primary" : ""}
-                        onClick={() => startEdit(rule)}
-                        onKeyDown={(e) => {
+                        onClick={canWriteDeals ? () => startEdit(rule) : undefined}
+                        onKeyDown={canWriteDeals ? (e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             startEdit(rule);
                           }
-                        }}
-                        style={{ cursor: "pointer" }}
+                        } : undefined}
+                        style={{ cursor: canWriteDeals ? "pointer" : "default" }}
                       >
                         <td className="fw-medium">{rule.name}</td>
                         <td>{getDealTypeBadge(rule.deal_type)}</td>
@@ -400,9 +413,11 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                           )}
                         </td>
                         <td className="text-end" onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
-                            <TrashIcon style={{ width: 14, height: 14 }} />
-                          </button>
+                          {canDeleteDeals && (
+                            <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
+                              <TrashIcon style={{ width: 14, height: 14 }} />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -550,7 +565,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
           </div>
 
           <div className="align-items-center border-top d-flex flex-shrink-0 gap-2 p-2">
-            <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save deal" />
+            {canWriteDeals && <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save deal" />}
             <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={resetForm} className="btn-outline-secondary" disabled={saving} title="Cancel" />
           </div>
         </div>

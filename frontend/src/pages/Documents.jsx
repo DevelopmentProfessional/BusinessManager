@@ -122,6 +122,7 @@ function formatFileSize(bytes) {
 
 export default function Documents() {
   const { user, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission } = useStore();
+  const canReadDocuments = hasPermission("documents", "read");
 
   // ─── 5  STATE DECLARATIONS ────────────────────────────────────────────────
   const [documents, setDocuments] = useState([]);
@@ -188,7 +189,7 @@ export default function Documents() {
   const [docTagMap, setDocTagMap] = useState({});
 
   // Templates state
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(() => !canReadDocuments && hasPermission("templates", "read"));
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
@@ -317,11 +318,13 @@ export default function Documents() {
 
   // ─── 7  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
-    loadDocuments();
-    loadCategories();
-    loadDocStatuses();
-    loadTemplates();
-    loadDocTagMap();
+    if (canReadDocuments) {
+      loadDocuments();
+      loadCategories();
+      loadDocStatuses();
+      loadDocTagMap();
+    }
+    if (hasPermission("templates", "read")) loadTemplates();
   });
 
   // ─── 8  TEMPLATE API HANDLERS ─────────────────────────────────────────────
@@ -338,16 +341,22 @@ export default function Documents() {
   };
 
   const handleNewTemplate = () => {
+    if (!hasPermission("templates", "write")) return;
     setEditingTemplate(null);
     setIsTemplateEditorOpen(true);
   };
 
   const handleEditTemplate = (tpl) => {
+    if (!hasPermission("templates", "write") || tpl?.is_standard) return;
     setEditingTemplate(tpl);
     setIsTemplateEditorOpen(true);
   };
 
   const handleSaveTemplate = async (data) => {
+    if (!hasPermission("templates", "write")) {
+      setError("You do not have permission to manage templates.");
+      return;
+    }
     if (editingTemplate?.id) {
       const res = await templatesAPI.update(editingTemplate.id, data);
       setTemplates((prev) =>
@@ -365,6 +374,10 @@ export default function Documents() {
   };
 
   const handleDeleteTemplate = async (tpl) => {
+    if (!hasPermission("templates", "delete")) {
+      setError("You do not have permission to delete templates.");
+      return;
+    }
     if (!(await showConfirm(`Delete template "${tpl.name}"?`))) return;
     try {
       await templatesAPI.delete(tpl.id);
@@ -648,7 +661,7 @@ export default function Documents() {
   };
 
   // ─── 15  RENDER / RETURN ──────────────────────────────────────────────────
-  usePagePermission("documents");
+  usePagePermission(["documents", "templates"]);
 
   if (loading) {
     return (
@@ -663,7 +676,7 @@ export default function Documents() {
       {/* Header */}
       <div className="app-page-header align-items-center border-bottom d-flex flex-shrink-0 justify-content-between p-1">
         <h1 className="app-page-title">{showTemplates ? "Templates" : "Documents"}</h1>
-        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+        {canReadDocuments && <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}
       </div>
 
       {/* Error Alert */}
@@ -711,28 +724,30 @@ export default function Documents() {
                     {filtered.map((tpl) => (
                       <tr
                         key={tpl.id}
-                        className="app-clickable-row align-middle border-bottom"
-                        tabIndex={0}
-                        onClick={() => handleEditTemplate(tpl)}
-                        onKeyDown={(e) => {
+                        className={`${!tpl.is_standard && hasPermission("templates", "write") ? "app-clickable-row" : ""} align-middle border-bottom`}
+                        tabIndex={!tpl.is_standard && hasPermission("templates", "write") ? 0 : -1}
+                        onClick={!tpl.is_standard && hasPermission("templates", "write") ? () => handleEditTemplate(tpl) : undefined}
+                        onKeyDown={!tpl.is_standard && hasPermission("templates", "write") ? (e) => {
                           if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
                             e.preventDefault();
                             handleEditTemplate(tpl);
                           }
-                        }}
+                        } : undefined}
                       >
                         <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTemplate(tpl);
-                            }}
-                            className="align-items-center border-0 btn btn-outline-danger btn-sm d-flex justify-content-center p-1"
-                            title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
-                            disabled={tpl.is_standard}
-                          >
-                            <XMarkIcon className="ui-icon-4" />
-                          </button>
+                          <Gate_Permission page="templates" permission="delete">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTemplate(tpl);
+                              }}
+                              className="align-items-center border-0 btn btn-outline-danger btn-sm d-flex justify-content-center p-1"
+                              title={tpl.is_standard ? "Standard templates cannot be deleted" : "Delete"}
+                              disabled={tpl.is_standard}
+                            >
+                              <XMarkIcon className="ui-icon-4" />
+                            </button>
+                          </Gate_Permission>
                         </td>
                         <td className="px-0">
                           <div className="ui-flex-center-gap-2">
@@ -742,16 +757,20 @@ export default function Documents() {
                           <span className={`badge rounded-pill mt-1 text-xxs ${TEMPLATE_TYPE_COLORS[tpl.template_type] || TEMPLATE_TYPE_COLORS.custom}`}>{tpl.template_type}</span>
                         </td>
                         <td className="px-1 text-center" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditTemplate(tpl);
-                            }}
-                            className="align-items-center border-0 btn btn-outline-primary btn-sm d-flex justify-content-center p-1"
-                            title="Edit"
-                          >
-                            <PencilIcon className="ui-icon-4" />
-                          </button>
+                          {!tpl.is_standard && (
+                            <Gate_Permission page="templates" permission="write">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditTemplate(tpl);
+                                }}
+                                className="align-items-center border-0 btn btn-outline-primary btn-sm d-flex justify-content-center p-1"
+                                title="Edit"
+                              >
+                                <PencilIcon className="ui-icon-4" />
+                              </button>
+                            </Gate_Permission>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -914,20 +933,26 @@ export default function Documents() {
           }
         >
           {/* Templates toggle */}
-          <Button_Toolbar
-            icon={DocumentTextIcon}
-            label="Temp"
-            title={showTemplates ? "Back to documents" : "Document templates"}
-            onClick={() => setShowTemplates((v) => !v)}
-            className={`border-0 shadow-lg transition-all ${showTemplates ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
-          />
+          <Gate_Permission page="templates" permission="read">
+            {(!showTemplates || canReadDocuments) && (
+            <Button_Toolbar
+              icon={DocumentTextIcon}
+              label="Temp"
+              title={showTemplates ? "Back to documents" : "Document templates"}
+              onClick={() => setShowTemplates((v) => !v)}
+              className={`border-0 shadow-lg transition-all ${showTemplates ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
+            />
+            )}
+          </Gate_Permission>
 
           {showTemplates ? (
             /* Templates mode controls */
             <>
-              <button type="button" onClick={handleNewTemplate} className="align-items-center btn btn-app-primary d-flex flex-shrink-0 justify-content-center px-1 rounded-pill" title="New template">
-                <PlusIcon className="ui-icon-5" />
-              </button>
+              <Gate_Permission page="templates" permission="write">
+                <button type="button" onClick={handleNewTemplate} className="align-items-center btn btn-app-primary d-flex flex-shrink-0 justify-content-center px-1 rounded-pill" title="New template">
+                  <PlusIcon className="ui-icon-5" />
+                </button>
+              </Gate_Permission>
               {/* Type filter for templates */}
               <div className="ui-pos-rel">
                 <Button_Toolbar

@@ -43,6 +43,7 @@ import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon, DocumentTextIcon, DocumentCurrencyDollarIcon } from "../icons";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Gate_Permission from "./components/layout/Gate_Permission";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
@@ -62,7 +63,7 @@ import { sortItemsAlphabetically } from "../utils/displaySort";
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
 // Unified Product/Service Card Component
-const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart, cardViewMode = "full" }) => {
+const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart, canWrite = false, cardViewMode = "full" }) => {
   const isService = itemType === "service";
   const imageUrl = getDisplayImageUrl(item);
   const hasImage = !!imageUrl;
@@ -117,7 +118,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
             {!isService && item.price_min != null && item.price_max != null ? (item.price_min === item.price_max ? `$${item.price_min.toFixed(2)}` : `$${item.price_min.toFixed(2)}–$${item.price_max.toFixed(2)}`) : `$${item.price?.toFixed(2)}`}
           </span>
 
-          <div>
+          {canWrite && <div>
             {inCart ? (
               <div className="bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700">
                 <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-5 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Remove">
@@ -137,7 +138,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
                 Add
               </button>
             )}
-          </div>
+          </div>}
         </div>
       </div>
     );
@@ -190,7 +191,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
           </span>
 
           {/* Cart Controls - Bottom Right */}
-          <div>
+          {canWrite && <div>
             {inCart ? (
               <div className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow-lg">
                 <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-6 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
@@ -207,7 +208,7 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
                 Add
               </button>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -376,9 +377,16 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
 
 // ─── 3  SALES PAGE COMPONENT ───────────────────────────────────────────────
 export default function Sales() {
-  const { services, setServices, loading, setLoading, error, setError, clearError, openAddClientModal, user } = useStore();
+  const { services, setServices, loading, setLoading, error, setError, clearError, openAddClientModal, user, hasPermission } = useStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const canWriteSales = hasPermission("sales", "write");
+  const canWriteClients = hasPermission("clients", "write");
+  const ensureSalesWrite = (action = "change the sales cart") => {
+    if (canWriteSales) return true;
+    setError(`You do not have permission to ${action}`);
+    return false;
+  };
   const { footerAlign } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
 
@@ -480,8 +488,19 @@ export default function Sales() {
   });
   const stripeReturnHandledRef = useRef(false);
   const routeHandoffProcessedRef = useRef(null);
+  const routeHandoffPermissionProcessedRef = useRef(null);
   const [checkoutContext, setCheckoutContext] = useState(null);
   const [checkoutReturnTarget, setCheckoutReturnTarget] = useState(null);
+
+  useEffect(() => {
+    if (canWriteSales) return;
+    setShowCartModal(false);
+    setShowCheckout(false);
+    setShowInvoiceModal(false);
+    setShowFeatureModal(false);
+    setFeatureModalItem(null);
+    setMixModalItem(null);
+  }, [canWriteSales]);
 
   const closeCheckoutModal = useCallback(
     (returnState = null) => {
@@ -578,6 +597,7 @@ export default function Sales() {
 
   // On mount: restore walk-in cart from localStorage (only when not navigating with a pre-selected client)
   useEffect(() => {
+    if (!canWriteSales) return;
     if (location.state?.preSelectedClient) return;
     try {
       const saved = localStorage.getItem("walk_in_cart");
@@ -586,23 +606,28 @@ export default function Sales() {
         if (Array.isArray(parsed) && parsed.length > 0) setCart(parsed);
       }
     } catch {}
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canWriteSales, location.state?.preSelectedClient]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!canWriteSales) {
+      setAutoOpenCheckoutRequested(false);
+      return;
+    }
     if (!autoOpenCheckoutRequested) return;
     if (cart.length === 0) return;
     setShowCheckout(true);
     setAutoOpenCheckoutRequested(false);
-  }, [autoOpenCheckoutRequested, cart.length]);
+  }, [autoOpenCheckoutRequested, canWriteSales, cart.length]);
 
   // Walk-in cart persisted to localStorage (no client selected)
   useEffect(() => {
+    if (!canWriteSales) return;
     if (!selectedClient?.id) {
       try {
         localStorage.setItem("walk_in_cart", JSON.stringify(cart));
       } catch {}
     }
-  }, [cart, selectedClient?.id]);
+  }, [canWriteSales, cart, selectedClient?.id]);
 
   useEffect(() => {
     if (stripeReturnHandledRef.current) return;
@@ -739,17 +764,20 @@ export default function Sales() {
   }, [clearError, clients, closeCheckoutModal, loadTransactionHistory, location.search, navigate, setError]);
 
   // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
-  const mapCartItemToDb = (item) => ({
-    cart_key: item.cartKey,
-    item_id: item.id || null,
-    item_type: item.itemType,
-    item_name: item.name,
-    unit_price: item.price,
-    quantity: item.quantity,
-    line_total: item.price * item.quantity,
-    // For mix items, persist selections in options_json so cart survives page refresh
-    options_json: item.itemType === "mix" && item.mixSelections?.length > 0 ? JSON.stringify(item.mixSelections) : item.selectedOptions?.length > 0 ? JSON.stringify(item.selectedOptions) : null,
-  });
+  const mapCartItemToDb = useCallback(
+    (item) => ({
+      cart_key: item.cartKey,
+      item_id: item.id || null,
+      item_type: item.itemType,
+      item_name: item.name,
+      unit_price: item.price,
+      quantity: item.quantity,
+      line_total: item.price * item.quantity,
+      // For mix items, persist selections in options_json so cart survives page refresh
+      options_json: item.itemType === "mix" && item.mixSelections?.length > 0 ? JSON.stringify(item.mixSelections) : item.selectedOptions?.length > 0 ? JSON.stringify(item.selectedOptions) : null,
+    }),
+    []
+  );
 
   const mapDbItemToCart = useCallback((dbItem) => {
     let parsedOptions = [];
@@ -777,14 +805,14 @@ export default function Sales() {
   }, []);
 
   const syncItemToDb = useCallback((item, clientId) => {
-    if (!clientId) return;
+    if (!canWriteSales || !clientId) return;
     clientCartAPI.upsertItem(clientId, mapCartItemToDb(item)).catch(() => {});
-  }, []);
+  }, [canWriteSales, mapCartItemToDb]);
 
-  const removeItemFromDb = (cartKey, clientId) => {
-    if (!clientId) return;
+  const removeItemFromDb = useCallback((cartKey, clientId) => {
+    if (!canWriteSales || !clientId) return;
     clientCartAPI.removeItem(clientId, cartKey).catch(() => {});
-  };
+  }, [canWriteSales]);
 
   const loadClients = useCallback(async () => {
     if (clientsLoaded) return; // Already loaded, skip
@@ -829,6 +857,11 @@ export default function Sales() {
   // Select a client, load their saved cart, merge any walk-in items, and include their next scheduled service
   const handleSelectClient = useCallback(
     async (client, options = {}) => {
+      if (!canWriteSales) {
+        setSelectedClient(client);
+        return;
+      }
+
       // Capture walk-in items before switching — from in-memory state (if no client was selected)
       // or from localStorage (when navigating to this page fresh with a pre-selected client)
       let walkInItems = selectedClient == null ? [...cart] : [];
@@ -908,7 +941,7 @@ export default function Sales() {
 
       setCart(nextCart);
     },
-    [cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]
+    [canWriteSales, cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]
   );
 
   useEffect(() => {
@@ -918,18 +951,19 @@ export default function Sales() {
   // Auto-select client (and optionally pre-load their cart) when navigated from Clients or Schedule pages.
   // Guard by route-state identity so callback dependency updates do not replay one-time handoff logic.
   useEffect(() => {
-    if (location.state && routeHandoffProcessedRef.current === location.state) return;
+    if (location.state && routeHandoffProcessedRef.current === location.state && routeHandoffPermissionProcessedRef.current === canWriteSales) return;
     routeHandoffProcessedRef.current = location.state || null;
+    routeHandoffPermissionProcessedRef.current = canWriteSales;
 
     const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
     if (scheduleId) setLinkedScheduleId(scheduleId);
     if (preloadServiceId) setLinkedScheduleServiceId(preloadServiceId);
     if (checkoutReturnTo?.pathname) setCheckoutReturnTarget(checkoutReturnTo);
     setCheckoutContext(stateCheckoutContext || null);
-    if (openCheckout) setAutoOpenCheckoutRequested(true);
+    if (openCheckout && canWriteSales) setAutoOpenCheckoutRequested(true);
     if (preSelectedClient) handleSelectClient(preSelectedClient, { preloadCart });
 
-    if (preloadServiceId) {
+    if (preloadServiceId && canWriteSales) {
       const addServiceWhenReady = () => {
         const service = services.find((candidate) => String(candidate.id) === String(preloadServiceId));
         if (!service) return;
@@ -952,7 +986,7 @@ export default function Sales() {
         return () => clearInterval(interval);
       }
     }
-  }, [handleSelectClient, location.state, services]);
+  }, [canWriteSales, handleSelectClient, location.state, services]);
 
   const loadProducts = async () => {
     try {
@@ -997,6 +1031,7 @@ export default function Sales() {
   // POS Functions
   // Use cartKey to distinguish services from products (avoids ID collisions)
   const addToCart = (item, itemType = "service", quantity = 1, overridePrice = null, selectedOptions = null) => {
+    if (!ensureSalesWrite()) return;
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find((c) => c.cartKey === cartKey);
     const price = overridePrice != null ? overridePrice : item.price;
@@ -1013,6 +1048,7 @@ export default function Sales() {
 
   // Route add-to-cart through feature check for products, or mix selection modal for mixes
   const addToCartWithFeatureCheck = async (item, itemType, quantity = 1) => {
+    if (!ensureSalesWrite()) return;
     if (itemType === "mix") {
       setMixModalItem(item);
     } else if (itemType === "bundle") {
@@ -1046,11 +1082,35 @@ export default function Sales() {
   };
 
   const removeFromCart = (cartKey) => {
+    if (!ensureSalesWrite()) return;
     setCart(cart.filter((item) => item.cartKey !== cartKey));
     removeItemFromDb(cartKey, selectedClient?.id);
   };
 
+  const clearCart = async () => {
+    if (!ensureSalesWrite()) return;
+    if (selectedClient?.id) {
+      try {
+        await clientCartAPI.clearCart(selectedClient.id);
+      } catch (err) {
+        setError(getDetailedApiErrorMessage(err, "Failed to clear the saved cart"));
+        console.error("Failed to clear saved client cart:", err);
+        return;
+      }
+      try {
+        localStorage.removeItem(`client_cart_${selectedClient.id}`);
+      } catch {}
+    } else {
+      try {
+        localStorage.removeItem("walk_in_cart");
+      } catch {}
+    }
+    setCart([]);
+    setSelectedCartDealIds([]);
+  };
+
   const updateCartQuantity = (cartKey, quantity) => {
+    if (!ensureSalesWrite()) return;
     if (quantity <= 0) {
       removeFromCart(cartKey);
     } else {
@@ -1063,6 +1123,7 @@ export default function Sales() {
 
   // Increment item quantity in cart (or trigger feature check if not yet in cart)
   const incrementCartItem = (item, itemType) => {
+    if (!ensureSalesWrite()) return;
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find((c) => c.cartKey === cartKey);
     if (existing) {
@@ -1074,6 +1135,7 @@ export default function Sales() {
 
   // Decrement item quantity in cart (removes if qty becomes 0)
   const decrementCartItem = (item, itemType) => {
+    if (!ensureSalesWrite()) return;
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find((c) => c.cartKey === cartKey);
     if (existing) {
@@ -1278,6 +1340,7 @@ export default function Sales() {
   }, [clients, filterClientSearch]);
 
   const addSubscriptionToCart = (subscription) => {
+    if (!ensureSalesWrite()) return;
     const cartKey = `subscription-${subscription.id}`;
     const existing = cart.find((c) => c.cartKey === cartKey);
     const startDate = subscriptionStartDate || new Date().toISOString().slice(0, 10);
@@ -1354,6 +1417,7 @@ export default function Sales() {
 
   // ─── 8  CHECKOUT / PAYMENT HANDLERS ──────────────────────────────────────
   const handleCheckout = () => {
+    if (!ensureSalesWrite("process sales")) return;
     if (cart.length === 0) {
       setError("Cart is empty");
       return;
@@ -1369,6 +1433,7 @@ export default function Sales() {
   };
 
   const processPayment = async (paymentMethod, checkoutItemsArg = null) => {
+    if (!ensureSalesWrite("process sales")) return { completed: false };
     const checkoutItems = Array.isArray(checkoutItemsArg) && checkoutItemsArg.length > 0 ? checkoutItemsArg : cart;
     if (checkoutItems.length === 0) return { completed: false };
     const includesLinkedScheduleService = linkedScheduleId && linkedScheduleServiceId ? checkoutItems.some((item) => item.itemType === "service" && String(item.id) === String(linkedScheduleServiceId)) : false;
@@ -1731,6 +1796,7 @@ export default function Sales() {
                   item={service}
                   itemType="service"
                   cardViewMode={cardViewMode}
+                  canWrite={canWriteSales}
                   onSelect={handleSelectItem}
                   inCart={isInCart(service.id, "service")}
                   cartQuantity={getCartQuantity(service.id, "service")}
@@ -1764,6 +1830,7 @@ export default function Sales() {
                     item={product}
                     itemType={pType}
                     cardViewMode={cardViewMode}
+                    canWrite={canWriteSales}
                     onSelect={handleSelectItem}
                     inCart={isInCart(product.id, pType)}
                     cartQuantity={getCartQuantity(product.id, pType)}
@@ -1796,7 +1863,8 @@ export default function Sales() {
                   item={subscription}
                   itemType="subscription"
                   cardViewMode={cardViewMode}
-                  onSelect={() => addSubscriptionToCart(subscription)}
+                  canWrite={canWriteSales}
+                  onSelect={canWriteSales ? () => addSubscriptionToCart(subscription) : () => {}}
                   inCart={isInCart(subscription.id, "subscription")}
                   cartQuantity={getCartQuantity(subscription.id, "subscription")}
                   onIncrement={() => addSubscriptionToCart(subscription)}
@@ -1878,7 +1946,7 @@ export default function Sales() {
                                 {c.email && <p className="dark:text-gray-400 text-gray-500">{c.email}</p>}
                               </button>
                             ))}
-                          {clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
+                          {canWriteClients && clients.filter((c) => c.name?.toLowerCase().includes(clientPanelSearch.toLowerCase()) || c.email?.toLowerCase().includes(clientPanelSearch.toLowerCase())).length === 0 && (
                             <button
                               onClick={() =>
                                 openAddClientModal((newClient) => {
@@ -1898,7 +1966,7 @@ export default function Sales() {
                         </div>
                       )}
                     </div>
-                    <button
+                    {canWriteClients && <button
                       type="button"
                       onClick={() =>
                         openAddClientModal((newClient) => {
@@ -1913,7 +1981,7 @@ export default function Sales() {
                       title="Add new client"
                     >
                       <PlusIcon className="ui-icon-5" />
-                    </button>
+                    </button>}
                   </div>
                 )}
               </div>
@@ -2008,28 +2076,32 @@ export default function Sales() {
               </div>
 
               {/* Deals Button */}
-              <Button_Toolbar
-                icon={DocumentCurrencyDollarIcon}
-                label="Deals"
-                title="Discount rules & deals"
-                onClick={() => setShowDiscountRules(true)}
-                className="btn-outline-secondary"
-              />
+              <Gate_Permission page="sales" permission="write">
+                <Button_Toolbar
+                  icon={DocumentCurrencyDollarIcon}
+                  label="Deals"
+                  title="Discount rules & deals"
+                  onClick={() => setShowDiscountRules(true)}
+                  className="btn-outline-secondary"
+                />
+              </Gate_Permission>
 
               {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
-              {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => { setInvoiceTemplateType("invoice"); setShowInvoiceModal(true); }} className="btn-outline-secondary" title="Generate invoice for current cart" />}
+              {canWriteSales && cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => { setInvoiceTemplateType("invoice"); setShowInvoiceModal(true); }} className="btn-outline-secondary" title="Generate invoice for current cart" />}
             </div>
 
             {/* Search Row — Cart button + search input */}
             <div className="align-items-center app-footer-search-row d-flex gap-1 w-100">
-              <Button_Toolbar
-                icon={ShoppingCartIcon}
-                label="Cart"
-                onClick={() => setShowCartModal(true)}
-                className="btn btn-secondary flex-shrink-0"
-                style={{ position: "relative" }}
-                badge={cartItemCount > 0 ? <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{cartItemCount}</span> : null}
-              />
+              {canWriteSales && (
+                <Button_Toolbar
+                  icon={ShoppingCartIcon}
+                  label="Cart"
+                  onClick={() => setShowCartModal(true)}
+                  className="btn btn-secondary flex-shrink-0"
+                  style={{ position: "relative" }}
+                  badge={cartItemCount > 0 ? <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{cartItemCount}</span> : null}
+                />
+              )}
               <input type="text" placeholder="Search products and services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="app-search-input form-control rounded-pill w-100" />
             </div>
           </div>
@@ -2039,6 +2111,8 @@ export default function Sales() {
       {/* Cart Modal */}
       <Modal_Cart_Sales
         isOpen={showCartModal}
+        canWriteSales={canWriteSales}
+        canWriteClients={canWriteClients}
         onClose={() => setShowCartModal(false)}
         cart={cart}
         selectedClient={selectedClient}
@@ -2066,9 +2140,10 @@ export default function Sales() {
         setClientsLocal={setClientsLocal}
         updateCartQuantity={updateCartQuantity}
         removeFromCart={removeFromCart}
-        setCart={setCart}
+        clearCart={clearCart}
         handleCheckout={handleCheckout}
         onCreateQuote={() => {
+          if (!canWriteSales) return;
           setInvoiceTemplateType("quote");
           setShowCartModal(false);
           setShowInvoiceModal(true);
@@ -2092,7 +2167,7 @@ export default function Sales() {
       `}</style>
 
       {/* Item Detail Modal - Sales Mode */}
-      <Modal_Detail_Item isOpen={showProductModal} onClose={() => setShowProductModal(false)} item={selectedItem} itemType={selectedItemType} mode="sales" onAddToCart={addToCartWithFeatureCheck} cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0} />
+      <Modal_Detail_Item isOpen={showProductModal} onClose={() => setShowProductModal(false)} item={selectedItem} itemType={selectedItemType} mode="sales" canAddToCart={canWriteSales} onAddToCart={addToCartWithFeatureCheck} cartQuantity={selectedItem ? getCartQuantity(selectedItem.id, selectedItemType) : 0} />
 
       {/* Checkout Modal */}
       <Modal_Checkout_Sales

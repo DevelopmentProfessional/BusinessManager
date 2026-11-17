@@ -31,16 +31,24 @@ try:
         AssetUnit, AssetUnitRead, AssetUnitCreate, AssetUnitUpdate,
         Inventory, Schedule, User, ASSET_UNIT_STATES,
     )
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, has_page_permission, require_page_permission
 except ModuleNotFoundError:
     from database import get_session
     from models import (
         AssetUnit, AssetUnitRead, AssetUnitCreate, AssetUnitUpdate,
         Inventory, Schedule, User, ASSET_UNIT_STATES,
     )
-    from routers.auth import get_current_user
+    from routers.auth import get_current_user, has_page_permission, require_page_permission
 
 router = APIRouter()
+
+
+def _require_asset_read(current_user: User, session: Session, include_schedule: bool = False) -> None:
+    allowed = has_page_permission(current_user, session, "inventory", "read")
+    if include_schedule:
+        allowed = allowed or has_page_permission(current_user, session, "schedule", "read")
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Missing permission: inventory:read")
 
 
 def _get_asset(session: Session, inventory_id: UUID, company_id: str) -> Inventory:
@@ -80,6 +88,7 @@ async def list_asset_units(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    _require_asset_read(current_user, session)
     _get_asset(session, inventory_id, current_user.company_id)
     units = session.exec(
         select(AssetUnit)
@@ -98,6 +107,7 @@ async def add_asset_unit(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "inventory", "write")
     _get_asset(session, inventory_id, current_user.company_id)
     _validate_employee_assignment(session, body.employee_id, current_user.company_id)
     if body.state not in ASSET_UNIT_STATES:
@@ -128,6 +138,7 @@ async def update_asset_unit(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "inventory", "write")
     _get_asset(session, inventory_id, current_user.company_id)
     unit = session.get(AssetUnit, unit_id)
     if not unit or unit.inventory_id != inventory_id:
@@ -156,6 +167,7 @@ async def delete_asset_unit(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    require_page_permission(current_user, session, "inventory", "delete")
     _get_asset(session, inventory_id, current_user.company_id)
     unit = session.get(AssetUnit, unit_id)
     if not unit or unit.inventory_id != inventory_id:
@@ -184,6 +196,7 @@ async def check_availability(
     AND it is linked to a schedule that overlaps with the requested window.
     Units in 'maintenance' or 'arriving_soon' are also not available.
     """
+    _require_asset_read(current_user, session, include_schedule=True)
     _get_asset(session, inventory_id, current_user.company_id)
     units = session.exec(
         select(AssetUnit).where(AssetUnit.inventory_id == inventory_id)

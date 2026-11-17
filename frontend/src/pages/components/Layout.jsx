@@ -17,7 +17,7 @@ const allNavigation = [
   { name: "Inventory", href: "/inventory", icon: ArchiveBoxIcon, permission: "inventory:read" },
   { name: "Clients", href: "/clients", icon: UserGroupIcon, permission: "clients:read" },
   { name: "Employees", href: "/employees", icon: UsersIcon, permission: "employees:read" },
-  { name: "Documents", href: "/documents", icon: DocumentIcon, permission: "documents:read" },
+  { name: "Documents", href: "/documents", icon: DocumentIcon, permission: ["documents:read", "templates:read"] },
   { name: "Suppliers", href: "/suppliers", icon: TruckIcon, permission: "suppliers:read" },
   { name: "Services", href: "/services", icon: SparklesIcon, permission: "services:read" },
   { name: "Sales", href: "/sales", icon: ShoppingCartIcon, permission: "sales:read" },
@@ -174,9 +174,11 @@ export default function Layout({ children }) {
   const filteredNavigation = allNavigation.filter((item) => {
     if (!item.permission) return true; // Dashboard and Profile don't need specific permissions
 
-    const [page, permission] = item.permission.split(":");
-
-    return hasPermission(page, permission);
+    const requiredPermissions = Array.isArray(item.permission) ? item.permission : [item.permission];
+    return requiredPermissions.some((permissionString) => {
+      const [page, permission] = permissionString.split(":");
+      return hasPermission(page, permission);
+    });
   });
 
   return (

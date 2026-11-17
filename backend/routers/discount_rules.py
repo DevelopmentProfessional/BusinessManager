@@ -24,11 +24,11 @@ from sqlmodel import Session, select
 try:
     from backend.database import get_session
     from backend.models import DiscountRule, DiscountRuleRead, User
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, require_page_permission
 except ModuleNotFoundError:
     from database import get_session
     from models import DiscountRule, DiscountRuleRead, User
-    from routers.auth import get_current_user
+    from routers.auth import get_current_user, require_page_permission
 
 router = APIRouter()
 
@@ -41,6 +41,7 @@ def list_discount_rules(
     current_user: User = Depends(get_current_user),
 ):
     """List all discount rules for the user's company."""
+    require_page_permission(current_user, session, "sales", "read")
     query = select(DiscountRule).where(
         DiscountRule.company_id == current_user.company_id
     )
@@ -56,6 +57,7 @@ def create_discount_rule(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new discount rule."""
+    require_page_permission(current_user, session, "sales", "write")
     rule.company_id = current_user.company_id
     
     session.add(rule)
@@ -78,6 +80,7 @@ def get_discount_rule(
     current_user: User = Depends(get_current_user),
 ):
     """Get a discount rule by ID."""
+    require_page_permission(current_user, session, "sales", "read")
     rule = session.get(DiscountRule, rule_id)
     if not rule:
         raise HTTPException(
@@ -100,6 +103,7 @@ def update_discount_rule(
     current_user: User = Depends(get_current_user),
 ):
     """Update a discount rule."""
+    require_page_permission(current_user, session, "sales", "write")
     rule = session.get(DiscountRule, rule_id)
     if not rule:
         raise HTTPException(
@@ -149,6 +153,7 @@ def delete_discount_rule(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a discount rule."""
+    require_page_permission(current_user, session, "sales", "delete")
     rule = session.get(DiscountRule, rule_id)
     if not rule:
         raise HTTPException(

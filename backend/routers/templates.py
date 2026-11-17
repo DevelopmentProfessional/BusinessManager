@@ -33,11 +33,11 @@ import json
 try:
     from backend.database import get_session
     from backend.models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead, User
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, has_page_permission, require_page_permission
 except ModuleNotFoundError:
     from database import get_session
     from models import DocumentTemplate, DocumentTemplateCreate, DocumentTemplateUpdate, DocumentTemplateRead, User
-    from routers.auth import get_current_user
+    from routers.auth import get_current_user, has_page_permission, require_page_permission
 
 router = APIRouter()
 
@@ -49,6 +49,13 @@ def _safe_parse_pages(accessible_pages_json):
         return json.loads(accessible_pages_json or "[]")
     except (json.JSONDecodeError, TypeError):
         return []
+
+
+def _require_template_read(current_user: User, session: Session, page: str | None = None) -> None:
+    if page and has_page_permission(current_user, session, page, "read"):
+        return
+    require_page_permission(current_user, session, "templates", "read")
+
 
 # ─── 1 STANDARD TEMPLATE DEFINITIONS ───────────────────────────────────────────
 
@@ -349,6 +356,7 @@ def list_templates(
     session: Session = Depends(get_session),
 ):
     """List all templates: standard (global) + company-specific ones."""
+    _require_template_read(current_user, session, page)
     if page == "suppliers":
         seed_standard_templates(session)
 
@@ -378,6 +386,7 @@ def get_template(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    require_page_permission(current_user, session, "templates", "read")
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -393,6 +402,7 @@ def create_template(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    require_page_permission(current_user, session, "templates", "write")
     tpl_data = data.model_dump()
     tpl_data['company_id'] = current_user.company_id or ""
     tpl = DocumentTemplate(**tpl_data)
@@ -413,9 +423,12 @@ def update_template(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    require_page_permission(current_user, session, "templates", "write")
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
+    if tpl.is_standard:
+        raise HTTPException(status_code=403, detail="Standard templates cannot be edited")
     company_id = current_user.company_id or ""
     if not tpl.is_standard and tpl.company_id != company_id:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -438,6 +451,7 @@ def delete_template(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    require_page_permission(current_user, session, "templates", "delete")
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -465,6 +479,7 @@ def render_template(
     session: Session = Depends(get_session),
 ):
     """Render a template server-side with provided variables."""
+    require_page_permission(current_user, session, "templates", "read")
     tpl = session.get(DocumentTemplate, template_id)
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
