@@ -3,6 +3,7 @@
 import React from "react";
 import { FolderOpenIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
+import { Accordion } from "../accordions";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";
 
@@ -21,29 +22,33 @@ export default function Modal_Services_Settings({
       title="Service Page Controls"
       onSave={onSave}
     >
-      <div className="ui-small-muted">Use these controls to manage the Services page view.</div>
-      <div className="small">Search, category filter, and add actions are available.</div>
-      <div className="page-controls-actions-group">
-        <Button_Toolbar
-          icon={FolderOpenIcon}
-          label="Cats"
-          onClick={() => {
-            onClose();
-            onOpenCategories?.();
-          }}
-          className="btn-primary"
-          title="Manage service categories"
+      <Accordion variant="settings" header="Table preferences" defaultOpen>
+        <div className="ui-small-muted mb-2">Search, category filtering, and add actions are managed from the page footer.</div>
+        <TableSettingsControls
+          settings={pendingSettings}
+          showHeading={false}
+          onChange={(patch) => setPendingSettings?.((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showCategory", label: "Show Category", description: "Display category badge under service name" },
+            { key: "showPrice", label: "Show Price Column", description: "Display service price column" },
+            { key: "showDuration", label: "Show Duration Column", description: "Display service duration column" },
+          ]}
         />
-      </div>
-      <TableSettingsControls
-        settings={pendingSettings}
-        onChange={(patch) => setPendingSettings?.((prev) => ({ ...prev, ...patch }))}
-        toggles={[
-          { key: "showCategory", label: "Show Category", description: "Display category badge under service name" },
-          { key: "showPrice", label: "Show Price Column", description: "Display service price column" },
-          { key: "showDuration", label: "Show Duration Column", description: "Display service duration column" },
-        ]}
-      />
+      </Accordion>
+      <Accordion variant="settings" header="Service categories">
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={FolderOpenIcon}
+            label="Cats"
+            onClick={() => {
+              onClose();
+              onOpenCategories?.();
+            }}
+            className="btn-primary"
+            title="Manage service categories"
+          />
+        </div>
+      </Accordion>
     </PageControlsModal>
   );
 }

@@ -650,6 +650,27 @@ def _validate_asset_unit_employee_assignment(session: Session, employee_id: Opti
         raise HTTPException(status_code=400, detail="Assigned employee is invalid for this company")
 
 
+def _validate_inventory_purchase_details(record_data: Dict[str, Any]) -> None:
+    if "purchase_unit" in record_data:
+        purchase_unit = str(record_data.get("purchase_unit") or "").strip()
+        if not purchase_unit or len(purchase_unit) > 80:
+            raise HTTPException(status_code=400, detail="Purchase unit is required and must be 80 characters or fewer")
+        record_data["purchase_unit"] = purchase_unit
+
+    if "units_per_purchase_unit" in record_data:
+        try:
+            units_per_purchase_unit = float(record_data["units_per_purchase_unit"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Units per purchase unit must be a positive whole number")
+        if (
+            not math.isfinite(units_per_purchase_unit)
+            or units_per_purchase_unit < 1
+            or not units_per_purchase_unit.is_integer()
+        ):
+            raise HTTPException(status_code=400, detail="Units per purchase unit must be a positive whole number")
+        record_data["units_per_purchase_unit"] = int(units_per_purchase_unit)
+
+
 def _create_initial_asset_units_for_inventory(
     session: Session,
     inventory_record: Inventory,
@@ -1115,28 +1136,15 @@ def _save_inventory_supplier_product(
 
     try:
         supplier_id = UUID(str(data.get("supplier_id")))
-        units_per_purchase_unit_value = float(data.get("units_per_purchase_unit", 1))
-        unit_price = float(data.get("unit_price", 0))
     except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="Supplier product price and pack conversion must be valid numbers")
+        raise HTTPException(status_code=400, detail="A valid supplier is required")
 
-    purchase_unit = str(data.get("purchase_unit") or "").strip()
     try:
         inventory_supplier_id = UUID(str(inventory.supplier_id))
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Inventory item must have a valid preferred supplier")
     if supplier_id != inventory_supplier_id:
         raise HTTPException(status_code=400, detail="Supplier product must match the item's preferred supplier")
-    if not purchase_unit or len(purchase_unit) > 80:
-        raise HTTPException(status_code=400, detail="Purchase unit is required and must be 80 characters or fewer")
-    if (
-        not math.isfinite(units_per_purchase_unit_value)
-        or units_per_purchase_unit_value < 1
-        or not units_per_purchase_unit_value.is_integer()
-    ):
-        raise HTTPException(status_code=400, detail="Pack conversion must be a positive whole number")
-    if not math.isfinite(unit_price) or unit_price < 0:
-        raise HTTPException(status_code=400, detail="Supplier price must be a non-negative number")
 
     supplier = session.get(Supplier, supplier_id)
     if not supplier or supplier.company_id != company_id:
@@ -1156,9 +1164,6 @@ def _save_inventory_supplier_product(
             company_id=company_id,
         )
 
-    product.purchase_unit = purchase_unit
-    product.units_per_purchase_unit = int(units_per_purchase_unit_value)
-    product.unit_price = unit_price
     product.is_preferred = True
     inventory.supplier_id = supplier_id
 
@@ -1509,6 +1514,8 @@ async def insert_with_file(
     is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
     asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
     supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
+    if is_inventory_table:
+        _validate_inventory_purchase_details(record_data)
 
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
@@ -1781,6 +1788,8 @@ async def insert(
     supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
 
     asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
+    if is_inventory_table:
+        _validate_inventory_purchase_details(record_data)
 
     # Special handling for user table: hash plain password into password_hash
     if table_name.lower() in ('user', 'users') and 'password' in record_data:
@@ -2010,6 +2019,8 @@ async def update_by_id(
 
     is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
     supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
+    if is_inventory_table:
+        _validate_inventory_purchase_details(record_data)
 
     if table_name.lower() in ('inventory', 'item', 'items') and 'cost_type' in record_data:
         _normalize_inventory_cost_fields(record_data)

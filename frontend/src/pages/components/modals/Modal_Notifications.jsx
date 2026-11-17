@@ -202,7 +202,7 @@ export default function Modal_Notifications({ isOpen, onClose }) {
           group.isPreferred = true;
         }
 
-        const packSize = Math.max(1, Number(chosenProduct?.units_per_purchase_unit || 1));
+        const packSize = Math.max(1, Number(chosenProduct?.units_per_purchase_unit || item.units_per_purchase_unit || 1));
         const suggestedPacks = Math.max(1, Math.ceil(deficit / packSize));
 
         group.items.push({
@@ -212,8 +212,8 @@ export default function Modal_Notifications({ isOpen, onClose }) {
           packSize,
           suggestedPacks,
           isPreferred: Boolean(chosenProduct?.is_preferred),
-          purchaseUnit: chosenProduct?.purchase_unit || item.stock_unit || "unit",
-          unitPrice: chosenProduct ? Number(chosenProduct.unit_price || 0) : Number(item.cost || 0),
+          purchaseUnit: chosenProduct?.purchase_unit || item.purchase_unit || "unit",
+          unitPrice: chosenProduct ? Number(chosenProduct.unit_price || 0) : Number(item.cost || 0) * packSize,
         });
       } else {
         unassignedItems.push({

@@ -86,6 +86,20 @@ export const TEMPLATE_VARIABLES = {
     { key: "inventory.price", label: "Item Price", description: "Formatted item price" },
     { key: "inventory.image", label: "Item Image", description: "Primary inventory image for catalogs and proposals", isLayout: true },
   ],
+  catalogue: [
+    { key: "catalogue.title", label: "Catalogue Title", description: "Product or service catalogue title" },
+    { key: "catalogue.count", label: "Catalogue Item Count", description: "Number of selected products or services" },
+  ],
+  catalogue_item: [
+    { key: "catalogue_item.type", label: "Item Type", description: "Product or service" },
+    { key: "catalogue_item.name", label: "Item Name", description: "Name of the selected product or service" },
+    { key: "catalogue_item.description", label: "Item Description", description: "Client-facing description" },
+    { key: "catalogue_item.category", label: "Item Category", description: "Product or service category" },
+    { key: "catalogue_item.sku", label: "Item SKU", description: "Product SKU, when available" },
+    { key: "catalogue_item.price", label: "Item Price", description: "Formatted selling price" },
+    { key: "catalogue_item.duration", label: "Service Duration", description: "Service duration, when applicable" },
+    { key: "catalogue_item.image", label: "Item Image", description: "Product or service image", isLayout: true },
+  ],
   supplier: [
     { key: "supplier.name", label: "Supplier Name", description: "Supplier name" },
     { key: "supplier.contact_person", label: "Supplier Contact", description: "Supplier contact person" },
@@ -110,8 +124,8 @@ export const PAGE_VARIABLE_SCOPES = {
   employees: ["system", "company", "sender", "employee", "payslip"],
   sales: ["system", "company", "sender", "client", "service", "inventory", "invoice"],
   schedule: ["system", "company", "sender", "client", "service", "appointment"],
-  services: ["system", "company", "sender", "service", "inventory"],
-  inventory: ["system", "company", "sender", "inventory", "supplier", "service"],
+  services: ["system", "company", "sender", "service", "inventory", "catalogue", "catalogue_item"],
+  inventory: ["system", "company", "sender", "inventory", "supplier", "service", "catalogue", "catalogue_item"],
   suppliers: ["system", "company", "sender", "supplier", "purchase_order"],
 };
 
@@ -130,6 +144,8 @@ export const SCOPE_PAGE_CONTEXT = {
   appointment: { label: "Appointment", pages: ["schedule"], color: "purple" },
   service: { label: "Service", pages: ["clients", "sales", "schedule", "services"], color: "purple" },
   inventory: { label: "Inventory / Product", pages: ["clients", "sales", "services", "inventory"], color: "amber" },
+  catalogue: { label: "Catalogue", pages: ["services", "inventory"], color: "purple" },
+  catalogue_item: { label: "Catalogue Item", pages: ["services", "inventory"], color: "amber" },
   supplier: { label: "Supplier", pages: ["inventory", "suppliers"], color: "gray" },
   purchase_order: { label: "Purchase Order", pages: ["suppliers"], color: "amber" },
 };
@@ -248,6 +264,25 @@ export const LAYOUT_TEMPLATES = [
 </div>`,
   },
   {
+    id: "catalogue_cards",
+    label: "Repeating Catalogue Cards",
+    description: "Repeats a styled card for every selected product or service",
+    pages: ["services", "inventory"],
+    scopeHint: "catalogue_item",
+    html: `{{#catalogue.items}}
+<div style="display:flex;gap:1rem;align-items:flex-start;padding:1rem;margin:0 0 1rem;border:1px solid #e5e7eb;border-radius:8px;font-family:inherit;break-inside:avoid;page-break-inside:avoid;">
+  <div style="flex:0 0 120px;">{{catalogue_item.image}}</div>
+  <div style="flex:1;">
+    <div style="margin-bottom:0.35rem;color:#6b7280;font-size:0.85rem;">{{catalogue_item.type}} · {{catalogue_item.category}}</div>
+    <h3 style="margin:0 0 0.35rem;">{{catalogue_item.name}}</h3>
+    <p style="margin:0 0 0.5rem;">{{catalogue_item.description}}</p>
+    <div style="color:#6b7280;">{{catalogue_item.sku}} {{catalogue_item.duration}}</div>
+    <strong>{{catalogue_item.price}}</strong>
+  </div>
+</div>
+{{/catalogue.items}}`,
+  },
+  {
     id: "client_info",
     label: "Client Info Block",
     description: "Client name, email, and phone as a compact block",
@@ -294,6 +329,17 @@ export function renderTemplate(html, variables) {
 
   let result = html;
   const vars = { ...variables };
+  const catalogueItems = Array.isArray(vars["catalogue.items"]) ? vars["catalogue.items"] : [];
+  result = result.replace(/\{\{#catalogue\.items\}\}([\s\S]*?)\{\{\/catalogue\.items\}\}/g, (_match, cardHtml) =>
+    catalogueItems
+      .map((itemVariables) => {
+        const rowVariables = { ...vars, ...itemVariables };
+        delete rowVariables["catalogue.items"];
+        return renderTemplate(cardHtml, rowVariables);
+      })
+      .join("")
+  );
+  delete vars["catalogue.items"];
 
   // Keys that should be completely suppressed (including labels and enclosing table rows) when 0 or empty
   const suppressibleKeys = [
@@ -538,6 +584,40 @@ export function buildInventoryVariables(inventory, currentUser, settings) {
     "supplier.email": inventory?.supplier?.email || "",
     "supplier.phone": inventory?.supplier?.phone || "",
     "supplier.address": inventory?.supplier?.address || "",
+  };
+}
+
+/** Build shared catalogue fields and one scoped variable set per selected item. */
+export function buildCatalogueVariables(items, itemType, currentUser, settings) {
+  const isServiceCatalogue = itemType === "services";
+  const selectedItems = Array.isArray(items) ? items : [];
+  const now = new Date();
+  return {
+    date: formatDateISO(now),
+    time: formatTime(now),
+    "company.name": settings?.company_name || "",
+    "company.email": settings?.company_email || "",
+    "company.phone": settings?.company_phone || "",
+    "company.address": settings?.company_address || "",
+    "sender.first_name": currentUser?.first_name || "",
+    "sender.last_name": currentUser?.last_name || "",
+    "sender.email": currentUser?.email || "",
+    "catalogue.title": isServiceCatalogue ? "Service Catalogue" : "Product Catalogue",
+    "catalogue.count": String(selectedItems.length),
+    "catalogue.items": selectedItems.map((item) => {
+      const name = item?.name || "";
+      const imageUrl = isServiceCatalogue ? item?.image_url : getPrimaryInventoryImage(item);
+      return {
+        "catalogue_item.type": isServiceCatalogue ? "Service" : "Product",
+        "catalogue_item.name": escapeHtml(name),
+        "catalogue_item.description": escapeHtml(item?.description || ""),
+        "catalogue_item.category": escapeHtml(item?.category || ""),
+        "catalogue_item.sku": escapeHtml(isServiceCatalogue ? "" : item?.sku || ""),
+        "catalogue_item.price": formatMoney(item?.price),
+        "catalogue_item.duration": isServiceCatalogue ? formatDuration(item?.duration_minutes) : "",
+        "catalogue_item.image": buildImageHtml(imageUrl, name || (isServiceCatalogue ? "Service" : "Product")),
+      };
+    }),
   };
 }
 

@@ -1,5 +1,5 @@
 // FILE: Modal_Schedule_Settings.jsx
-// Dedicated settings/controls modal for the Schedule page wrapping Modal_SettingsSchedule
+// Dedicated settings modal for the Schedule page wrapping Modal_SettingsSchedule
 import React from "react";
 import PageControlsModal from "./Page_ControlsModal";
 import Modal_SettingsSchedule from "./Modal_SettingsSchedule";

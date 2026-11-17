@@ -2,6 +2,7 @@
 // Dedicated settings/controls modal for the Sales page
 import React from "react";
 import PageControlsModal from "./Page_ControlsModal";
+import { Accordion } from "../accordions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 
 export default function Modal_Sales_Settings({
@@ -25,10 +26,7 @@ export default function Modal_Sales_Settings({
     >
       <div className="mb-2 ui-small-muted">Use these controls to manage the sales experience on this page.</div>
 
-      {/* Card Display Settings */}
-      <hr className="my-2" />
-      <div className="fw-semibold mb-2 ui-text-sm">Card Display Settings</div>
-
+      <Accordion variant="settings" header="Card display" defaultOpen>
       <div className="mb-2">
         <label className="d-block mb-1 small text-muted">Item Card Style</label>
         <div style={{ maxWidth: "16rem" }}>
@@ -60,9 +58,9 @@ export default function Modal_Sales_Settings({
         </div>
       </div>
 
-      {/* Discounts & Deals Settings */}
-      <hr className="my-2" />
-      <div className="fw-semibold mb-2 ui-text-sm">Discounts & Deals</div>
+      </Accordion>
+
+      <Accordion variant="settings" header="Discounts and deals">
 
       <div className="mb-2">
         <label className="d-block mb-1 small text-muted">Discount Calculation Order</label>
@@ -138,10 +136,9 @@ export default function Modal_Sales_Settings({
         </label>
       </div>
 
-      {/* Receipt Settings */}
-      <hr className="my-2" />
-      <div className="fw-semibold mb-2 ui-text-sm">Receipt Settings</div>
+      </Accordion>
 
+      <Accordion variant="settings" header="Receipt settings">
       <div className="mb-2">
         <label className="d-block mb-1 small text-muted">Receipt Template</label>
         <Dropdown_Custom
@@ -182,6 +179,7 @@ export default function Modal_Sales_Settings({
           closeOnSelect
         />
       </div>
+      </Accordion>
     </PageControlsModal>
   );
 }

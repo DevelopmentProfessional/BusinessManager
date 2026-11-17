@@ -4374,6 +4374,12 @@ select.form-select {
   }
 }
 
+.app-accordion-settings {
+  border: 0.0625rem solid var(--bs-border-color);
+  border-radius: 0.375rem;
+  background-color: var(--bs-body-bg);
+}
+
 /* ─── Page Controls Modal Action Group ─── */
 .page-controls-actions-group {
   display: flex;

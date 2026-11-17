@@ -391,6 +391,8 @@ class Inventory(BaseModel, table=True):
     min_stock_level: Optional[float] = Field(default=10, ge=0)
     auto_min_stock_level: bool = Field(default=False)
     stock_unit: Optional[str] = Field(default=None, max_length=32)
+    purchase_unit: str = Field(default="unit", max_length=80)
+    units_per_purchase_unit: int = Field(default=1, ge=1)
     # How many days it takes to receive a restock order from supplier
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = Field(default=None)
@@ -451,6 +453,39 @@ class InventoryCategoryRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+INVENTORY_PURCHASE_UNIT_BUILT_INS = (
+    "container",
+    "pallet",
+    "crate",
+    "carton",
+    "case",
+    "box",
+    "pack",
+    "pair",
+    "unit",
+)
+
+
+class InventoryPurchaseUnit(BaseModel, table=True):
+    """Company-specific additional purchase-unit choices."""
+    __tablename__ = "inventory_purchase_unit"
+    __table_args__ = (
+        UniqueConstraint("company_id", "name", name="uq_inventory_purchase_unit_company_name"),
+    )
+
+    name: str = Field(max_length=80)
+    company_id: Optional[str] = Field(default=None, index=True)
+
+
+class InventoryPurchaseUnitRead(SQLModel):
+    id: UUID
+    name: str
+    company_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 # ─── 6c ASSET UNIT MODEL ───────────────────────────────────────────────────────
 
 ASSET_UNIT_STATES = {"available", "in_use", "maintenance", "arriving_soon"}
@@ -486,7 +521,7 @@ class Supplier(BaseModel, table=True):
 
 
 class SupplierProduct(BaseModel, table=True):
-    """Supplier-specific purchase price and pack conversion for an inventory item."""
+    """Links a supplier to an inventory item and records supplier preference."""
     __tablename__ = "supplier_product"
     __table_args__ = (
         UniqueConstraint("supplier_id", "inventory_id", name="uq_supplier_product_supplier_inventory"),
@@ -494,9 +529,6 @@ class SupplierProduct(BaseModel, table=True):
 
     supplier_id: UUID = Field(foreign_key="supplier.id", index=True)
     inventory_id: UUID = Field(sa_column=Column(ForeignKey("inventory.id", ondelete="CASCADE"), nullable=False, index=True))
-    purchase_unit: str = Field(default="unit")
-    units_per_purchase_unit: int = Field(default=1, ge=1)
-    unit_price: float = Field(default=0, ge=0)
     is_preferred: bool = Field(default=False)
     company_id: Optional[str] = Field(default=None, index=True)
 
@@ -1106,6 +1138,8 @@ class InventoryCreate(SQLModel):
     min_stock_level: Optional[float] = Field(default=10, ge=0)
     auto_min_stock_level: bool = False
     stock_unit: Optional[str] = Field(default=None, max_length=32)
+    purchase_unit: str = Field(default="unit", max_length=80)
+    units_per_purchase_unit: int = Field(default=1, ge=1)
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     supplier_id: Optional[UUID] = None
@@ -1246,6 +1280,8 @@ class InventoryRead(SQLModel):
     min_stock_level: Optional[float] = None
     auto_min_stock_level: bool = False
     stock_unit: Optional[str] = None
+    purchase_unit: str = "unit"
+    units_per_purchase_unit: int = Field(default=1, ge=1)
     procurement_lead_days: Optional[int] = Field(default=None, ge=0)
     location: Optional[str] = None
     price_type: Optional[str] = "fixed"

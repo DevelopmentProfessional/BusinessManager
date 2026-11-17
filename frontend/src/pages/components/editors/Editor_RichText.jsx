@@ -40,12 +40,13 @@ import { SearchAndReplace } from "./extensions/SearchAndReplace";
 
 // ─── 1 RICHTEXTEDITOR COMPONENT ────────────────────────────────────────────────
 
-const Editor_RichText = forwardRef(function Editor_RichText({ content, onChange }, ref) {
+const Editor_RichText = forwardRef(function Editor_RichText({ content, onChange, editable = true }, ref) {
   // Track what the editor currently contains so we can distinguish
   // external content changes (reload) from internal ones (user typing)
   const editorContentRef = useRef(content);
 
   const editor = useEditor({
+    editable,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
@@ -89,6 +90,10 @@ const Editor_RichText = forwardRef(function Editor_RichText({ content, onChange 
     editorContentRef.current = content;
     editor.commands.setContent(content || "", false);
   }, [content, editor]);
+
+  useEffect(() => {
+    editor?.setEditable(editable);
+  }, [editable, editor]);
 
   if (!editor) {
     return (

@@ -12,6 +12,8 @@ const FIELD_OPTIONS = [
   { value: "description", label: "Description" },
   { value: "location", label: "Location" },
   { value: "cost", label: "Cost" },
+  { value: "purchase_unit", label: "Purchase Unit" },
+  { value: "units_per_purchase_unit", label: "Units per Purchase Unit" },
   { value: "asset_unit_count", label: "Asset Unit Count" },
   { value: "features", label: "Features" },
   { value: "feature_1", label: "Feature 1" },
@@ -19,7 +21,7 @@ const FIELD_OPTIONS = [
   { value: "feature_3", label: "Feature 3" },
 ];
 
-const DEFAULT_FIELD_SEQUENCE = ["name", "sku", "price", "cost", "quantity", "type", "category", "description", "min_stock_level", "feature_1", "feature_2", "feature_3"];
+const DEFAULT_FIELD_SEQUENCE = ["name", "sku", "price", "cost", "purchase_unit", "units_per_purchase_unit", "quantity", "type", "category", "description", "min_stock_level", "feature_1", "feature_2", "feature_3"];
 
 function parseFeatureString(raw) {
   if (!raw || !raw.trim()) return [];
@@ -105,7 +107,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
       onImport={onImport}
       title="Bulk Add Items"
       entityLabel="item"
-      hint="Enter unit cost in Cost. For each Feature column use: size(s,m,l). Matching feature names are reused."
+      hint="Enter Cost per stock unit. Purchase-order defaults use Cost × Units per Purchase Unit. For Feature columns use size(s,m,l). Matching feature names are reused."
       fieldOptions={FIELD_OPTIONS}
       defaultFieldSequence={DEFAULT_FIELD_SEQUENCE}
       buildRecord={(data) => {
@@ -127,10 +129,23 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
         const parsedCost = parseNumber(data.cost, "Cost");
         if (!parsedCost.ok) errors.push(parsedCost.error);
 
+        const parsedUnitsPerPurchaseUnit = parseNumber(data.units_per_purchase_unit, "Units per Purchase Unit");
+        if (!parsedUnitsPerPurchaseUnit.ok) errors.push(parsedUnitsPerPurchaseUnit.error);
+        const purchaseUnit = String(data.purchase_unit || "unit").trim();
+
         if (parsedQty.value != null && parsedQty.value < 0) errors.push("Stock Quantity cannot be negative.");
         if (parsedMin.value != null && parsedMin.value < 0) errors.push("Min Stock Level cannot be negative.");
         if (parsedPrice.value != null && parsedPrice.value < 0) errors.push("Price cannot be negative.");
         if (parsedCost.value != null && parsedCost.value < 0) errors.push("Cost cannot be negative.");
+        if (
+          parsedUnitsPerPurchaseUnit.value != null
+          && (!Number.isInteger(parsedUnitsPerPurchaseUnit.value) || parsedUnitsPerPurchaseUnit.value < 1)
+        ) {
+          errors.push("Units per Purchase Unit must be a positive whole number.");
+        }
+        if (!purchaseUnit || purchaseUnit.length > 80) {
+          errors.push("Purchase Unit is required and must be 80 characters or fewer.");
+        }
 
         const normalizedSku = String(data.sku || "")
           .trim()
@@ -180,6 +195,8 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
             description: data.description ? String(data.description).trim() : null,
             location: data.location ? String(data.location).trim() : null,
             cost: parsedCost.value,
+            purchase_unit: purchaseUnit,
+            units_per_purchase_unit: parsedUnitsPerPurchaseUnit.value == null ? 1 : parsedUnitsPerPurchaseUnit.value,
             asset_unit_count: data.asset_unit_count ? parseInt(String(data.asset_unit_count).trim(), 10) || null : null,
             features: Array.from(featuresByName.values()),
           },
@@ -190,6 +207,8 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
         feature_1: "Size(S, M, L)",
         feature_2: "Color(Red, Blue)",
         feature_3: "Material(Cotton, Wool)",
+        purchase_unit: "case",
+        units_per_purchase_unit: "12",
       }}
     />
   );

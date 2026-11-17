@@ -3,6 +3,7 @@
 import React from "react";
 import { TicketIcon, CheckCircleIcon } from "../../../icons";
 import PageControlsModal from "./Page_ControlsModal";
+import { Accordion } from "../accordions";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";
 
@@ -22,38 +23,43 @@ export default function Modal_Clients_Settings({
       title="Client Page Controls"
       onSave={onSave}
     >
-      <div className="ui-small-muted">Use these controls to manage the Clients page view.</div>
-      <div className="small">Subscription filter and search are available.</div>
-      <div className="page-controls-actions-group">
-        <Button_Toolbar
-          icon={TicketIcon}
-          label="Subs"
-          onClick={() => {
-            onClose();
-            onOpenSubscriptions?.();
-          }}
-          className="btn-primary"
-          title="Manage subscriptions"
+      <Accordion variant="settings" header="Table preferences" defaultOpen>
+        <div className="ui-small-muted mb-2">Configure the Clients page table view.</div>
+        <TableSettingsControls
+          settings={pendingSettings}
+          showHeading={false}
+          onChange={(patch) => setPendingSettings?.((prev) => ({ ...prev, ...patch }))}
+          toggles={[
+            { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
+            { key: "showSubs", label: "Show Subscription Column", description: "Display client membership tier column" },
+          ]}
         />
-        <Button_Toolbar
-          icon={CheckCircleIcon}
-          label="Status"
-          onClick={() => {
-            onClose();
-            onOpenStatuses?.();
-          }}
-          className="btn-primary"
-          title="Manage client statuses"
-        />
-      </div>
-      <TableSettingsControls
-        settings={pendingSettings}
-        onChange={(patch) => setPendingSettings?.((prev) => ({ ...prev, ...patch }))}
-        toggles={[
-          { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
-          { key: "showSubs", label: "Show Subscription Column", description: "Display client membership tier column" },
-        ]}
-      />
+      </Accordion>
+      <Accordion variant="settings" header="Client actions">
+        <div className="ui-small-muted mb-2">Manage subscription and status lists.</div>
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={TicketIcon}
+            label="Subs"
+            onClick={() => {
+              onClose();
+              onOpenSubscriptions?.();
+            }}
+            className="btn-primary"
+            title="Manage subscriptions"
+          />
+          <Button_Toolbar
+            icon={CheckCircleIcon}
+            label="Status"
+            onClick={() => {
+              onClose();
+              onOpenStatuses?.();
+            }}
+            className="btn-primary"
+            title="Manage client statuses"
+          />
+        </div>
+      </Accordion>
     </PageControlsModal>
   );
 }

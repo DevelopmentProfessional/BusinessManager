@@ -468,6 +468,7 @@ export const supplierProductsAPI = {
   getAll: () => api.get("/supplier-products"),
   getBySupplier: (supplierId) => api.get(`/supplier-products?supplier_id=${supplierId}`),
   save: (data) => api.post("/supplier-products", data),
+  delete: (supplierProductId) => api.delete(`/supplier-products/${supplierProductId}`),
 };
 
 export const employeesAPI = {
@@ -766,6 +767,11 @@ export const inventoryCategoriesAPI = {
   },
   delete: (id) => api.delete(`/inventory-categories/${id}`),
   update: (id, data) => api.put(`/inventory-categories/${id}`, data),
+};
+
+export const inventoryPurchaseUnitsAPI = {
+  getAll: () => api.get("/inventory-purchase-units"),
+  create: (name) => api.post("/inventory-purchase-units", { name }),
 };
 
 export const discountRulesAPI = createISUDApi("discount_rule");

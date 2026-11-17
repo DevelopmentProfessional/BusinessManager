@@ -135,6 +135,68 @@ def test_procurement_catalog_migration_adds_line_snapshots(monkeypatch):
     assert any("ADD COLUMN units_per_purchase_unit INTEGER NOT NULL DEFAULT 1" in statement for statement in statements)
 
 
+def test_inventory_packaging_migration_moves_supplier_fields(monkeypatch):
+    statements = []
+
+    class Result:
+        def __init__(self, rows=(), scalar=None, row=None):
+            self.rows = rows
+            self.scalar_value = scalar
+            self.row = row
+
+        def fetchall(self):
+            return self.rows
+
+        def scalar(self):
+            return self.scalar_value
+
+        def fetchone(self):
+            return self.row
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            statements.append(sql)
+            if "table_name='inventory'" in sql and "SELECT column_name" in sql:
+                return Result(rows=[("id",), ("cost",)])
+            if "table_name='supplier_product'" in sql and "SELECT column_name" in sql:
+                return Result(rows=[
+                    ("id",),
+                    ("created_at",),
+                    ("is_preferred",),
+                    ("purchase_unit",),
+                    ("units_per_purchase_unit",),
+                    ("unit_price",),
+                ])
+            if "inventory_purchase_unit')" in sql:
+                return Result(scalar=True)
+            if "SELECT DISTINCT ON (i.company_id" in sql:
+                return Result(rows=[])
+            return Result(row=None)
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    monkeypatch.setattr(database, "engine", Engine())
+
+    database._ensure_inventory_purchase_packaging_columns_if_needed()
+
+    assert any("ADD COLUMN purchase_unit VARCHAR(80)" in statement for statement in statements)
+    assert any("ADD COLUMN units_per_purchase_unit INTEGER" in statement for statement in statements)
+    assert any("UPDATE inventory i SET" in statement and "chosen.unit_price" in statement for statement in statements)
+    assert any("DROP COLUMN purchase_unit" in statement for statement in statements)
+    assert any("DROP COLUMN units_per_purchase_unit" in statement for statement in statements)
+    assert any("DROP COLUMN unit_price" in statement for statement in statements)
+
+
 def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
     calls = []
 

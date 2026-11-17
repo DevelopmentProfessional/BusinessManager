@@ -19,6 +19,7 @@ const TEMPLATE_TYPES = [
   { value: "receipt", label: "Receipt" },
   { value: "memo", label: "Memo" },
   { value: "quote", label: "Quote" },
+  { value: "catalogue", label: "Catalogue" },
   { value: "purchase_order", label: "Purchase Order" },
   { value: "payslip", label: "Payslip" },
   { value: "custom", label: "Custom" },
@@ -61,7 +62,7 @@ const TAB_IMAGES = "images";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function Modal_Template_Editor({ template, onSave, onClose }) {
+export default function Modal_Template_Editor({ template, onSave, onClose, readOnly = false }) {
   const isNew = !template?.id;
   const isStandard = template?.is_standard === true;
 
@@ -174,6 +175,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
   const handlePageToggle = (page) => setAccessiblePages((prev) => (prev.includes(page) ? prev.filter((p) => p !== page) : [...prev, page]));
 
   const handleSave = async () => {
+    if (readOnly) return;
     if (!name.trim()) {
       setError("Template name is required");
       return;
@@ -260,7 +262,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         <div className="component-header">
           <div className="component-header-left">
             <DocumentTextIcon className="app-icon me-1 text-muted" aria-hidden="true" />
-            {isNew ? "New Template" : "Edit Template"}
+            {readOnly ? "View Template" : isNew ? "New Template" : "Edit Template"}
           </div>
           <div className="component-header-center"></div>
           <div className="component-header-right"></div>
@@ -287,7 +289,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
             {/* ── Editor area ─────────────────────────────────────────────────── */}
             <div className="flex flex-1 flex-col overflow-hidden template-editor-content-shell">
               {/* ── Variables panel ─────────────────────────────────────────── */}
-              {activeTab === TAB_VARS && (
+              {!readOnly && activeTab === TAB_VARS && (
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   <p className="dark:text-gray-500 mb-1.5 text-[10px] text-gray-400">
                     Click a variable to insert it. Coloured badges show which page populates it.
@@ -298,7 +300,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               )}
 
               {/* ── Layouts panel ───────────────────────────────────────────── */}
-              {activeTab === TAB_LAYOUTS && (
+              {!readOnly && activeTab === TAB_LAYOUTS && (
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   <p className="dark:text-gray-500 mb-1.5 text-[10px] text-gray-400">Pre-built HTML blocks. Click to insert at the cursor. Data is filled when the template is used on the matching page.</p>
                   <div className="gap-1.5 grid grid-cols-2">
@@ -322,7 +324,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               )}
 
               {/* ── Images panel ────────────────────────────────────────────── */}
-              {activeTab === TAB_IMAGES && (
+              {!readOnly && activeTab === TAB_IMAGES && (
                 <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex-shrink-0 max-h-52 overflow-y-auto px-1 py-0">
                   {loadingImgs ? (
                     <p className="text-gray-500 text-xs">Loading images…</p>
@@ -357,7 +359,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
               {/* Rich text editor */}
               <div className="flex-1 h-full min-h-0 overflow-hidden p-0 template-editor-richtext-wrap w-100" style={{ zoom: zoomLevel }}>
                 <Suspense fallback={<div className="flex h-full items-center justify-center text-gray-500 text-sm">Loading editor…</div>}>
-                  <Editor_RichText ref={editorCallbackRef} content={content} onChange={setContent} />
+                  <Editor_RichText ref={editorCallbackRef} content={content} onChange={readOnly ? undefined : setContent} editable={!readOnly} />
                 </Suspense>
               </div>
             </div>
@@ -370,13 +372,13 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
         <div className="component-footer app-modal-footer app-form-footer app-standard-footer d-flex flex-column p-0 template-editor-footer" style={{ gap: 0, alignItems: "stretch" }}>
           {/* Row 1: editor controls */}
-          {!isEditorMinimized && (
+          {!readOnly && !isEditorMinimized && (
             <div className="template-editor-toolbar-shell template-editor-footer-row w-100">
               <Editor_Toolbar editorType="richtext" editor={editorInstance} onSave={handleSave} onUndo={handleUndo} onRedo={handleRedo} isDirty={isDirty} isSaving={saving} saveStatus={saveStatus} showDesignTab={false} wrapToolbar />
             </div>
           )}
           {/* Row 2: template metadata + dropups */}
-          {!isEditorMinimized && (
+          {!readOnly && !isEditorMinimized && (
             <div className="template-editor-meta-row template-editor-footer-row align-items-center border-top d-flex flex-wrap gap-2 px-1 py-1 w-100">
               <div className="template-editor-meta-group align-items-center d-flex flex-wrap gap-2 w-100">
                 <div className="ui-pos-rel" style={showPagesDropup ? { zIndex: 30 } : undefined}>
@@ -447,15 +449,21 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
 
           {/* Row 3: save/cancel */}
           <div className="border-top d-flex align-items-center justify-content-start gap-2 p-1 template-editor-actions w-100">
-            <Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : isNew ? "Add" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save Template" />
-            <Button_Toolbar icon={PencilIcon} label="" onClick={() => setShowTemplateDetails(true)} className="btn-outline-secondary" title="Edit template details" />
-            <Button_Toolbar icon={isEditorMinimized ? EyeIcon : EyeSlashIcon} label="" onClick={() => setIsEditorMinimized((previous) => !previous)} className="btn-outline-secondary" title={isEditorMinimized ? "Show rich text editor" : "Hide rich text editor"} aria-expanded={!isEditorMinimized} />
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={saving} className="btn-outline-secondary" title="Cancel" />
+            {readOnly ? (
+              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close template preview" />
+            ) : (
+              <>
+                <Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : isNew ? "Add" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save Template" />
+                <Button_Toolbar icon={PencilIcon} label="" onClick={() => setShowTemplateDetails(true)} className="btn-outline-secondary" title="Edit template details" />
+                <Button_Toolbar icon={isEditorMinimized ? EyeIcon : EyeSlashIcon} label="" onClick={() => setIsEditorMinimized((previous) => !previous)} className="btn-outline-secondary" title={isEditorMinimized ? "Show rich text editor" : "Hide rich text editor"} aria-expanded={!isEditorMinimized} />
+                <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={saving} className="btn-outline-secondary" title="Cancel" />
+              </>
+            )}
           </div>
         </div>
         {/* /component-footer */}
       </div>
-      <Modal
+      {!readOnly && <Modal
         isOpen={showTemplateDetails}
         onClose={() => setShowTemplateDetails(false)}
         title="Template details"
@@ -507,7 +515,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose }) {
             <label htmlFor="template-details-description">Template description</label>
           </div>
         </div>
-      </Modal>
+      </Modal>}
       {/* /component */}
     </Modal>
   );

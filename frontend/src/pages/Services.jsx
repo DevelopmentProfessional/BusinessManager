@@ -67,6 +67,7 @@ export default function Services() {
   // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
   const [templateService, setTemplateService] = useState(null);
+  const [catalogueItems, setCatalogueItems] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState([]);
@@ -383,6 +384,11 @@ export default function Services() {
             <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
+            <Button_Icon
+              icon={DocumentTextIcon}
+              label="Generate catalogue"
+              onClick={() => setCatalogueItems(services.filter((service) => selectedIds.has(service.id)))}
+            />
             <Button_Icon icon={PencilSquareIcon} label="Edit selected services" variant="primary" onClick={() => setShowMultiEdit(true)} />
             <Gate_Permission
               page="services"
@@ -510,6 +516,18 @@ export default function Services() {
           currentUser={currentUser}
           settings={{}}
           onClose={() => setTemplateService(null)}
+        />
+      )}
+      {catalogueItems?.length > 0 && (
+        <Modal_TemplateUse
+          page="services"
+          entity={{ name: "Service Catalogue" }}
+          catalogueItems={catalogueItems}
+          currentUser={currentUser}
+          settings={{}}
+          filterType="catalogue"
+          initialTemplateType="catalogue"
+          onClose={() => setCatalogueItems(null)}
         />
       )}
 

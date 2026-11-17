@@ -14,6 +14,7 @@ import {
   buildScheduleVariables,
   buildServiceVariables,
   buildInventoryVariables,
+  buildCatalogueVariables,
   buildPurchaseOrderVariables,
 } from "../utils/Utils_TemplateVariables";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
@@ -25,6 +26,7 @@ const TYPE_BADGE_COLOR = {
   payslip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
   memo: "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300",
   quote: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300",
+  catalogue: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300",
   custom: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
@@ -35,6 +37,7 @@ const TYPE_BADGE_COLOR = {
  *  currentUser   – logged-in user object
  *  settings      – AppSettings object
  *  items         – (optional) sale transaction items for sales page
+ *  catalogueItems – (optional) selected services or products for a catalogue
  *  client        – (optional) client for sales/schedule page
  *  employee      – (optional) employee for schedule page
  *  service       – (optional) service for schedule page
@@ -42,7 +45,7 @@ const TYPE_BADGE_COLOR = {
  *  initialTemplateType – (optional) select this type first without filtering other templates
  *  onClose       – callback to close this modal
  */
-export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], client, employee, service, filterType = null, initialTemplateType = null, onClose }) {
+export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], catalogueItems = [], client, employee, service, filterType = null, initialTemplateType = null, onClose }) {
   const { hasPermission } = useStore();
   const canEditTemplates = hasPermission("templates", "write");
   const [templates, setTemplates] = useState([]);
@@ -314,6 +317,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   }, [page, entity?.id]);
 
   const buildVars = useCallback(() => {
+    if (catalogueItems.length > 0) return buildCatalogueVariables(catalogueItems, page, currentUser, settings);
     if (page === "clients") {
       const baseVars = buildClientVariables(entity, currentUser, settings);
       const cartItems = (clientCartItems || []).map((item) => {
@@ -358,7 +362,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     if (page === "inventory") return buildInventoryVariables(entity, currentUser, settings);
     if (page === "suppliers") return buildPurchaseOrderVariables(purchaseOrder, entity, currentUser, settings, inventoryItems);
     return {};
-  }, [page, entity, currentUser, settings, items, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal, purchaseOrder, inventoryItems]);
+  }, [page, entity, currentUser, settings, items, catalogueItems, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal, purchaseOrder, inventoryItems]);
 
   useEffect(() => {
     if (!selected) {

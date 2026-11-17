@@ -6,13 +6,14 @@
 # ============================================================
 
 from typing import List, Optional, Any, Dict
+import math
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, SQLModel, select
 
 from ..database import get_session
 from ..models import (
-    Inventory, User,
+    INVENTORY_PURCHASE_UNIT_BUILT_INS, Inventory, InventoryPurchaseUnit, User,
     AssetUnit, ASSET_UNIT_STATES,
     DescriptiveFeature, FeatureOption, InventoryFeature, InventoryFeatureOptionData,
 )
@@ -42,6 +43,8 @@ class BulkProductIn(SQLModel):
     description: Optional[str] = None
     location: Optional[str] = None
     cost: Optional[float] = None
+    purchase_unit: str = "unit"
+    units_per_purchase_unit: float = 1
     # New: asset unit count — only used when type == "asset"
     asset_unit_count: Optional[int] = None
     # New: feature definitions — list of {name, options: [str]}
@@ -121,6 +124,15 @@ def bulk_import_products(
         select(DescriptiveFeature).where(DescriptiveFeature.company_id == current_user.company_id)
     ).all():
         features_by_name.setdefault(_normalize_import_name(feature.name), feature)
+    purchase_units_by_name = {
+        _normalize_import_name(unit.name): unit
+        for unit in session.exec(
+            select(InventoryPurchaseUnit).where(
+                InventoryPurchaseUnit.company_id == current_user.company_id
+            )
+        ).all()
+    }
+    built_in_purchase_units = {unit: unit for unit in INVENTORY_PURCHASE_UNIT_BUILT_INS}
 
     for idx, product in enumerate(products, start=1):
         name = (product.name or "").strip()
@@ -147,6 +159,21 @@ def bulk_import_products(
             errors.append(f"Row {idx}: Cost cannot be negative.")
             skipped_count += 1
             continue
+        purchase_unit = str(product.purchase_unit or "unit").strip()
+        units_per_purchase_unit = float(product.units_per_purchase_unit)
+        if not purchase_unit or len(purchase_unit) > 80:
+            errors.append(f"Row {idx}: Purchase unit is required and must be 80 characters or fewer.")
+            skipped_count += 1
+            continue
+        if (
+            not math.isfinite(units_per_purchase_unit)
+            or units_per_purchase_unit < 1
+            or not units_per_purchase_unit.is_integer()
+        ):
+            errors.append(f"Row {idx}: Units per purchase unit must be a positive whole number.")
+            skipped_count += 1
+            continue
+        purchase_unit = built_in_purchase_units.get(purchase_unit.casefold(), purchase_unit)
 
         sku_value = (product.sku or "").strip()
         normalized_sku = sku_value.lower()
@@ -190,8 +217,22 @@ def bulk_import_products(
             description=(product.description or "").strip() or None,
             location=(product.location or "").strip() or None,
             cost=product.cost,
+            purchase_unit=purchase_unit,
+            units_per_purchase_unit=int(units_per_purchase_unit),
             company_id=current_user.company_id,
         )
+
+        purchase_unit_key = _normalize_import_name(purchase_unit)
+        if (
+            purchase_unit_key not in built_in_purchase_units
+            and purchase_unit_key not in purchase_units_by_name
+        ):
+            unit = InventoryPurchaseUnit(
+                name=purchase_unit,
+                company_id=current_user.company_id,
+            )
+            session.add(unit)
+            purchase_units_by_name[purchase_unit_key] = unit
 
         session.add(item)
         session.flush()  # get item.id before creating child records

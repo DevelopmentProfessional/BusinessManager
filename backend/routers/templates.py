@@ -232,6 +232,27 @@ _STANDARD_TEMPLATES = [
         ),
     },
     {
+        "name": "Catalogue",
+        "template_type": "catalogue",
+        "accessible_pages": '["services","inventory"]',
+        "description": "A reusable product or service catalogue with one styled card per selected item.",
+        "content": (
+            "<h1 style=\"margin-bottom:0.25rem;\">{{catalogue.title}}</h1>"
+            "<p style=\"margin-top:0;color:#6b7280;\">{{catalogue.count}} items</p>"
+            "{{#catalogue.items}}"
+            "<div style=\"display:flex;gap:1rem;align-items:flex-start;padding:1rem;margin:0 0 1rem;border:1px solid #e5e7eb;border-radius:8px;font-family:inherit;break-inside:avoid;page-break-inside:avoid;\">"
+            "<div style=\"flex:0 0 120px;\">{{catalogue_item.image}}</div>"
+            "<div style=\"flex:1;\">"
+            "<div style=\"margin-bottom:0.35rem;color:#6b7280;font-size:0.85rem;\">{{catalogue_item.type}} - {{catalogue_item.category}}</div>"
+            "<h3 style=\"margin:0 0 0.35rem;\">{{catalogue_item.name}}</h3>"
+            "<p style=\"margin:0 0 0.5rem;\">{{catalogue_item.description}}</p>"
+            "<div style=\"color:#6b7280;\">{{catalogue_item.sku}} {{catalogue_item.duration}}</div>"
+            "<strong>{{catalogue_item.price}}</strong>"
+            "</div></div>"
+            "{{/catalogue.items}}"
+        ),
+    },
+    {
         "name": "Appointment Confirmation",
         "template_type": "email",
         "accessible_pages": '["schedule","clients"]',
@@ -337,8 +358,27 @@ def seed_standard_templates(session: Session) -> None:
 # ---------------------------------------------------------------------------
 
 def _render_template(html: str, variables: dict) -> str:
-    """Replace {{key}} placeholders with values from the variables dict."""
+    """Render supported repeated catalogue sections and {{key}} placeholders."""
+    catalogue_items = variables.get("catalogue.items")
+    if not isinstance(catalogue_items, list):
+        catalogue_items = []
+
+    def render_catalogue_section(match: re.Match) -> str:
+        section_html = match.group(1)
+        return "".join(
+            _render_template(section_html, {**variables, **item_variables})
+            for item_variables in catalogue_items
+            if isinstance(item_variables, dict)
+        )
+
+    html = re.sub(
+        r"\{\{#catalogue\.items\}\}([\s\S]*?)\{\{\/catalogue\.items\}\}",
+        render_catalogue_section,
+        html,
+    )
     for key, val in variables.items():
+        if key == "catalogue.items":
+            continue
         html = html.replace("{{" + key + "}}", str(val) if val is not None else "{{" + key + "}}")
     return html
 
@@ -357,7 +397,7 @@ def list_templates(
 ):
     """List all templates: standard (global) + company-specific ones."""
     _require_template_read(current_user, session, page)
-    if page == "suppliers":
+    if page in {"suppliers", "services", "inventory"}:
         seed_standard_templates(session)
 
     company_id = current_user.company_id or ""

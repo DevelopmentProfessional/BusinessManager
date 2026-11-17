@@ -46,6 +46,7 @@ import Widget_Camera from "../widgets/Widget_Camera";
 import FeatureSection from "../panels/Panel_Features";
 import AssetUnitsPanel from "../panels/Panel_AssetUnits";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Dropdown_InventoryPurchaseUnit from "../dropdowns/Dropdown_InventoryPurchaseUnit";
 import { InputText, InputNumber, InputDate, InputTextarea, InputCheckbox } from "../Inputs";
 import ImagePreview from "../media/ImagePreview";
 
@@ -665,6 +666,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanError, setScanError] = useState("");
   const [saleDateError, setSaleDateError] = useState("");
+  const [inventorySaveError, setInventorySaveError] = useState("");
   const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera' | 'upload'
   const [newImageUrl, setNewImageUrl] = useState("");
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -697,6 +699,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     min_stock_level: 10,
     auto_min_stock_level: false,
     stock_unit: "",
+    purchase_unit: "unit",
+    units_per_purchase_unit: 1,
     location: "",
     image_url: "",
     type: "PRODUCT",
@@ -767,6 +771,8 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         min_stock_level: item.min_stock_level ?? 10,
         auto_min_stock_level: item.auto_min_stock_level || false,
         stock_unit: item.stock_unit || "",
+        purchase_unit: item.purchase_unit || "unit",
+        units_per_purchase_unit: item.units_per_purchase_unit ?? 1,
         location: item.location || "",
         image_url: item.image_url || "",
         type: (item.type || "PRODUCT").toUpperCase(),
@@ -782,6 +788,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       setFeaturesPriceRange(null);
       setSalesPriceRange(null);
       setSaleDateError("");
+      setInventorySaveError("");
 
       // In sales mode, fetch feature price range for this item
       if (isSalesMode) {
@@ -824,7 +831,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         })
         .catch(() => {});
     }
-  }, [isOpen, item, cartQuantity, isSalesMode, loadAvailableLocations]);
+  }, [isOpen, item, itemType, cartQuantity, isSalesMode, loadAvailableLocations]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -1018,7 +1025,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     onClose();
   };
 
-  const handleUpdateInventory = (e) => {
+  const handleUpdateInventory = async (e) => {
     e.preventDefault();
     setSaleDateError("");
     if (isDuplicateSku(formData.sku)) {
@@ -1033,27 +1040,40 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
       return;
     }
 
-    onUpdateInventory?.(item.id, {
-      name: formData.name,
-      sku: formData.sku,
-      // When features manage price, preserve the existing fixed price (don't override with range)
-      price: parseFloat(formData.price) || 0,
-      cost: formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null,
-      cost_type: formData.cost_type || "one_time",
-      date_of_purchase: formData.date_of_purchase || null,
-      date_of_sale: formData.date_of_sale || null,
-      description: formData.description,
-      min_stock_level: formData.auto_min_stock_level
-        ? null
-        : Number(formData.min_stock_level || 0),
-      auto_min_stock_level: Boolean(formData.auto_min_stock_level),
-      stock_unit: formData.stock_unit.trim() || null,
-      location: formData.location,
-      image_url: formData.image_url,
-      type: formData.type,
-      supplier_id: formData.supplier_id || null,
-      category: formData.category || null,
-    });
+    const unitsPerPurchaseUnit = Number(formData.units_per_purchase_unit);
+    if (!Number.isInteger(unitsPerPurchaseUnit) || unitsPerPurchaseUnit < 1) {
+      setInventorySaveError("Units per purchase unit must be a positive whole number.");
+      return;
+    }
+
+    setInventorySaveError("");
+    try {
+      await onUpdateInventory?.(item.id, {
+        name: formData.name,
+        sku: formData.sku,
+        // When features manage price, preserve the existing fixed price (don't override with range)
+        price: parseFloat(formData.price) || 0,
+        cost: formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null,
+        cost_type: formData.cost_type || "one_time",
+        date_of_purchase: formData.date_of_purchase || null,
+        date_of_sale: formData.date_of_sale || null,
+        description: formData.description,
+        min_stock_level: formData.auto_min_stock_level
+          ? null
+          : Number(formData.min_stock_level || 0),
+        auto_min_stock_level: Boolean(formData.auto_min_stock_level),
+        stock_unit: formData.stock_unit.trim() || null,
+        purchase_unit: formData.purchase_unit || "unit",
+        units_per_purchase_unit: unitsPerPurchaseUnit,
+        location: formData.location,
+        image_url: formData.image_url,
+        type: formData.type,
+        supplier_id: formData.supplier_id || null,
+        category: formData.category || null,
+      });
+    } catch (updateError) {
+      setInventorySaveError(String(updateError?.response?.data?.detail || updateError?.message || "Failed to update inventory item."));
+    }
   };
 
   const handleStockAdjustment = async (e) => {
@@ -1224,6 +1244,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
             /* Inventory Mode - Image + Stock fields at top, form fields below */
             <>
               <form onSubmit={handleUpdateInventory} className="inventory-edit-form">
+                {inventorySaveError && <div className="alert alert-danger py-1 small" role="alert">{inventorySaveError}</div>}
                 {/* Top Section: Image and add-photo controls */}
                 <div className="mb-3" style={{ minHeight: "200px" }}>
                   {/* Image */}
@@ -1461,6 +1482,32 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       <label htmlFor="detail_price">Price</label>
                     </div>
                   </div>
+                  {!isLocation && !isAsset && (
+                    <>
+                      <div className={inventoryRowClass}>
+                        <div style={equalFieldStyle}>
+                          <Dropdown_InventoryPurchaseUnit
+                            id="detail-purchase-unit"
+                            value={formData.purchase_unit}
+                            onChange={handleChange}
+                          />
+                        </div>
+                        <div className="form-floating" style={equalFieldStyle}>
+                          <InputNumber
+                            id="detail-units-per-purchase-unit"
+                            name="units_per_purchase_unit"
+                            value={formData.units_per_purchase_unit}
+                            onChange={handleChange}
+                            min="1"
+                            step="1"
+                            placeholder="Stock units per package"
+                          />
+                          <label htmlFor="detail-units-per-purchase-unit">Stock units per package</label>
+                        </div>
+                      </div>
+                      <div className="form-text mb-2">Purchase-order default price is item cost multiplied by units per package.</div>
+                    </>
+                  )}
                   {isResource && (
                     <div className="form-floating mb-2">
                       <InputText id="detail-stock-unit" name="stock_unit" value={formData.stock_unit} onChange={handleChange} placeholder="Stock unit" />

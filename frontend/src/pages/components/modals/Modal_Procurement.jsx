@@ -2,7 +2,7 @@
  * Supplier product and purchase-order management.
  */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { InputNumber, InputTextarea, InputDate, InputText } from "../Inputs";
+import { InputNumber, InputTextarea, InputDate } from "../Inputs";
 import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "../../../icons";
 import api, { inventoryAPI, inventoryCategoriesAPI, documentsAPI, supplierProductsAPI } from "../../../services/api";
 import { formatCurrency } from "../../../utils/formatters";
@@ -11,6 +11,9 @@ import Footer_Actions from "../footers/Footer_Actions";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import PageTableHeader from "../tables/Page_TableHeader";
+import PageTableRow from "../tables/Page_TableRow";
+import Table from "../tables/Table";
 
 const EMPTY_LINE = { supplier_product_id: "", inventory_id: "", quantity_ordered: 1, unit_price: 0 };
 
@@ -48,14 +51,6 @@ const Modal_Procurement = ({
     else setLocalView(nextView);
   };
   const [supplierProducts, setSupplierProducts] = useState([]);
-  const [catalogForm, setCatalogForm] = useState({
-    inventory_id: "",
-    purchase_unit: "unit",
-    units_per_purchase_unit: 1,
-    unit_price: 0,
-    is_preferred: false,
-  });
-  const [savingCatalog, setSavingCatalog] = useState(false);
   const [procurementError, setProcurementError] = useState("");
   const [detailPoId, setDetailPoId] = useState(null);
   const [detailPo, setDetailPo] = useState(null);
@@ -157,20 +152,26 @@ const Modal_Procurement = ({
       setFormData((prev) => {
         let changed = false;
         const updated = prev.line_items.map((line) => {
-          if (!line.supplier_product_id && line.inventory_id) {
-            const sp = supplierProducts.find((p) => String(p.inventory_id) === String(line.inventory_id));
-            if (sp) {
-              changed = true;
-              return {
-                ...line,
-                supplier_product_id: sp.id,
-                unit_price: line.unit_price || num(sp.unit_price),
-                purchase_unit: sp.purchase_unit || line.purchase_unit || "unit",
-                units_per_purchase_unit: Number(sp.units_per_purchase_unit || line.units_per_purchase_unit || 1),
-              };
-            }
-          }
-          return line;
+          if (!line.inventory_id) return line;
+          const sp = supplierProducts.find((product) =>
+            String(product.inventory_id) === String(line.inventory_id)
+            || (line.supplier_product_id && String(product.id) === String(line.supplier_product_id))
+          );
+          if (!sp) return line;
+          const next = {
+            ...line,
+            supplier_product_id: sp.id,
+            unit_price: line.unit_price || num(sp.unit_price),
+            purchase_unit: sp.purchase_unit || "unit",
+            units_per_purchase_unit: Number(sp.units_per_purchase_unit || 1),
+          };
+          if (
+            next.supplier_product_id !== line.supplier_product_id
+            || next.unit_price !== line.unit_price
+            || next.purchase_unit !== line.purchase_unit
+            || next.units_per_purchase_unit !== line.units_per_purchase_unit
+          ) changed = true;
+          return next;
         });
         return changed ? { ...prev, line_items: updated } : prev;
       });
@@ -188,9 +189,6 @@ const Modal_Procurement = ({
           supplierProductsAPI.save({
             supplier_id: supplierId,
             inventory_id: item.inventory_id,
-            purchase_unit: item.purchase_unit || "unit",
-            units_per_purchase_unit: item.units_per_purchase_unit || 1,
-            unit_price: Math.max(0, num(item.unit_price)),
             is_preferred: Boolean(item.is_preferred),
           })
         )
@@ -321,33 +319,6 @@ const Modal_Procurement = ({
     });
   };
 
-  const handleSaveCatalogProduct = async () => {
-    if (!catalogForm.inventory_id || !catalogForm.purchase_unit.trim()) return;
-    setProcurementError("");
-    try {
-      setSavingCatalog(true);
-      await supplierProductsAPI.save({
-        ...catalogForm,
-        supplier_id: supplierId,
-        units_per_purchase_unit: Math.max(1, Math.round(num(catalogForm.units_per_purchase_unit))),
-        unit_price: Math.max(0, num(catalogForm.unit_price)),
-      });
-      setCatalogForm({
-        inventory_id: "",
-        purchase_unit: "unit",
-        units_per_purchase_unit: 1,
-        unit_price: 0,
-        is_preferred: false,
-      });
-      await loadSupplierProducts();
-    } catch (error) {
-      console.error("Failed to save supplier catalog item:", error);
-      setProcurementError(getErrorMessage(error, "Failed to save supplier catalog item."));
-    } finally {
-      setSavingCatalog(false);
-    }
-  };
-
   const handleCreatePO = async () => {
     const validLines = formData.line_items.filter((i) => i.supplier_product_id);
     if (validLines.length === 0) return;
@@ -445,144 +416,6 @@ const Modal_Procurement = ({
     }
   };
 
-  const renderCatalog = () => {
-    const availableItems = inventoryItems;
-    const editingProduct = supplierProducts.find(
-      (product) => String(product.inventory_id) === String(catalogForm.inventory_id)
-    );
-    return (
-      <div className="d-flex flex-column flex-grow-1 min-h-0">
-        {embedded && (
-          <div className="align-items-center d-flex flex-shrink-0 justify-content-between mb-2">
-            <span className="fw-semibold small text-muted">{editingProduct ? "Edit supplier product" : "Supplier products"}</span>
-            <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" onClick={() => setView("orders")} title="Done" aria-label="Done">
-              <XMarkIcon style={{ width: 14, height: 14 }} />
-            </button>
-          </div>
-        )}
-        <div className="flex-grow-1 min-h-0 overflow-auto">
-          <div className="border mb-2 p-2 rounded">
-            <div className="mb-2">
-              <Dropdown_Custom
-                className="form-select ui-control-sm"
-                value={catalogForm.inventory_id}
-                onChange={(e) => setCatalogForm((prev) => ({ ...prev, inventory_id: e.target.value }))}
-                options={[
-                  { value: "", label: "Select inventory item…" },
-                  ...availableItems.map((item) => ({ value: item.id, label: item.name })),
-                ]}
-              />
-            </div>
-            <div className="align-items-end d-flex flex-wrap gap-2">
-              {settings.showProductPurchaseUnitField !== false && (
-                <div className="flex-grow-1" style={{ minWidth: 105 }}>
-                  <InputText
-                    aria-label="Purchase unit"
-                    className="form-control ui-control-sm"
-                    value={catalogForm.purchase_unit}
-                    onChange={(e) => setCatalogForm((prev) => ({ ...prev, purchase_unit: e.target.value }))}
-                    placeholder="Purchase unit"
-                  />
-                </div>
-              )}
-              {settings.showProductPackSizeField !== false && (
-                <div style={{ width: 110 }}>
-                  <InputNumber
-                    min="1"
-                    step="1"
-                    className="form-control ui-control-sm"
-                    value={catalogForm.units_per_purchase_unit}
-                    onChange={(e) => setCatalogForm((prev) => ({ ...prev, units_per_purchase_unit: e.target.value }))}
-                    aria-label="Stock units per purchase unit"
-                    title="Stock units per purchase unit"
-                  />
-                </div>
-              )}
-              {settings.showProductPriceField !== false && (
-                <div style={{ width: 120 }}>
-                  <InputNumber
-                    min="0"
-                    step="0.01"
-                    className="form-control ui-control-sm"
-                    value={catalogForm.unit_price}
-                    onChange={(e) => setCatalogForm((prev) => ({ ...prev, unit_price: e.target.value }))}
-                    aria-label="Supplier price per purchase unit"
-                    title="Supplier price per purchase unit"
-                  />
-                </div>
-              )}
-              {embedded && (
-                <button
-                  type="button"
-                  className="align-items-center btn btn-primary btn-sm d-inline-flex gap-1"
-                  onClick={handleSaveCatalogProduct}
-                  disabled={savingCatalog || !catalogForm.inventory_id || !catalogForm.purchase_unit.trim()}
-                >
-                  <PlusIcon style={{ width: 14, height: 14 }} />
-                  <span>{savingCatalog ? "Saving…" : editingProduct ? "Update" : "Add"}</span>
-                </button>
-              )}
-            </div>
-            {settings.showProductPreferredField !== false && (
-              <div className="form-check mt-2">
-                <input
-                  className="form-check-input"
-                  id={`supplier-preferred-${supplierId}`}
-                  type="checkbox"
-                  checked={catalogForm.is_preferred}
-                  onChange={(e) => setCatalogForm((prev) => ({ ...prev, is_preferred: e.target.checked }))}
-                />
-                <label className="form-check-label small" htmlFor={`supplier-preferred-${supplierId}`}>Preferred supplier for this item</label>
-              </div>
-            )}
-          </div>
-          {settings.showProductsTable === false ? (
-            <p className="small text-center text-muted">The products table is hidden in supplier page settings.</p>
-          ) : supplierProducts.length === 0 ? (
-            <p className="small text-center text-muted">No products in this supplier catalog yet.</p>
-          ) : (
-            <table className="align-middle mb-0 table table-sm">
-              <thead className="table-light">
-                <tr>
-                  <th>Item</th>
-                  {settings.showProductPack !== false && <th>Pack</th>}
-                  {settings.showProductPrice !== false && <th className="text-end">Price</th>}
-                  {settings.showProductPreferred !== false && <th>Preferred</th>}
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {supplierProducts.map((product) => (
-                  <tr key={product.id}>
-                    <td>{product.inventory_name}</td>
-                    {settings.showProductPack !== false && <td>{product.units_per_purchase_unit} stock units / {product.purchase_unit}</td>}
-                    {settings.showProductPrice !== false && <td className="text-end">{formatCurrency(product.unit_price)}</td>}
-                    {settings.showProductPreferred !== false && <td>{product.is_preferred ? "Yes" : "—"}</td>}
-                    <td className="text-end">
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => setCatalogForm({
-                          inventory_id: product.inventory_id,
-                          purchase_unit: product.purchase_unit,
-                          units_per_purchase_unit: product.units_per_purchase_unit,
-                          unit_price: product.unit_price,
-                          is_preferred: product.is_preferred,
-                        })}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const openDetail = (po) => {
     setDetailPoId(po.id);
     setView("orders");
@@ -618,8 +451,8 @@ const Modal_Procurement = ({
               <tr>
                 <th style={{ width: 36 }} />
                 <th>Item</th>
-                <th style={{ width: 72 }}>Packs</th>
-                <th style={{ width: 96 }}>Pack price</th>
+                <th style={{ width: 72 }}>Quantity</th>
+                <th style={{ width: 96 }}>Price / unit</th>
                 <th className="text-end" style={{ width: 80 }}>Line</th>
               </tr>
             </thead>
@@ -716,13 +549,19 @@ const Modal_Procurement = ({
     </div>
   );
 
-  const renderPoList = () => (
-    <>
+  const renderPoList = () => {
+    const columns = [
+      { key: "po-number", label: "PO#", className: "app-col-flex" },
+      ...(settings.showPODate !== false ? [{ key: "date", label: "Date", className: "app-col-action-90" }] : []),
+      ...(settings.showPOStatus !== false ? [{ key: "status", label: "Status", className: "app-col-action-90" }] : []),
+      ...(settings.showPOAmount !== false ? [{ key: "amount", label: "Sum", className: "app-col-action-90 text-end" }] : []),
+      { key: "view", label: <span className="visually-hidden">View</span>, className: "app-col-action-56 text-center" },
+    ];
+
+    return (
+      <>
       {!isViewControlled && (
         <div className="align-items-center d-flex flex-shrink-0 gap-2 justify-content-end mb-2">
-          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setView("products")}>
-            Products ({supplierProducts.length})
-          </button>
           <button
             type="button"
             onClick={() => {
@@ -738,48 +577,52 @@ const Modal_Procurement = ({
         </div>
       )}
 
-      {settings.showPurchaseOrdersTable === false ? (
-        <div className="flex-grow-1 py-3 small text-center text-muted">The purchase-orders table is hidden in supplier page settings.</div>
-      ) : (
-        <div className="flex-grow-1 min-h-0 overflow-auto">
-          <table className="align-middle mb-0 table table-hover table-sm">
-            <thead className="sticky-top table-light">
-              <tr>
-                <th className="pe-1 ps-1">PO#</th>
-                {settings.showPODate !== false && <th className="px-1">Date</th>}
-                {settings.showPOStatus !== false && <th className="px-1">Status</th>}
-                {settings.showPOAmount !== false && <th className="px-1 text-end">Sum</th>}
-                <th className="pe-1 text-end" style={{ width: 44 }}><span className="visually-hidden">View</span></th>
-              </tr>
-            </thead>
+      <div className="app-page-scroll-surface d-flex flex-column-reverse flex-grow-1 min-h-0 overflow-auto">
+        {settings.showPurchaseOrdersTable === false ? (
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center py-3 small text-center text-muted">
+            The purchase-orders table is hidden in supplier page settings.
+          </div>
+        ) : (
+          <Table responsive={false} className="app-main-page-table table-borderless table-hover w-100">
+            <colgroup>
+              {columns.map((column) => <col key={column.key} className={column.className} />)}
+            </colgroup>
             <tbody>
               {purchaseOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={1 + Number(settings.showPODate !== false) + Number(settings.showPOStatus !== false) + Number(settings.showPOAmount !== false) + 1} className="ps-1 py-1 small text-center text-muted">
+                <PageTableRow>
+                  <td colSpan={columns.length} className="main-page-table-data py-2 small text-center text-muted">
                     No purchase orders yet.
                   </td>
-                </tr>
+                </PageTableRow>
               ) : (
                 purchaseOrders.map((po) => (
-                  <tr key={po.id}>
-                    <td className="font-monospace pe-1 ps-1 small">{po.po_number}</td>
-                    {settings.showPODate !== false && <td className="px-1 small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>}
-                    {settings.showPOStatus !== false && <td className="px-1 small text-capitalize">{String(po.status || "draft").replaceAll("_", " ")}</td>}
-                    {settings.showPOAmount !== false && <td className="fw-medium px-1 small text-end">{formatCurrency(po.total_amount)}</td>}
-                    <td className="pe-1 text-end">
+                  <PageTableRow key={po.id}>
+                    <td className="font-monospace main-page-table-data small">{po.po_number}</td>
+                    {settings.showPODate !== false && (
+                      <td className="main-page-table-data small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
+                    )}
+                    {settings.showPOStatus !== false && (
+                      <td className="main-page-table-data small text-capitalize">{String(po.status || "draft").replaceAll("_", " ")}</td>
+                    )}
+                    {settings.showPOAmount !== false && (
+                      <td className="fw-medium main-page-table-data small text-end">{formatCurrency(po.total_amount)}</td>
+                    )}
+                    <td className="main-page-table-data text-center">
                       <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" title="View purchase order" onClick={() => openDetail(po)}>
-                        <EyeIcon style={{ width: 14, height: 14 }} />
+                        <EyeIcon className="ui-icon-4" />
                       </button>
                     </td>
-                  </tr>
+                  </PageTableRow>
                 ))
               )}
             </tbody>
-          </table>
-        </div>
-      )}
-    </>
-  );
+          </Table>
+        )}
+        {settings.showPurchaseOrdersTable !== false && <PageTableHeader columns={columns} />}
+      </div>
+      </>
+    );
+  };
 
   const content = (
     <div className={`d-flex flex-column min-h-0 h-100 ${embedded ? "procurement-ui--embedded" : ""}`}>
@@ -788,7 +631,7 @@ const Modal_Procurement = ({
           {procurementError}
         </div>
       )}
-      {view === "create" ? renderCreateForm() : view === "products" ? renderCatalog() : renderPoList()}
+      {view === "create" ? renderCreateForm() : renderPoList()}
 
       <Modal
         isOpen={!!detailPoId}
@@ -878,7 +721,7 @@ const Modal_Procurement = ({
                       style={{ width: 110 }}
                       value={newPoLine.unit_price}
                       onChange={(e) => setNewPoLine((prev) => ({ ...prev, unit_price: e.target.value }))}
-                      aria-label="Pack price"
+                      aria-label="Purchase-unit price"
                     />
                     <button
                       type="button"
@@ -898,7 +741,7 @@ const Modal_Procurement = ({
                           <th>Item</th>
                           <th className="text-end">Ordered</th>
                           <th className="text-end">Received</th>
-                          <th className="text-end">Pack price</th>
+                          <th className="text-end">Price / unit</th>
                           <th className="text-end">Line</th>
                           {["sent", "confirmed", "partially_received"].includes(detailPo.status) && <th className="text-end">Receive</th>}
                         </tr>
@@ -991,7 +834,7 @@ const Modal_Procurement = ({
       onClick={onClick}
       title={label}
       aria-label={label}
-      disabled={loading || savingCatalog}
+      disabled={loading}
     >
       <XMarkIcon style={{ width: 14, height: 14 }} />
     </button>
@@ -1019,33 +862,10 @@ const Modal_Procurement = ({
         />
       }
     />
-  ) : view === "products" ? (
-    <Footer_Actions
-      start={
-        <Button_Toolbar
-          icon={savingCatalog ? CheckIcon : PlusIcon}
-          label={savingCatalog ? "Saving…" : supplierProducts.some((product) => String(product.inventory_id) === String(catalogForm.inventory_id)) ? "Update" : "Add"}
-          onClick={handleSaveCatalogProduct}
-          disabled={savingCatalog || !catalogForm.inventory_id || !catalogForm.purchase_unit.trim()}
-          className="btn-primary"
-          title="Save supplier product"
-        />
-      }
-      center={cancelButton("Back to purchase orders", () => setView("orders"))}
-    />
   ) : (
     <Footer_Actions
       start={
         <>
-          {settings.showProductModal !== false && (
-            <Button_Toolbar
-              icon={DocumentPlusIcon}
-              label={`Products (${supplierProducts.length})`}
-              onClick={() => setView("products")}
-              className="btn-outline-secondary"
-              title={`View products from ${supplierName || supplier?.name || "supplier"}`}
-            />
-          )}
           {settings.showPurchaseOrderForm !== false && (
             <Button_Toolbar
               icon={PlusIcon}

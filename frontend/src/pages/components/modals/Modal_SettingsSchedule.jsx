@@ -3,7 +3,7 @@
  * FILE: Modal_SettingsSchedule.jsx
  *
  * PURPOSE:
- *   User profile schedule settings component. Allows users to
+ *   Schedule page settings component. Allows users to
  *   configure business hours, days of operation, attendance
  *   check-in, and auto-accept bookings with grace period settings.
  * ============================================================
@@ -12,13 +12,12 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { CheckIcon, ExclamationTriangleIcon, ArrowPathIcon } from "../../../icons";
 import { settingsAPI } from "../../../services/api";
-import useDarkMode from "../../../services/useDarkMode";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { Accordion } from "../accordions";
 import { InputCheckbox, InputNumber } from "../Inputs";
 
 const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ userId, HelpIcon, onSaved, onSavingChange, hideFooter = false }, ref) {
-  const { isDarkMode } = useDarkMode();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -148,41 +147,45 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
   }));
 
   if (loading) {
-    return <div className="text-gray-600">Loading schedule settings...</div>;
+    return <div className="small text-muted">Loading schedule settings...</div>;
   }
 
   return (
-    <div className={`rounded-lg shadow-lg p-1 border-t-4 border-blue-600 space-y-6 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
+    <div className="d-flex flex-column gap-2">
       {/* Message Display */}
       {message && (
-        <div className={`p-1 rounded-lg flex items-center gap-3 ${message.type === "success" ? (isDarkMode ? "bg-green-900 border border-green-700" : "bg-green-50 border border-green-200") : isDarkMode ? "bg-red-900 border border-red-700" : "bg-red-50 border border-red-200"}`}>
-          {message.type === "success" ? <CheckIcon className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? "text-green-300" : "text-green-600"}`} /> : <ExclamationTriangleIcon className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? "text-red-300" : "text-red-600"}`} />}
-          <p className={`text-sm font-medium ${message.type === "success" ? (isDarkMode ? "text-green-100" : "text-green-800") : isDarkMode ? "text-red-100" : "text-red-800"}`}>{message.text}</p>
+        <div className={`alert ${message.type === "success" ? "alert-success" : "alert-danger"} align-items-center d-flex gap-2 mb-0 py-2`} role={message.type === "error" ? "alert" : "status"}>
+          {message.type === "success" ? <CheckIcon className="ui-icon-4 flex-shrink-0" /> : <ExclamationTriangleIcon className="ui-icon-4 flex-shrink-0" />}
+          <span className="small fw-medium">{message.text}</span>
         </div>
       )}
 
       {/* Business Hours */}
-      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Business Hours {HelpIcon && <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />}</h4>
-        <div className="gap-3 grid grid-cols-2">
-          <div className="form-floating">
-            <input type="time" id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className={`form-control form-control-sm ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : ""}`} placeholder="Start of Day" />
-            <label htmlFor="start_of_day" className={isDarkMode ? "text-gray-300" : ""}>
-              Start of Day
-            </label>
+      <Accordion variant="settings" header="Business hours" defaultOpen>
+        {HelpIcon && <div className="mb-2"><HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" /></div>}
+        <div className="row g-2">
+          <div className="col-6">
+            <div className="form-floating">
+              <input type="time" id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className="form-control form-control-sm" placeholder="Start of Day" />
+              <label htmlFor="start_of_day">
+                Start of Day
+              </label>
+            </div>
           </div>
-          <div className="form-floating">
-            <input type="time" id="end_of_day" value={formData.end_of_day} onChange={(e) => handleInputChange("end_of_day", e.target.value)} className={`form-control form-control-sm ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : ""}`} placeholder="End of Day" />
-            <label htmlFor="end_of_day" className={isDarkMode ? "text-gray-300" : ""}>
-              End of Day
-            </label>
+          <div className="col-6">
+            <div className="form-floating">
+              <input type="time" id="end_of_day" value={formData.end_of_day} onChange={(e) => handleInputChange("end_of_day", e.target.value)} className="form-control form-control-sm" placeholder="End of Day" />
+              <label htmlFor="end_of_day">
+                End of Day
+              </label>
+            </div>
           </div>
         </div>
-      </div>
+      </Accordion>
 
       {/* Days of Operation */}
-      <div className={`border rounded-lg p-2 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-        <h4 className={`font-semibold mb-2 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Days of Operation {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}</h4>
+      <Accordion variant="settings" header="Days of operation">
+        {HelpIcon && <div className="mb-2"><HelpIcon id="days-of-operation" text="Select which days your business operates" /></div>}
         <Dropdown_Custom
           className="ui-control-sm"
           options={[
@@ -215,75 +218,64 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
           searchable={true}
           closeOnSelect={false}
         />
-      </div>
+      </Accordion>
 
       {/* Attendance Check-in */}
-      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Attendance {HelpIcon && <HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" />}</h4>
-        <div className={`flex items-center justify-between p-1 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
-          <div className="ui-flex-items-gap-2">
-            <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : ""}`}>Attendance Check-in</span>
-            {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
-          </div>
-          <label className="cursor-pointer inline-flex items-center relative">
-            <InputCheckbox checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="peer sr-only" />
-            <div
-              className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
-            ></div>
-          </label>
+      <Accordion variant="settings" header="Attendance">
+        {HelpIcon && <div className="mb-2"><HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" /></div>}
+        <div className="form-check form-switch mb-0">
+          <InputCheckbox id="attendance_check_in_required" checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="form-check-input" />
+          <label className="form-check-label" htmlFor="attendance_check_in_required">Attendance Check-in</label>
+          {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
         </div>
-      </div>
+      </Accordion>
 
       {/* Appointment Reminder Settings */}
-      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-        <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Appointment Reminder {HelpIcon && <HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" />}</h4>
-        <div className="gap-3 grid grid-cols-1 sm:grid-cols-2">
-          <div className="form-floating">
-            <InputNumber
-              id="reminder_time_minutes"
-              min="0"
-              max="10080"
-              step="5"
-              value={formData.reminder_time_minutes ?? 30}
-              onChange={(e) => handleInputChange("reminder_time_minutes", Number(e.target.value || 0))}
-              className={`form-control form-control-sm ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : ""}`}
-              placeholder="Reminder minutes"
-            />
-            <label htmlFor="reminder_time_minutes" className={isDarkMode ? "text-gray-300" : ""}>
-              Reminder Time (minutes before)
-            </label>
+      <Accordion variant="settings" header="Appointment reminder">
+        {HelpIcon && <div className="mb-2"><HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" /></div>}
+        <div className="row g-2">
+          <div className="col-12 col-sm-6">
+            <div className="form-floating">
+              <InputNumber
+                id="reminder_time_minutes"
+                min="0"
+                max="10080"
+                step="5"
+                value={formData.reminder_time_minutes ?? 30}
+                onChange={(e) => handleInputChange("reminder_time_minutes", Number(e.target.value || 0))}
+                className="form-control form-control-sm"
+                placeholder="Reminder minutes"
+              />
+              <label htmlFor="reminder_time_minutes">
+                Reminder Time (minutes before)
+              </label>
+            </div>
           </div>
 
-          <div className={`flex items-center justify-between p-1 rounded-lg border ${isDarkMode ? "bg-gray-600 border-gray-500" : "bg-white border-gray-200"}`}>
-            <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : ""}`}>Send Reminder Notification</span>
-            <label className="cursor-pointer inline-flex items-center relative">
-              <InputCheckbox checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="peer sr-only" />
-              <div
-                className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isDarkMode ? "bg-gray-500 peer-checked:bg-blue-600" : "bg-gray-200 peer-checked:bg-blue-600"}`}
-              ></div>
-            </label>
+          <div className="col-12 col-sm-6 align-self-center">
+            <div className="form-check form-switch mb-0">
+              <InputCheckbox id="reminder_send_notification" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="form-check-input" />
+              <label className="form-check-label" htmlFor="reminder_send_notification">Send Reminder Notification</label>
+            </div>
           </div>
         </div>
-      </div>
+      </Accordion>
 
       {/* Auto-Accept Toggle */}
-      <div className={`border rounded-lg p-0 ${isDarkMode ? "bg-gradient-to-r from-blue-900 to-gray-700 border-blue-700" : "bg-gradient-to-r from-blue-50 to-transparent border-blue-200"}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h4 className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Auto-Accept Client Bookings</h4>
+      <Accordion variant="settings" header="Auto-accept client bookings">
+        <div className="align-items-center d-flex justify-content-between gap-2">
+          <div className="form-check form-switch mb-0">
+            <InputCheckbox id="auto_accept_client_bookings" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="form-check-input" />
+            <label className="form-check-label" htmlFor="auto_accept_client_bookings">{formData.auto_accept_client_bookings ? "Enabled" : "Disabled"}</label>
           </div>
-          <label className="flex items-center ml-4">
-            <InputCheckbox checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="border-gray-300 focus:ring-blue-500 h-6 rounded text-blue-600 w-6" />
-            <span className={`ml-2 text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{formData.auto_accept_client_bookings ? "Enabled" : "Disabled"}</span>
-          </label>
         </div>
 
         {/* Grace Period - only show when auto-accept is enabled */}
         {formData.auto_accept_client_bookings && (
-          <div className={`mt-4 pt-1 border-t ${isDarkMode ? "border-blue-700" : "border-blue-200"}`}>
-            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Grace Period for Pending Requests</label>
-            <p className={`text-xs mb-3 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>Bookings pending longer than this period will NOT be auto-accepted, requiring manual review. Leave blank for no limit.</p>
-            <div className="ui-flex-items-gap-2">
+          <div className="border-top mt-3 pt-3">
+            <label className="form-label fw-medium mb-1">Grace Period for Pending Requests</label>
+            <p className="small text-muted mb-2">Bookings pending longer than this period will NOT be auto-accepted, requiring manual review. Leave blank for no limit.</p>
+            <div className="d-flex align-items-center gap-2">
               <InputNumber
                 min="0"
                 max="168"
@@ -291,27 +283,28 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
                 value={formData.auto_accept_pending_hours || ""}
                 onChange={(e) => handleGraceHoursChange(e.target.value)}
                 placeholder="e.g., 24"
-                className={`w-24 px-1 py-0 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center ${isDarkMode ? "bg-gray-600 text-white border-gray-500" : "border-gray-300"}`}
+                className="form-control form-control-sm text-center"
+                style={{ maxWidth: "6rem" }}
               />
-              <span className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>hours</span>
-              {formData.auto_accept_pending_hours && <span className={`ml-2 text-xs px-0 py-1 rounded ${isDarkMode ? "bg-blue-700 text-blue-100" : "bg-blue-100 text-blue-700"}`}>Max {formData.auto_accept_pending_hours} hours old</span>}
+              <span className="small text-muted">hours</span>
+              {formData.auto_accept_pending_hours && <span className="badge text-bg-primary">Max {formData.auto_accept_pending_hours} hours old</span>}
             </div>
-            <p className={`text-xs mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Example: Set to 24 to auto-accept only fresh bookings (less than 24 hours old)</p>
+            <p className="small text-muted mt-2 mb-0">Example: Set to 24 to auto-accept only fresh bookings (less than 24 hours old)</p>
           </div>
         )}
-      </div>
+      </Accordion>
 
       {/* Current Status */}
       {settings && (
-        <div className={`rounded-lg p-0 border text-xs ${isDarkMode ? "bg-gray-700 border-gray-600 text-gray-400" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
-          <p>
+        <div className="border-top pt-2 small text-muted">
+          <p className="mb-0">
             <strong>Last Updated:</strong> {settings.updated_at && !isNaN(new Date(settings.updated_at).getTime()) ? new Date(settings.updated_at).toLocaleString() : "N/A"}
           </p>
         </div>
       )}
 
       {!hideFooter && (
-        <div className={`d-flex gap-2 pt-2 border-top justify-content-start align-items-center ${isDarkMode ? "border-gray-600" : ""}`}>
+        <div className="d-flex gap-2 pt-2 border-top justify-content-start align-items-center">
           <Button_Toolbar
             icon={CheckIcon}
             label={saving ? "Saving..." : "Save"}

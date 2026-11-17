@@ -78,7 +78,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.17.2"
+CURRENT_SCHEMA_VERSION = "2026.11.18.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -104,6 +104,18 @@ def _required_schema_artifacts_present() -> bool:
             cost_type_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='inventory' AND column_name='cost_type'"
+            )).fetchone()
+            inventory_purchase_unit_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory' AND column_name='purchase_unit'"
+            )).fetchone()
+            inventory_units_per_purchase_unit_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='inventory' AND column_name='units_per_purchase_unit'"
+            )).fetchone()
+            inventory_purchase_unit_table = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='inventory_purchase_unit'"
             )).fetchone()
             client_email_verified_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
@@ -193,6 +205,18 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.tables "
                 "WHERE table_schema='public' AND table_name='supplier_product'"
             )).fetchone()
+            supplier_product_purchase_unit_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier_product' AND column_name='purchase_unit'"
+            )).fetchone()
+            supplier_product_units_per_purchase_unit_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier_product' AND column_name='units_per_purchase_unit'"
+            )).fetchone()
+            supplier_product_unit_price_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier_product' AND column_name='unit_price'"
+            )).fetchone()
             inventory_cost_layer_table = conn.execute(text(
                 "SELECT 1 FROM information_schema.tables "
                 "WHERE table_schema='public' AND table_name='inventory_cost_layer'"
@@ -259,6 +283,9 @@ def _required_schema_artifacts_present() -> bool:
                 and registration_status_column is not None
                 and registration_notes_column is not None
                 and cost_type_column is not None
+                and inventory_purchase_unit_column is not None
+                and inventory_units_per_purchase_unit_column is not None
+                and inventory_purchase_unit_table is not None
                 and client_email_verified_column is not None
                 and asset_unit_employee_column is not None
                 and asset_unit_location_column is not None
@@ -281,6 +308,9 @@ def _required_schema_artifacts_present() -> bool:
                 and employee_payment_method_table is not None
                 and company_payment_account_table is not None
                 and supplier_product_table is not None
+                and supplier_product_purchase_unit_column is None
+                and supplier_product_units_per_purchase_unit_column is None
+                and supplier_product_unit_price_column is None
                 and inventory_cost_layer_table is not None
                 and inventory_cost_consumption_table is not None
                 and inventory_stock_adjustment_table is not None
@@ -1407,6 +1437,111 @@ def _ensure_procurement_catalog_columns_if_needed():
                 print(f"  + Added procurement_order_line.{column}")
 
 
+def _ensure_inventory_purchase_packaging_columns_if_needed():
+    """Move supplier package details onto inventory and retain custom unit names."""
+    from datetime import datetime
+    from uuid import uuid4
+
+    with engine.begin() as conn:
+        inventory_columns = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='inventory'"
+        )).fetchall()}
+        if not inventory_columns:
+            return
+
+        if "purchase_unit" not in inventory_columns:
+            conn.execute(text(
+                "ALTER TABLE inventory "
+                "ADD COLUMN purchase_unit VARCHAR(80) NOT NULL DEFAULT 'unit'"
+            ))
+        if "units_per_purchase_unit" not in inventory_columns:
+            conn.execute(text(
+                "ALTER TABLE inventory "
+                "ADD COLUMN units_per_purchase_unit INTEGER NOT NULL DEFAULT 1"
+            ))
+
+        supplier_product_columns = {row[0] for row in conn.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='supplier_product'"
+        )).fetchall()}
+        if not supplier_product_columns:
+            return
+
+        if "purchase_unit" in supplier_product_columns:
+            unit_table_exists = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='inventory_purchase_unit')"
+            )).scalar()
+            if unit_table_exists:
+                preferred_order = "sp.is_preferred DESC, " if "is_preferred" in supplier_product_columns else ""
+                legacy_units = conn.execute(text(
+                    "SELECT DISTINCT ON (i.company_id, lower(trim(sp.purchase_unit))) "
+                    "i.company_id, trim(sp.purchase_unit) AS name "
+                    "FROM supplier_product sp "
+                    "JOIN inventory i ON i.id = sp.inventory_id "
+                    "WHERE i.company_id IS NOT NULL "
+                    "AND sp.purchase_unit IS NOT NULL "
+                    "AND trim(sp.purchase_unit) <> '' "
+                    "AND lower(trim(sp.purchase_unit)) NOT IN "
+                    "('container', 'pallet', 'crate', 'carton', 'case', 'box', 'pack', 'pair', 'unit') "
+                    f"ORDER BY i.company_id, lower(trim(sp.purchase_unit)), {preferred_order}"
+                    "sp.created_at, sp.id"
+                )).fetchall()
+                for company_id, name in legacy_units:
+                    existing = conn.execute(text(
+                        "SELECT 1 FROM inventory_purchase_unit "
+                        "WHERE company_id = :company_id AND lower(name) = lower(:name)"
+                    ), {"company_id": company_id, "name": name}).fetchone()
+                    if existing:
+                        continue
+                    now = datetime.utcnow()
+                    conn.execute(text(
+                        "INSERT INTO inventory_purchase_unit "
+                        "(id, name, company_id, created_at, updated_at) "
+                        "VALUES (:id, :name, :company_id, :created_at, :updated_at)"
+                    ), {
+                        "id": uuid4(),
+                        "name": name,
+                        "company_id": company_id,
+                        "created_at": now,
+                        "updated_at": now,
+                    })
+
+            if "units_per_purchase_unit" in supplier_product_columns:
+                unit_count = "sp.units_per_purchase_unit"
+            else:
+                unit_count = "1"
+            cost_update = ""
+            if "cost" in inventory_columns and "unit_price" in supplier_product_columns:
+                cost_update = (
+                    ", cost = CASE WHEN i.cost IS NULL AND chosen.unit_price IS NOT NULL "
+                    "THEN chosen.unit_price / GREATEST(COALESCE(chosen.units_per_purchase_unit, 1), 1) "
+                    "ELSE i.cost END"
+                )
+            unit_price = "sp.unit_price" if "unit_price" in supplier_product_columns else "NULL"
+            conn.execute(text(
+                "WITH chosen AS ("
+                " SELECT DISTINCT ON (sp.inventory_id) sp.inventory_id, "
+                "sp.purchase_unit, "
+                f"{unit_count} AS units_per_purchase_unit, "
+                f"{unit_price} AS unit_price "
+                "FROM supplier_product sp "
+                f"ORDER BY sp.inventory_id, {preferred_order}sp.created_at, sp.id"
+                ") "
+                "UPDATE inventory i SET "
+                "purchase_unit = COALESCE(NULLIF(trim(chosen.purchase_unit), ''), 'unit'), "
+                "units_per_purchase_unit = GREATEST(COALESCE(chosen.units_per_purchase_unit, 1), 1)"
+                f"{cost_update} "
+                "FROM chosen WHERE i.id = chosen.inventory_id"
+            ))
+
+        for column in ("purchase_unit", "units_per_purchase_unit", "unit_price"):
+            if column in supplier_product_columns:
+                conn.execute(text(f"ALTER TABLE supplier_product DROP COLUMN {column}"))
+                print(f"  - Removed supplier_product.{column}")
+
+
 def _ensure_fifo_stock_movement_schema_if_needed():
     """Make cost layers support non-PO stock and allow unknown legacy unit costs."""
     with engine.begin() as conn:
@@ -1888,6 +2023,7 @@ def create_db_and_tables():
     _ensure_app_settings_stripe_columns_if_needed()
     _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
+    _ensure_inventory_purchase_packaging_columns_if_needed()
     _ensure_service_image_url_if_needed()
     _ensure_user_hierarchy_columns_if_needed()
     _ensure_asset_unit_employee_column_if_needed()

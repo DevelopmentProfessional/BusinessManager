@@ -34,7 +34,7 @@
  *   2026-05-19 | GitHub Copilot | Added cost type/date fields and bundle/mix subtotal summaries
  *   2026-07-24 | GitHub Copilot | Removed type dropdown caret icon and added word-safe trigger label truncation
  *   2026-09-11 | GitHub Copilot | Removed unused locals and fixed photo URL cleanup dependencies
- *   2026-11-16 | GitHub Copilot | Capture supplier purchase unit and pricing when adding inventory
+ *   2026-11-18 | GitHub Copilot | Store purchase packaging on inventory items
  * ============================================================
  */
 
@@ -48,6 +48,7 @@ import Scanner_Barcode from "../widgets/Scanner_Barcode";
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Dropdown_InventoryPurchaseUnit from "../dropdowns/Dropdown_InventoryPurchaseUnit";
 import { InputText, InputNumber, InputDate, InputTextarea, InputCheckbox } from "../Inputs";
 import cacheService from "../../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../../services/api";
@@ -71,6 +72,8 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     min_stock_level: 10,
     auto_min_stock_level: false,
     stock_unit: "",
+    purchase_unit: "unit",
+    units_per_purchase_unit: 1,
     category: "",
     cost_type: "one_time",
     date_of_purchase: "",
@@ -89,9 +92,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
   const [isSupplierCreateOpen, setIsSupplierCreateOpen] = useState(false);
   const [newSupplierData, setNewSupplierData] = useState({ name: "", email: "", phone: "", address: "" });
   const [newSupplierError, setNewSupplierError] = useState("");
-  const [supplierPurchaseUnit, setSupplierPurchaseUnit] = useState("unit");
-  const [supplierUnitsPerPurchaseUnit, setSupplierUnitsPerPurchaseUnit] = useState(1);
-  const [supplierUnitPrice, setSupplierUnitPrice] = useState(0);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   // Bundle / Mix state (local — saved after item creation)
@@ -139,12 +139,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
         min_stock_level: item.min_stock_level ?? 10,
         auto_min_stock_level: item.auto_min_stock_level || false,
         stock_unit: item.stock_unit || "",
+        purchase_unit: item.purchase_unit || "unit",
+        units_per_purchase_unit: item.units_per_purchase_unit ?? 1,
         category: item.category || "",
         cost_type: item.cost_type || "one_time",
         date_of_purchase: item.date_of_purchase ? item.date_of_purchase.slice(0, 10) : "",
         date_of_sale: item.date_of_sale ? item.date_of_sale.slice(0, 10) : "",
       });
-      setSupplierUnitPrice(item.cost ?? 0);
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -284,11 +285,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
   const handleSupplierChange = (e) => {
     const supplierId = e.target.value;
-    if (supplierId !== formData.supplier_id) {
-      setSupplierPurchaseUnit("unit");
-      setSupplierUnitsPerPurchaseUnit(1);
-      setSupplierUnitPrice(0);
-    }
     setFormData((prev) => ({ ...prev, supplier_id: supplierId }));
   };
 
@@ -301,9 +297,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       if (!supplier?.id) throw new Error("Supplier was created without an ID");
       setAvailableSuppliers((previous) => sortItemsAlphabetically([...previous, supplier], ["name", "email"]));
       setFormData((previous) => ({ ...previous, supplier_id: supplier.id }));
-      setSupplierPurchaseUnit("unit");
-      setSupplierUnitsPerPurchaseUnit(1);
-      setSupplierUnitPrice(0);
       setNewSupplierData({ name: "", email: "", phone: "", address: "" });
       setIsSupplierCreateOpen(false);
     } catch (error) {
@@ -337,6 +330,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     }
     const cost = formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null;
     const type = typeof formData.type === "string" ? formData.type.toUpperCase() : "PRODUCT";
+    const unitsPerPurchaseUnit = Number(formData.units_per_purchase_unit);
+    if (!Number.isInteger(unitsPerPurchaseUnit) || unitsPerPurchaseUnit < 1) {
+      alert("Units per purchase unit must be a positive whole number.");
+      return;
+    }
     const description = (formData.description || "").trim();
     const image_url = addImageMode === "url" || !pendingPhotoUrl ? (formData.image_url || "").trim() : "";
     const location = (formData.location || "").trim();
@@ -366,15 +364,14 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       min_stock_level: minStockLevel,
       auto_min_stock_level: Boolean(formData.auto_min_stock_level),
       stock_unit: formData.stock_unit.trim() || undefined,
+      purchase_unit: formData.purchase_unit || "unit",
+      units_per_purchase_unit: unitsPerPurchaseUnit,
       date_of_purchase: formData.date_of_purchase || undefined,
       date_of_sale: formData.date_of_sale || undefined,
     };
     if (formData.supplier_id && (!item || String(formData.supplier_id) !== String(item.supplier_id))) {
       payload.supplier_product = {
         supplier_id: formData.supplier_id,
-        purchase_unit: supplierPurchaseUnit.trim() || "unit",
-        units_per_purchase_unit: Math.max(1, parseInt(supplierUnitsPerPurchaseUnit, 10) || 1),
-        unit_price: Math.max(0, parseFloat(supplierUnitPrice) || 0),
       };
     }
 
@@ -730,6 +727,33 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
             )}
           </div>
 
+          {!isLocation && !isAsset && (
+            <>
+              <div className="align-items-start d-flex flex-wrap gap-2 mb-1">
+                <div className="flex-grow-1" style={{ minWidth: 200 }}>
+                  <Dropdown_InventoryPurchaseUnit
+                    id="purchase_unit"
+                    value={formData.purchase_unit}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="flex-grow-1 form-floating" style={{ minWidth: 160 }}>
+                  <InputNumber
+                    id="units_per_purchase_unit"
+                    name="units_per_purchase_unit"
+                    min="1"
+                    step="1"
+                    value={formData.units_per_purchase_unit}
+                    onChange={handleChange}
+                    placeholder="Units per package"
+                  />
+                  <label htmlFor="units_per_purchase_unit">Stock units per package</label>
+                </div>
+              </div>
+              <div className="form-text mb-2">Purchase-order default price is item cost multiplied by units per package.</div>
+            </>
+          )}
+
           {!isLocation && (
             <div className="align-items-start d-flex gap-2 mb-2">
               <div className="flex-grow-1 mb-0">
@@ -768,42 +792,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
               >
                 <PlusIcon className="ui-icon-5" />
               </button>
-            </div>
-          )}
-
-          {!isLocation && formData.supplier_id && (
-            <div className="align-items-end d-flex flex-wrap gap-2 mb-2">
-              <div className="flex-grow-1" style={{ minWidth: 105 }}>
-                <InputText
-                  className="form-control ui-control-sm"
-                  value={supplierPurchaseUnit}
-                  onChange={(e) => setSupplierPurchaseUnit(e.target.value)}
-                  aria-label="Supplier purchase unit"
-                  placeholder="Purchase unit"
-                />
-              </div>
-              <div style={{ width: 125 }}>
-                <InputNumber
-                  min="1"
-                  step="1"
-                  className="form-control ui-control-sm"
-                  value={supplierUnitsPerPurchaseUnit}
-                  onChange={(e) => setSupplierUnitsPerPurchaseUnit(e.target.value)}
-                  aria-label="Stock units per supplier purchase unit"
-                  title="Stock units per purchase unit"
-                />
-              </div>
-              <div style={{ width: 125 }}>
-                <InputNumber
-                  min="0"
-                  step="0.01"
-                  className="form-control ui-control-sm"
-                  value={supplierUnitPrice}
-                  onChange={(e) => setSupplierUnitPrice(e.target.value)}
-                  aria-label="Supplier price per purchase unit"
-                  title="Supplier price per purchase unit"
-                />
-              </div>
             </div>
           )}
 

@@ -139,13 +139,13 @@ def _choose_supplier(
             )
         ).first()
         if supplier:
-            pack_size = max(1, int(product.units_per_purchase_unit or 1))
+            pack_size = max(1, int(inventory.units_per_purchase_unit or 1))
             candidates.append((
                 supplier,
                 product,
-                product.purchase_unit or "unit",
+                inventory.purchase_unit or "unit",
                 pack_size,
-                float(product.unit_price or 0),
+                float(inventory.cost or 0) * pack_size,
             ))
     if candidates:
         candidates.sort(
@@ -165,7 +165,14 @@ def _choose_supplier(
             )
         ).first()
         if supplier:
-            return supplier, None, "unit", 1, float(inventory.cost or 0)
+            pack_size = max(1, int(inventory.units_per_purchase_unit or 1))
+            return (
+                supplier,
+                None,
+                inventory.purchase_unit or "unit",
+                pack_size,
+                float(inventory.cost or 0) * pack_size,
+            )
     return None
 
 
@@ -292,7 +299,7 @@ def generate_draft_purchase_orders(
                 expected_delivery_date=now + timedelta(days=lead_days),
                 status="draft",
                 created_by=None,
-                notes="Automatically generated draft. Review quantities and supplier pricing before sending.",
+                notes="Automatically generated draft. Review quantities and package pricing before sending.",
                 company_id=company_id,
             )
             session.add(existing_draft)

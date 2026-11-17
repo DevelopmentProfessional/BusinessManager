@@ -1728,8 +1728,7 @@ export default function Schedule() {
         onClose={() => setShowPageControls(false)}
         saving={scheduleSettingsSaving}
         onSave={async () => {
-          const ok = await scheduleSettingsRef.current?.save?.();
-          if (ok) setShowPageControls(false);
+          return await scheduleSettingsRef.current?.save?.();
         }}
         user={user}
         scheduleSettingsRef={scheduleSettingsRef}

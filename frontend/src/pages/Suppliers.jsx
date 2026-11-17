@@ -16,6 +16,7 @@ import Modal_Procurement from "./components/modals/Modal_Procurement";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_Suppliers_Settings from "./components/modals/Modal_Suppliers_Settings";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
+import Panel_SupplierProducts from "./components/panels/Panel_SupplierProducts";
 import { EmptyState, LoadingSpinner } from "./components/feedback";
 import Badge from "./components/badges/Badge";
 import usePagePermission from "../services/usePagePermission";
@@ -42,6 +43,7 @@ const supplierErrorMessage = (error, fallback) =>
 
 export default function Suppliers() {
   const { user } = useStore();
+  const canManageAutomation = String(user?.role || "").toLowerCase() === "admin";
   const { settings: pageSettings, savePageSettings } = usePageTableSettings("suppliers");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
   const [suppliers, setSuppliers] = useState([]);
@@ -61,6 +63,13 @@ export default function Suppliers() {
   const [initialPoLineItems, setInitialPoLineItems] = useState(null);
   const [communicationSupplier, setCommunicationSupplier] = useState(null);
   const [appSettings, setAppSettings] = useState({});
+  const [automationSettings, setAutomationSettings] = useState({
+    inventory_po_generation_mode: "scheduled",
+    inventory_po_frequency: "monthly",
+  });
+  const [automationSettingsLoading, setAutomationSettingsLoading] = useState(false);
+  const [automationSettingsLoaded, setAutomationSettingsLoaded] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -71,6 +80,36 @@ export default function Suppliers() {
   useEffect(() => {
     if (showPageControls) setPendingSettings(pageSettings);
   }, [showPageControls, pageSettings]);
+
+  useEffect(() => {
+    if (!showPageControls || !canManageAutomation) return undefined;
+
+    let active = true;
+    const loadAutomationSettings = async () => {
+      setAutomationSettingsLoading(true);
+      setAutomationSettingsLoaded(false);
+      setSettingsError("");
+      try {
+        const response = await settingsAPI.getScheduleSettings();
+        const settings = response?.data ?? response ?? {};
+        if (!active) return;
+        setAutomationSettings({
+          inventory_po_generation_mode: settings.inventory_po_generation_mode || "scheduled",
+          inventory_po_frequency: settings.inventory_po_frequency || "monthly",
+        });
+        setAutomationSettingsLoaded(true);
+      } catch (error) {
+        if (active) setSettingsError(supplierErrorMessage(error, "Failed to load purchase-order automation settings."));
+      } finally {
+        if (active) setAutomationSettingsLoading(false);
+      }
+    };
+
+    loadAutomationSettings();
+    return () => {
+      active = false;
+    };
+  }, [showPageControls, canManageAutomation]);
 
   const loadSuppliers = useCallback(async () => {
     setLoading(true);
@@ -516,6 +555,7 @@ export default function Suppliers() {
         <SupplierForm
           key={editingSupplier?.id || "new"}
           supplier={editingSupplier}
+          settings={pageSettings}
           error={formError}
           onSubmit={handleSaveSupplier}
         />
@@ -554,10 +594,26 @@ export default function Suppliers() {
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
         onSave={async () => {
-          await savePageSettings("suppliers", pendingSettings);
+          try {
+            await savePageSettings("suppliers", pendingSettings);
+            if (canManageAutomation && automationSettingsLoaded) {
+              await settingsAPI.updateScheduleSettings(automationSettings);
+            }
+            setSettingsError("");
+            return true;
+          } catch (error) {
+            setSettingsError(supplierErrorMessage(error, "Failed to save supplier settings."));
+            return false;
+          }
         }}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
+        automationSettings={automationSettings}
+        setAutomationSettings={setAutomationSettings}
+        canManageAutomation={canManageAutomation}
+        automationSettingsLoading={automationSettingsLoading}
+        automationSettingsLoaded={automationSettingsLoaded}
+        settingsError={settingsError}
       />
 
       <Modal_Bulk_Import_Sheet
@@ -603,7 +659,7 @@ export default function Suppliers() {
   );
 }
 
-function SupplierForm({ supplier, error, onSubmit }) {
+function SupplierForm({ supplier, settings, error, onSubmit }) {
   const [formData, setFormData] = useState({
     name: supplier?.name || "",
     email: supplier?.email || "",
@@ -643,19 +699,16 @@ function SupplierForm({ supplier, error, onSubmit }) {
         <label htmlFor="supplier-address">Address</label>
       </div>
       <div className="fw-semibold small">Shipping</div>
-      <div className="form-floating ui-form-floating-mb2">
-        <Dropdown_Custom
-          id="supplier-shipping-rate-type"
-          value={formData.shipping_rate_type}
-          onChange={(event) => setFormData((previous) => ({ ...previous, shipping_rate_type: event.target.value }))}
-          className="form-select ui-control-sm"
-          options={[
-            { value: "fixed", label: "Fixed amount" },
-            { value: "percentage", label: "Percentage of order subtotal" },
-          ]}
-        />
-        <label htmlFor="supplier-shipping-rate-type">Shipping calculation</label>
-      </div>
+      <Dropdown_Custom
+        id="supplier-shipping-rate-type"
+        floatingLabel="Shipping calculation"
+        value={formData.shipping_rate_type}
+        onChange={(event) => setFormData((previous) => ({ ...previous, shipping_rate_type: event.target.value }))}
+        options={[
+          { value: "fixed", label: "Fixed amount" },
+          { value: "percentage", label: "Percentage of order subtotal" },
+        ]}
+      />
       <div className="form-floating ui-form-floating-mb2">
         <InputNumber
           id="supplier-shipping-rate"
@@ -670,6 +723,13 @@ function SupplierForm({ supplier, error, onSubmit }) {
           {formData.shipping_rate_type === "percentage" ? "Shipping (%)" : "Shipping amount"}
         </label>
       </div>
+      {supplier?.id ? (
+        <Panel_SupplierProducts supplierId={supplier.id} settings={settings} />
+      ) : (
+        <div className="border mt-2 p-2 rounded small text-muted">
+          Save the supplier first to link its inventory products.
+        </div>
+      )}
     </form>
   );
 }

@@ -31,6 +31,7 @@ export default function Dropdown_Custom({
   multiSelect = false,
   onCreateFromSearch = null,
   createButtonTitle = "Add",
+  preserveOptionOrder = false,
   openUpward = true,
   closeOnSelect = true,
   useCountLabelForMultiSelect = false,
@@ -122,7 +123,7 @@ export default function Dropdown_Custom({
     };
   }, [isOpen, openUpward]);
 
-  const sortedOptions = sortOptionsByLabel(options);
+  const sortedOptions = preserveOptionOrder ? options : sortOptionsByLabel(options);
   const normalizedValue = multiSelect ? (Array.isArray(value) ? value : value ? [value] : []) : value;
   const selectedOptions = multiSelect ? sortedOptions.filter((option) => normalizedValue.includes(option.value)) : [];
   const selectedOption = !multiSelect ? sortedOptions.find((option) => option.value === value) : null;

@@ -194,6 +194,7 @@ export default function Documents() {
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+  const [templateReadOnly, setTemplateReadOnly] = useState(false);
   const [templateTypeFilter, setTemplateTypeFilter] = useState("all");
   const [isTemplateTypeFilterOpen, setIsTemplateTypeFilterOpen] = useState(false);
   const [workflowDoc, setWorkflowDoc] = useState(null);
@@ -343,13 +344,26 @@ export default function Documents() {
   const handleNewTemplate = () => {
     if (!hasPermission("templates", "write")) return;
     setEditingTemplate(null);
+    setTemplateReadOnly(false);
     setIsTemplateEditorOpen(true);
   };
 
   const handleEditTemplate = (tpl) => {
     if (!hasPermission("templates", "write") || tpl?.is_standard) return;
     setEditingTemplate(tpl);
+    setTemplateReadOnly(false);
     setIsTemplateEditorOpen(true);
+  };
+
+  const handleOpenTemplate = (tpl) => {
+    if (tpl?.is_standard) {
+      if (!hasPermission("templates", "read")) return;
+      setEditingTemplate(tpl);
+      setTemplateReadOnly(true);
+      setIsTemplateEditorOpen(true);
+      return;
+    }
+    handleEditTemplate(tpl);
   };
 
   const handleSaveTemplate = async (data) => {
@@ -721,16 +735,18 @@ export default function Documents() {
                     <col className="app-col-action-56" />
                   </colgroup>
                   <tbody>
-                    {filtered.map((tpl) => (
+                    {filtered.map((tpl) => {
+                      const canOpenTemplate = tpl.is_standard ? hasPermission("templates", "read") : hasPermission("templates", "write");
+                      return (
                       <tr
                         key={tpl.id}
-                        className={`${!tpl.is_standard && hasPermission("templates", "write") ? "app-clickable-row" : ""} align-middle border-bottom`}
-                        tabIndex={!tpl.is_standard && hasPermission("templates", "write") ? 0 : -1}
-                        onClick={!tpl.is_standard && hasPermission("templates", "write") ? () => handleEditTemplate(tpl) : undefined}
-                        onKeyDown={!tpl.is_standard && hasPermission("templates", "write") ? (e) => {
+                        className={`${canOpenTemplate ? "app-clickable-row" : ""} align-middle border-bottom`}
+                        tabIndex={canOpenTemplate ? 0 : -1}
+                        onClick={canOpenTemplate ? () => handleOpenTemplate(tpl) : undefined}
+                        onKeyDown={canOpenTemplate ? (e) => {
                           if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
                             e.preventDefault();
-                            handleEditTemplate(tpl);
+                            handleOpenTemplate(tpl);
                           }
                         } : undefined}
                       >
@@ -773,7 +789,8 @@ export default function Documents() {
                           )}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               ) : (
@@ -939,26 +956,14 @@ export default function Documents() {
             ) : null
           }
         >
-          {/* Templates toggle */}
-          <Gate_Permission page="templates" permission="read">
-            {(!showTemplates || canReadDocuments) && (
-            <Button_Toolbar
-              icon={DocumentTextIcon}
-              label="Temp"
-              title={showTemplates ? "Back to documents" : "Document templates"}
-              onClick={() => setShowTemplates((v) => !v)}
-              className={`border-0 shadow-lg transition-all ${showTemplates ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
-            />
-            )}
-          </Gate_Permission>
-
           {showTemplates ? (
             /* Templates mode controls */
             <>
               <Gate_Permission page="templates" permission="write">
-                <button type="button" onClick={handleNewTemplate} className="align-items-center btn btn-app-primary d-flex flex-shrink-0 justify-content-center px-1 rounded-pill" title="New template">
-                  <PlusIcon className="ui-icon-5" />
-                </button>
+                <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleNewTemplate} className="btn-app-primary" title="Add" />
+              </Gate_Permission>
+              <Gate_Permission page="templates" permission="read">
+                {canReadDocuments && <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={() => setShowTemplates(false)} className="btn-app-secondary" title="Cancel" />}
               </Gate_Permission>
               {/* Type filter for templates */}
               <div className="ui-pos-rel">
@@ -1004,6 +1009,16 @@ export default function Documents() {
           ) : (
             /* Documents mode controls */
             <>
+              <Gate_Permission page="templates" permission="read">
+                <Button_Toolbar
+                  icon={DocumentTextIcon}
+                  label="Temp"
+                  title="Document templates"
+                  onClick={() => setShowTemplates(true)}
+                  className="btn-app-secondary"
+                />
+              </Gate_Permission>
+
               {/* View Toggle: List <-> Grid */}
               <Button_Toolbar
                 icon={viewMode === "grid" ? ListBulletIcon : Squares2X2Icon}
@@ -1082,10 +1097,12 @@ export default function Documents() {
       {isTemplateEditorOpen && (
         <Modal_Template_Editor
           template={editingTemplate}
+          readOnly={templateReadOnly}
           onSave={handleSaveTemplate}
           onClose={() => {
             setIsTemplateEditorOpen(false);
             setEditingTemplate(null);
+            setTemplateReadOnly(false);
           }}
         />
       )}

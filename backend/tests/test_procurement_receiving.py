@@ -156,12 +156,7 @@ def test_inventory_creation_links_preferred_supplier_catalog_product():
     isud._save_inventory_supplier_product(
         session,
         inventory,
-        {
-            "supplier_id": str(supplier_id),
-            "purchase_unit": "case",
-            "units_per_purchase_unit": 6,
-            "unit_price": 12.5,
-        },
+        {"supplier_id": str(supplier_id)},
         "company-1",
     )
 
@@ -169,9 +164,6 @@ def test_inventory_creation_links_preferred_supplier_catalog_product():
     product = session.added[0]
     assert product.supplier_id == supplier_id
     assert product.inventory_id == inventory.id
-    assert product.purchase_unit == "case"
-    assert product.units_per_purchase_unit == 6
-    assert product.unit_price == pytest.approx(12.5)
     assert product.is_preferred
 
 
@@ -200,14 +192,12 @@ def test_create_purchase_order_snapshots_supplier_shipping_and_category_tax(
         company_id="company-1",
         type="product",
         category="Hair care",
+        cost=5.0,
+        purchase_unit="case",
+        units_per_purchase_unit=4,
     )
     category = SimpleNamespace(item_type="product", name="Hair care", import_tax_rate=10.0)
-    supplier_product = SimpleNamespace(
-        id=uuid4(),
-        purchase_unit="case",
-        units_per_purchase_unit=6,
-        unit_price=20.0,
-    )
+    supplier_product = SimpleNamespace(id=uuid4())
 
     class CreateSession:
         def __init__(self):
@@ -262,4 +252,64 @@ def test_create_purchase_order_snapshots_supplier_shipping_and_category_tax(
     assert result["import_tax"] == pytest.approx(4.0)
     assert result["shipping_cost"] == pytest.approx(expected_shipping)
     assert result["total_amount"] == pytest.approx(44.0 + expected_shipping)
+    line = next(row for row in session.added if isinstance(row, financial.ProcurementOrderLine))
+    assert line.unit_price == pytest.approx(20.0)
+    assert line.purchase_unit == "case"
+    assert line.units_per_purchase_unit == 4
+    assert session.committed
+
+
+def test_unlink_supplier_product_preserves_purchase_order_lines_and_preferred_supplier():
+    company_id = "company-1"
+    supplier_id = uuid4()
+    inventory_id = uuid4()
+    supplier_product = SimpleNamespace(
+        id=uuid4(),
+        supplier_id=supplier_id,
+        inventory_id=inventory_id,
+        company_id=company_id,
+    )
+    preferred_product = SimpleNamespace(supplier_id=uuid4())
+    inventory = SimpleNamespace(
+        id=inventory_id,
+        company_id=company_id,
+        supplier_id=supplier_id,
+    )
+    purchase_order_line = SimpleNamespace(supplier_product_id=supplier_product.id)
+
+    class DeleteSession:
+        def __init__(self):
+            self.results = iter([supplier_product, preferred_product, [purchase_order_line]])
+            self.added = []
+            self.deleted = []
+            self.committed = False
+
+        def exec(self, _statement):
+            return Result(next(self.results))
+
+        def get(self, model, _record_id):
+            assert model is financial.Inventory
+            return inventory
+
+        def add(self, value):
+            self.added.append(value)
+
+        def delete(self, value):
+            self.deleted.append(value)
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            raise AssertionError("Unexpected rollback")
+
+    session = DeleteSession()
+    current_user = SimpleNamespace(role=UserRole.ADMIN, company_id=company_id)
+
+    result = financial.delete_supplier_product(supplier_product.id, session, current_user)
+
+    assert result["message"] == "Supplier product unlinked successfully"
+    assert purchase_order_line.supplier_product_id is None
+    assert inventory.supplier_id == preferred_product.supplier_id
+    assert session.deleted == [supplier_product]
     assert session.committed

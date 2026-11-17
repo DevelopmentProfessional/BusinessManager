@@ -47,32 +47,32 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "../icons";
-import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import useStore from "../services/useStore";
-import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI, settingsAPI } from "../services/api";
+import api, { inventoryAPI, featuresAPI, assetUnitsAPI, bundleAPI, mixAPI, inventoryCategoriesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Modal_Bulk_Import_Items from "./components/modals/Modal_ImportItems";
 import Modal_Inventory_AddItem from "./components/modals/Modal_Inventory_AddItem";
 import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settings";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
 import { EmptyState, LoadingSpinner } from "./components/feedback";
 import { sortItemsAlphabetically } from "../utils/displaySort";
-import useTableSettings, { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
+import { usePageTableSettings, getTextSizeStyle } from "../services/useTableSettings";
 
 const ASSET_UNITS_PAGE_SIZE_KEY = "inventory_asset_units_page_size";
 const ASSET_UNITS_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 export default function Inventory() {
   // ─── 2 PERMISSION GUARD ──────────────────────────────────────────────────────
-  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user } = useStore();
+  const { inventory, setInventory, loading, setLoading, error, setError, clearError, isModalOpen, modalContent, openModal, closeModal, hasPermission, user: currentUser } = useStore();
 
   // Use the permission refresh hook
 
@@ -100,22 +100,18 @@ export default function Inventory() {
   const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
+  const [catalogueItems, setCatalogueItems] = useState(null);
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
   const { isTrainingMode } = useViewMode();
   const { settings: pageSettings, savePageSettings } = usePageTableSettings("inventory");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
-  const [automationSettings, setAutomationSettings] = useState({
-    inventory_po_generation_mode: "scheduled",
-    inventory_po_frequency: "monthly",
-  });
-  const canManageAutomation = String(user?.role || "").toLowerCase() === "admin";
 
   useEffect(() => {
     if (showPageControls) {
       setPendingSettings(pageSettings);
     }
-  }, [showPageControls]);
+  }, [showPageControls, pageSettings]);
 
   const scrollRef = useRef(null);
 
@@ -243,7 +239,6 @@ export default function Inventory() {
   useFetchOnce(() => {
     loadInventoryData();
     loadInventoryCategories();
-    loadAutomationSettings();
   });
 
   const loadInventoryCategories = async () => {
@@ -252,19 +247,6 @@ export default function Inventory() {
       setInventoryCategories(res?.data || []);
     } catch (err) {
       console.warn("Failed to load inventory categories:", err);
-    }
-  };
-
-  const loadAutomationSettings = async () => {
-    try {
-      const response = await settingsAPI.getScheduleSettings();
-      const settings = response?.data ?? response ?? {};
-      setAutomationSettings({
-        inventory_po_generation_mode: settings.inventory_po_generation_mode || "scheduled",
-        inventory_po_frequency: settings.inventory_po_frequency || "monthly",
-      });
-    } catch (loadError) {
-      setError(loadError?.response?.data?.detail || "Failed to load inventory automation settings.");
     }
   };
 
@@ -544,6 +526,10 @@ export default function Inventory() {
       return n;
     });
   const allVisibleSelectedInv = filteredInventory.length > 0 && filteredInventory.every((i) => selectedIds.has(i.id));
+  const selectedCatalogueProducts = useMemo(
+    () => inventory.filter((item) => selectedIds.has(item.id) && String(item.type || "PRODUCT").toUpperCase() === "PRODUCT"),
+    [inventory, selectedIds]
+  );
   const handleSelectAllInv = () => {
     if (allVisibleSelectedInv) {
       setSelectedIds(new Set());
@@ -684,6 +670,13 @@ export default function Inventory() {
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
+              <Button_Icon
+                icon={DocumentTextIcon}
+                label="Generate catalogue"
+                onClick={() => setCatalogueItems(selectedCatalogueProducts)}
+                disabled={selectedCatalogueProducts.length === 0}
+                title="Generate a catalogue from selected products"
+              />
               <Gate_Permission page="inventory" permission="write">
                 <Button_Icon icon={PencilSquareIcon} label="Edit selected items" variant="primary" onClick={() => setShowMultiEdit(true)} />
               </Gate_Permission>
@@ -801,9 +794,6 @@ export default function Inventory() {
         onSave={async () => {
           try {
             await savePageSettings("inventory", pendingSettings);
-            if (canManageAutomation) {
-              await settingsAPI.updateScheduleSettings(automationSettings);
-            }
             setShowPageControls(false);
           } catch (saveError) {
             setError(saveError?.response?.data?.detail || "Failed to save inventory settings.");
@@ -815,9 +805,6 @@ export default function Inventory() {
         assetUnitsPageSizeOptions={ASSET_UNITS_PAGE_SIZE_OPTIONS}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
-        automationSettings={automationSettings}
-        setAutomationSettings={setAutomationSettings}
-        canManageAutomation={canManageAutomation}
       />
 
       <Modal_ManageLookup
@@ -846,6 +833,18 @@ export default function Inventory() {
         onSave={handleMultiEditSave}
         saving={multiSaving}
       />
+      {catalogueItems?.length > 0 && (
+        <Modal_TemplateUse
+          page="inventory"
+          entity={{ name: "Product Catalogue" }}
+          catalogueItems={catalogueItems}
+          currentUser={currentUser}
+          settings={{}}
+          filterType="catalogue"
+          initialTemplateType="catalogue"
+          onClose={() => setCatalogueItems(null)}
+        />
+      )}
 
     </PageLayout>
   );

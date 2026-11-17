@@ -1,12 +1,12 @@
 import React from "react";
 import { TABLE_TEXT_SIZES } from "../../../services/useTableSettings";
 
-export default function TableSettingsControls({ settings, onChange, toggles = [] }) {
+export default function TableSettingsControls({ settings, onChange, toggles = [], showHeading = true }) {
   const currentTextSize = settings?.textSize || "medium";
 
   return (
-    <div className="border-top dark:border-gray-700 mt-2 pt-2">
-      <div className="fw-semibold mb-2 small">Table Preferences</div>
+    <div className={showHeading ? "border-top dark:border-gray-700 mt-2 pt-2" : ""}>
+      {showHeading && <div className="fw-semibold mb-2 small">Table Preferences</div>}
 
       {/* Text Size Controls */}
       <div className="mb-2">

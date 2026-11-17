@@ -2,6 +2,7 @@
 // Dedicated settings/controls modal for the Reports page
 import React from "react";
 import PageControlsModal from "./Page_ControlsModal";
+import { Accordion } from "../accordions";
 import TableSettingsControls from "../tables/TableSettingsControls";
 
 export default function Modal_Reports_Settings({
@@ -21,25 +22,29 @@ export default function Modal_Reports_Settings({
       onSave={onSave}
     >
       <div className="mb-2 ui-small-muted">Configure report display and export options.</div>
-      <div className="fw-semibold mb-1 small">Summary Cards</div>
-      {Object.keys(kpiVisibility).map((label) => (
-        <div key={label} className="form-check mb-1">
-          <input
-            type="checkbox"
-            id={`kpi-vis-${label}`}
-            className="form-check-input"
-            checked={kpiVisibility[label] ?? false}
-            onChange={(e) => setKpiVisibility?.((prev) => ({ ...prev, [label]: e.target.checked }))}
-          />
-          <label className="form-check-label small" htmlFor={`kpi-vis-${label}`}>
-            {label}
-          </label>
-        </div>
-      ))}
-      <TableSettingsControls
-        settings={pendingReportsSettings}
-        onChange={(patch) => setPendingReportsSettings?.((prev) => ({ ...prev, ...patch }))}
-      />
+      <Accordion variant="settings" header="Summary cards" defaultOpen>
+        {Object.keys(kpiVisibility).map((label) => (
+          <div key={label} className="form-check mb-1">
+            <input
+              type="checkbox"
+              id={`kpi-vis-${label}`}
+              className="form-check-input"
+              checked={kpiVisibility[label] ?? false}
+              onChange={(e) => setKpiVisibility?.((prev) => ({ ...prev, [label]: e.target.checked }))}
+            />
+            <label className="form-check-label small" htmlFor={`kpi-vis-${label}`}>
+              {label}
+            </label>
+          </div>
+        ))}
+      </Accordion>
+      <Accordion variant="settings" header="Table preferences">
+        <TableSettingsControls
+          settings={pendingReportsSettings}
+          showHeading={false}
+          onChange={(patch) => setPendingReportsSettings?.((prev) => ({ ...prev, ...patch }))}
+        />
+      </Accordion>
     </PageControlsModal>
   );
 }

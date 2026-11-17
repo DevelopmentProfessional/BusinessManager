@@ -1,14 +1,12 @@
-﻿import React from "react";
+import React from "react";
 import Modal from "./Modal";
 import Footer_Settings from "../footers/Footer_Settings";
 
-/** Gear-icon page settings modal: title in header, Save (left) and Close (center) in footer. */
+/** Gear-icon page settings modal with a standard Save and Close footer. */
 export default function PageControlsModal({ isOpen, onClose, title, children, onSave, saveLabel = "Save", saving = false, saveDisabled = false }) {
   const handleSave = async () => {
-    if (onSave) {
-      await onSave();
-    }
-    onClose();
+    const result = await onSave?.();
+    if (result !== false) onClose();
   };
 
   return (

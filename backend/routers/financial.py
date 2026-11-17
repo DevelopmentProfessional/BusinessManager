@@ -332,6 +332,18 @@ def _nonnegative_price(value, field_name: str = "unit_price") -> float:
     return price
 
 
+def _inventory_purchase_details(inventory: Inventory) -> tuple[str, int, float]:
+    purchase_unit = str(inventory.purchase_unit or "unit").strip()
+    if not purchase_unit or len(purchase_unit) > 80:
+        raise HTTPException(status_code=400, detail="Inventory purchase unit must be 80 characters or fewer")
+    units_per_purchase_unit = _positive_integer(
+        inventory.units_per_purchase_unit or 1,
+        "inventory units per purchase unit",
+    )
+    unit_cost = _nonnegative_price(inventory.cost or 0, "inventory cost")
+    return purchase_unit, units_per_purchase_unit, unit_cost * units_per_purchase_unit
+
+
 def _supplier_product_for_item(
     session: Session,
     supplier_id: UUID,
@@ -351,9 +363,6 @@ def _supplier_product_for_item(
             product = SupplierProduct(
                 supplier_id=supplier_id,
                 inventory_id=inventory_id,
-                purchase_unit=inventory.stock_unit or "unit",
-                units_per_purchase_unit=1,
-                unit_price=float(inventory.cost or 0),
                 is_preferred=bool(inventory.supplier_id == supplier_id),
                 company_id=company_id,
             )
@@ -389,15 +398,16 @@ def list_supplier_products(
         inventory = session.get(Inventory, product.inventory_id)
         supplier = session.get(Supplier, product.supplier_id)
         if inventory and supplier:
+            purchase_unit, units_per_purchase_unit, unit_price = _inventory_purchase_details(inventory)
             rows.append({
                 "id": product.id,
                 "supplier_id": product.supplier_id,
                 "supplier_name": supplier.name,
                 "inventory_id": product.inventory_id,
                 "inventory_name": inventory.name,
-                "purchase_unit": product.purchase_unit,
-                "units_per_purchase_unit": product.units_per_purchase_unit,
-                "unit_price": float(product.unit_price or 0),
+                "purchase_unit": purchase_unit,
+                "units_per_purchase_unit": units_per_purchase_unit,
+                "unit_price": unit_price,
                 "is_preferred": product.is_preferred,
             })
     return rows
@@ -423,17 +433,7 @@ def save_supplier_product(
     if not inventory or inventory.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="Inventory item not found")
 
-    purchase_unit = str(payload.get("purchase_unit") or "").strip()
-    if not purchase_unit:
-        raise HTTPException(status_code=400, detail="Purchase unit is required")
-    if len(purchase_unit) > 80:
-        raise HTTPException(status_code=400, detail="Purchase unit must be 80 characters or fewer")
-
-    units_per_purchase_unit = _positive_integer(
-        payload.get("units_per_purchase_unit", 1),
-        "units_per_purchase_unit",
-    )
-    unit_price = _nonnegative_price(payload.get("unit_price", 0))
+    purchase_unit, units_per_purchase_unit, unit_price = _inventory_purchase_details(inventory)
     is_preferred = bool(payload.get("is_preferred", False))
 
     product = session.exec(
@@ -450,9 +450,6 @@ def save_supplier_product(
             company_id=current_user.company_id,
         )
 
-    product.purchase_unit = purchase_unit
-    product.units_per_purchase_unit = units_per_purchase_unit
-    product.unit_price = unit_price
     product.is_preferred = is_preferred
 
     if is_preferred:
@@ -484,11 +481,59 @@ def save_supplier_product(
         "id": product.id,
         "supplier_id": product.supplier_id,
         "inventory_id": product.inventory_id,
-        "purchase_unit": product.purchase_unit,
-        "units_per_purchase_unit": product.units_per_purchase_unit,
-        "unit_price": float(product.unit_price or 0),
+        "purchase_unit": purchase_unit,
+        "units_per_purchase_unit": units_per_purchase_unit,
+        "unit_price": unit_price,
         "is_preferred": product.is_preferred,
     }
+
+
+@router.delete("/supplier-products/{supplier_product_id}")
+def delete_supplier_product(
+    supplier_product_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    _require_procurement_permission(current_user, session, ("suppliers", "inventory"), "write")
+    product = session.exec(
+        select(SupplierProduct).where(
+            SupplierProduct.id == supplier_product_id,
+            SupplierProduct.company_id == current_user.company_id,
+        )
+    ).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Supplier product not found")
+
+    inventory = session.get(Inventory, product.inventory_id)
+    if inventory and inventory.company_id == current_user.company_id and inventory.supplier_id == product.supplier_id:
+        preferred_product = session.exec(
+            select(SupplierProduct).where(
+                SupplierProduct.inventory_id == product.inventory_id,
+                SupplierProduct.company_id == current_user.company_id,
+                SupplierProduct.id != product.id,
+                SupplierProduct.is_preferred.is_(True),
+            )
+        ).first()
+        inventory.supplier_id = preferred_product.supplier_id if preferred_product else None
+        session.add(inventory)
+
+    purchase_order_lines = session.exec(
+        select(ProcurementOrderLine).where(
+            ProcurementOrderLine.supplier_product_id == product.id
+        )
+    ).all()
+    for line in purchase_order_lines:
+        line.supplier_product_id = None
+        session.add(line)
+
+    try:
+        session.delete(product)
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to unlink supplier product: {exc}")
+
+    return {"message": "Supplier product unlinked successfully"}
 
 
 @router.post("/purchase-orders")
@@ -576,7 +621,8 @@ def create_purchase_order(
                 current_user.company_id,
             )
             qty = _positive_integer(item.get("quantity"), "quantity")
-            unit_price = _nonnegative_price(item.get("unit_price", supplier_product.unit_price))
+            purchase_unit, units_per_purchase_unit, default_price = _inventory_purchase_details(inventory)
+            unit_price = _nonnegative_price(item.get("unit_price", default_price))
             line = ProcurementOrderLine(
                 po_id=po.id,
                 inventory_id=inventory_id,
@@ -584,8 +630,8 @@ def create_purchase_order(
                 quantity_ordered=qty,
                 unit_price=unit_price,
                 line_total=qty * unit_price,
-                purchase_unit=supplier_product.purchase_unit,
-                units_per_purchase_unit=supplier_product.units_per_purchase_unit,
+                purchase_unit=purchase_unit,
+                units_per_purchase_unit=units_per_purchase_unit,
             )
             session.add(line)
             line_models.append(line)
@@ -711,7 +757,8 @@ def add_purchase_order_items(
                 current_user.company_id,
             )
             qty = _positive_integer(item.get("quantity"), "quantity")
-            unit_price = _nonnegative_price(item.get("unit_price", supplier_product.unit_price))
+            purchase_unit, units_per_purchase_unit, default_price = _inventory_purchase_details(inventory)
+            unit_price = _nonnegative_price(item.get("unit_price", default_price))
             line = ProcurementOrderLine(
                 po_id=po.id,
                 inventory_id=inventory_id,
@@ -719,8 +766,8 @@ def add_purchase_order_items(
                 quantity_ordered=qty,
                 unit_price=unit_price,
                 line_total=qty * unit_price,
-                purchase_unit=supplier_product.purchase_unit,
-                units_per_purchase_unit=supplier_product.units_per_purchase_unit,
+                purchase_unit=purchase_unit,
+                units_per_purchase_unit=units_per_purchase_unit,
             )
             session.add(line)
             category_key = (

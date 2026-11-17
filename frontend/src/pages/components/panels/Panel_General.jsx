@@ -2,12 +2,13 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, ChevronDownIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon } from "../../../icons";
+import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon } from "../../../icons";
 import Button_App from "../buttons/Button_App";
 import Modal from "../modals/Modal";
 import { documentsAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputCheckbox, InputNumber, InputText, InputFile, InputColor } from "../Inputs";
+import { Accordion } from "../accordions";
 
 const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
@@ -16,21 +17,19 @@ const SECTION_BODY_MAX_HEIGHT = "min(52vh, calc(var(--vvp-height, 100dvh) - 14re
 /** Profile-style accordion: content expands upward above the section header row. */
 function SettingsSection({ open, onToggle, icon: Icon, iconClassName = "", title, titleExtra = null, children }) {
   return (
-    <div className="border rounded" style={{ background: "var(--bs-body-bg)" }}>
-      {open && (
-        <div className="px-2 pt-2 pb-1" style={{ borderBottom: "1px solid var(--bs-border-color)", maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}>
-          {children}
-        </div>
-      )}
-      <button type="button" className="align-items-center bg-transparent border-0 d-flex justify-content-between px-1 py-0 text-start w-100" onClick={onToggle} aria-expanded={open}>
-        <div className="align-items-center d-flex flex-wrap gap-2 min-w-0">
-          {Icon && <Icon className={`h-5 w-5 flex-shrink-0 ${iconClassName}`} />}
-          <span className="fw-semibold">{title}</span>
-          {titleExtra}
-        </div>
-        <ChevronDownIcon className="flex-shrink-0 h-4 text-muted w-4" style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }} />
-      </button>
-    </div>
+    <Accordion
+      variant="settings"
+      header={title}
+      open={open}
+      onToggle={onToggle}
+      icon={Icon}
+      iconClassName={iconClassName}
+      titleExtra={titleExtra}
+      bodyPlacement="above"
+      bodyStyle={{ maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}
+    >
+      {children}
+    </Accordion>
   );
 }
 
