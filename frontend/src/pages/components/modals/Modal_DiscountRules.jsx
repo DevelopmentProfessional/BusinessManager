@@ -13,6 +13,12 @@ import { InputCheckbox, InputNumber, InputText, InputDateTime } from "../Inputs"
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+const getNowDateTimeString = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+};
+
 const EMPTY_FORM = {
   name: "",
   deal_type: "product", // "product" | "cart_auto" | "cart_selectable"
@@ -129,7 +135,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   const startNew = () => {
     setEditPanelOpen(true);
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      start_date: getNowDateTimeString(),
+    });
     setError("");
   };
 
@@ -168,13 +177,25 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
       setError("Discount value must be greater than 0.");
       return;
     }
-    if (!form.end_date) {
-      setError("End date is required for all deals.");
+    if (!form.start_date) {
+      setError("Start date and time is required.");
       return;
     }
-    if (form.start_date && form.end_date && form.end_date < form.start_date) {
-      setError("End date must be after start date.");
+
+    const startDate = new Date(form.start_date);
+    // Allow a 2-minute buffer so that normal form entry does not trigger past date error
+    const nowWithBuffer = new Date(Date.now() - 2 * 60 * 1000);
+    if (!editingId && startDate < nowWithBuffer) {
+      setError("Start date and time cannot be in the past.");
       return;
+    }
+
+    if (form.end_date) {
+      const endDate = new Date(form.end_date);
+      if (endDate <= startDate) {
+        setError("End date must be after start date.");
+        return;
+      }
     }
 
     setSaving(true);
@@ -272,8 +293,43 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
       }
       footer={
         <div className="d-flex gap-2 justify-content-start align-items-center">
-          <Button_Toolbar icon={PlusIcon} label="New" onClick={startNew} className="btn-primary" title="New Rule" />
-          <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close" />
+          {showEditor ? (
+            <>
+              <Button_Toolbar
+                icon={CheckIcon}
+                label="Save"
+                onClick={handleSave}
+                className="btn-primary"
+                disabled={saving}
+                title={editingId ? "Save changes to deal" : "Save new deal"}
+              />
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Cancel"
+                onClick={resetForm}
+                className="btn-outline-secondary"
+                disabled={saving}
+                title="Cancel editing"
+              />
+            </>
+          ) : (
+            <>
+              <Button_Toolbar
+                icon={PlusIcon}
+                label="New"
+                onClick={startNew}
+                className="btn-primary"
+                title="New Rule"
+              />
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Close"
+                onClick={onClose}
+                className="btn-outline-secondary"
+                title="Close"
+              />
+            </>
+          )}
         </div>
       }
     >
@@ -445,11 +501,11 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
             <div className="g-2 mb-2 row">
               <div className="col-12">
-                <label className="form-label mb-0 small">Start Date & Time</label>
+                <label className="form-label mb-0 small">Start Date & Time * (Required)</label>
                 <InputDateTime value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
               </div>
               <div className="col-12">
-                <label className="form-label mb-0 small">End Date & Time * (Required)</label>
+                <label className="form-label mb-0 small">End Date & Time (Optional)</label>
                 <InputDateTime value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
               </div>
             </div>
