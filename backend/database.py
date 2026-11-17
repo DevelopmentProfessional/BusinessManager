@@ -78,7 +78,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.16.6"
+CURRENT_SCHEMA_VERSION = "2026.11.17.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -233,6 +233,10 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='supplier' AND column_name='shipping_rate'"
             )).fetchone()
+            supplier_is_hidden_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='supplier' AND column_name='is_hidden'"
+            )).fetchone()
             inventory_category_import_tax_rate_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='inventory_category' AND column_name='import_tax_rate'"
@@ -283,6 +287,7 @@ def _required_schema_artifacts_present() -> bool:
                 and procurement_units_per_purchase_unit_column is not None
                 and supplier_shipping_rate_type_column is not None
                 and supplier_shipping_rate_column is not None
+                and supplier_is_hidden_column is not None
                 and inventory_category_import_tax_rate_column is not None
                 and procurement_shipping_rate_type_column is not None
                 and procurement_shipping_rate_column is not None

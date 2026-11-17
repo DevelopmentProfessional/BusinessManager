@@ -205,3 +205,47 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
         "schema_current",
         "required_artifacts",
     ]
+
+
+def test_supplier_shipping_and_visibility_migration_adds_columns(monkeypatch):
+    statements = []
+
+    class Result:
+        def __init__(self, data=None):
+            self.data = data or []
+
+        def scalar(self):
+            return True
+
+        def fetchall(self):
+            return self.data
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            statements.append(sql)
+            if "information_schema.tables" in sql:
+                return Result([True])
+            if "information_schema.columns" in sql:
+                return Result([])
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    monkeypatch.setattr(database, "engine", Engine())
+
+    database._ensure_supplier_shipping_and_category_tax_columns_if_needed()
+
+    assert any("ALTER TABLE supplier ADD COLUMN is_hidden BOOLEAN NOT NULL DEFAULT FALSE" in statement for statement in statements)
+    assert any("ALTER TABLE supplier ADD COLUMN shipping_rate_type VARCHAR NOT NULL DEFAULT 'fixed'" in statement for statement in statements)
+    assert any("ALTER TABLE supplier ADD COLUMN shipping_rate DOUBLE PRECISION NOT NULL DEFAULT 0" in statement for statement in statements)
+

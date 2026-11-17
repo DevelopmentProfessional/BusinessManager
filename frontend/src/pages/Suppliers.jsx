@@ -407,7 +407,7 @@ export default function Suppliers() {
                 <Gate_Permission page="suppliers" permission="write">
                   <Button_Toolbar
                     icon={DocumentPlusIcon}
-                    label="Purchase Order"
+                    label="Orders"
                     onClick={() => openProcurement(selectedSupplier, true)}
                     disabled={pageSettings.showPurchaseOrderForm === false}
                     className="btn-app-secondary"
@@ -427,7 +427,7 @@ export default function Suppliers() {
             <Gate_Permission page="suppliers" permission="write">
               <Button_Toolbar
                 icon={DocumentPlusIcon}
-                label="Purchase Order"
+                label="Orders"
                 onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
                 disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
                 className="btn-app-secondary"
