@@ -1329,6 +1329,38 @@ def undo_last_action(
     entity_title = last_action.entity_title or table_name
     before_state = json.loads(last_action.before_state) if last_action.before_state else None
 
+    if action_type == "DELETE_FEATURE_BUNDLE" and table_name == "descriptive_feature_bundle":
+        try:
+            if not isinstance(before_state, dict):
+                raise ValueError("Feature snapshot is missing or invalid.")
+            if not before_state.get("feature"):
+                raise ValueError("Feature snapshot does not contain the feature.")
+            if before_state["feature"][0].get("company_id") != current_user.company_id:
+                raise ValueError("Feature snapshot belongs to another company.")
+            if session.get(DescriptiveFeature, UUID(record_id)):
+                raise ValueError("A feature with this ID already exists.")
+
+            model_by_snapshot_key = {
+                "feature": DescriptiveFeature,
+                "options": FeatureOption,
+                "inventory_features": InventoryFeature,
+                "option_data": InventoryFeatureOptionData,
+                "combinations": InventoryFeatureCombination,
+            }
+            for key in ("feature", "options", "inventory_features", "option_data", "combinations"):
+                rows = before_state.get(key, [])
+                if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                    raise ValueError(f"Feature snapshot section '{key}' is invalid.")
+                for row in rows:
+                    session.add(model_by_snapshot_key[key](**row))
+
+            session.delete(last_action)
+            session.commit()
+            return {"success": True, "message": f"Undid deletion of feature {entity_title}"}
+        except Exception as exc:
+            session.rollback()
+            return {"success": False, "message": f"Failed to restore feature {entity_title}: {str(exc)}"}
+
     try:
         model_class = get_model_class(table_name)
     except Exception:

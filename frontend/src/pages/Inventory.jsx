@@ -687,7 +687,12 @@ export default function Inventory() {
               <Gate_Permission page="inventory" permission="write">
                 <Button_Icon icon={PencilSquareIcon} label="Edit selected items" variant="primary" onClick={() => setShowMultiEdit(true)} />
               </Gate_Permission>
-              <Gate_Permission page="inventory" permission="delete">
+              <Gate_Permission
+                page="inventory"
+                permission="delete"
+                hide={false}
+                fallback={<Button_Icon icon={TrashIcon} label="Delete selected items" variant="outline-danger" onClick={handleDeleteSelectedInv} disabled title="Deletion requires inventory:delete permission and an online connection" />}
+              >
                 <Button_Icon icon={TrashIcon} label="Delete selected items" variant="outline-danger" onClick={handleDeleteSelectedInv} disabled={multiSaving} />
               </Gate_Permission>
               <Button_Icon icon={XMarkIcon} label="Clear selection" variant="secondary" onClick={clearSelectionInv} />

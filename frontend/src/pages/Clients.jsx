@@ -587,7 +587,12 @@ export default function Clients() {
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
             <Button_Icon icon={PencilSquareIcon} label="Edit selected clients" variant="primary" onClick={() => setShowMultiEdit(true)} />
-            <Gate_Permission page="clients" permission="delete">
+            <Gate_Permission
+              page="clients"
+              permission="delete"
+              hide={false}
+              fallback={<Button_Icon icon={TrashIcon} label="Delete selected clients" variant="outline-danger" onClick={handleDeleteSelectedClients} disabled title="Deletion requires clients:delete permission and an online connection" />}
+            >
               <Button_Icon icon={TrashIcon} label="Delete selected clients" variant="outline-danger" onClick={handleDeleteSelectedClients} />
             </Gate_Permission>
             <Button_Icon icon={XMarkIcon} label="Clear selection" variant="secondary" onClick={clearSelectionCl} />

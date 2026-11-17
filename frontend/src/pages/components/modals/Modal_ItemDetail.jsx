@@ -1607,7 +1607,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               </form>
 
               {/* Descriptive Features — most types, shown after item is saved */}
-              {item?.id && !isResource && !isLocation && !isService && <FeatureSection inventoryId={item.id} onStockChange={setFeatureStock} onPriceRangeChange={setFeaturesPriceRange} />}
+              {item?.id && !isResource && !isLocation && !isService && <FeatureSection inventoryId={item.id} onStockChange={setFeatureStock} onPriceRangeChange={setFeaturesPriceRange} onFeaturesChanged={onStockAdjusted} />}
 
               {/* Asset Unit Management — ASSET type only */}
               {item?.id && isAsset && <AssetUnitsPanel assetId={item.id} perPage={assetUnitsPerPage} />}

@@ -420,7 +420,12 @@ export default function Suppliers() {
                   title={`${allSelectedHidden ? "Show" : "Hide"} selected suppliers`}
                 />
               </Gate_Permission>
-              <Gate_Permission page="suppliers" permission="delete">
+              <Gate_Permission
+                page="suppliers"
+                permission="delete"
+                hide={false}
+                fallback={<Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDeleteSelected} disabled title="Deletion requires suppliers:delete permission and an online connection" className="btn-app-danger" />}
+              >
                 <Button_Toolbar
                   icon={TrashIcon}
                   label="Delete"

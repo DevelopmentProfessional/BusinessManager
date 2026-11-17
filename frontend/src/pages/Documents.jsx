@@ -888,7 +888,14 @@ export default function Documents() {
               <button type="button" className="btn btn-circle btn-primary" title="Edit selected documents" onClick={() => setShowMultiEdit(true)}>
                 <PencilSquareIcon className="app-icon-14" />
               </button>
-              <Gate_Permission page="documents" permission="delete">
+              <Gate_Permission
+                page="documents"
+                permission="delete"
+                hide={false}
+                fallback={<button type="button" className="btn btn-circle btn-outline-danger" title="Deletion requires documents:delete permission and an online connection" aria-label="Delete selected documents" onClick={handleDeleteSelectedDocuments} disabled>
+                  <TrashIcon className="app-icon-14" />
+                </button>}
+              >
                 <button type="button" className="btn btn-circle btn-outline-danger" title="Delete selected documents" onClick={handleDeleteSelectedDocuments}>
                   <TrashIcon className="app-icon-14" />
                 </button>

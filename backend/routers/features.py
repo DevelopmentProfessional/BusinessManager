@@ -38,6 +38,7 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from uuid import UUID
 import json
+from datetime import datetime
 from pydantic import BaseModel as PydanticModel
 
 try:
@@ -49,7 +50,7 @@ try:
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
         InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
-        InventoryStockAdjustment, UserRole,
+        InventoryStockAdjustment, UserRole, UserUndoAction,
     )
     from backend.routers.auth import get_current_user, get_user_permissions_list, has_page_permission, require_page_permission
     from backend.inventory_costing import add_inventory_cost_layer, consume_inventory_fifo, fallback_unit_cost
@@ -62,7 +63,7 @@ except ModuleNotFoundError:
         DescriptiveFeatureRead, FeatureOptionRead,
         InventoryFeatureRead, InventoryFeatureOptionDataRead,
         InventoryFeatureCombinationRead, InventoryFeatureCombinationWrite,
-        InventoryStockAdjustment, UserRole,
+        InventoryStockAdjustment, UserRole, UserUndoAction,
     )
     from routers.auth import get_current_user, get_user_permissions_list, has_page_permission, require_page_permission
     from inventory_costing import add_inventory_cost_layer, consume_inventory_fifo, fallback_unit_cost
@@ -76,6 +77,21 @@ def _require_inventory_read(current_user: User, session: Session) -> None:
         or has_page_permission(current_user, session, "sales", "read")
     ):
         raise HTTPException(status_code=403, detail="Missing permission: inventory:read")
+
+
+def _serialize_feature_rows(rows) -> List[dict]:
+    serialized = []
+    for row in rows:
+        values = {}
+        for column in row.__table__.columns:
+            value = getattr(row, column.name, None)
+            if isinstance(value, UUID):
+                value = str(value)
+            elif isinstance(value, datetime):
+                value = value.isoformat()
+            values[column.name] = value
+        serialized.append(values)
+    return serialized
 
 
 # ─── REQUEST BODIES ─────────────────────────────────────────────────────────────
@@ -400,6 +416,13 @@ async def list_features(session: Session = Depends(get_session), current_user: U
     _require_inventory_read(current_user, session)
     stmt = select(DescriptiveFeature).where(DescriptiveFeature.company_id == current_user.company_id)
     features = session.exec(stmt).all()
+    usage_counts = {}
+    for usage in session.exec(
+        select(InventoryFeature)
+        .join(Inventory, Inventory.id == InventoryFeature.inventory_id)
+        .where(Inventory.company_id == current_user.company_id)
+    ).all():
+        usage_counts.setdefault(usage.feature_id, set()).add(usage.inventory_id)
     result = []
     for feat in features:
         options = session.exec(
@@ -409,6 +432,7 @@ async def list_features(session: Session = Depends(get_session), current_user: U
             id=feat.id,
             name=feat.name,
             description=feat.description,
+            usage_count=len(usage_counts.get(feat.id, set())),
             options=[FeatureOptionRead(id=o.id, feature_id=o.feature_id, name=o.name) for o in options],
         ))
     return result
@@ -473,31 +497,75 @@ async def rename_feature(
 
 @router.delete("/features/{feature_id}")
 async def delete_feature(feature_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
-    """Delete a global feature. Blocked if any inventory item has it added."""
+    """Delete a company-wide feature and preserve its linked data for undo."""
     require_page_permission(current_user, session, "inventory", "delete")
     feat = session.get(DescriptiveFeature, feature_id)
-    if not feat:
+    if not feat or feat.company_id != current_user.company_id:
         raise HTTPException(status_code=404, detail="Feature not found.")
     usages = session.exec(
         select(InventoryFeature).where(InventoryFeature.feature_id == feature_id)
     ).all()
-    if usages:
-        items = []
-        for u in usages:
-            inv = session.get(Inventory, u.inventory_id)
-            if inv:
-                items.append({"id": str(inv.id), "name": inv.name})
-        raise HTTPException(
-            status_code=409,
-            detail={"message": "Feature is in use by inventory items.", "blocking_items": items},
-        )
-    # Delete options first
-    options = session.exec(select(FeatureOption).where(FeatureOption.feature_id == feature_id)).all()
+    inventory_ids = list({usage.inventory_id for usage in usages})
+    options = session.exec(
+        select(FeatureOption).where(FeatureOption.feature_id == feature_id)
+    ).all()
+    option_data = session.exec(
+        select(InventoryFeatureOptionData).where(InventoryFeatureOptionData.feature_id == feature_id)
+    ).all()
+    affected_inventory_ids = list(
+        set(inventory_ids) | {row.inventory_id for row in option_data}
+    )
+    linked_inventory = (
+        session.exec(select(Inventory).where(Inventory.id.in_(affected_inventory_ids))).all()
+        if affected_inventory_ids
+        else []
+    )
+    if any(item.company_id != current_user.company_id for item in linked_inventory):
+        raise HTTPException(status_code=409, detail="Feature has linked data outside this company and cannot be deleted.")
+    combinations = (
+        session.exec(
+            select(InventoryFeatureCombination).where(
+                InventoryFeatureCombination.inventory_id.in_(affected_inventory_ids),
+            )
+        ).all()
+        if affected_inventory_ids
+        else []
+    )
+    snapshot = {
+        "feature": _serialize_feature_rows([feat]),
+        "options": _serialize_feature_rows(options),
+        "inventory_features": _serialize_feature_rows(usages),
+        "option_data": _serialize_feature_rows(option_data),
+        "combinations": _serialize_feature_rows(combinations),
+    }
+    session.add(UserUndoAction(
+        user_id=current_user.id,
+        action_type="DELETE_FEATURE_BUNDLE",
+        table_name="descriptive_feature_bundle",
+        record_id=str(feature_id),
+        entity_title=feat.name,
+        before_state=json.dumps(snapshot),
+    ))
+    session.flush()
+    recent_actions = session.exec(
+        select(UserUndoAction)
+        .where(UserUndoAction.user_id == current_user.id)
+        .order_by(UserUndoAction.created_at.desc())
+    ).all()
+    for stale_action in recent_actions[10:]:
+        session.delete(stale_action)
+
+    for combination in combinations:
+        session.delete(combination)
+    for data_row in option_data:
+        session.delete(data_row)
+    for usage in usages:
+        session.delete(usage)
     for opt in options:
         session.delete(opt)
     session.delete(feat)
     session.commit()
-    return {"deleted": True}
+    return {"deleted": True, "affected_products": len(inventory_ids)}
 
 
 # ─── AGGREGATE SUMMARY ROUTE ────────────────────────────────────────────────────

@@ -384,7 +384,12 @@ export default function Services() {
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
             <Button_Icon icon={PencilSquareIcon} label="Edit selected services" variant="primary" onClick={() => setShowMultiEdit(true)} />
-            <Gate_Permission page="services" permission="delete">
+            <Gate_Permission
+              page="services"
+              permission="delete"
+              hide={false}
+              fallback={<Button_Icon icon={TrashIcon} label="Delete selected services" variant="outline-danger" onClick={handleDeleteSelectedSvc} disabled title="Deletion requires services:delete permission and an online connection" />}
+            >
               <Button_Icon icon={TrashIcon} label="Delete selected services" variant="outline-danger" onClick={handleDeleteSelectedSvc} />
             </Gate_Permission>
             <Button_Icon icon={XMarkIcon} label="Clear selection" variant="secondary" onClick={clearSelectionSvc} />

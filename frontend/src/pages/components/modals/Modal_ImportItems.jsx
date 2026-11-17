@@ -14,9 +14,12 @@ const FIELD_OPTIONS = [
   { value: "cost", label: "Cost" },
   { value: "asset_unit_count", label: "Asset Unit Count" },
   { value: "features", label: "Features" },
+  { value: "feature_1", label: "Feature 1" },
+  { value: "feature_2", label: "Feature 2" },
+  { value: "feature_3", label: "Feature 3" },
 ];
 
-const DEFAULT_FIELD_SEQUENCE = ["name", "sku", "price", "quantity", "type", "category", "description", "min_stock_level"];
+const DEFAULT_FIELD_SEQUENCE = ["name", "sku", "price", "cost", "quantity", "type", "category", "description", "min_stock_level", "feature_1", "feature_2", "feature_3"];
 
 function parseFeatureString(raw) {
   if (!raw || !raw.trim()) return [];
@@ -102,7 +105,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
       onImport={onImport}
       title="Bulk Add Items"
       entityLabel="item"
-      hint="For features use: size(s,m,l); color(red,blue)."
+      hint="Enter unit cost in Cost. For each Feature column use: size(s,m,l). Matching feature names are reused."
       fieldOptions={FIELD_OPTIONS}
       defaultFieldSequence={DEFAULT_FIELD_SEQUENCE}
       buildRecord={(data) => {
@@ -127,6 +130,7 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
         if (parsedQty.value != null && parsedQty.value < 0) errors.push("Stock Quantity cannot be negative.");
         if (parsedMin.value != null && parsedMin.value < 0) errors.push("Min Stock Level cannot be negative.");
         if (parsedPrice.value != null && parsedPrice.value < 0) errors.push("Price cannot be negative.");
+        if (parsedCost.value != null && parsedCost.value < 0) errors.push("Cost cannot be negative.");
 
         const normalizedSku = String(data.sku || "")
           .trim()
@@ -146,6 +150,24 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
           return { record: null, errors };
         }
 
+        const featuresByName = new Map();
+        [data.features, data.feature_1, data.feature_2, data.feature_3]
+          .filter(Boolean)
+          .flatMap(parseFeatureString)
+          .forEach((feature) => {
+            const key = feature.name.trim().toLowerCase();
+            const existing = featuresByName.get(key) || { name: feature.name.trim(), options: [] };
+            const optionKeys = new Set(existing.options.map((option) => option.toLowerCase()));
+            feature.options.forEach((option) => {
+              const normalizedOption = option.trim();
+              if (normalizedOption && !optionKeys.has(normalizedOption.toLowerCase())) {
+                existing.options.push(normalizedOption);
+                optionKeys.add(normalizedOption.toLowerCase());
+              }
+            });
+            featuresByName.set(key, existing);
+          });
+
         return {
           record: {
             name: String(data.name || "").trim(),
@@ -159,10 +181,15 @@ export default function Modal_Bulk_Import_Items({ isOpen, onClose, onImport, exi
             location: data.location ? String(data.location).trim() : null,
             cost: parsedCost.value,
             asset_unit_count: data.asset_unit_count ? parseInt(String(data.asset_unit_count).trim(), 10) || null : null,
-            features: data.features ? parseFeatureString(data.features) : null,
+            features: Array.from(featuresByName.values()),
           },
           errors: [],
         };
+      }}
+      templateSampleValues={{
+        feature_1: "Size(S, M, L)",
+        feature_2: "Color(Red, Blue)",
+        feature_3: "Material(Cotton, Wool)",
       }}
     />
   );

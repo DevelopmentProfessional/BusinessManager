@@ -1309,6 +1309,7 @@ class DescriptiveFeatureRead(SQLModel):
     id: UUID
     name: str
     description: Optional[str] = None
+    usage_count: int = 0
     options: List["FeatureOptionRead"] = []
     model_config = {"from_attributes": True}
 

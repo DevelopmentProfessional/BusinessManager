@@ -58,6 +58,30 @@ class BulkImportResponse(SQLModel):
     errors: List[str]
 
 
+def _normalize_import_name(value: str) -> str:
+    return " ".join(str(value or "").split()).casefold()
+
+
+def _merge_bulk_features(features: Optional[List[BulkFeatureIn]]) -> List[BulkFeatureIn]:
+    merged: Dict[str, BulkFeatureIn] = {}
+    option_names: Dict[str, set[str]] = {}
+    for feature in features or []:
+        name = (feature.name or "").strip()
+        key = _normalize_import_name(name)
+        if not key:
+            continue
+        if key not in merged:
+            merged[key] = BulkFeatureIn(name=name, options=[])
+            option_names[key] = set()
+        for option in feature.options or []:
+            option_name = (option or "").strip()
+            option_key = _normalize_import_name(option_name)
+            if option_key and option_key not in option_names[key]:
+                merged[key].options.append(option_name)
+                option_names[key].add(option_key)
+    return list(merged.values())
+
+
 def _ensure_inventory_write_permission(current_user: User, session: Session) -> None:
     require_page_permission(current_user, session, "inventory", "write")
 
@@ -92,6 +116,11 @@ def bulk_import_products(
     errors: List[str] = []
     imported_count = 0
     skipped_count = 0
+    features_by_name = {}
+    for feature in session.exec(
+        select(DescriptiveFeature).where(DescriptiveFeature.company_id == current_user.company_id)
+    ).all():
+        features_by_name.setdefault(_normalize_import_name(feature.name), feature)
 
     for idx, product in enumerate(products, start=1):
         name = (product.name or "").strip()
@@ -112,6 +141,10 @@ def bulk_import_products(
 
         if product.min_stock_level is not None and product.min_stock_level < 0:
             errors.append(f"Row {idx}: Min stock level cannot be negative.")
+            skipped_count += 1
+            continue
+        if product.cost is not None and product.cost < 0:
+            errors.append(f"Row {idx}: Cost cannot be negative.")
             skipped_count += 1
             continue
 
@@ -179,19 +212,14 @@ def bulk_import_products(
             session.add(item)
 
         # ── Descriptive features ─────────────────────────────────────────────
-        raw_features: List[BulkFeatureIn] = product.features or []
+        raw_features = _merge_bulk_features(product.features)
         for feat_in in raw_features:
             feat_name = (feat_in.name or "").strip()
             if not feat_name:
                 continue
 
-            # Get-or-create the DescriptiveFeature (company-scoped)
-            feature = session.exec(
-                select(DescriptiveFeature).where(
-                    DescriptiveFeature.company_id == current_user.company_id,
-                    DescriptiveFeature.name == feat_name,
-                )
-            ).first()
+            feature_key = _normalize_import_name(feat_name)
+            feature = features_by_name.get(feature_key)
             if feature is None:
                 feature = DescriptiveFeature(
                     name=feat_name,
@@ -199,6 +227,7 @@ def bulk_import_products(
                 )
                 session.add(feature)
                 session.flush()
+                features_by_name[feature_key] = feature
 
             # Link the feature to this inventory item (skip if already linked)
             existing_link = session.exec(
@@ -216,17 +245,19 @@ def bulk_import_products(
                 ))
 
             # Get-or-create each option and add per-item data rows
-            for opt_name in (feat_in.options or []):
+            options_by_name = {
+                _normalize_import_name(option.name): option
+                for option in session.exec(
+                    select(FeatureOption).where(FeatureOption.feature_id == feature.id)
+                ).all()
+            }
+            for opt_name in feat_in.options or []:
                 opt_name = opt_name.strip()
-                if not opt_name:
+                option_key = _normalize_import_name(opt_name)
+                if not option_key:
                     continue
 
-                option = session.exec(
-                    select(FeatureOption).where(
-                        FeatureOption.feature_id == feature.id,
-                        FeatureOption.name == opt_name,
-                    )
-                ).first()
+                option = options_by_name.get(option_key)
                 if option is None:
                     option = FeatureOption(
                         feature_id=feature.id,
@@ -235,6 +266,7 @@ def bulk_import_products(
                     )
                     session.add(option)
                     session.flush()
+                    options_by_name[option_key] = option
 
                 # Create per-item option data (enabled by default)
                 existing_data = session.exec(

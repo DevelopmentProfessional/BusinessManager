@@ -22,10 +22,12 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon } from "../../../icons";
+import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from "../../../icons";
 import { featuresAPI, inventoryFeaturesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputCheckbox, InputNumber, InputText } from "../Inputs";
+import { showConfirm } from "../../../services/showConfirm";
+import Gate_Permission from "../layout/Gate_Permission";
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +108,7 @@ function InlineTextInput({ value, onSave, placeholder = "" }) {
 
 // ─── 3 FEATURE SECTION ───────────────────────────────────────────────────────
 
-export default function FeatureSection({ inventoryId, onStockChange, onPriceRangeChange }) {
+export default function FeatureSection({ inventoryId, onStockChange, onPriceRangeChange, onFeaturesChanged }) {
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [itemFeatures, setItemFeatures] = useState([]);
   const [combinationRows, setCombinationRows] = useState([]);
@@ -121,6 +123,8 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [stockAdjustmentReason, setStockAdjustmentReason] = useState("");
   const [, setLastSavedAt] = useState(null);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [deletingFeatureId, setDeletingFeatureId] = useState(null);
   const [openFeatureIds, setOpenFeatureIds] = useState({});
   const [isCombinationsOpen, setIsCombinationsOpen] = useState(true);
   const featureSearchRef = useRef(null);
@@ -460,11 +464,40 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   // ── Remove feature from item ──
   const handleRemoveFeature = async (featureId) => {
     setError(null);
+    setNotice(null);
     try {
       await inventoryFeaturesAPI.removeFeature(inventoryId, featureId);
       await reload();
     } catch (e) {
       setError(e?.response?.data?.detail ?? "Cannot remove feature");
+    }
+  };
+
+  const handleDeleteFeatureEverywhere = async (featureId) => {
+    const feature = globalFeatures.find((item) => String(item.id) === String(featureId));
+    const affectedProducts = Number(feature?.usage_count) || 0;
+    const productLabel = `${affectedProducts} product${affectedProducts === 1 ? "" : "s"}`;
+    const confirmed = await showConfirm(
+      `This will delete the feature and its options from ${productLabel}. You can restore the feature and its linked data using the app's Undo action. Continue?`
+    );
+    if (!confirmed) return;
+
+    setError(null);
+    setNotice(null);
+    setDeletingFeatureId(featureId);
+    try {
+      await featuresAPI.delete(featureId);
+      setNotice(`Deleted the feature from ${productLabel}. Use the app's Undo action to restore it and its linked data.`);
+      await reload();
+      try {
+        await onFeaturesChanged?.();
+      } catch {
+        setError("The feature was deleted, but the inventory list could not be refreshed.");
+      }
+    } catch (e) {
+      setError(e?.response?.data?.detail?.message ?? e?.response?.data?.detail ?? "Could not delete feature");
+    } finally {
+      setDeletingFeatureId(null);
     }
   };
 
@@ -829,6 +862,36 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                       >
                         <XMarkIcon style={{ width: 15, height: 15 }} />
                       </button>
+                      <Gate_Permission
+                        page="inventory"
+                        permission="delete"
+                        hide={false}
+                        fallback={
+                          <button
+                            type="button"
+                            className="align-items-center btn btn-link d-flex p-0 text-danger"
+                            title="Deleting everywhere requires inventory:delete permission and an online connection"
+                            aria-label="Delete feature from all products"
+                            disabled
+                          >
+                            <TrashIcon style={{ width: 15, height: 15 }} />
+                          </button>
+                        }
+                      >
+                        <button
+                          type="button"
+                          className="align-items-center btn btn-link d-flex p-0 text-danger"
+                          title={`Delete feature from all ${globalFeatures.find((item) => String(item.id) === String(feature.feature_id))?.usage_count ?? 0} products`}
+                          aria-label="Delete feature from all products"
+                          disabled={deletingFeatureId === feature.feature_id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteFeatureEverywhere(feature.feature_id);
+                          }}
+                        >
+                          <TrashIcon style={{ width: 15, height: 15 }} />
+                        </button>
+                      </Gate_Permission>
                       <ChevronDownIcon style={{ width: 16, height: 16, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }} />
                     </div>
                   </div>
@@ -913,6 +976,14 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           </div>
         )}
 
+        {notice && (
+          <div className="mt-2 small text-success" role="status">
+            {notice}{" "}
+            <button type="button" className="btn btn-link btn-sm p-0 text-success text-decoration-underline" onClick={() => setNotice(null)}>
+              dismiss
+            </button>
+          </div>
+        )}
         {error && (
           <div className="mt-2 small text-danger">
             {error}{" "}

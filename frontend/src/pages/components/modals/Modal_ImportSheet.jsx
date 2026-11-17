@@ -92,7 +92,7 @@ function parseClipboardTable(text) {
  *   buildRecord         {func}              — (data: {[field]: string}) => { record: object|null, errors: string[] }
  *   hint                {string?}           — optional tip shown below the title (e.g. default password note)
  */
-export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, title = "Bulk Add", entityLabel = "record", fieldOptions, defaultFieldSequence, buildRecord, hint = null }) {
+export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, title = "Bulk Add", entityLabel = "record", fieldOptions, defaultFieldSequence, buildRecord, hint = null, templateSampleValues = {} }) {
   const defaultColCount = defaultFieldSequence.length;
 
   const [columns, setColumns] = useState(() => makeColumns(defaultColCount));
@@ -331,7 +331,8 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
 
       const sampleRow = {};
       defaultFieldSequence.forEach((key) => {
-        if (key.includes("email")) sampleRow[key] = "john@example.com";
+        if (templateSampleValues[key] !== undefined) sampleRow[key] = templateSampleValues[key];
+        else if (key.includes("email")) sampleRow[key] = "john@example.com";
         else if (key.includes("phone")) sampleRow[key] = "+1 555 123 4567";
         else if (key.includes("price") || key.includes("cost") || key.includes("rate") || key.includes("wage") || key.includes("base_pay")) sampleRow[key] = 25.0;
         else if (key.includes("date")) sampleRow[key] = new Date().toISOString().slice(0, 10);
