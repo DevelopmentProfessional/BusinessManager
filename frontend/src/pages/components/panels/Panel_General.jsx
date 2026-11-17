@@ -250,7 +250,7 @@ const Panel_General = ({
             <div className="ui-flex-center-gap-2">
               <label className={`btn btn-sm btn-outline-primary ${brandingLogoUploading ? "disabled" : ""}`}>
                 <ArrowUpTrayIcon className="ui-icon-4" style={{ width: 16, height: 16, marginRight: 6 }} />
-                {brandingLogoUploading ? "…" : "Upload"}
+                {brandingLogoUploading ? "..." : "Upload"}
                 <InputFile accept="image/*" style={{ display: "none" }} onChange={(e) => handleUploadBrandingLogo(e.target.files?.[0] || null)} disabled={brandingLogoUploading} />
               </label>
               <button

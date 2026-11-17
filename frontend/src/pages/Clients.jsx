@@ -158,9 +158,7 @@ export default function Clients() {
 
   // ─── [3] LIFECYCLE HOOKS ────────────────────────────────────────────────────
   useFetchOnce(() => {
-    // Skip the network round-trip if preloadStoreData (App.jsx) already populated
-    // the store — avoids two concurrent GET /isud/clients requests on every page visit.
-    if (clients.length === 0) loadClients();
+    loadClients();
     loadMemberships();
     loadClientStatuses();
     settingsAPI
@@ -168,6 +166,14 @@ export default function Clients() {
       .then((res) => setAppSettings(res.data))
       .catch(() => {});
   });
+
+  // Reload clients if the company context changes
+  const activeCompanyId = user?.company_id;
+  useEffect(() => {
+    if (activeCompanyId) {
+      loadClients();
+    }
+  }, [activeCompanyId]);
 
   // Auto-open create modal when navigated with ?new=1
   useEffect(() => {

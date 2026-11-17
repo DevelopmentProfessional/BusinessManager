@@ -29,7 +29,25 @@ const useStore = create((set, get) => ({
   permissions: [],
   authReady: false, // true once initializeUserData has run at least once
   setAuthReady: () => set({ authReady: true }),
-  setUser: (user) => set({ user }),
+  resetEntityState: () =>
+    set({
+      clients: [],
+      services: [],
+      employees: [],
+      appointments: [],
+      inventory: [],
+      lowStockItems: [],
+      suppliers: [],
+      documents: [],
+      attendanceRecords: [],
+    }),
+  setUser: (user) => {
+    const prevUser = get().user;
+    if (user && prevUser && user.company_id && prevUser.company_id && String(user.company_id).toUpperCase() !== String(prevUser.company_id).toUpperCase()) {
+      get().resetEntityState();
+    }
+    set({ user });
+  },
   setToken: (token) => set({ token }),
   setPermissions: (permissions) => set({ permissions }),
   logout: () => {
@@ -52,6 +70,9 @@ const useStore = create((set, get) => ({
       sessionStorage.removeItem("permissions");
     } catch {}
     set({ user: null, token: null, permissions: [] });
+
+    // Clear all in-memory entities so no data leaks to another session
+    get().resetEntityState();
 
     // Clear persistent data cache on logout
     cacheService.clearAll();

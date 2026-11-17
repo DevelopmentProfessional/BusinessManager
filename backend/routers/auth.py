@@ -313,9 +313,10 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
             if candidate and candidate.company_id in (None, "", "DEFAULT"):
                 user = candidate
             elif candidate:
+                # Security: Don't reveal that account exists in another company
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail=f"Account was found, but it belongs to company '{candidate.company_id}', not '{company_id}'."
+                    detail="Invalid Credentials"
                 )
     else:
         user = session.exec(
@@ -327,10 +328,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=(
-                f"No account found for '{username_or_email}'"
-                + (f" in company '{company_id}'." if company_id else ".")
-            )
+            detail="Invalid Credentials"
         )
 
     # Check if account is locked
@@ -365,7 +363,7 @@ def login(login_data: LoginRequest, session: Session = Depends(get_session)):
         session.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Incorrect password. Attempt {user.failed_login_attempts} of 5 before temporary lock."
+            detail="Invalid Credentials"
         )
     
     # Reset failed attempts on successful login

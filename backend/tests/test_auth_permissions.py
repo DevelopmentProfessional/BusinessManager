@@ -88,3 +88,29 @@ def test_create_permission_regrants_existing_denied_permission():
     assert existing.granted is True
     assert result.granted is True
     assert session.commit_count == 1
+
+
+def test_isud_permission_resolution_cross_workflow():
+    from backend.routers.isud import _resolve_permission_pages
+
+    # Services read resolves to services, sales, schedule
+    read_services = _resolve_permission_pages("services", "read")
+    assert "sales" in read_services
+    assert "schedule" in read_services
+    assert "services" in read_services
+
+    # Services write does NOT resolve to sales/schedule
+    write_services = _resolve_permission_pages("services", "write")
+    assert "sales" not in write_services
+    assert "schedule" not in write_services
+    assert "services" in write_services
+
+    # Inventory read resolves to sales
+    read_inv = _resolve_permission_pages("inventory", "read")
+    assert "sales" in read_inv
+
+    # Status and category lookups resolve to parent pages
+    assert "clients" in _resolve_permission_pages("client_status", "read")
+    assert "employees" in _resolve_permission_pages("employee_status", "read")
+    assert "documents" in _resolve_permission_pages("document_status", "read")
+    assert "documents" in _resolve_permission_pages("document_category", "read")

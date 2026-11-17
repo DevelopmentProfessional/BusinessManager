@@ -452,7 +452,17 @@ export const serviceRecipeAPI = {
   update: (id, data) => api.put(`/isud/service_recipe/${id}`, data),
 };
 
-export const suppliersAPI = createISUDApi("suppliers");
+export const suppliersAPI = {
+  ...createISUDApi("suppliers"),
+  bulkImport: async (records) => {
+    clearCache("suppliers");
+    const results = [];
+    for (const record of records) {
+      results.push((await api.post("/isud/suppliers", record))?.data);
+    }
+    return results;
+  },
+};
 
 export const supplierProductsAPI = {
   getAll: () => api.get("/supplier-products"),

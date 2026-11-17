@@ -19,9 +19,32 @@ export default class PageErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch() {}
+  componentDidCatch(error) {
+    const msg = String(error?.message || "");
+    if (
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("error loading dynamically imported module")
+    ) {
+      const lastReload = sessionStorage.getItem("last_chunk_reload");
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem("last_chunk_reload", String(now));
+        window.location.reload();
+      }
+    }
+  }
 
   handleReload() {
+    const msg = String(this.state.error?.message || "");
+    if (
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("error loading dynamically imported module")
+    ) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   }
 

@@ -679,7 +679,7 @@ def _create_initial_asset_units_for_inventory(
     session.add(inventory_record)
 
 
-def _resolve_permission_pages(table_name: str) -> set[str]:
+def _resolve_permission_pages(table_name: str, action: str = "read") -> set[str]:
     """Return candidate permission page names for a table endpoint."""
     base = (table_name or "").strip().lower()
     pages = {base}
@@ -704,6 +704,33 @@ def _resolve_permission_pages(table_name: str) -> set[str]:
         pages.add("employees")
     if base in {"app_settings", "settings"}:
         pages.add("settings")
+    if base in {"client_status", "client_statuses"}:
+        pages.add("clients")
+    if base in {"employee_status", "employee_statuses"}:
+        pages.add("employees")
+    if base in {"document_status", "document_statuses", "document_category", "document_categories", "document_tag", "document_tags"}:
+        pages.add("documents")
+    if base in {"supplier", "suppliers", "supplier_product", "supplier_products", "supplier_order", "supplier_orders"}:
+        pages.add("suppliers")
+        pages.add("inventory")
+    if base in {"service_resource", "service_resources", "service_asset", "service_assets", "service_employee", "service_employees", "service_location", "service_locations", "service_recipe", "service_recipes"}:
+        pages.add("services")
+    if base in {"inventory_feature", "inventory_features", "descriptive_feature", "descriptive_features", "feature_option", "feature_options", "inventory_feature_option_data"}:
+        pages.add("inventory")
+        pages.add("sales")
+
+    # Read-only cross-workflow resolution:
+    # Cashiers (sales) and schedulers (schedule) must be able to view services, inventory, and clients.
+    if action == "read":
+        if base in {"service", "services"}:
+            pages.add("sales")
+            pages.add("schedule")
+        if base in {"inventory", "item", "items"}:
+            pages.add("sales")
+        if base in {"client", "clients"}:
+            pages.add("sales")
+            pages.add("schedule")
+
     return {p for p in pages if p}
 
 
@@ -718,7 +745,7 @@ def _require_isud_permission(
         return
 
     permissions = set(get_user_permissions_list(current_user, session))
-    for page in _resolve_permission_pages(table_name):
+    for page in _resolve_permission_pages(table_name, action):
         if f"{page}:{action}" in permissions or f"{page}:admin" in permissions:
             return
         if action == "write" and page == "schedule" and f"{page}:write_self_only" in permissions:
@@ -1468,7 +1495,9 @@ async def insert_with_file(
 
     # Auto-inject company_id for tenant-scoped tables
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
-        record_data['company_id'] = current_user.company_id or ""
+        if not current_user.company_id:
+            raise HTTPException(status_code=400, detail="Cannot create tenant-scoped record without an assigned company.")
+        record_data['company_id'] = current_user.company_id
 
     try:
         record = model_class(**record_data)
@@ -1738,7 +1767,9 @@ async def insert(
 
     # Auto-inject company_id for tenant-scoped tables
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
-        record_data['company_id'] = current_user.company_id or ""
+        if not current_user.company_id:
+            raise HTTPException(status_code=400, detail="Cannot create tenant-scoped record without an assigned company.")
+        record_data['company_id'] = current_user.company_id
 
     normalized_table = table_name.lower()
     if normalized_table in ("sale_transaction", "sale_transactions") and record_data.get("schedule_id"):
@@ -1902,8 +1933,13 @@ async def update_by_id(
             detail="Inventory quantity must be changed through the audited stock-adjustment workflow.",
         )
 
+    # Prevent changing company_id
+    record_data.pop('company_id', None)
+
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        if not current_user.company_id:
+            raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     if table_name.lower() in ("schedule", "schedules"):
         stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
@@ -1962,7 +1998,7 @@ async def update_by_id(
             record_data['password_hash'] = User.hash_password(plain_password)
 
     for key, value in record_data.items():
-        if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
+        if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
             setattr(record, key, value)
 
     if is_inventory_table and supplier_product_payload is not None:
@@ -2246,6 +2282,8 @@ async def select(
 
     # Auto-filter by company_id for tenant-scoped tables
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        if not current_user.company_id:
+            return []
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
 
     if table_name.lower() in ("schedule", "schedules"):
@@ -2273,6 +2311,8 @@ async def select_by_id(
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        if not current_user.company_id:
+            raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     if table_name.lower() in ("schedule", "schedules"):
         stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
@@ -2298,6 +2338,9 @@ async def update(
             detail="Inventory quantity must be changed through the audited stock-adjustment workflow.",
         )
 
+    # Prevent changing company_id
+    record_data.pop('company_id', None)
+
     raw_filters = [(k, v) for k, v in request.query_params.multi_items()]
     if not raw_filters:
         raise HTTPException(status_code=400, detail="Update requires at least one filter (e.g., id=...)")
@@ -2321,6 +2364,8 @@ async def update(
 
     stmt = stmt.where(and_(*conditions))
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        if not current_user.company_id:
+            raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     if table_name.lower() in ("schedule", "schedules"):
         stmt = _apply_schedule_visibility_scope(stmt, current_user, session)
@@ -2343,7 +2388,7 @@ async def update(
 
         for record in records:
             for key, value in record_data.items():
-                if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
+                if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
                     setattr(record, key, value)
             session.add(record)
 
@@ -2355,7 +2400,7 @@ async def update(
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
     for key, value in record_data.items():
-        if hasattr(record, key) and key not in ["id", "created_at", "updated_at"]:
+        if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
             setattr(record, key, value)
 
     session.add(record)
@@ -2531,6 +2576,8 @@ async def delete_by_id(
 
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
+        if not current_user.company_id:
+            raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
         stmt = stmt.where(getattr(model_class, 'company_id') == current_user.company_id)
     if table_name.lower() in ("schedule", "schedules"):
         stmt = _apply_schedule_visibility_scope(stmt, current_user, session)

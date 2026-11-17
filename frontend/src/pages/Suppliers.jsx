@@ -15,6 +15,7 @@ import Modal from "./components/modals/Modal";
 import Modal_Procurement from "./components/modals/Modal_Procurement";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_Suppliers_Settings from "./components/modals/Modal_Suppliers_Settings";
+import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import { EmptyState, LoadingSpinner } from "./components/feedback";
 import Badge from "./components/badges/Badge";
 import usePagePermission from "../services/usePagePermission";
@@ -53,6 +54,7 @@ export default function Suppliers() {
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [supplierFormOpen, setSupplierFormOpen] = useState(false);
   const [savingSupplier, setSavingSupplier] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showPageControls, setShowPageControls] = useState(false);
   const [procurementSupplier, setProcurementSupplier] = useState(null);
   const [procurementView, setProcurementView] = useState("orders");
@@ -252,6 +254,14 @@ export default function Suppliers() {
     }
   }, [location.state, suppliers]);
 
+  const handleBulkImportSuppliers = async (records) => {
+    const result = await suppliersAPI.bulkImport(records);
+    await loadSuppliers();
+    setShowBulkImport(false);
+    setPageError("");
+    return result;
+  };
+
   return (
     <PageLayout
       title="Suppliers"
@@ -441,16 +451,27 @@ export default function Suppliers() {
               />
             </>
           ) : (
-            <Gate_Permission page="suppliers" permission="write">
-              <Button_Toolbar
-                icon={DocumentPlusIcon}
-                label="Orders"
-                onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
-                disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
-                className="btn-app-secondary"
-                title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : "Select a supplier first"}
-              />
-            </Gate_Permission>
+            <>
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={PlusIcon}
+                  label="Bulk"
+                  onClick={() => setShowBulkImport(true)}
+                  className="btn-app-secondary"
+                  title="Bulk add suppliers"
+                />
+              </Gate_Permission>
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={DocumentPlusIcon}
+                  label="Orders"
+                  onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
+                  disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
+                  className="btn-app-secondary"
+                  title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : "Select a supplier first"}
+                />
+              </Gate_Permission>
+            </>
           )}
         </div>
       </PageTableFooter>
@@ -532,6 +553,46 @@ export default function Suppliers() {
         }}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
+      />
+
+      <Modal_Bulk_Import_Sheet
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={handleBulkImportSuppliers}
+        title="Bulk Add Suppliers"
+        entityLabel="supplier"
+        fieldOptions={[
+          { value: "name", label: "Name (required)" },
+          { value: "contact_person", label: "Contact Person" },
+          { value: "email", label: "Email" },
+          { value: "phone", label: "Phone" },
+          { value: "address", label: "Address" },
+          { value: "shipping_rate_type", label: "Shipping Rate Type (fixed/percentage)" },
+          { value: "shipping_rate", label: "Shipping Rate" },
+        ]}
+        defaultFieldSequence={["name", "contact_person", "email", "phone", "address", "shipping_rate_type", "shipping_rate"]}
+        buildRecord={(data) => {
+          const errors = [];
+          if (!data.name?.trim()) errors.push("Name is required.");
+          const rateType = String(data.shipping_rate_type || "").trim().toLowerCase();
+          const validRateType = rateType === "percentage" ? "percentage" : "fixed";
+          const rate = parseFloat(data.shipping_rate) || 0;
+          return {
+            record: errors.length
+              ? null
+              : {
+                  name: data.name.trim(),
+                  contact_person: data.contact_person?.trim() || null,
+                  email: data.email?.trim() || null,
+                  phone: data.phone?.trim() || null,
+                  address: data.address?.trim() || null,
+                  shipping_rate_type: validRateType,
+                  shipping_rate: rate >= 0 ? rate : 0,
+                  is_hidden: false,
+                },
+            errors,
+          };
+        }}
       />
     </PageLayout>
   );

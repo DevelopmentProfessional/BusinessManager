@@ -215,6 +215,9 @@ const Login = () => {
         selectedStorage.setItem("token", data.access_token);
         selectedStorage.setItem("user", JSON.stringify(data.user));
 
+        // Clear any previous company entity state in store
+        useStore.getState().resetEntityState();
+
         // Update Zustand store
         setToken(data.access_token);
         setUser(data.user);

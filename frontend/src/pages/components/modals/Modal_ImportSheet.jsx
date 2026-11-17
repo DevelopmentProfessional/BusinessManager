@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import ExcelJS from "exceljs";
 import { InputNumber } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon } from "../../../icons";
+import { ArrowPathIcon, ArrowUpIcon, Bars3Icon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ClipboardDocumentCheckIcon, TrashIcon, TableCellsIcon } from "../../../icons";
 import { showConfirm } from "../../../services/showConfirm";
 import StateMessage from "../feedback/StateMessage";
 
@@ -103,6 +104,7 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
   const [status, setStatus] = useState({ type: null, message: "" });
   const [isSaving, setIsSaving] = useState(false);
   const scrollContainerRef = useRef(null);
+  const excelFileInputRef = useRef(null);
   const dragPanRef = useRef({
     isDragging: false,
     startX: 0,
@@ -298,6 +300,163 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
     }
   };
 
+  const handleDownloadExcelTemplate = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "BusinessManager";
+      workbook.created = new Date();
+      const sheetName = `${entityLabel}s_Template`.slice(0, 31).replace(/[/?*[\]:]/g, "");
+      const worksheet = workbook.addWorksheet(sheetName);
+
+      const activeHeaders = defaultFieldSequence.map((fieldKey) => {
+        const opt = fieldOptions.find((o) => o.value === fieldKey);
+        return {
+          header: opt?.label || fieldKey,
+          key: fieldKey,
+          width: Math.max(18, (opt?.label || fieldKey).length + 4),
+        };
+      });
+
+      worksheet.columns = activeHeaders;
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF2563EB" },
+      };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 24;
+
+      const sampleRow = {};
+      defaultFieldSequence.forEach((key) => {
+        if (key.includes("email")) sampleRow[key] = "john@example.com";
+        else if (key.includes("phone")) sampleRow[key] = "+1 555 123 4567";
+        else if (key.includes("price") || key.includes("cost") || key.includes("rate") || key.includes("wage") || key.includes("base_pay")) sampleRow[key] = 25.0;
+        else if (key.includes("date")) sampleRow[key] = new Date().toISOString().slice(0, 10);
+        else if (key === "name" || key === "first_name") sampleRow[key] = "Sample Name";
+        else if (key === "last_name") sampleRow[key] = "Sample Lastname";
+        else if (key.includes("address")) sampleRow[key] = "123 Business Way, Suite 100";
+        else if (key.includes("duration")) sampleRow[key] = 60;
+        else if (key === "shipping_rate_type") sampleRow[key] = "fixed";
+        else if (key === "contact_person") sampleRow[key] = "Jane Doe";
+        else sampleRow[key] = "Sample Value";
+      });
+      const exampleRow = worksheet.addRow(sampleRow);
+      exampleRow.font = { italic: true, color: { argb: "FF6B7280" } };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${entityLabel}_bulk_import_template.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setStatus({ type: "info", message: `Downloaded ${entityLabel} Excel import template.` });
+    } catch (err) {
+      console.error("Failed to generate Excel template:", err);
+      setStatus({ type: "error", message: "Failed to generate Excel template." });
+    }
+  };
+
+  const handleExcelFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    try {
+      setStatus({ type: "info", message: "Reading Excel file..." });
+      const workbook = new ExcelJS.Workbook();
+      const arrayBuffer = await file.arrayBuffer();
+      await workbook.xlsx.load(arrayBuffer);
+
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet || worksheet.rowCount === 0) {
+        setStatus({ type: "error", message: "Excel file has no worksheets or data." });
+        return;
+      }
+
+      const matrix = [];
+      worksheet.eachRow({ includeEmpty: false }, (row) => {
+        const rowVals = [];
+        const cellCount = Math.max(row.cellCount, defaultColCount);
+        for (let colIdx = 1; colIdx <= cellCount; colIdx += 1) {
+          const cell = row.getCell(colIdx);
+          let val = cell.value;
+          if (val == null) val = "";
+          else if (val instanceof Date) val = val.toISOString().slice(0, 10);
+          else if (typeof val === "object") {
+            if (val.result !== undefined) val = val.result;
+            else if (val.text !== undefined) val = val.text;
+            else if (Array.isArray(val.richText)) val = val.richText.map((p) => p.text || "").join("");
+            else val = String(val);
+          }
+          rowVals.push(String(val ?? "").trim());
+        }
+        matrix.push(rowVals);
+      });
+
+      if (!matrix.length) {
+        setStatus({ type: "error", message: "No rows found in Excel sheet." });
+        return;
+      }
+
+      const firstRow = matrix[0] || [];
+      const isHeaderRow = firstRow.some((cellText) => {
+        const text = String(cellText || "").trim().toLowerCase();
+        return fieldOptions.some(
+          (opt) =>
+            opt.label.toLowerCase().includes(text) ||
+            opt.value.toLowerCase() === text ||
+            text.includes(opt.value.toLowerCase())
+        );
+      });
+
+      let dataRows = matrix;
+      if (isHeaderRow) {
+        const matchedMappings = firstRow.map((headerText, i) => {
+          const text = String(headerText || "").trim().toLowerCase();
+          const found = fieldOptions.find(
+            (opt) =>
+              opt.label.toLowerCase().includes(text) ||
+              opt.value.toLowerCase() === text ||
+              text.includes(opt.value.toLowerCase())
+          );
+          return found ? found.value : getDefaultMappingForIndex(i, defaultFieldSequence);
+        });
+
+        const colCount = Math.max(firstRow.length, defaultColCount);
+        setColumns(makeColumns(colCount));
+        setMappings(
+          Array.from(
+            { length: colCount },
+            (_, i) => matchedMappings[i] || getDefaultMappingForIndex(i, defaultFieldSequence)
+          )
+        );
+
+        dataRows = matrix.slice(1);
+      }
+
+      if (!dataRows.length) {
+        setStatus({ type: "info", message: "Header detected, but no data rows were found below it." });
+        return;
+      }
+
+      applyPastedMatrix(dataRows, 0, 0);
+      setStatus({ type: "success", message: `Imported ${dataRows.length} row(s) from "${file.name}".` });
+    } catch (err) {
+      console.error("Failed to read Excel file:", err);
+      setStatus({ type: "error", message: `Failed to import Excel file: ${err?.message || err}` });
+    }
+  };
+
   const handleCellChange = (rowIdx, colIdx, value) => {
     setRows((prev) => {
       const next = prev.map((r) => [...r]);
@@ -453,6 +612,33 @@ export default function Modal_Bulk_Import_Sheet({ isOpen, onClose, onImport, tit
               <ClipboardDocumentCheckIcon className="ui-icon-4" />
               <span>Paste</span>
             </button>
+            <button
+              type="button"
+              className="align-items-center btn btn-outline-secondary d-flex gap-1"
+              onClick={handleDownloadExcelTemplate}
+              disabled={isSaving}
+              title="Download Excel (.xlsx) template with column headers and sample data"
+            >
+              <ArrowDownTrayIcon className="ui-icon-4" />
+              <span>Template</span>
+            </button>
+            <button
+              type="button"
+              className="align-items-center btn btn-outline-secondary d-flex gap-1"
+              onClick={() => excelFileInputRef.current?.click()}
+              disabled={isSaving}
+              title="Import rows from an Excel (.xlsx) file"
+            >
+              <TableCellsIcon className="ui-icon-4" />
+              <span>Excel Import</span>
+            </button>
+            <input
+              ref={excelFileInputRef}
+              type="file"
+              accept=".xlsx, .xls"
+              className="d-none"
+              onChange={handleExcelFileUpload}
+            />
           </div>
           <div className="bulk-import-top-actions-group">
             <button type="button" className="btn ui-btn-outline-secondary-sm" title="Scroll to top" onClick={() => scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}>
