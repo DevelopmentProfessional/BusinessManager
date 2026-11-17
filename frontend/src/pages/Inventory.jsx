@@ -47,8 +47,7 @@ import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
 import PageTableRow from "./components/tables/Page_TableRow";
-import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon, DocumentCurrencyDollarIcon } from "../icons";
-import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
+import { PlusIcon, TagIcon, CircleStackIcon, XMarkIcon, Cog6ToothIcon, PencilSquareIcon, TrashIcon } from "../icons";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
@@ -82,7 +81,6 @@ export default function Inventory() {
   // ─── 3 STATE & REFS ──────────────────────────────────────────────────────────
   const [editingInventory, setEditingInventory] = useState(null);
   const [featureSummary, setFeatureSummary] = useState({}); // { [inventory_id]: { feature_names, price_min, price_max } }
-  const [showDiscountRules, setShowDiscountRules] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -711,11 +709,6 @@ export default function Inventory() {
           searchTerm={searchTerm}
           onSearch={setSearchTerm}
           searchPlaceholder="Search by name or SKU..."
-          beforeSearch={
-            <div className="align-items-center app-footer-toolbar d-flex">
-              <Button_Toolbar icon={DocumentCurrencyDollarIcon} label="Deals" onClick={() => setShowDiscountRules(true)} className="btn-app-secondary" title="Discount rules" />
-            </div>
-          }
           addButton={
             <Gate_Permission page="inventory" permission="write">
               <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleOpenAddItem} className="btn-app-primary" />
@@ -794,8 +787,6 @@ export default function Inventory() {
       />
 
       <Modal_Bulk_Import_Items isOpen={showBulkImport} onClose={() => setShowBulkImport(false)} onImport={handleBulkImportItems} existingSkus={inventory.map((i) => i.sku).filter(Boolean)} />
-
-      <Modal_DiscountRules isOpen={showDiscountRules} onClose={() => setShowDiscountRules(false)} />
 
       <Modal_Inventory_Settings
         isOpen={showPageControls}

@@ -34,6 +34,7 @@ const Modal_Procurement = ({
   view: controlledView,
   onViewChange,
   onPOCreated,
+  initialLineItems = null,
 }) => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -64,11 +65,20 @@ const Modal_Procurement = ({
   const [detailLoading, setDetailLoading] = useState(false);
   const [linkedDocs, setLinkedDocs] = useState([]);
   const [showDocUpload, setShowDocUpload] = useState(false);
-  const [formData, setFormData] = useState({
-    line_items: [{ ...EMPTY_LINE }],
+  const [formData, setFormData] = useState(() => ({
+    line_items: Array.isArray(initialLineItems) && initialLineItems.length > 0
+      ? initialLineItems.map((line) => ({
+          supplier_product_id: line.supplier_product_id || "",
+          inventory_id: line.inventory_id || "",
+          quantity_ordered: line.quantity_ordered ?? 1,
+          unit_price: num(line.unit_price),
+          purchase_unit: line.purchase_unit || "unit",
+          units_per_purchase_unit: line.units_per_purchase_unit || 1,
+        }))
+      : [{ ...EMPTY_LINE }],
     expected_delivery_date: "",
     notes: "",
-  });
+  }));
 
   const loadPurchaseOrders = useCallback(async () => {
     try {
@@ -125,6 +135,70 @@ const Modal_Procurement = ({
     loadInventoryCategories();
     loadSupplierProducts();
   }, [loadPurchaseOrders, loadInventoryItems, loadInventoryCategories, loadSupplierProducts]);
+
+  useEffect(() => {
+    if (Array.isArray(initialLineItems) && initialLineItems.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        line_items: initialLineItems.map((line) => ({
+          supplier_product_id: line.supplier_product_id || "",
+          inventory_id: line.inventory_id || "",
+          quantity_ordered: line.quantity_ordered ?? 1,
+          unit_price: num(line.unit_price),
+          purchase_unit: line.purchase_unit || "unit",
+          units_per_purchase_unit: line.units_per_purchase_unit || 1,
+        })),
+      }));
+    }
+  }, [initialLineItems]);
+
+  useEffect(() => {
+    if (supplierProducts.length > 0) {
+      setFormData((prev) => {
+        let changed = false;
+        const updated = prev.line_items.map((line) => {
+          if (!line.supplier_product_id && line.inventory_id) {
+            const sp = supplierProducts.find((p) => String(p.inventory_id) === String(line.inventory_id));
+            if (sp) {
+              changed = true;
+              return {
+                ...line,
+                supplier_product_id: sp.id,
+                unit_price: line.unit_price || num(sp.unit_price),
+                purchase_unit: sp.purchase_unit || line.purchase_unit || "unit",
+                units_per_purchase_unit: Number(sp.units_per_purchase_unit || line.units_per_purchase_unit || 1),
+              };
+            }
+          }
+          return line;
+        });
+        return changed ? { ...prev, line_items: updated } : prev;
+      });
+    }
+  }, [supplierProducts]);
+
+  useEffect(() => {
+    if (!initialLineItems || initialLineItems.length === 0 || !supplierId) return;
+    const missing = initialLineItems.filter(
+      (line) => line.inventory_id && !supplierProducts.some((p) => String(p.inventory_id) === String(line.inventory_id))
+    );
+    if (missing.length > 0) {
+      Promise.all(
+        missing.map((item) =>
+          supplierProductsAPI.save({
+            supplier_id: supplierId,
+            inventory_id: item.inventory_id,
+            purchase_unit: item.purchase_unit || "unit",
+            units_per_purchase_unit: item.units_per_purchase_unit || 1,
+            unit_price: Math.max(0, num(item.unit_price)),
+            is_preferred: Boolean(item.is_preferred),
+          })
+        )
+      )
+        .then(() => loadSupplierProducts())
+        .catch((err) => console.warn("Could not auto-register supplier product:", err));
+    }
+  }, [initialLineItems, supplierId, supplierProducts, loadSupplierProducts]);
 
   const loadDetail = async (poId) => {
     setDetailLoading(true);

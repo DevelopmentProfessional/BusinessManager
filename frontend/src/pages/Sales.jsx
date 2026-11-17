@@ -40,12 +40,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation, useNavigate } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon, DocumentTextIcon } from "../icons";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon, DocumentTextIcon, DocumentCurrencyDollarIcon } from "../icons";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
+import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import { templatesAPI } from "../services/api";
 import Modal_Detail_Item from "./components/modals/Modal_ItemDetail";
 import Modal_Checkout_Sales from "./components/modals/Modal_SalesCheckout";
@@ -415,6 +416,25 @@ export default function Sales() {
   const [mixModalItem, setMixModalItem] = useState(null);
   // Discount Rules State
   const [discountRules, setDiscountRules] = useState([]);
+  const [showDiscountRules, setShowDiscountRules] = useState(false);
+  const [selectedCartDealIds, setSelectedCartDealIds] = useState([]);
+  const [discountSettings, setDiscountSettings] = useState(() => {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("sales_discount_settings") || "null") || {
+          calculationOrder: "item_first",
+          itemStacking: "best_deal",
+          allowMultipleCartDeals: true,
+        }
+      );
+    } catch {
+      return {
+        calculationOrder: "item_first",
+        itemStacking: "best_deal",
+        allowMultipleCartDeals: true,
+      };
+    }
+  });
   // Sales History State
   const [salesHistory, setSalesHistory] = useState([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -481,18 +501,22 @@ export default function Sales() {
     [checkoutReturnTarget, navigate]
   );
 
+  const loadDiscountRules = useCallback(() => {
+    discountRulesAPI
+      .getAll()
+      .then((res) => setDiscountRules(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => {});
+  }, []);
+
   // ─── 5  LIFECYCLE / useEffect HOOKS ──────────────────────────────────────
   useFetchOnce(() => {
     loadServices();
     loadProducts();
     loadMemberships();
+    loadDiscountRules();
     settingsAPI
       .getSettings()
       .then((res) => setAppSettings(res.data))
-      .catch(() => {});
-    discountRulesAPI
-      .getAll()
-      .then((res) => setDiscountRules(Array.isArray(res?.data) ? res.data : []))
       .catch(() => {});
   });
 
@@ -1061,50 +1085,176 @@ export default function Sales() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const taxRatePercent = Number.isFinite(Number(appSettings?.tax_rate)) ? Number(appSettings.tax_rate) : 0;
 
-  const calculateDiscountForItems = (items) => {
-    const targetItems = Array.isArray(items) ? items : [];
-    const itemsSubtotal = targetItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    if (itemsSubtotal <= 0) return 0;
+  const getDiscountDetailsForItems = useCallback(
+    (items, overrideSelectedDealIds = null) => {
+      const targetItems = Array.isArray(items) ? items : [];
+      const itemsSubtotal = targetItems.reduce(
+        (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+        0
+      );
+      if (itemsSubtotal <= 0) {
+        return {
+          totalDiscount: 0,
+          itemDiscounts: {},
+          itemDiscountsTotal: 0,
+          autoCartDiscount: 0,
+          autoCartDeals: [],
+          selectableCartDeals: [],
+          selectedCartDiscount: 0,
+        };
+      }
 
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const currentClock = now.toTimeString().slice(0, 5);
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const currentDay = dayNames[now.getDay()];
-    let total = 0;
-    for (const rule of discountRules) {
-      if (!rule.is_active) continue;
-      if (rule.start_date && today < rule.start_date.slice(0, 10)) continue;
-      if (rule.end_date && today > rule.end_date.slice(0, 10)) continue;
-      if (rule.is_recurring && rule.recur_days) {
-        let days = [];
-        try {
-          days = typeof rule.recur_days === "string" ? JSON.parse(rule.recur_days) : rule.recur_days;
-        } catch {
-          days = [];
+      const activeDealIds = overrideSelectedDealIds !== null ? overrideSelectedDealIds : selectedCartDealIds;
+
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+      const currentClock = now.toTimeString().slice(0, 5);
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const currentDay = dayNames[now.getDay()];
+
+      const isRuleActiveNow = (rule) => {
+        if (!rule.is_active) return false;
+        if (rule.start_date && today < rule.start_date.slice(0, 10)) return false;
+        // End date is inclusive: evaluate through 23:59:59 of end date
+        if (rule.end_date && today > rule.end_date.slice(0, 10)) return false;
+
+        if (rule.is_recurring && rule.recur_days) {
+          let days = [];
+          try {
+            days = typeof rule.recur_days === "string" ? JSON.parse(rule.recur_days) : rule.recur_days;
+          } catch {
+            days = [];
+          }
+          if (days.length > 0 && !days.includes(currentDay)) return false;
         }
-        if (days.length > 0 && !days.includes(currentDay)) continue;
-      }
-      if (rule.day_start_time && currentClock < rule.day_start_time) continue;
-      if (rule.day_end_time && currentClock > rule.day_end_time) continue;
-      let base = itemsSubtotal;
-      if (rule.applies_to !== "all") {
-        let ids = [];
-        try {
-          ids = typeof rule.item_ids === "string" ? JSON.parse(rule.item_ids) : rule.item_ids || [];
-        } catch {
-          ids = [];
+        if (rule.day_start_time && currentClock < rule.day_start_time) return false;
+        if (rule.day_end_time && currentClock > rule.day_end_time) return false;
+        return true;
+      };
+
+      const activeRules = discountRules.filter(isRuleActiveNow);
+      const productRules = activeRules.filter((r) => !r.deal_type || r.deal_type === "product");
+      const autoCartRules = activeRules.filter((r) => r.deal_type === "cart_auto");
+      const selectableCartRules = activeRules.filter((r) => r.deal_type === "cart_selectable");
+
+      // 1. Line-item discounts
+      const itemDiscounts = {};
+      let itemDiscountsTotal = 0;
+
+      targetItems.forEach((item) => {
+        const lineTotal = (Number(item.price) || 0) * (Number(item.quantity) || 1);
+        const itemType = (item.itemType || "product").toLowerCase();
+
+        // Check which productRules match this item
+        const matchingRules = productRules.filter((rule) => {
+          if (rule.applies_to === "all") return true;
+          if (rule.applies_to === "all_products" && itemType === "product") return true;
+          if (rule.applies_to === "all_services" && itemType === "service") return true;
+          if (rule.applies_to === "all_packages" && (itemType === "bundle" || itemType === "mix")) return true;
+          if (rule.applies_to === "selected") {
+            try {
+              const ids = typeof rule.item_ids === "string" ? JSON.parse(rule.item_ids) : rule.item_ids || [];
+              return Array.isArray(ids) && ids.includes(item.id);
+            } catch {
+              return false;
+            }
+          }
+          return false;
+        });
+
+        if (matchingRules.length > 0) {
+          const ruleAmounts = matchingRules.map((rule) => {
+            const val =
+              rule.discount_type === "percentage"
+                ? lineTotal * (Number(rule.discount_value) / 100)
+                : Math.min(Number(rule.discount_value) * (Number(item.quantity) || 1), lineTotal);
+            return { rule, amount: val };
+          });
+
+          let discountAmount = 0;
+          let appliedRule = matchingRules[0];
+
+          if (discountSettings?.itemStacking === "stack_all") {
+            discountAmount = Math.min(
+              lineTotal,
+              ruleAmounts.reduce((sum, r) => sum + r.amount, 0)
+            );
+          } else {
+            // best_deal
+            const best = ruleAmounts.reduce((prev, curr) => (curr.amount > prev.amount ? curr : prev), ruleAmounts[0]);
+            discountAmount = Math.min(lineTotal, best.amount);
+            appliedRule = best.rule;
+          }
+
+          if (discountAmount > 0) {
+            itemDiscounts[item.cartKey] = {
+              discountAmount,
+              unitDiscount: discountAmount / (Number(item.quantity) || 1),
+              dealName: appliedRule.name,
+            };
+            itemDiscountsTotal += discountAmount;
+          }
         }
-        base = targetItems.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.price * i.quantity, 0);
-      }
-      const amt = rule.discount_type === "percentage" ? base * (rule.discount_value / 100) : Math.min(rule.discount_value, base);
-      total += amt;
-    }
-    return Math.min(total, itemsSubtotal);
-  };
+      });
+
+      // 2. Base for cart deals depends on calculationOrder
+      const postItemSubtotal = Math.max(0, itemsSubtotal - itemDiscountsTotal);
+      const cartBase = discountSettings?.calculationOrder === "cart_first" ? itemsSubtotal : postItemSubtotal;
+
+      // 3. Auto Cart Promotions
+      let autoCartDiscount = 0;
+      const appliedAutoDeals = [];
+      autoCartRules.forEach((rule) => {
+        const amt =
+          rule.discount_type === "percentage"
+            ? cartBase * (Number(rule.discount_value) / 100)
+            : Math.min(Number(rule.discount_value), cartBase);
+        if (amt > 0) {
+          autoCartDiscount += amt;
+          appliedAutoDeals.push(rule);
+        }
+      });
+
+      // 4. Selectable Cart Deals
+      let selectedCartDiscount = 0;
+      const selectedRules = selectableCartRules.filter((r) => activeDealIds.includes(r.id));
+      selectedRules.forEach((rule) => {
+        const amt =
+          rule.discount_type === "percentage"
+            ? cartBase * (Number(rule.discount_value) / 100)
+            : Math.min(Number(rule.discount_value), cartBase);
+        if (amt > 0) {
+          selectedCartDiscount += amt;
+        }
+      });
+
+      const totalDiscount = Math.min(
+        itemsSubtotal,
+        itemDiscountsTotal + autoCartDiscount + selectedCartDiscount
+      );
+
+      return {
+        totalDiscount,
+        itemDiscounts,
+        itemDiscountsTotal,
+        autoCartDiscount,
+        autoCartDeals: appliedAutoDeals,
+        selectableCartDeals: selectableCartRules,
+        selectedCartDiscount,
+      };
+    },
+    [discountRules, selectedCartDealIds, discountSettings]
+  );
+
+  const calculateDiscountForItems = useCallback(
+    (items, overrideSelectedDealIds = null) =>
+      getDiscountDetailsForItems(items, overrideSelectedDealIds).totalDiscount,
+    [getDiscountDetailsForItems]
+  );
 
   // Calculate applicable discount from active rules
-  const cartDiscount = calculateDiscountForItems(cart);
+  const cartDiscountDetails = useMemo(() => getDiscountDetailsForItems(cart), [getDiscountDetailsForItems, cart]);
+  const cartDiscount = cartDiscountDetails.totalDiscount;
 
   const roundCurrency = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
@@ -1857,6 +2007,15 @@ export default function Sales() {
                 )}
               </div>
 
+              {/* Deals Button */}
+              <Button_Toolbar
+                icon={DocumentCurrencyDollarIcon}
+                label="Deals"
+                title="Discount rules & deals"
+                onClick={() => setShowDiscountRules(true)}
+                className="btn-outline-secondary"
+              />
+
               {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
               {cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => { setInvoiceTemplateType("invoice"); setShowInvoiceModal(true); }} className="btn-outline-secondary" title="Generate invoice for current cart" />}
             </div>
@@ -1893,6 +2052,14 @@ export default function Sales() {
         cartTotal={cartTotal}
         taxRate={taxRatePercent}
         discountAmount={cartDiscount}
+        itemDiscounts={cartDiscountDetails.itemDiscounts}
+        itemDiscountsTotal={cartDiscountDetails.itemDiscountsTotal}
+        autoCartDiscount={cartDiscountDetails.autoCartDiscount}
+        autoCartDeals={cartDiscountDetails.autoCartDeals}
+        selectableCartDeals={cartDiscountDetails.selectableCartDeals}
+        selectedCartDealIds={selectedCartDealIds}
+        setSelectedCartDealIds={setSelectedCartDealIds}
+        allowMultipleCartDeals={discountSettings?.allowMultipleCartDeals !== false}
         loadClients={loadClients}
         openAddClientModal={openAddClientModal}
         handleSelectClient={handleSelectClient}
@@ -1972,6 +2139,7 @@ export default function Sales() {
               id: sale.id,
               created_at: sale.date,
               subtotal: sale.subtotal,
+              discount_amount: sale.discount_amount ?? sale.discount ?? 0,
               tax_amount: sale.tax,
               total: sale.total,
               payment_method: sale.paymentMethod,
@@ -2007,19 +2175,26 @@ export default function Sales() {
               id: `DRAFT-${Date.now()}`,
               created_at: new Date().toISOString(),
               subtotal: cartTotal,
+              discount_amount: cartDiscount,
               tax_amount: invoiceTaxAmount,
               total: invoiceTotal,
               payment_method: "pending",
             }}
             client={selectedClient}
-            items={cart.map((i) => ({
-              item_name: i.name,
-              item_type: i.itemType,
-              quantity: i.quantity,
-              unit_price: i.price,
-              line_total: i.price * i.quantity,
-              selectedOptions: i.selectedOptions || [],
-            }))}
+            items={cart.map((i) => {
+              const itemDisc = cartDiscountDetails.itemDiscounts[i.cartKey];
+              const gross = (Number(i.price) || 0) * (Number(i.quantity) || 1);
+              const discAmt = Number(itemDisc?.discountAmount || 0);
+              return {
+                item_name: i.name,
+                item_type: i.itemType,
+                quantity: i.quantity,
+                unit_price: i.price,
+                discount_amount: discAmt,
+                line_total: Math.max(0, gross - discAmt),
+                selectedOptions: i.selectedOptions || [],
+              };
+            })}
             currentUser={user}
             settings={appSettings}
             filterType={invoiceTemplateType}
@@ -2063,6 +2238,16 @@ export default function Sales() {
         receiptSettings={receiptSettings}
         setReceiptSettings={setReceiptSettings}
         rcptTemplates={rcptTemplates}
+        discountSettings={discountSettings}
+        setDiscountSettings={setDiscountSettings}
+      />
+
+      <Modal_DiscountRules
+        isOpen={showDiscountRules}
+        onClose={() => {
+          setShowDiscountRules(false);
+          loadDiscountRules();
+        }}
       />
     </div>
   );

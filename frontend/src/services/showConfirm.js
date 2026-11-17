@@ -44,14 +44,14 @@ export function showConfirm(message, { confirmLabel = "Delete", cancelLabel = "C
     wrap.style.cssText = "position:fixed;inset:0;z-index:20001;display:flex;align-items:center;justify-content:center;padding:1rem;";
     wrap.innerHTML = `
       <div style="width:100%;max-width:400px;">
-        <div class="modal-content shadow border-0 rounded-3">
-          <div class="modal-header ${headerClass} border-0 rounded-top-3 px-1 py-1">
+        <div class="modal-content bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow border-0 rounded-3 overflow-hidden" style="background-color: var(--bs-body-bg, #fff);">
+          <div class="modal-header ${headerClass} border-0 rounded-top-3 px-3 py-2">
             <h6 class="modal-title fw-semibold mb-0">${companyName}</h6>
           </div>
-          <div class="modal-body px-1 py-1">
+          <div class="modal-body bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-3" style="background-color: var(--bs-body-bg, #fff); color: var(--bs-body-color, inherit);">
             <p class="mb-0">${message}</p>
           </div>
-          <div class="modal-footer border-top-0 px-1 pb-1 pt-1 gap-2 justify-content-end">
+          <div class="modal-footer bg-white dark:bg-gray-800 border-top-0 px-3 pb-3 pt-1 gap-2 justify-content-end" style="background-color: var(--bs-body-bg, #fff);">
             <button type="button" class="btn btn-secondary btn-sm" id="__bm_cancel_btn">${compactCancelLabel}</button>
             <button type="button" class="btn ${btnClass} btn-sm" id="__bm_ok_btn">${compactConfirmLabel}</button>
           </div>

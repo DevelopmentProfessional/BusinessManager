@@ -78,7 +78,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.17.1"
+CURRENT_SCHEMA_VERSION = "2026.11.17.2"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -249,6 +249,10 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='procurement_order' AND column_name='shipping_rate'"
             )).fetchone()
+            discount_rule_deal_type_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='discount_rule' AND column_name='deal_type'"
+            )).fetchone()
             return (
                 department_column is not None
                 and company_email_column is not None
@@ -291,6 +295,7 @@ def _required_schema_artifacts_present() -> bool:
                 and inventory_category_import_tax_rate_column is not None
                 and procurement_shipping_rate_type_column is not None
                 and procurement_shipping_rate_column is not None
+                and discount_rule_deal_type_column is not None
             )
     except Exception:
         return False
@@ -858,7 +863,7 @@ def _ensure_client_order_workflow_columns_if_needed():
 
 # ─── MIGRATION: DISCOUNT RULE TABLE ─────────────────────────────────────────────
 def _ensure_discount_rule_table_if_needed():
-    """Create the discount_rule table for scheduled inventory discounts."""
+    """Create the discount_rule table for scheduled inventory discounts, and add deal_type if missing."""
     with engine.begin() as conn:
         exists = conn.execute(text("SELECT to_regclass('discount_rule')")).scalar()
         if not exists:
@@ -866,7 +871,8 @@ def _ensure_discount_rule_table_if_needed():
                 CREATE TABLE discount_rule (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     created_at TIMESTAMP NOT NULL DEFAULT now(), updated_at TIMESTAMP,
-                    name VARCHAR NOT NULL, applies_to VARCHAR NOT NULL DEFAULT 'all',
+                    name VARCHAR NOT NULL, deal_type VARCHAR NOT NULL DEFAULT 'product',
+                    applies_to VARCHAR NOT NULL DEFAULT 'all',
                     item_ids TEXT, discount_type VARCHAR NOT NULL DEFAULT 'percentage',
                     discount_value DOUBLE PRECISION NOT NULL DEFAULT 0,
                     start_date TIMESTAMP, end_date TIMESTAMP,
@@ -877,6 +883,14 @@ def _ensure_discount_rule_table_if_needed():
                 )
             """))
             print("  + Created table discount_rule")
+        else:
+            col_exists = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='discount_rule' AND column_name='deal_type'"
+            )).fetchone()
+            if not col_exists:
+                conn.execute(text("ALTER TABLE discount_rule ADD COLUMN deal_type VARCHAR NOT NULL DEFAULT 'product'"))
+                print("  + Added discount_rule.deal_type")
 
 
 # ─── MIGRATION: MAKE inventory.sku NULLABLE ─────────────────────────────────────

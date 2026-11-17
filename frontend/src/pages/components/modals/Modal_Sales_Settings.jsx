@@ -13,6 +13,8 @@ export default function Modal_Sales_Settings({
   receiptSettings,
   setReceiptSettings,
   rcptTemplates = [],
+  discountSettings,
+  setDiscountSettings,
 }) {
   return (
     <PageControlsModal
@@ -56,6 +58,84 @@ export default function Modal_Sales_Settings({
             ? "Items with images display full-size; items without images display compact."
             : "All items display as full-size cards."}
         </div>
+      </div>
+
+      {/* Discounts & Deals Settings */}
+      <hr className="my-2" />
+      <div className="fw-semibold mb-2 ui-text-sm">Discounts & Deals</div>
+
+      <div className="mb-2">
+        <label className="d-block mb-1 small text-muted">Discount Calculation Order</label>
+        <div style={{ maxWidth: "20rem" }}>
+          <Dropdown_Custom
+            className="ui-control-sm"
+            value={discountSettings?.calculationOrder || "item_first"}
+            onChange={(e) => {
+              const next = { ...discountSettings, calculationOrder: e.target.value };
+              setDiscountSettings?.(next);
+              try {
+                localStorage.setItem("sales_discount_settings", JSON.stringify(next));
+              } catch {}
+            }}
+            options={[
+              { value: "item_first", label: "Item-level first, then cart-level (Recommended)" },
+              { value: "cart_first", label: "Cart-level first, then item-level" },
+            ]}
+            placeholder="Calculation order"
+            closeOnSelect
+          />
+        </div>
+        <div className="mt-1 ui-small-muted">
+          {discountSettings?.calculationOrder === "cart_first"
+            ? "Cart deals apply to the gross subtotal first before item-level discounts."
+            : "Item-level discounts apply first to reduce line items, then cart deals apply to the resulting subtotal."}
+        </div>
+      </div>
+
+      <div className="mb-2">
+        <label className="d-block mb-1 small text-muted">Item Discount Rule</label>
+        <div style={{ maxWidth: "20rem" }}>
+          <Dropdown_Custom
+            className="ui-control-sm"
+            value={discountSettings?.itemStacking || "best_deal"}
+            onChange={(e) => {
+              const next = { ...discountSettings, itemStacking: e.target.value };
+              setDiscountSettings?.(next);
+              try {
+                localStorage.setItem("sales_discount_settings", JSON.stringify(next));
+              } catch {}
+            }}
+            options={[
+              { value: "best_deal", label: "Best deal wins (apply highest discount)" },
+              { value: "stack_all", label: "Stack all matching item discounts" },
+            ]}
+            placeholder="Item stacking rule"
+            closeOnSelect
+          />
+        </div>
+        <div className="mt-1 ui-small-muted">
+          {discountSettings?.itemStacking === "stack_all"
+            ? "Multiple product deals matching the same item are combined."
+            : "The single highest product deal is applied to each qualifying item."}
+        </div>
+      </div>
+
+      <div className="mb-2">
+        <label className="align-items-center d-flex gap-2 small text-muted cursor-pointer mb-0">
+          <input
+            type="checkbox"
+            className="form-check-input mt-0"
+            checked={discountSettings?.allowMultipleCartDeals !== false}
+            onChange={(e) => {
+              const next = { ...discountSettings, allowMultipleCartDeals: e.target.checked };
+              setDiscountSettings?.(next);
+              try {
+                localStorage.setItem("sales_discount_settings", JSON.stringify(next));
+              } catch {}
+            }}
+          />
+          Allow selecting multiple cart-level deals at once
+        </label>
       </div>
 
       {/* Receipt Settings */}

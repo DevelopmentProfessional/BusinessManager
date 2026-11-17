@@ -51,13 +51,15 @@ export const TEMPLATE_VARIABLES = {
     { key: "invoice.date", label: "Invoice Date", description: "Transaction date" },
     { key: "invoice.total", label: "Total", description: "Total amount" },
     { key: "invoice.subtotal", label: "Subtotal", description: "Subtotal before tax" },
-    { key: "invoice.tax", label: "Tax", description: "Tax amount" },
+    { key: "invoice.discount", label: "Discount", description: "Discount amount (hidden if $0)" },
+    { key: "invoice.tax", label: "Tax", description: "Tax amount (hidden if $0)" },
+    { key: "invoice.totals_table", label: "Totals Table", description: "Subtotal, discount (if any), tax (if any), and total formatted table", isLayout: true },
     { key: "invoice.items", label: "Line Items (list)", description: "Purchased items as a bullet list" },
     { key: "invoice.items.table", label: "Line Items (table)", description: "Purchased items as a formatted table", isLayout: true },
     { key: "invoice.items.compact_feature_table", label: "Line Items (compact feature table)", description: "Purchased items with descriptive features stacked compactly under each product", isLayout: true },
     { key: "invoice.items.dense_table", label: "Line Items (dense table)", description: "Purchased items in an extra-tight print layout for longer orders", isLayout: true },
     { key: "invoice.items.feature_table", label: "Line Items (feature table)", description: "Purchased items with descriptive feature columns", isLayout: true },
-    { key: "invoice.payment_method", label: "Payment Method", description: "Cash or card" },
+    { key: "invoice.payment_method", label: "Payment Method", description: "Cash or card (hidden if empty)" },
   ],
   appointment: [
     { key: "appointment.date", label: "Appointment Date", description: "Formatted date (e.g. Monday, March 15, 2026)" },
@@ -284,11 +286,111 @@ export const LAYOUT_TEMPLATES = [
 
 /**
  * Replace all {{key}} placeholders in html with values from the variables dict.
- * Unreplaced keys are left as-is.
+ * Applies zero-suppression so that if values are zero or empty (e.g. Tax, Discount,
+ * Payment Method), neither the value nor the surrounding label or table row is shown.
  */
 export function renderTemplate(html, variables) {
   if (!html) return "";
-  return Object.entries(variables).reduce((acc, [key, val]) => acc.replaceAll(`{{${key}}}`, val != null ? String(val) : `{{${key}}}`), html);
+
+  let result = html;
+  const vars = { ...variables };
+
+  // Keys that should be completely suppressed (including labels and enclosing table rows) when 0 or empty
+  const suppressibleKeys = [
+    "invoice.tax",
+    "invoice.discount",
+    "invoice.discount_amount",
+    "invoice.payment_method",
+    "client.phone",
+    "client.email",
+  ];
+
+  suppressibleKeys.forEach((key) => {
+    const val = vars[key];
+    const isSuppressed =
+      val == null ||
+      val === "" ||
+      val === "$0.00" ||
+      val === "-$0.00" ||
+      val === "0.00" ||
+      val === "$0" ||
+      val === "0";
+
+    if (isSuppressed) {
+      // 1. Remove table rows <tr>...{{key}}...</tr>
+      const trRegex = new RegExp(
+        `<tr\\b[^>]*>(?:(?!<\\/tr>)[\\s\\S])*?\\{\\{${key}\\}\\}(?:(?!<\\/tr>)[\\s\\S])*?<\\/tr>`,
+        "gi"
+      );
+      result = result.replace(trRegex, "");
+
+      // 2. Remove paragraphs, divs, list items, or spans solely displaying this placeholder + label
+      // Guard against removing blocks that also contain total or subtotal
+      const blockRegex = new RegExp(
+        `<(p|div|li)\\b[^>]*>(?:(?!<\\/\\1>)[\\s\\S])*?\\{\\{${key}\\}\\}(?:(?!<\\/\\1>)[\\s\\S])*?<\\/\\1>`,
+        "gi"
+      );
+      result = result.replace(blockRegex, (match) => {
+        if (match.includes("{{invoice.total}}") || match.includes("{{invoice.subtotal}}")) {
+          return match
+            .replace(
+              new RegExp(
+                `(?:Tax[:\\s]*|<strong>Tax[:\\s]*<\\/strong>|Discount[:\\s]*|<strong>Discount[:\\s]*<\\/strong>)\\s*\\{\\{${key}\\}\\}`,
+                "gi"
+              ),
+              ""
+            )
+            .replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), "");
+        }
+        return "";
+      });
+
+      // 3. Inline label + placeholder patterns, e.g. "Tax: {{invoice.tax}}<br>" or "<strong>Payment Method:</strong> {{invoice.payment_method}}"
+      const labelPrefixes = ["Tax", "Discount", "Payment Method", "Phone", "Email"].join("|");
+      const inlineRegex = new RegExp(
+        `(?:<strong[^>]*>)?(?:${labelPrefixes})[^<]*?(?:<\\/strong>)?[:\\s]*\\{\\{${key}\\}\\}(?:<br\\s*\\/?>)?`,
+        "gi"
+      );
+      result = result.replace(inlineRegex, "");
+
+      vars[key] = "";
+    }
+  });
+
+  // If invoice has a discount > 0 and the template does NOT have an {{invoice.discount}} placeholder,
+  // but has Subtotal/Tax/Total, inject a Discount line before Tax/Total:
+  const discountVal = vars["invoice.discount"];
+  if (discountVal && !html.includes("{{invoice.discount}}") && !html.includes("{{invoice.discount_amount}}")) {
+    const discountRow = `<tr><td style="padding:4px 8px;text-align:right;color:#16a34a;">Discount</td><td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;color:#16a34a;">${discountVal}</td></tr>`;
+    if (result.includes("{{invoice.tax}}")) {
+      result = result.replace(
+        /(<tr\b[^>]*>(?:(?!<\/tr>)[\s\S])*?\{\{invoice\.tax\}\}(?:(?!<\/tr>)[\s\S])*?<\/tr>)/i,
+        `${discountRow}$1`
+      );
+    } else if (result.includes("{{invoice.total}}")) {
+      result = result.replace(
+        /(<tr\b[^>]*>(?:(?!<\/tr>)[\s\S])*?\{\{invoice\.total\}\}(?:(?!<\/tr>)[\s\S])*?<\/tr>)/i,
+        `${discountRow}$1`
+      );
+    } else if (result.includes("Subtotal{{invoice.subtotal}}")) {
+      result = result.replace(
+        "Subtotal{{invoice.subtotal}}",
+        `Subtotal{{invoice.subtotal}}<span style="color:#16a34a;margin:0 6px;">Discount ${discountVal}</span>`
+      );
+    }
+  }
+
+  // If template has a cramped <p>Subtotal{{invoice.subtotal}}...Total{{invoice.total}}</p>, replace with clean totals table
+  const crampedTotalsRegex = /<p\b[^>]*>\s*Subtotal\s*\{\{invoice\.subtotal\}\}[\s\S]*?\{\{invoice\.total\}\}\s*(?:<\/strong>)?\s*<\/p>/gi;
+  if (crampedTotalsRegex.test(result)) {
+    result = result.replace(crampedTotalsRegex, "{{invoice.totals_table}}");
+  }
+
+  // 4. Standard mustache replacement
+  return Object.entries(vars).reduce(
+    (acc, [key, val]) => acc.replaceAll(`{{${key}}}`, val != null ? String(val) : `{{${key}}}`),
+    result
+  );
 }
 
 /** Build a flat variable dict from a client object + current user + settings */
@@ -553,15 +655,28 @@ function buildItemsFeatureTableHtml(items) {
         if (featureName) optionMap[featureName] = optionName || "";
       });
       const qty = item.quantity ?? "";
-      const unit = item.unit_price != null ? `$${Number(item.unit_price).toFixed(2)}` : "";
-      const total = item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : "";
+      const discAmt = Number(item.discount_amount || 0);
+      const hasDiscount = discAmt > 0;
+      const grossUnitPrice = Number(item.unit_price || 0);
+      const grossLineTotal = grossUnitPrice * (Number(item.quantity) || 1);
+      const netLineTotal = item.line_total != null ? Number(item.line_total) : Math.max(0, grossLineTotal - discAmt);
+      const effectiveUnitPrice = Number(item.quantity) > 0 ? netLineTotal / Number(item.quantity) : grossUnitPrice;
+
+      const unit = `$${grossUnitPrice.toFixed(2)}`;
+      const netUnit = `$${effectiveUnitPrice.toFixed(2)}`;
+      const total = `$${netLineTotal.toFixed(2)}`;
+      const grossTotal = `$${grossLineTotal.toFixed(2)}`;
+      const discountBadge = hasDiscount
+        ? ` <span style="display:inline-block;padding:1px 5px;border-radius:4px;background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:600;">Deal -$${discAmt.toFixed(2)}</span>`
+        : "";
+
       const featureCells = featureNames.map((name) => `<td style="padding:6px 8px;">${optionMap[name] || "—"}</td>`).join("");
       return `<tr style="border-bottom:1px solid #e5e7eb;">
-    <td style="padding:6px 8px;">${item.item_name || ""}</td>
+    <td style="padding:6px 8px;">${escapeHtml(item.item_name || "")}${discountBadge}</td>
     ${featureCells}
     <td style="padding:6px 8px;text-align:center;">${qty}</td>
-    <td style="padding:6px 8px;text-align:right;white-space:nowrap;">${unit}</td>
-    <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:500;">${total}</td>
+    <td style="padding:6px 8px;text-align:right;white-space:nowrap;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.75rem;line-height:1.2;">${unit}</div><div style="font-weight:500;line-height:1.2;">${netUnit}</div>` : unit}</td>
+    <td style="padding:6px 8px;text-align:right;white-space:nowrap;font-weight:500;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.75rem;line-height:1.2;">${grossTotal}</div><div style="line-height:1.2;">${total}</div>` : total}</td>
   </tr>`;
     })
     .join("");
@@ -581,17 +696,30 @@ function buildItemsCompactFeatureTableHtml(items) {
   const rows = items
     .map((item) => {
       const qty = item.quantity ?? "";
-      const unit = item.unit_price != null ? `$${Number(item.unit_price).toFixed(2)}` : "";
-      const total = item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : "";
+      const discAmt = Number(item.discount_amount || 0);
+      const hasDiscount = discAmt > 0;
+      const grossUnitPrice = Number(item.unit_price || 0);
+      const grossLineTotal = grossUnitPrice * (Number(item.quantity) || 1);
+      const netLineTotal = item.line_total != null ? Number(item.line_total) : Math.max(0, grossLineTotal - discAmt);
+      const effectiveUnitPrice = Number(item.quantity) > 0 ? netLineTotal / Number(item.quantity) : grossUnitPrice;
+
+      const unit = `$${grossUnitPrice.toFixed(2)}`;
+      const netUnit = `$${effectiveUnitPrice.toFixed(2)}`;
+      const total = `$${netLineTotal.toFixed(2)}`;
+      const grossTotal = `$${grossLineTotal.toFixed(2)}`;
+      const discountBadge = hasDiscount
+        ? ` <span style="display:inline-block;padding:1px 5px;border-radius:4px;background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:600;">Deal -$${discAmt.toFixed(2)}</span>`
+        : "";
+
       const featureSummary = buildCompactFeatureSummaryHtml(item);
       return `<tr style="border-bottom:1px solid #e5e7eb;page-break-inside:avoid;break-inside:avoid;">
   <td style="padding:7px 8px;">
-    <div style="font-weight:500;line-height:1.35;">${escapeHtml(item.item_name || "")}</div>
+    <div style="font-weight:500;line-height:1.35;">${escapeHtml(item.item_name || "")}${discountBadge}</div>
     ${featureSummary}
   </td>
   <td style="padding:7px 8px;text-align:center;width:50px;vertical-align:top;">${qty}</td>
-  <td style="padding:7px 8px;text-align:right;width:90px;white-space:nowrap;vertical-align:top;">${unit}</td>
-  <td style="padding:7px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;vertical-align:top;">${total}</td>
+  <td style="padding:7px 8px;text-align:right;width:90px;white-space:nowrap;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.75rem;line-height:1.2;">${unit}</div><div style="font-weight:500;line-height:1.2;">${netUnit}</div>` : unit}</td>
+  <td style="padding:7px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.75rem;line-height:1.2;">${grossTotal}</div><div style="font-weight:600;line-height:1.2;">${total}</div>` : total}</td>
 </tr>`;
     })
     .join("");
@@ -619,8 +747,21 @@ function buildItemsDenseTableHtml(items) {
   const rows = items
     .map((item) => {
       const qty = item.quantity ?? "";
-      const unit = item.unit_price != null ? `$${Number(item.unit_price).toFixed(2)}` : "";
-      const total = item.line_total != null ? `$${Number(item.line_total).toFixed(2)}` : "";
+      const discAmt = Number(item.discount_amount || 0);
+      const hasDiscount = discAmt > 0;
+      const grossUnitPrice = Number(item.unit_price || 0);
+      const grossLineTotal = grossUnitPrice * (Number(item.quantity) || 1);
+      const netLineTotal = item.line_total != null ? Number(item.line_total) : Math.max(0, grossLineTotal - discAmt);
+      const effectiveUnitPrice = Number(item.quantity) > 0 ? netLineTotal / Number(item.quantity) : grossUnitPrice;
+
+      const unit = `$${grossUnitPrice.toFixed(2)}`;
+      const netUnit = `$${effectiveUnitPrice.toFixed(2)}`;
+      const total = `$${netLineTotal.toFixed(2)}`;
+      const grossTotal = `$${grossLineTotal.toFixed(2)}`;
+      const discountBadge = hasDiscount
+        ? ` <span style="display:inline-block;padding:1px 4px;border-radius:3px;background:#dcfce7;color:#15803d;font-size:0.65rem;font-weight:600;">-$${discAmt.toFixed(2)}</span>`
+        : "";
+
       const options = getNormalizedSelectedOptions(item);
       const featureLine = options.length
         ? `<div style="margin-top:2px;color:#475569;font-size:0.68rem;line-height:1.2;">${escapeHtml(
@@ -635,12 +776,12 @@ function buildItemsDenseTableHtml(items) {
 
       return `<tr style="border-bottom:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
   <td style="padding:4px 6px;vertical-align:top;line-height:1.2;">
-    <div style="font-weight:500;">${escapeHtml(item.item_name || "")}</div>
+    <div style="font-weight:500;">${escapeHtml(item.item_name || "")}${discountBadge}</div>
     ${featureLine}
   </td>
   <td style="padding:4px 6px;text-align:center;width:42px;vertical-align:top;">${qty}</td>
-  <td style="padding:4px 6px;text-align:right;width:78px;white-space:nowrap;vertical-align:top;">${unit}</td>
-  <td style="padding:4px 6px;text-align:right;width:78px;white-space:nowrap;font-weight:600;vertical-align:top;">${total}</td>
+  <td style="padding:4px 6px;text-align:right;width:78px;white-space:nowrap;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.7rem;line-height:1.1;">${unit}</div><div style="font-weight:500;line-height:1.1;">${netUnit}</div>` : unit}</td>
+  <td style="padding:4px 6px;text-align:right;width:78px;white-space:nowrap;font-weight:600;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.7rem;line-height:1.1;">${grossTotal}</div><div style="font-weight:600;line-height:1.1;">${total}</div>` : total}</td>
 </tr>`;
     })
     .join("");
@@ -670,14 +811,27 @@ function buildItemsTableHtml(items) {
   const rows = items
     .map((i) => {
       const qty = i.quantity ?? "";
-      const unit = i.unit_price != null ? `$${Number(i.unit_price).toFixed(2)}` : "";
-      const total = i.line_total != null ? `$${Number(i.line_total).toFixed(2)}` : "";
+      const discAmt = Number(i.discount_amount || 0);
+      const hasDiscount = discAmt > 0;
+      const grossUnitPrice = Number(i.unit_price || 0);
+      const grossLineTotal = grossUnitPrice * (Number(i.quantity) || 1);
+      const netLineTotal = i.line_total != null ? Number(i.line_total) : Math.max(0, grossLineTotal - discAmt);
+      const effectiveUnitPrice = Number(i.quantity) > 0 ? netLineTotal / Number(i.quantity) : grossUnitPrice;
+
+      const unit = `$${grossUnitPrice.toFixed(2)}`;
+      const netUnit = `$${effectiveUnitPrice.toFixed(2)}`;
+      const total = `$${netLineTotal.toFixed(2)}`;
+      const grossTotal = `$${grossLineTotal.toFixed(2)}`;
+      const discountBadge = hasDiscount
+        ? ` <span style="display:inline-block;padding:1px 5px;border-radius:4px;background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:600;">Deal -$${discAmt.toFixed(2)}</span>`
+        : "";
       const optionsLine = buildCompactFeatureSummaryHtml(i);
+
       return `<tr style="border-bottom:1px solid #e5e7eb;">
-  <td style="padding:6px 8px;">${i.item_name || ""}${optionsLine}</td>
+  <td style="padding:6px 8px;">${escapeHtml(i.item_name || "")}${discountBadge}${optionsLine}</td>
   <td style="padding:6px 8px;text-align:center;width:50px;">${qty}</td>
-  <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;">${unit}</td>
-  <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;">${total}</td>
+  <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.75rem;line-height:1.2;">${unit}</div><div style="font-weight:500;line-height:1.2;">${netUnit}</div>` : unit}</td>
+  <td style="padding:6px 8px;text-align:right;width:90px;white-space:nowrap;font-weight:500;vertical-align:top;">${hasDiscount ? `<div style="text-decoration:line-through;color:#9ca3af;font-size:0.75rem;line-height:1.2;">${grossTotal}</div><div style="font-weight:600;line-height:1.2;">${total}</div>` : total}</td>
 </tr>`;
     })
     .join("");
@@ -700,6 +854,30 @@ function buildItemsTableHtml(items) {
 </table>`;
 }
 
+function buildInvoiceTotalsTableHtml({ subtotal, discount, tax, total }) {
+  const rows = [];
+  if (subtotal > 0) {
+    rows.push(
+      `<tr><td style="padding:4px 8px;text-align:right;color:#555;">Subtotal</td><td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;">$${subtotal.toFixed(2)}</td></tr>`
+    );
+  }
+  if (discount > 0) {
+    rows.push(
+      `<tr><td style="padding:4px 8px;text-align:right;color:#16a34a;">Discount</td><td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;color:#16a34a;">-$${discount.toFixed(2)}</td></tr>`
+    );
+  }
+  if (tax > 0) {
+    rows.push(
+      `<tr><td style="padding:4px 8px;text-align:right;color:#555;">Tax</td><td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;">$${tax.toFixed(2)}</td></tr>`
+    );
+  }
+  rows.push(
+    `<tr style="border-top:2px solid #111;"><td style="padding:6px 8px;text-align:right;font-weight:700;">Total</td><td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;">$${total.toFixed(2)}</td></tr>`
+  );
+
+  return `<table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:12px;"><tbody>${rows.join("")}</tbody></table>`;
+}
+
 /** Build a flat variable dict from a sale transaction + client + current user + settings */
 export function buildSalesVariables(transaction, client, currentUser, settings, items = []) {
   const now = new Date();
@@ -709,6 +887,19 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
   const itemsDenseTableHtml = buildItemsDenseTableHtml(items);
   const itemsFeatureTableHtml = buildItemsFeatureTableHtml(items);
   const itemsHtml = itemsTableHtml;
+
+  const subtotalNum = Number(transaction?.subtotal ?? 0);
+  const discountNum = Number(transaction?.discount_amount ?? transaction?.discount ?? 0);
+  const taxNum = Number(transaction?.tax_amount ?? transaction?.tax ?? 0);
+  const totalNum = Number(transaction?.total ?? Math.max(0, subtotalNum - discountNum + taxNum));
+
+  const totalsTableHtml = buildInvoiceTotalsTableHtml({
+    subtotal: subtotalNum,
+    discount: discountNum,
+    tax: taxNum,
+    total: totalNum,
+  });
+
   return {
     date: formatDateISO(now),
     time: formatTime(now),
@@ -725,15 +916,18 @@ export function buildSalesVariables(transaction, client, currentUser, settings, 
     "client.membership_tier": client?.membership_tier || "none",
     "invoice.number": transaction?.id ? String(transaction.id).slice(0, 8).toUpperCase() : "",
     "invoice.date": txDate,
-    "invoice.total": transaction?.total != null ? `$${Number(transaction.total).toFixed(2)}` : "",
-    "invoice.subtotal": transaction?.subtotal != null ? `$${Number(transaction.subtotal).toFixed(2)}` : "",
-    "invoice.tax": transaction?.tax_amount != null ? `$${Number(transaction.tax_amount).toFixed(2)}` : "",
+    "invoice.subtotal": subtotalNum > 0 ? `$${subtotalNum.toFixed(2)}` : "",
+    "invoice.discount": discountNum > 0 ? `-$${discountNum.toFixed(2)}` : "",
+    "invoice.discount_amount": discountNum > 0 ? `-$${discountNum.toFixed(2)}` : "",
+    "invoice.tax": taxNum > 0 ? `$${taxNum.toFixed(2)}` : "",
+    "invoice.total": `$${totalNum.toFixed(2)}`,
+    "invoice.totals_table": totalsTableHtml,
     "invoice.items": itemsHtml,
     "invoice.items.table": itemsTableHtml,
     "invoice.items.compact_feature_table": itemsCompactFeatureTableHtml,
     "invoice.items.dense_table": itemsDenseTableHtml,
     "invoice.items.feature_table": itemsFeatureTableHtml,
-    "invoice.payment_method": transaction?.payment_method || "",
+    "invoice.payment_method": transaction?.payment_method && transaction.payment_method !== "pending" ? transaction.payment_method : "",
   };
 }
 

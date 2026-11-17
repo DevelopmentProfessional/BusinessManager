@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
@@ -55,10 +56,13 @@ export default function Suppliers() {
   const [showPageControls, setShowPageControls] = useState(false);
   const [procurementSupplier, setProcurementSupplier] = useState(null);
   const [procurementView, setProcurementView] = useState("orders");
+  const [initialPoLineItems, setInitialPoLineItems] = useState(null);
   const [communicationSupplier, setCommunicationSupplier] = useState(null);
   const [appSettings, setAppSettings] = useState({});
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
+
+  const location = useLocation();
 
   usePagePermission("suppliers");
 
@@ -230,10 +234,23 @@ export default function Suppliers() {
     }
   };
 
-  const openProcurement = (supplier, initialCreate = false) => {
+  const openProcurement = (supplier, initialCreate = false, lineItems = null) => {
     setProcurementView(initialCreate ? "create" : "orders");
+    setInitialPoLineItems(lineItems);
     setProcurementSupplier(supplier);
   };
+
+  useEffect(() => {
+    if (location.state?.draftPoSupplierId && suppliers.length > 0) {
+      const target = suppliers.find((s) => String(s.id) === String(location.state.draftPoSupplierId));
+      if (target) {
+        setProcurementSupplier(target);
+        setProcurementView("create");
+        setInitialPoLineItems(location.state.initialLineItems || null);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, suppliers]);
 
   return (
     <PageLayout
@@ -481,7 +498,10 @@ export default function Suppliers() {
       {procurementSupplier && (
         <Modal_Procurement
           isOpen
-          onClose={() => setProcurementSupplier(null)}
+          onClose={() => {
+            setProcurementSupplier(null);
+            setInitialPoLineItems(null);
+          }}
           supplier={procurementSupplier}
           supplierName={procurementSupplier.name}
           supplierId={procurementSupplier.id}
@@ -490,6 +510,7 @@ export default function Suppliers() {
           onViewChange={setProcurementView}
           embedded={false}
           onPOCreated={loadSuppliers}
+          initialLineItems={initialPoLineItems}
         />
       )}
 

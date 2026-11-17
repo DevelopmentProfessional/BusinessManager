@@ -346,6 +346,20 @@ def _supplier_product_for_item(
         )
     ).first()
     if not product:
+        inventory = session.get(Inventory, inventory_id)
+        if inventory and inventory.company_id == company_id:
+            product = SupplierProduct(
+                supplier_id=supplier_id,
+                inventory_id=inventory_id,
+                purchase_unit=inventory.stock_unit or "unit",
+                units_per_purchase_unit=1,
+                unit_price=float(inventory.cost or 0),
+                is_preferred=bool(inventory.supplier_id == supplier_id),
+                company_id=company_id,
+            )
+            session.add(product)
+            session.flush()
+            return product
         raise HTTPException(
             status_code=400,
             detail="Add this item to the supplier catalog before ordering it",

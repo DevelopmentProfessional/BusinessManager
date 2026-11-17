@@ -455,6 +455,7 @@ export const serviceRecipeAPI = {
 export const suppliersAPI = createISUDApi("suppliers");
 
 export const supplierProductsAPI = {
+  getAll: () => api.get("/supplier-products"),
   getBySupplier: (supplierId) => api.get(`/supplier-products?supplier_id=${supplierId}`),
   save: (data) => api.post("/supplier-products", data),
 };

@@ -366,7 +366,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                     <span className="dark:text-red-400 text-red-600">-${selectedItemsDiscount.toFixed(2)}</span>
                   </div>
                 )}
-                {taxRate > 0 && (
+                {tax > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="dark:text-gray-400 text-gray-500">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
                     <span className="dark:text-white text-gray-900">${tax.toFixed(2)}</span>

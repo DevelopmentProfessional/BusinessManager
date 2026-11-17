@@ -8,10 +8,10 @@
  * ============================================================
  */
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArchiveBoxIcon, ArrowTopRightOnSquareIcon, BellIcon, CalendarDaysIcon, ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon } from "../../../icons";
+import { Link, useNavigate } from "react-router-dom";
+import { ArchiveBoxIcon, ArrowTopRightOnSquareIcon, BellIcon, CalendarDaysIcon, ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, DocumentPlusIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
-import { chatAPI, inventoryAPI, notificationsAPI, purchaseOrdersAPI, tasksAPI } from "../../../services/api";
+import { chatAPI, inventoryAPI, notificationsAPI, purchaseOrdersAPI, supplierProductsAPI, suppliersAPI, tasksAPI } from "../../../services/api";
 import { EmptyState, LoadingSpinner } from "../feedback";
 import Accordion from "../accordions/Accordion";
 import Modal from "./Modal";
@@ -20,6 +20,8 @@ const EMPTY_DATA = {
   tasks: [],
   inventory: [],
   purchaseOrders: [],
+  suppliers: [],
+  supplierProducts: [],
   chats: {},
   requests: {
     leave_requests: [],
@@ -58,6 +60,7 @@ function ActionLink({ to, onClick, children }) {
 }
 
 export default function Modal_Notifications({ isOpen, onClose }) {
+  const navigate = useNavigate();
   const user = useStore((state) => state.user);
   const employees = useStore((state) => state.employees);
   const appointments = useStore((state) => state.appointments);
@@ -95,6 +98,8 @@ export default function Modal_Notifications({ isOpen, onClose }) {
     if (canViewLowStock) {
       sources.push({ key: "inventory", label: "inventory levels", load: () => inventoryAPI.getAll(), isValid: Array.isArray });
       sources.push({ key: "purchaseOrders", label: "draft purchase orders", load: () => purchaseOrdersAPI.getDrafts(), isValid: Array.isArray });
+      sources.push({ key: "suppliers", label: "suppliers", load: () => suppliersAPI.getAll(), isValid: Array.isArray });
+      sources.push({ key: "supplierProducts", label: "supplier products", load: () => supplierProductsAPI.getAll(), isValid: Array.isArray });
     }
 
     setLoading(true);
@@ -142,15 +147,115 @@ export default function Modal_Notifications({ isOpen, onClose }) {
       .sort((left, right) => new Date(left.appointment_date) - new Date(right.appointment_date));
   }, [appointments, user?.id]);
 
-  const lowStockItems = useMemo(
-    () =>
-      data.inventory.filter((item) => {
-        const quantity = Number(item.quantity);
-        const minimum = Number(item.min_stock_level);
-        return Number.isFinite(quantity) && Number.isFinite(minimum) && quantity <= minimum;
-      }),
-    [data.inventory]
-  );
+  const lowStockBySupplier = useMemo(() => {
+    const lowItems = data.inventory.filter((item) => {
+      const quantity = Number(item.quantity);
+      const minimum = Number(item.min_stock_level);
+      return Number.isFinite(quantity) && Number.isFinite(minimum) && quantity <= minimum;
+    });
+
+    if (lowItems.length === 0) {
+      return { groups: [], unassigned: [], totalCount: 0 };
+    }
+
+    const suppliersList = Array.isArray(data.suppliers) ? data.suppliers : [];
+    const supplierProductsList = Array.isArray(data.supplierProducts) ? data.supplierProducts : [];
+
+    const supplierGroups = new Map();
+    const unassignedItems = [];
+
+    lowItems.forEach((item) => {
+      const quantity = Number(item.quantity) || 0;
+      const minimum = Number(item.min_stock_level) || 0;
+      const deficit = Math.max(1, Math.round(minimum - quantity));
+
+      const matchingProducts = supplierProductsList.filter(
+        (sp) => String(sp.inventory_id) === String(item.id)
+      );
+
+      // 1. Preferred supplier product
+      let chosenProduct = matchingProducts.find((sp) => sp.is_preferred);
+
+      // 2. If no preferred, match by item.supplier_id or first supplier product
+      if (!chosenProduct && matchingProducts.length > 0) {
+        if (item.supplier_id) {
+          chosenProduct = matchingProducts.find((sp) => String(sp.supplier_id) === String(item.supplier_id)) || matchingProducts[0];
+        } else {
+          chosenProduct = matchingProducts[0];
+        }
+      }
+
+      const chosenSupplierId = chosenProduct?.supplier_id || item.supplier_id;
+      const chosenSupplier = suppliersList.find((s) => String(s.id) === String(chosenSupplierId));
+
+      if (chosenSupplier) {
+        const supIdStr = String(chosenSupplier.id);
+        if (!supplierGroups.has(supIdStr)) {
+          supplierGroups.set(supIdStr, {
+            supplier: chosenSupplier,
+            isPreferred: Boolean(chosenProduct?.is_preferred),
+            items: [],
+          });
+        }
+        const group = supplierGroups.get(supIdStr);
+        if (chosenProduct?.is_preferred) {
+          group.isPreferred = true;
+        }
+
+        const packSize = Math.max(1, Number(chosenProduct?.units_per_purchase_unit || 1));
+        const suggestedPacks = Math.max(1, Math.ceil(deficit / packSize));
+
+        group.items.push({
+          item,
+          supplierProduct: chosenProduct || null,
+          deficit,
+          packSize,
+          suggestedPacks,
+          isPreferred: Boolean(chosenProduct?.is_preferred),
+          purchaseUnit: chosenProduct?.purchase_unit || item.stock_unit || "unit",
+          unitPrice: chosenProduct ? Number(chosenProduct.unit_price || 0) : Number(item.cost || 0),
+        });
+      } else {
+        unassignedItems.push({
+          item,
+          deficit,
+        });
+      }
+    });
+
+    const sortedGroups = Array.from(supplierGroups.values()).sort((a, b) => {
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      return String(a.supplier.name || "").localeCompare(String(b.supplier.name || ""));
+    });
+
+    return {
+      groups: sortedGroups,
+      unassigned: unassignedItems,
+      totalCount: lowItems.length,
+    };
+  }, [data.inventory, data.suppliers, data.supplierProducts]);
+
+  const handleDraftPurchaseOrder = (group) => {
+    onClose?.();
+    const initialLineItems = group.items.map((entry) => ({
+      supplier_product_id: entry.supplierProduct?.id || "",
+      inventory_id: entry.item.id,
+      inventory_name: entry.item.name,
+      quantity_ordered: entry.suggestedPacks,
+      unit_price: entry.unitPrice,
+      purchase_unit: entry.purchaseUnit,
+      units_per_purchase_unit: entry.packSize,
+      is_preferred: entry.isPreferred,
+    }));
+
+    navigate("/suppliers", {
+      state: {
+        draftPoSupplierId: group.supplier.id,
+        initialLineItems,
+      },
+    });
+  };
 
   const changedRequests = useMemo(
     () =>
@@ -176,7 +281,7 @@ export default function Modal_Notifications({ isOpen, onClose }) {
     [data.chats, employees]
   );
 
-  const totalItems = data.tasks.length + upcomingAppointments.length + lowStockItems.length + data.purchaseOrders.length + changedRequests.length + chatThreads.length;
+  const totalItems = data.tasks.length + upcomingAppointments.length + lowStockBySupplier.totalCount + data.purchaseOrders.length + changedRequests.length + chatThreads.length;
 
   return (
     <Modal
@@ -243,17 +348,87 @@ export default function Modal_Notifications({ isOpen, onClose }) {
           </Accordion>
         )}
 
-        {lowStockItems.length > 0 && (
-          <Accordion header={<SectionHeader icon={ArchiveBoxIcon} label="Low stock" count={lowStockItems.length} />}>
+        {lowStockBySupplier.totalCount > 0 && (
+          <Accordion header={<SectionHeader icon={ArchiveBoxIcon} label="Low stock" count={lowStockBySupplier.totalCount} />}>
             <div className="d-flex flex-column gap-2">
-              {lowStockItems.map((item) => (
-                <Accordion key={item.id} header={<span>{item.name} <span className="badge bg-warning text-dark ms-1">Low stock</span></span>}>
+              {lowStockBySupplier.groups.map((group) => (
+                <Accordion
+                  key={group.supplier.id}
+                  header={
+                    <span className="align-items-center d-flex flex-wrap gap-1">
+                      <span className="fw-medium">{group.supplier.name}</span>
+                      {group.isPreferred && (
+                        <span className="badge bg-success ms-1">Preferred Supplier</span>
+                      )}
+                      <span className="badge bg-secondary rounded-pill ms-1">
+                        {group.items.length} {group.items.length === 1 ? "item" : "items"}
+                      </span>
+                    </span>
+                  }
+                >
                   <div className="small">
-                    <div>On hand: {item.quantity} · Minimum: {item.min_stock_level}</div>
-                    <ActionLink to="/inventory" onClick={onClose}>Open inventory</ActionLink>
+                    <div className="d-flex flex-column gap-1 mb-2">
+                      {group.items.map((entry) => (
+                        <div key={entry.item.id} className="d-flex justify-content-between align-items-center py-1 border-bottom">
+                          <div>
+                            <span className="fw-medium">{entry.item.name}</span>
+                            <span className="text-muted ms-2">
+                              On hand: {entry.item.quantity} · Minimum: {entry.item.min_stock_level}
+                            </span>
+                            {entry.suggestedPacks > 0 && (
+                              <span className="text-muted ms-1">
+                                (Need {entry.suggestedPacks} {entry.purchaseUnit}{entry.suggestedPacks > 1 ? "s" : ""})
+                              </span>
+                            )}
+                          </div>
+                          {entry.isPreferred && (
+                            <span className="badge bg-outline-success border text-success" style={{ fontSize: "0.7rem" }}>
+                              Preferred
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm mt-1"
+                      onClick={() => handleDraftPurchaseOrder(group)}
+                    >
+                      Draft purchase order
+                      <ArrowTopRightOnSquareIcon className="app-icon ms-1" />
+                    </button>
                   </div>
                 </Accordion>
               ))}
+
+              {lowStockBySupplier.unassigned.length > 0 && (
+                <Accordion
+                  header={
+                    <span className="align-items-center d-flex flex-wrap gap-1">
+                      <span>Unassigned / Other</span>
+                      <span className="badge bg-secondary rounded-pill ms-1">
+                        {lowStockBySupplier.unassigned.length}
+                      </span>
+                    </span>
+                  }
+                >
+                  <div className="small">
+                    <div className="d-flex flex-column gap-1 mb-2">
+                      {lowStockBySupplier.unassigned.map((entry) => (
+                        <div key={entry.item.id} className="py-1 border-bottom">
+                          <span className="fw-medium">{entry.item.name}</span>
+                          <span className="text-muted ms-2">
+                            On hand: {entry.item.quantity} · Minimum: {entry.item.min_stock_level}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <ActionLink to="/inventory" onClick={onClose}>
+                      Open inventory
+                    </ActionLink>
+                  </div>
+                </Accordion>
+              )}
             </div>
           </Accordion>
         )}

@@ -249,3 +249,45 @@ def test_supplier_shipping_and_visibility_migration_adds_columns(monkeypatch):
     assert any("ALTER TABLE supplier ADD COLUMN shipping_rate_type VARCHAR NOT NULL DEFAULT 'fixed'" in statement for statement in statements)
     assert any("ALTER TABLE supplier ADD COLUMN shipping_rate DOUBLE PRECISION NOT NULL DEFAULT 0" in statement for statement in statements)
 
+
+def test_discount_rule_deal_type_migration_adds_column(monkeypatch):
+    statements = []
+
+    class Result:
+        def __init__(self, data=None):
+            self.data = data or []
+
+        def scalar(self):
+            return True
+
+        def fetchone(self):
+            return None
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            statements.append(sql)
+            if "to_regclass" in sql:
+                return Result([True])
+            if "information_schema.columns" in sql:
+                return Result(None)
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    monkeypatch.setattr(database, "engine", Engine())
+
+    database._ensure_discount_rule_table_if_needed()
+
+    assert any("ALTER TABLE discount_rule ADD COLUMN deal_type VARCHAR NOT NULL DEFAULT 'product'" in statement for statement in statements)
+
+

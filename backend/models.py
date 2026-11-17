@@ -2780,7 +2780,8 @@ class DiscountRule(BaseModel, table=True):
     """A scheduled discount rule applied to all or selected inventory items."""
     __tablename__ = "discount_rule"
     name: str = Field(index=True)
-    applies_to: str = Field(default="all")           # "all" or "selected"
+    deal_type: str = Field(default="product")        # "product" | "cart_auto" | "cart_selectable"
+    applies_to: str = Field(default="all")           # "all" | "all_products" | "all_services" | "all_packages" | "selected"
     item_ids: Optional[str] = Field(default=None)    # JSON: ["uuid1", "uuid2", ...]
     discount_type: str = Field(default="percentage") # "percentage" or "fixed"
     discount_value: float = Field(default=0.0, ge=0) # % value or fixed amount
@@ -2802,6 +2803,7 @@ class DiscountRule(BaseModel, table=True):
 class DiscountRuleRead(SQLModel):
     id: UUID
     name: str
+    deal_type: str = "product"
     applies_to: str
     item_ids: Optional[str] = None
     discount_type: str

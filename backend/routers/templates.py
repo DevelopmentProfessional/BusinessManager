@@ -108,8 +108,10 @@ _STANDARD_TEMPLATES = [
             '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;">'
             '<tr><td style="padding:4px 8px;text-align:right;color:#555;">Subtotal</td>'
             '<td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;">{{invoice.subtotal}}</td></tr>'
+            '<tr><td style="padding:4px 8px;text-align:right;color:#16a34a;">Discount</td>'
+            '<td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;color:#16a34a;">{{invoice.discount}}</td></tr>'
             '<tr><td style="padding:4px 8px;text-align:right;color:#555;">Tax</td>'
-            '<td style="padding:4px 8px;text-align:right;white-space:nowrap;">{{invoice.tax}}</td></tr>'
+            '<td style="padding:4px 8px;text-align:right;width:110px;white-space:nowrap;">{{invoice.tax}}</td></tr>'
             '<tr style="border-top:2px solid #111;">'
             '<td style="padding:6px 8px;text-align:right;font-weight:700;">Total</td>'
             '<td style="padding:6px 8px;text-align:right;font-weight:700;white-space:nowrap;">{{invoice.total}}</td></tr>'
@@ -138,8 +140,13 @@ _STANDARD_TEMPLATES = [
             "<p><strong>Customer:</strong> {{client.name}}</p>"
             "<p>{{invoice.items}}</p>"
             "<hr>"
-            "<p><strong>Total Paid:</strong> {{invoice.total}}<br>"
-            "<strong>Payment Method:</strong> {{invoice.payment_method}}</p>"
+            "<table style=\"width:100%;border-collapse:collapse;font-size:0.9rem;\">"
+            "<tr><td style=\"padding:4px 0;color:#555;\">Subtotal</td><td style=\"padding:4px 0;text-align:right;\">{{invoice.subtotal}}</td></tr>"
+            "<tr><td style=\"padding:4px 0;color:#16a34a;\">Discount</td><td style=\"padding:4px 0;text-align:right;color:#16a34a;\">{{invoice.discount}}</td></tr>"
+            "<tr><td style=\"padding:4px 0;color:#555;\">Tax</td><td style=\"padding:4px 0;text-align:right;\">{{invoice.tax}}</td></tr>"
+            "<tr style=\"border-top:1px solid #ddd;\"><td style=\"padding:6px 0;font-weight:700;\">Total Paid</td><td style=\"padding:6px 0;text-align:right;font-weight:700;\">{{invoice.total}}</td></tr>"
+            "</table>"
+            "<p><strong>Payment Method:</strong> {{invoice.payment_method}}</p>"
             "<p>Thank you! — {{company.name}}</p>"
         ),
     },

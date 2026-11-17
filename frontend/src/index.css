@@ -818,6 +818,27 @@ table::-webkit-scrollbar,
 }
 
 /* ─── 12. MODALS ─── */
+/* Global solid background for modals and confirm/delete dialogs */
+.modal-content,
+#__bm_confirm_wrap .modal-content {
+  background-color: var(--bs-body-bg, #fff) !important;
+  color: var(--bs-body-color, #212529);
+}
+
+#__bm_confirm_wrap .modal-body,
+#__bm_confirm_wrap .modal-footer {
+  background-color: var(--bs-body-bg, #fff) !important;
+  color: var(--bs-body-color, #212529);
+}
+
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] #__bm_confirm_wrap .modal-content,
+[data-bs-theme="dark"] #__bm_confirm_wrap .modal-body,
+[data-bs-theme="dark"] #__bm_confirm_wrap .modal-footer {
+  background-color: var(--bs-body-bg, #1f2937) !important;
+  color: var(--bs-body-color, #f3f4f6) !important;
+}
+
 .app-modal {
   position: fixed;
   inset: 0;

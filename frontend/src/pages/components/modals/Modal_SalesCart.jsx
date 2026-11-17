@@ -102,7 +102,7 @@ function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew
 }
 
 // ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
-const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
+const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove }) => {
   const isService = item.itemType === "service";
   const isBundle = item.itemType === "bundle";
   const isMix = item.itemType === "mix";
@@ -110,6 +110,12 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
 
   // Build a compact mix selection summary: "3× White, 7× Black"
   const mixSummary = isMix && item.mixSelections?.length > 0 ? item.mixSelections.map((s) => `${s.quantity}× ${s.product_name}`).join(", ") : null;
+
+  const grossLineTotal = (item.price || 0) * (item.quantity || 1);
+  const discountVal = Number(itemDiscount?.discountAmount || 0);
+  const hasDiscount = discountVal > 0;
+  const netLineTotal = Math.max(0, grossLineTotal - discountVal);
+  const effectiveUnitPrice = (grossLineTotal - discountVal) / (item.quantity || 1);
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800 flex gap-1 items-center rounded-lg">
@@ -142,32 +148,47 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
       </div>
 
       {/* Item Info */}
-      <div className="flex-1 min-w-0">
-        <h4 className="dark:text-white font-medium text-gray-900 text-sm truncate">{item.name}</h4>
+      <div className="flex-1 min-w-0 pr-1">
+        <h4 className="dark:text-white font-medium text-gray-900 text-sm truncate mb-0" title={item.name}>
+          {item.name}
+        </h4>
         {mixSummary && (
-          <p className="dark:text-pink-400 text-pink-600 text-xs truncate" title={mixSummary}>
+          <p className="dark:text-pink-400 text-pink-600 text-xs truncate mb-0" title={mixSummary}>
             {mixSummary}
           </p>
         )}
-        <p className="ui-muted-xs">
-          ${item.price?.toFixed(2)} × {item.quantity}
+        <p className="ui-muted-xs mb-0">
+          {hasDiscount ? (
+            <span className="text-success font-medium">${effectiveUnitPrice.toFixed(2)}</span>
+          ) : (
+            `$${item.price?.toFixed(2)}`
+          )}{" "}
+          × {item.quantity}
         </p>
       </div>
 
       {/* Quantity Controls */}
-      <div className="ui-flex-items-gap-1">
+      <div className="ui-flex-items-gap-1 flex-shrink-0">
         <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
           <MinusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
         </button>
-        <span className="dark:text-white font-medium text-center text-gray-900 text-sm w-8">{item.quantity}</span>
+        <span className="dark:text-white font-medium text-center text-gray-900 text-sm w-7">{item.quantity}</span>
         <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity + 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
           <PlusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
         </button>
       </div>
 
       {/* Total */}
-      <div className="flex-shrink-0 px-1 text-right">
-        <p className="dark:text-white font-semibold p-1 text-gray-900 text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+      <div className="flex-shrink-0 text-right ps-1">
+        {hasDiscount && (
+          <p className="line-through text-muted text-xs mb-0">${grossLineTotal.toFixed(2)}</p>
+        )}
+        <p className="dark:text-white font-semibold text-gray-900 text-sm mb-0">${netLineTotal.toFixed(2)}</p>
+        {hasDiscount && (
+          <span className="badge bg-success" style={{ fontSize: "0.58rem", padding: "1px 4px" }}>
+            -${discountVal.toFixed(2)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -189,6 +210,14 @@ export default function Modal_Cart_Sales({
   cartTotal = 0,
   taxRate = 0,
   discountAmount = 0,
+  itemDiscounts = {},
+  itemDiscountsTotal = 0,
+  autoCartDiscount = 0,
+  autoCartDeals = [],
+  selectableCartDeals = [],
+  selectedCartDealIds = [],
+  setSelectedCartDealIds = () => {},
+  allowMultipleCartDeals = true,
   loadClients = () => {},
   openAddClientModal = () => {},
   handleSelectClient = () => {},
@@ -203,8 +232,9 @@ export default function Modal_Cart_Sales({
   const clientSearchAnchorRef = useRef(null);
   const tip = parseFloat(tipAmount) || 0;
   const discountedSubtotal = Math.max(cartTotal - discountAmount, 0);
-  const taxAmount = discountedSubtotal * (taxRate / 100);
+  const taxAmount = taxRate > 0 ? discountedSubtotal * (taxRate / 100) : 0;
   const grandTotal = discountedSubtotal + taxAmount + tip;
+  const selectedCartDiscount = Math.max(0, discountAmount - itemDiscountsTotal - autoCartDiscount);
 
   useEffect(() => {
     if (isOpen) loadClients();
@@ -332,7 +362,13 @@ export default function Modal_Cart_Sales({
             {/* Cart Items */}
             <div className="flex-1 max-h-[35vh] overflow-y-auto p-1 space-y-1">
               {cart.map((item) => (
-                <CartItem key={item.cartKey} item={item} onUpdateQuantity={updateCartQuantity} onRemove={removeFromCart} />
+                <CartItem
+                  key={item.cartKey}
+                  item={item}
+                  itemDiscount={itemDiscounts[item.cartKey]}
+                  onUpdateQuantity={updateCartQuantity}
+                  onRemove={removeFromCart}
+                />
               ))}
             </div>
 
@@ -344,13 +380,68 @@ export default function Modal_Cart_Sales({
                   <span className="dark:text-gray-400 text-gray-500">Subtotal ({cartItemCount} items)</span>
                   <span className="dark:text-white text-gray-900">${cartTotal.toFixed(2)}</span>
                 </div>
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="dark:text-emerald-400 text-emerald-600">Discount</span>
-                    <span className="dark:text-emerald-400 text-emerald-600">-${discountAmount.toFixed(2)}</span>
+
+                {/* Selectable cart deals picker (if any selectable deals exist) */}
+                {selectableCartDeals.length > 0 && (
+                  <div className="py-1 border-top border-bottom border-gray-200 dark:border-gray-700 my-1">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <span className="text-xs fw-semibold text-muted">Available Cart Deals</span>
+                    </div>
+                    <div className="d-flex flex-wrap gap-1">
+                      {selectableCartDeals.map((deal) => {
+                        const isSelected = selectedCartDealIds.includes(deal.id);
+                        return (
+                          <button
+                            key={deal.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedCartDealIds(selectedCartDealIds.filter((id) => id !== deal.id));
+                              } else {
+                                if (allowMultipleCartDeals) {
+                                  setSelectedCartDealIds([...selectedCartDealIds, deal.id]);
+                                } else {
+                                  setSelectedCartDealIds([deal.id]);
+                                }
+                              }
+                            }}
+                            className={`btn btn-sm py-0 px-2 rounded-pill ${
+                              isSelected ? "btn-primary text-white" : "btn-outline-secondary"
+                            }`}
+                            style={{ fontSize: "0.72rem" }}
+                          >
+                            {deal.name} ({deal.discount_type === "percentage" ? `${deal.discount_value}%` : `$${deal.discount_value}`})
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
-                {taxRate > 0 && (
+
+                {/* ZERO SUPPRESSION: Only show discount lines if > 0 */}
+                {itemDiscountsTotal > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="dark:text-emerald-400 text-emerald-600">Item Discounts</span>
+                    <span className="dark:text-emerald-400 text-emerald-600">-${itemDiscountsTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {autoCartDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="dark:text-emerald-400 text-emerald-600">
+                      Promotion {autoCartDeals.length > 0 ? `(${autoCartDeals.map((d) => d.name).join(", ")})` : ""}
+                    </span>
+                    <span className="dark:text-emerald-400 text-emerald-600">-${autoCartDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {selectedCartDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="dark:text-emerald-400 text-emerald-600">Applied Deals</span>
+                    <span className="dark:text-emerald-400 text-emerald-600">-${selectedCartDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {/* ZERO SUPPRESSION: Only show Tax line if taxAmount > 0 */}
+                {taxAmount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="dark:text-gray-400 text-gray-500">Tax ({Number(taxRate).toFixed(1).replace(/\.0$/, "")}%)</span>
                     <span className="dark:text-white text-gray-900">${taxAmount.toFixed(2)}</span>
