@@ -52,7 +52,6 @@ export default function Modal_Clients_Settings({
         toggles={[
           { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
           { key: "showSubs", label: "Show Subscription Column", description: "Display client membership tier column" },
-          { key: "showNotify", label: "Show Notify Column", description: "Display quick-template notify button" },
         ]}
       />
     </PageControlsModal>

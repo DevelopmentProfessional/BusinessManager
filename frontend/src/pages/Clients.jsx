@@ -47,10 +47,9 @@ import Modal_Detail_Client from "./components/modals/Modal_ClientDetail";
 import Modal_Clients_Settings from "./components/modals/Modal_Clients_Settings";
 import Modal_Client_Create from "./components/modals/Modal_Client_Create";
 import Gate_Permission from "./components/layout/Gate_Permission";
-import { PlusIcon, StarIcon, XMarkIcon, EnvelopeIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "../icons";
+import { PlusIcon, StarIcon, XMarkIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
-import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
@@ -152,9 +151,7 @@ export default function Clients() {
     [sortedClientStatuses]
   );
 
-  // Template modal state
-  const [templateClient, setTemplateClient] = useState(null);
-  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  // Settings state
   const [appSettings, setAppSettings] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -257,17 +254,6 @@ export default function Clients() {
   };
 
   // ─── [5] CRUD HANDLERS ──────────────────────────────────────────────────────
-  const handleOpenTemplate = (client) => (e) => {
-    e.stopPropagation();
-    setTemplateClient(client);
-    setIsTemplateOpen(true);
-  };
-
-  const handleCloseTemplate = () => {
-    setIsTemplateOpen(false);
-    setTemplateClient(null);
-  };
-
   const handleCreateClient = () => {
     if (!hasPermission("clients", "write")) {
       setError("You do not have permission to create clients");
@@ -536,7 +522,6 @@ export default function Clients() {
               <col className="app-col-select" />
               <col className="app-col-flex" />
               {pageSettings.showSubs !== false && <col className="app-col-action-120" />}
-              {pageSettings.showNotify !== false && <col className="app-col-action-56" />}
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((client, index) => {
@@ -569,19 +554,12 @@ export default function Clients() {
                       <div className="small text-muted text-truncate">{contactText}</div>
                     </td>
 
-                    {/* Membership + template */}
+                    {/* Membership */}
                     {pageSettings.showSubs !== false && (
                       <td className="main-page-table-data">
                         <div className="ui-flex-center-gap-1">
                           <Badge variant={tierVariant(client.membership_tier || "none")} pill label={getTierLabel(client)} />
                         </div>
-                      </td>
-                    )}
-                    {pageSettings.showNotify !== false && (
-                      <td className="main-page-table-data p-0 text-center">
-                        <button type="button" onClick={handleOpenTemplate(client)} className="align-items-center border-0 btn btn-sm d-flex dark:hover:bg-blue-900/20 hover:bg-blue-50 justify-content-center rounded text-blue-600" title="Use template">
-                          <EnvelopeIcon className="h-6 w-6" />
-                        </button>
                       </td>
                     )}
                   </PageTableRow>
@@ -615,7 +593,6 @@ export default function Clients() {
           { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedCl} onToggle={handleSelectAllCl} title="Select all visible clients" />, className: "app-col-select p-0" },
           { label: "Client", className: "app-col-flex ps-0", sortKey: "name" },
           ...(pageSettings.showSubs !== false ? [{ label: "Subs", className: "app-col-action-120", sortKey: "email" }] : []),
-          ...(pageSettings.showNotify !== false ? [{ label: "Notify", className: "app-col-action-56" }] : []),
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}
@@ -735,9 +712,6 @@ export default function Clients() {
           };
         }}
       />
-
-      {/* Template Use Modal */}
-      {isTemplateOpen && templateClient && <Modal_TemplateUse page="clients" entity={templateClient} currentUser={user} settings={appSettings} onClose={handleCloseTemplate} />}
 
       <Modal_ManageLookup isOpen={showStatusManager} onClose={() => setShowStatusManager(false)} title="Manage Statuses" entityLabel="status" items={clientStatuses} onItemsChanged={loadClientStatuses} api={clientStatusesAPI} />
 

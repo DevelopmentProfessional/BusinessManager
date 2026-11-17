@@ -64,7 +64,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const printIframeRef = useRef(null);
   const pdfCacheRef = useRef(new Map());
   const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || "Invoice";
-  const recipientEmail = (client?.email || entity?.email || "").trim();
+  const recipientEmail = (client?.email || entity?.email || employee?.email || "").trim();
   const isPayslip = filterType === "payslip";
   const isPurchaseOrderTemplate = page === "suppliers" && selected?.template_type === "purchase_order";
 

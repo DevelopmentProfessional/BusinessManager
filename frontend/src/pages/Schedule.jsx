@@ -1638,9 +1638,19 @@ export default function Schedule() {
             page="schedule"
             filterType="email"
             entity={reminderAppointment}
-            client={clients.find((c) => c.id === reminderAppointment?.client_id)}
-            employee={employees.find((e) => e.id === reminderAppointment?.employee_id)}
-            service={services.find((s) => s.id === reminderAppointment?.service_id)}
+            client={
+              clients.find((c) => String(c.id) === String(reminderAppointment?.client_id)) ||
+              (selectedAttendees.find((a) => a.client_id)
+                ? clients.find((c) => String(c.id) === String(selectedAttendees.find((a) => a.client_id)?.client_id))
+                : null)
+            }
+            employee={
+              employees.find((e) => String(e.id) === String(reminderAppointment?.employee_id)) ||
+              (selectedAttendees.find((a) => a.user_id)
+                ? employees.find((e) => String(e.id) === String(selectedAttendees.find((a) => a.user_id)?.user_id))
+                : null)
+            }
+            service={services.find((s) => String(s.id) === String(reminderAppointment?.service_id))}
             currentUser={user}
             settings={scheduleSettings}
             onClose={() => {

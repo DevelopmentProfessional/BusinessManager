@@ -1675,7 +1675,7 @@ export default function ComponentShowcase() {
               isOpen={true}
               onClose={noop}
               onSave={noop}
-              pendingSettings={{ showEmail: true, showSubs: true, showNotify: true }}
+              pendingSettings={{ showEmail: true, showSubs: true }}
               setPendingSettings={noop}
             />
           </ComponentCard>

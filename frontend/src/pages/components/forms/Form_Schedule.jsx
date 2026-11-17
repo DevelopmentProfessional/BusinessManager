@@ -49,7 +49,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import useStore from "../../../services/useStore";
 import { isudAPI, serviceRelationsAPI, inventoryAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../../services/api";
-import { XMarkIcon, CheckIcon, TrashIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
@@ -195,7 +195,7 @@ const parseSelectedServiceAddons = (rawValue) => {
 };
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
   const { hasPermission, user } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -1096,7 +1096,20 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />}
-          center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+          center={
+            <div className="d-flex align-items-center gap-1">
+              <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />
+              {appointment?.id && onSendReminder && (
+                <Button_Toolbar
+                  icon={EnvelopeIcon}
+                  label="Email"
+                  onClick={onSendReminder}
+                  className="btn-outline-secondary"
+                  title="Send reminder or notification email to attendees"
+                />
+              )}
+            </div>
+          }
           end={appointment?.id && onDelete ? <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" /> : null}
         />
       </div>
