@@ -527,18 +527,22 @@ export default function Clients() {
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
-              {pageSettings.showSubs !== false && <col className="app-col-action-120" />}
+              {pageSettings.showSubs !== false && <col className="app-col-action-80" />}
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((client, index) => {
                 const contactText = (pageSettings.showEmail !== false ? client.email : null) || client.phone || "No contact";
                 return (
-                  <PageTableRow key={client.id || index} onClick={() => !selectionMode && handleOpenClient(client)}>
+                  <PageTableRow
+                    key={client.id || index}
+                    onClick={() => !selectionMode && handleOpenClient(client)}
+                    name={<div className="fw-medium text-wrap-word">{client.name}</div>}
+                  >
                     <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
                     </td>
 
-                    {/* Name + contact */}
+                    {/* Contact + action badges */}
                     <td className="main-page-table-data" style={{ position: "relative", overflow: "visible" }}>
                       {/* Red badge — top-left, straddles left border, shown only when > 0 */}
                       {internalActionCounts[client.id] > 0 && (
@@ -556,8 +560,7 @@ export default function Clients() {
                           {portalActionCounts[client.id]}
                         </span>
                       )}
-                      <div className="fw-medium text-truncate">{client.name}</div>
-                      <div className="small text-muted text-truncate">{contactText}</div>
+                      <div className="d-flex flex-wrap align-items-center gap-1 small text-muted text-break text-wrap-word">{contactText}</div>
                     </td>
 
                     {/* Membership */}
@@ -603,7 +606,7 @@ export default function Clients() {
         columns={[
           { label: <Toggle_MultiSelectIcon selected={allVisibleSelectedCl} onToggle={handleSelectAllCl} title="Select all visible clients" />, className: "app-col-select p-0" },
           { label: "Client", className: "app-col-flex ps-0", sortKey: "name" },
-          ...(pageSettings.showSubs !== false ? [{ label: "Subs", className: "app-col-action-120", sortKey: "email" }] : []),
+          ...(pageSettings.showSubs !== false ? [{ label: "Subs", className: "app-col-action-80", sortKey: "email" }] : []),
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}

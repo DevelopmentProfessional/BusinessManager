@@ -1669,7 +1669,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
               {item?.id && isMix && <MixSetupPanel mixId={item.id} />}
 
               <hr className="my-2" />
-              <div className="border-0 form-floating mb-2">
+              <div className="border-0 form-floating mb-4 pb-4">
                 <InputTextarea id="detail_description" name="description" rows={6} value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} className="ui-description-textarea" placeholder="Description" />
                 <label htmlFor="detail_description">Description</label>
               </div>

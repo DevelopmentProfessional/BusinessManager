@@ -347,22 +347,14 @@ export default function Suppliers() {
               <col className="app-col-select" />
               <col className="app-col-flex" />
               {pageSettings.showAddress !== false && <col className="app-col-flex" />}
-              <col className="app-col-action-120" />
+              <col className="app-col-action-80" />
             </colgroup>
             <tbody>
               {visibleSuppliers.map((supplier) => (
                 <PageTableRow
                   key={supplier.id}
                   className={`app-supplier-table-row ${selectedSupplierIds.includes(supplier.id) ? "bg-gray-100 dark:bg-gray-800" : ""}`}
-                >
-                  <td className="app-col-select app-select-icon-cell" onClick={(event) => event.stopPropagation()}>
-                    <Toggle_MultiSelectIcon
-                      selected={selectedSupplierIds.includes(supplier.id)}
-                      onToggle={() => toggleSupplierSelection(supplier.id)}
-                      title={`Select ${supplier.name}`}
-                    />
-                  </td>
-                  <td className="main-page-table-data">
+                  name={
                     <Gate_Permission
                       page="suppliers"
                       permission="write"
@@ -377,19 +369,30 @@ export default function Suppliers() {
                         {supplier.name}
                       </button>
                     </Gate_Permission>
+                  }
+                  colSpan={pageSettings.showAddress !== false ? 4 : 3}
+                >
+                  <td className="app-col-select app-select-icon-cell" onClick={(event) => event.stopPropagation()}>
+                    <Toggle_MultiSelectIcon
+                      selected={selectedSupplierIds.includes(supplier.id)}
+                      onToggle={() => toggleSupplierSelection(supplier.id)}
+                      title={`Select ${supplier.name}`}
+                    />
+                  </td>
+                  <td className="main-page-table-data">
                     {(pageSettings.showPhone !== false && supplier.phone) || (pageSettings.showEmail !== false && supplier.email) ? (
-                      <div className="d-flex flex-wrap gap-1 mt-1">
+                      <div className="d-flex flex-wrap align-items-center gap-1">
                         {pageSettings.showPhone !== false && supplier.phone && (
-                          <Badge variant="gray" pill label={`Phone: ${supplier.phone}`} className="mw-100 text-truncate" />
+                          <Badge variant="gray" pill label={`Phone: ${supplier.phone}`} className="text-break text-wrap-word" />
                         )}
                         {pageSettings.showEmail !== false && supplier.email && (
-                          <Badge variant="gray" pill label={`Email: ${supplier.email}`} className="mw-100 text-truncate" />
+                          <Badge variant="gray" pill label={`Email: ${supplier.email}`} className="text-break text-wrap-word" />
                         )}
                       </div>
                     ) : null}
                   </td>
                   {pageSettings.showAddress !== false && (
-                    <td className="main-page-table-data text-truncate" title={supplier.address || ""}>
+                    <td className="main-page-table-data text-break text-wrap-word" title={supplier.address || ""}>
                       {supplier.address || "—"}
                     </td>
                   )}
@@ -426,7 +429,7 @@ export default function Suppliers() {
           },
           { label: "Supplier", className: "app-col-flex", sortKey: "name" },
           ...(pageSettings.showAddress !== false ? [{ label: "Address", className: "app-col-flex", sortKey: "address" }] : []),
-          { label: "Actions", className: "app-col-action-120" },
+          { label: "Actions", className: "app-col-action-80 text-center" },
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}

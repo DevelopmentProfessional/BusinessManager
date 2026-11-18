@@ -633,28 +633,39 @@ export default function Inventory() {
                 {pageSettings.showStock !== false && <col className="app-col-action-60" />}
               </colgroup>
               <tbody>
-                {sortedAndFiltered.map((inv, index) => (
-                  <PageTableRow key={inv.id || index} onClick={() => !selectionMode && handleUpdateInventory(inv)}>
-                    <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
-                      <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
-                    </td>
-                    <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} showPrice={pageSettings.showPrice !== false} showCost={pageSettings.showCost !== false} showCategory={pageSettings.showCategory !== false} />
+                {sortedAndFiltered.map((inv, index) => {
+                  let totalCols = 2;
+                  if (pageSettings.showType !== false) totalCols++;
+                  if (pageSettings.showStock !== false) totalCols++;
 
-                    {/* Type */}
-                    {pageSettings.showType !== false && (
-                      <td className="main-page-table-data">
-                        <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
+                  return (
+                    <PageTableRow
+                      key={inv.id || index}
+                      onClick={() => !selectionMode && handleUpdateInventory(inv)}
+                      name={<div className="fw-medium text-wrap-word">{inv.name}</div>}
+                      colSpan={totalCols}
+                    >
+                      <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
+                        <Toggle_MultiSelectIcon selected={selectedIds.has(inv.id)} onToggle={() => toggleSelectInv(inv.id)} title="Select item" />
                       </td>
-                    )}
+                      <Inventory_RowDetail item={inv} priceDisplay={getPriceDisplay(inv)} featureNames={featureSummary[inv.id]?.feature_names || []} showPrice={pageSettings.showPrice !== false} showCost={pageSettings.showCost !== false} showCategory={pageSettings.showCategory !== false} showName={false} />
 
-                    {/* Count */}
-                    {pageSettings.showStock !== false && (
-                      <td className="main-page-table-data text-center">
-                        <Badge variant={stockVariant(inv)} pill label={formatCountDisplay(inv)} />
-                      </td>
-                    )}
-                  </PageTableRow>
-                ))}
+                      {/* Type */}
+                      {pageSettings.showType !== false && (
+                        <td className="main-page-table-data">
+                          <Badge variant={itemTypeVariant(inv.type)} pill label={getItemTypeLabel(inv.type)} />
+                        </td>
+                      )}
+
+                      {/* Count */}
+                      {pageSettings.showStock !== false && (
+                        <td className="main-page-table-data text-center">
+                          <Badge variant={stockVariant(inv)} pill label={formatCountDisplay(inv)} />
+                        </td>
+                      )}
+                    </PageTableRow>
+                  );
+                })}
               </tbody>
             </table>
           ) : (

@@ -1018,16 +1018,18 @@ export default function Employees() {
                       console.log("Row clicked for employee:", employee);
                       handleEdit(employee);
                     }}
+                    name={
+                      <div className={`fw-medium text-wrap-word ${employee.is_active ? "text-success" : "text-muted"}`} style={{ maxWidth: "100%" }}>
+                        {employee.first_name} {employee.last_name}
+                      </div>
+                    }
                   >
                     <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                       <Toggle_MultiSelectIcon selected={selectedIds.has(employee.id)} onToggle={() => toggleSelectEmp(employee.id)} title="Select employee" />
                     </td>
 
-                    {/* Name with color coding for active/inactive */}
+                    {/* Department */}
                     <td className="main-page-table-data">
-                      <div className={`fw-medium text-truncate ${employee.is_active ? "text-success" : "text-muted"}`} style={{ maxWidth: "100%" }}>
-                        {employee.first_name} {employee.last_name}
-                      </div>
                       {pageSettings.showDepartment !== false &&
                         employee.department_id &&
                         (() => {

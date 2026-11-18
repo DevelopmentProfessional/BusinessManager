@@ -58,6 +58,7 @@ import Modal_Document_History from "./components/modals/Modal_Document_History";
 import Modal_Document_Sign from "./components/modals/Modal_Document_Sign";
 import Modal_Document_Categories from "./components/modals/Modal_Document_Categories";
 import Gate_Permission from "./components/layout/Gate_Permission";
+import PageTableRow from "./components/tables/Page_TableRow";
 import Modal_Viewer_Document from "./components/modals/Modal_DocumentView";
 import Modal_Edit_Document from "./components/modals/Modal_DocumentEdit";
 import Modal_Template_Editor from "./components/modals/Modal_TemplateEdit";
@@ -849,16 +850,22 @@ export default function Documents() {
                     const catName = catId != null ? categoryNameById.get(String(catId)) : null;
 
                     return (
-                      <tr key={doc.id || index} className="app-clickable-row main-page-table-row app-table-row align-middle border-bottom" onClick={() => !selectionMode && handleView(doc)}>
+                      <PageTableRow
+                        key={doc.id || index}
+                        className="app-clickable-row align-middle"
+                        onClick={() => !selectionMode && handleView(doc)}
+                        name={
+                          <div className="fw-medium text-wrap-word">
+                            {doc.original_filename ?? "(unnamed)"}
+                          </div>
+                        }
+                      >
                         <td className="app-col-select app-select-icon-cell text-center" onClick={(e) => e.stopPropagation()}>
                           <Toggle_MultiSelectIcon selected={selectedIds.has(doc.id)} onToggle={() => toggleSelectDoc(doc.id)} title="Select document" />
                         </td>
 
-                        {/* File Name */}
+                        {/* Metadata */}
                         <td className="px-1">
-                          <div className="fw-medium text-truncate" style={{ maxWidth: "100%" }}>
-                            {doc.original_filename ?? "(unnamed)"}
-                          </div>
                           <div className="align-items-center d-flex flex-wrap gap-1 small text-muted">
                             {pageSettings.showType !== false && <span className="text-capitalize">{doc.entity_type || "Document"}</span>}
                             {pageSettings.showCategory !== false && catName && (
@@ -883,7 +890,7 @@ export default function Documents() {
                             </button>
                           </td>
                         )}
-                      </tr>
+                      </PageTableRow>
                     );
                   })}
                 </tbody>

@@ -337,13 +337,16 @@ export default function Services() {
             </colgroup>
             <tbody>
               {sortedAndFiltered.map((service, index) => (
-                <PageTableRow key={service.id || index} onClick={() => !selectionMode && handleEditService(service)}>
+                <PageTableRow
+                  key={service.id || index}
+                  onClick={() => !selectionMode && handleEditService(service)}
+                  name={<div className="fw-medium text-wrap-word">{service.name}</div>}
+                >
                   <td className="app-col-select app-select-icon-cell" onClick={(e) => e.stopPropagation()}>
                     <Toggle_MultiSelectIcon selected={selectedIds.has(service.id)} onToggle={() => toggleSelectSvc(service.id)} title="Select service" />
                   </td>
-                  {/* Name + Category stacked */}
+                  {/* Category */}
                   <td className="main-page-table-data">
-                    <div className="fw-medium text-wrap-word">{service.name}</div>
                     {pageSettings.showCategory !== false && service.category && (
                       <span className="badge bg-secondary-subtle rounded-pill text-secondary text-xxs" style={{ width: "fit-content" }}>
                         {service.category}
