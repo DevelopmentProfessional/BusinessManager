@@ -365,6 +365,7 @@ export default function Chat_Employee({ employee, currentUser, onClose }) {
             {/* Message input */}
             <InputTextarea
               ref={inputRef}
+              autoResize={false}
               rows={1}
               className={`form-control flex-grow-1 rounded-pill ${dm ? "bg-secondary text-light border-secondary" : ""}`}
               placeholder="Type a message…"

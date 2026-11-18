@@ -1670,12 +1670,12 @@ table::-webkit-scrollbar,
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE / Edge legacy */
   overscroll-behavior: contain;
-  height: 9rem;
+  height: auto;
   min-height: 9rem;
+  resize: vertical;
 }
 
 .form-floating > .ui-description-textarea {
-  height: 10.5rem;
   min-height: 10.5rem;
 }
 
