@@ -20,6 +20,7 @@
  *   2026-05-26 | GitHub Copilot | Applied shared sticky footer classes for modal footer consistency
  *   2026-11-16 | GitHub Copilot | Moved the default modal close action from the header to the footer
  *   2026-11-16 | GitHub Copilot | Removed the shared modal header close control
+ *   2026-11-18 | GitHub Copilot | Adjusted modal body inner top padding to pt-3 (with p-2) for floating label visibility
  * ============================================================
  */
 import React, { createContext, useContext } from "react";
@@ -99,7 +100,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
         <ModalStackContext.Provider value={nextDepth}>
           {title && <ModalHeader title={title} actions={headerActions} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-2" : "p-2"} no-scrollbar ${bodyClassName}`.trim()} style={bodyStyle}>
+          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-3" : "p-2 pt-3"} no-scrollbar ${bodyClassName}`.trim()} style={bodyStyle}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
           {resolvedFooter && <ModalFooter>{resolvedFooter}</ModalFooter>}
@@ -130,7 +131,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         {title && <ModalHeader title={title} actions={headerActions} />}
         <div
           className={`app-modal-body app-modal-content app-modal-scroll-surface flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${bodyClassName} ${
-            noPadding ? "p-0" : "p-1 pt-2"
+            noPadding ? "p-0" : "p-2 pt-3"
           }`.trim()}
           style={bodyStyle}
         >
