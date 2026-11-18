@@ -12,7 +12,7 @@ const FIELD_OPTIONS = [
   { value: "description", label: "Description" },
   { value: "location", label: "Location" },
   { value: "cost", label: "Cost" },
-  { value: "purchase_unit", label: "Purchase Unit" },
+  { value: "purchase_unit", label: "Unit" },
   { value: "units_per_purchase_unit", label: "Units per Purchase Unit" },
   { value: "asset_unit_count", label: "Asset Unit Count" },
   { value: "features", label: "Features" },

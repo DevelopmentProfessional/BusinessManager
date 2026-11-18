@@ -96,7 +96,7 @@ export default function Dropdown_InventoryPurchaseUnit({
       <Dropdown_Custom
         id={id}
         name={name}
-        floatingLabel="Purchase unit"
+        floatingLabel="unit"
         value={value}
         onChange={onChange}
         disabled={disabled}

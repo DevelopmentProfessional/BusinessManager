@@ -598,11 +598,11 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   <div className="d-flex gap-2 mb-1">
                     <div className="flex-grow-1 form-floating">
                       <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"} min="0" step={isResource ? "0.01" : "1"} disabled={formData.auto_min_stock_level} />
-                      <label htmlFor="min_stock_level">{isResource ? "Manual Threshold" : "Min Count"}</label>
+                      <label htmlFor="min_stock_level">{isResource ? "Min" : "Min"}</label>
                     </div>
                     <div className="flex-grow-1 form-floating">
-                      <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Current Count" min="0" step={isResource ? "0.01" : "1"} />
-                      <label htmlFor="quantity">Current Count</label>
+                      <InputNumber id="quantity" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Count" min="0" step={isResource ? "0.01" : "1"} />
+                      <label htmlFor="quantity">Count</label>
                     </div>
                   </div>
                   {isResource && (
@@ -747,7 +747,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     onChange={handleChange}
                     placeholder="Units per package"
                   />
-                  <label htmlFor="units_per_purchase_unit">Stock units per package</label>
+                  <label htmlFor="units_per_purchase_unit">Stock per unit</label>
                 </div>
               </div>
               <div className="form-text mb-2">Purchase-order default price is item cost multiplied by units per package.</div>

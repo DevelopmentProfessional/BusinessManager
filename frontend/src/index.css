@@ -254,6 +254,10 @@ table::-webkit-scrollbar,
   height: 0 !important;
 }
 
+textarea::-webkit-resizer {
+  display: block !important;
+}
+
 /* ==========================================================================
    PREDEFINED COMPONENT STYLES
    Foundational styles derived from runtime tokens for standard UI elements.
@@ -1583,10 +1587,16 @@ table::-webkit-scrollbar,
   border-radius: var(--bs-border-radius-sm);
 }
 
-.form-control.ui-control-sm,
+.form-control.ui-control-sm:not(textarea),
 .form-select.ui-control-sm {
   height: var(--app-input-height);
   min-height: var(--app-input-height);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--app-input-font-size) !important;
+  line-height: 1.2;
+}
+
+textarea.form-control.ui-control-sm {
   padding: 0.25rem 0.5rem;
   font-size: var(--app-input-font-size) !important;
   line-height: 1.2;
@@ -2238,10 +2248,16 @@ div[role="combobox"] {
 }
 
 /* Keep Bootstrap floating labels readable; compact global input sizing makes these overlap. */
-.form-floating > .form-control,
+.form-floating > .form-control:not(textarea),
 .form-floating > .form-select {
   height: calc(3.5rem + 0.125rem) !important;
   min-height: calc(3.5rem + 0.125rem) !important;
+  padding-top: 1.625rem !important;
+  padding-bottom: 0.625rem !important;
+  font-size: 1rem !important;
+}
+
+.form-floating > textarea.form-control {
   padding-top: 1.625rem !important;
   padding-bottom: 0.625rem !important;
   font-size: 1rem !important;
