@@ -105,10 +105,9 @@ export default function Dropdown_InventoryPurchaseUnit({
         preserveOptionOrder
         onCreateFromSearch={handleCreateFromSearch}
         createButtonTitle="Add company purchase unit"
-        placeholder="Select purchase unit"
+        placeholder="unit"
         closeOnSelect
       />
-      <div className="form-text">Set the package size on this item. Custom units are shared within your company.</div>
       {error && <div className="small text-danger" role="alert">{error}</div>}
     </>
   );

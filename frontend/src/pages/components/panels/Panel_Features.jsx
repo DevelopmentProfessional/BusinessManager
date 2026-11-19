@@ -15,6 +15,7 @@
  *                        handles all CRUD, notifies parent of stock/price
  *
  * CHANGE LOG:
+ *   2026-11-19 | GitHub Copilot | Relocated stock change reason from inline section to a popup modal when stock changes
  *   2026-03-05 | Claude | Initial implementation
  *   2026-03-11 | Claude | Accordion headers, remove icon, borderless table,
  *                         right-aligned add-option row, options preview in header
@@ -22,12 +23,15 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from "../../../icons";
+import { CheckIcon, XMarkIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from "../../../icons";
 import { featuresAPI, inventoryFeaturesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { InputCheckbox, InputNumber, InputText } from "../Inputs";
+import { InputCheckbox, InputNumber, InputText, InputTextarea } from "../Inputs";
 import { showConfirm } from "../../../services/showConfirm";
 import Gate_Permission from "../layout/Gate_Permission";
+import Modal from "../modals/Modal";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 
 // ─── 1 HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +56,16 @@ function calcTotalStock(features, combinations = []) {
   if (!features.length) return 0;
   const totals = features.map(calcFeatureTotal);
   return Math.min(...totals);
+}
+
+function haveCombinationsChanged(rowsA = [], rowsB = []) {
+  if (rowsA.length !== rowsB.length) return true;
+  const mapA = new Map(rowsA.map((r) => [r.combination_key, parseInt(r.quantity, 10) || 0]));
+  for (const r of rowsB) {
+    if (!mapA.has(r.combination_key)) return true;
+    if (mapA.get(r.combination_key) !== (parseInt(r.quantity, 10) || 0)) return true;
+  }
+  return false;
 }
 
 function buildOptionLookup(features) {
@@ -112,6 +126,20 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [itemFeatures, setItemFeatures] = useState([]);
   const [combinationRows, setCombinationRows] = useState([]);
+  const [savedCombinationRows, setSavedCombinationRows] = useState([]);
+  const [isStockReasonModalOpen, setIsStockReasonModalOpen] = useState(false);
+  const [stockReasonError, setStockReasonError] = useState("");
+  const combinationRowsRef = useRef(combinationRows);
+  const savedCombinationRowsRef = useRef(savedCombinationRows);
+
+  useEffect(() => {
+    combinationRowsRef.current = combinationRows;
+  }, [combinationRows]);
+
+  useEffect(() => {
+    savedCombinationRowsRef.current = savedCombinationRows;
+  }, [savedCombinationRows]);
+
   const [featureSearchTerm, setFeatureSearchTerm] = useState("");
   const [committedFeatureName, setCommittedFeatureName] = useState("");
   const [isFeatureSearchOpen, setIsFeatureSearchOpen] = useState(false);
@@ -142,7 +170,11 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
       setItemFeatures(pRes.value?.data ?? pRes.value ?? []);
     }
     if (cRes.status === "fulfilled") {
-      setCombinationRows(cRes.value?.data ?? cRes.value ?? []);
+      const rows = cRes.value?.data ?? cRes.value ?? [];
+      setCombinationRows(rows);
+      combinationRowsRef.current = rows;
+      setSavedCombinationRows(rows);
+      savedCombinationRowsRef.current = rows;
     }
 
     if (gRes.status === "rejected" || pRes.status === "rejected" || cRes.status === "rejected") {
@@ -255,7 +287,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   // ── Save dirty features ──
   const persistFeatures = useCallback(
-    async (featureIds) => {
+    async (featureIds, reason = "") => {
       if (!featureIds?.length) return;
       setSaving(true);
       setError(null);
@@ -273,7 +305,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                 quantity: parseInt(o.quantity) || 0,
                 price: o.price !== "" && o.price != null ? parseFloat(o.price) : null,
               })),
-              stockAdjustmentReason
+              reason || undefined
             )
           )
         );
@@ -285,7 +317,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           });
           return next;
         });
-        setStockAdjustmentReason("");
         setLastSavedAt(Date.now());
       } catch (e) {
         setError(e?.response?.data?.detail?.message ?? e?.response?.data?.detail ?? "Save failed");
@@ -293,31 +324,81 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         setSaving(false);
       }
     },
-    [inventoryId, itemFeatures, stockAdjustmentReason]
+    [inventoryId, itemFeatures]
   );
 
   const persistCombinations = useCallback(
-    async (rows) => {
+    async (rows, reason = "") => {
       const payload = rows.map((row) => ({
         option_ids: row.option_ids,
         quantity: Math.max(0, parseInt(row.quantity, 10) || 0),
       }));
-      await inventoryFeaturesAPI.saveCombinations(inventoryId, payload, stockAdjustmentReason);
-      setStockAdjustmentReason("");
+      await inventoryFeaturesAPI.saveCombinations(inventoryId, payload, reason || undefined);
+      setSavedCombinationRows(rows);
+      savedCombinationRowsRef.current = rows;
     },
-    [inventoryId, stockAdjustmentReason]
+    [inventoryId]
   );
 
-  const handleSave = async () => {
-    await persistFeatures(Object.keys(dirty));
-    if (combinationDirty) {
-      try {
-        await persistCombinations(combinationRows);
-        setCombinationDirty(false);
-      } catch (e) {
-        setError(e?.response?.data?.detail ?? "Could not save combination stock");
-      }
+  const handleStockInputBlur = (e) => {
+    const nextTarget = e?.relatedTarget;
+    if (nextTarget?.classList?.contains("feature-stock-input")) {
+      return;
     }
+    if (haveCombinationsChanged(savedCombinationRowsRef.current, combinationRowsRef.current)) {
+      setStockReasonError("");
+      setStockAdjustmentReason("");
+      setIsStockReasonModalOpen(true);
+    }
+  };
+
+  const handleConfirmStockReason = async () => {
+    const reasonTrimmed = stockAdjustmentReason.trim();
+    if (!reasonTrimmed) {
+      setStockReasonError("A reason is required when changing feature stock.");
+      return;
+    }
+
+    setSaving(true);
+    setStockReasonError("");
+    try {
+      await persistCombinations(combinationRowsRef.current, reasonTrimmed);
+      if (Object.keys(dirty).length > 0) {
+        await persistFeatures(Object.keys(dirty), reasonTrimmed);
+      }
+      setCombinationDirty(false);
+      setSavedCombinationRows(combinationRowsRef.current);
+      savedCombinationRowsRef.current = combinationRowsRef.current;
+      setIsStockReasonModalOpen(false);
+      setStockAdjustmentReason("");
+      setNotice("Stock changes saved successfully.");
+      await onFeaturesChanged?.();
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      setStockReasonError(typeof detail === "string" ? detail : e?.message || "Could not save combination stock");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelStockReason = () => {
+    if (saving) return;
+    setCombinationRows(savedCombinationRowsRef.current);
+    combinationRowsRef.current = savedCombinationRowsRef.current;
+    setCombinationDirty(false);
+    setIsStockReasonModalOpen(false);
+    setStockAdjustmentReason("");
+    setStockReasonError("");
+  };
+
+  const handleSave = async () => {
+    if (combinationDirty && haveCombinationsChanged(savedCombinationRowsRef.current, combinationRowsRef.current)) {
+      setStockReasonError("");
+      setStockAdjustmentReason("");
+      setIsStockReasonModalOpen(true);
+      return;
+    }
+    await persistFeatures(Object.keys(dirty));
   };
 
   useEffect(() => {
@@ -327,20 +408,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     }, 700);
     return () => clearTimeout(timer);
   }, [dirty, itemFeatures, saving, persistFeatures]);
-
-  useEffect(() => {
-    if (saving || !combinationDirty) return;
-    const timer = setTimeout(async () => {
-      try {
-        await persistCombinations(combinationRows);
-        setCombinationDirty(false);
-        setLastSavedAt(Date.now());
-      } catch (e) {
-        setError(e?.response?.data?.detail ?? "Could not save combination stock");
-      }
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [combinationDirty, combinationRows, persistCombinations, saving]);
 
   const linkExistingFeature = useCallback(
     async (featureId, displayName) => {
@@ -528,13 +595,25 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
   const optionLookup = buildOptionLookup(itemFeatures);
   const updateCombinationQuantity = (combinationKey, quantity) => {
-    setCombinationRows((prev) => prev.map((row) => (row.combination_key === combinationKey ? { ...row, quantity: Math.max(0, parseInt(quantity, 10) || 0) } : row)));
+    const nextQty = Math.max(0, parseInt(quantity, 10) || 0);
+    const nextRows = combinationRowsRef.current.map((row) =>
+      row.combination_key === combinationKey ? { ...row, quantity: nextQty } : row
+    );
+    setCombinationRows(nextRows);
+    combinationRowsRef.current = nextRows;
     setCombinationDirty(true);
   };
 
   const removeCombinationRow = (combinationKey) => {
-    setCombinationRows((prev) => prev.filter((row) => row.combination_key !== combinationKey));
+    const nextRows = combinationRowsRef.current.filter((row) => row.combination_key !== combinationKey);
+    setCombinationRows(nextRows);
+    combinationRowsRef.current = nextRows;
     setCombinationDirty(true);
+    if (haveCombinationsChanged(savedCombinationRowsRef.current, nextRows)) {
+      setStockReasonError("");
+      setStockAdjustmentReason("");
+      setIsStockReasonModalOpen(true);
+    }
   };
 
   const handleDraftSelectionChange = (featureId, optionId) => {
@@ -558,23 +637,30 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
     const quantity = Math.max(0, parseInt(combinationDraft.quantity, 10) || 0);
     const combinationKey = [...optionIds].map(String).sort().join("|");
 
-    setCombinationRows((prev) => {
-      const existing = prev.find((row) => row.combination_key === combinationKey);
-      if (existing) {
-        return prev.map((row) => (row.combination_key === combinationKey ? { ...row, quantity } : row));
-      }
-      return [
-        ...prev,
-        {
-          combination_key: combinationKey,
-          option_ids: optionIds,
-          quantity,
-        },
-      ];
-    });
+    const currentRows = combinationRowsRef.current;
+    const existing = currentRows.find((row) => row.combination_key === combinationKey);
+    const nextRows = existing
+      ? currentRows.map((row) => (row.combination_key === combinationKey ? { ...row, quantity } : row))
+      : [
+          ...currentRows,
+          {
+            combination_key: combinationKey,
+            option_ids: optionIds,
+            quantity,
+          },
+        ];
+
+    setCombinationRows(nextRows);
+    combinationRowsRef.current = nextRows;
     setCombinationDraft({ selections: {}, quantity: "" });
     setCombinationDirty(true);
     setError(null);
+
+    if (haveCombinationsChanged(savedCombinationRowsRef.current, nextRows)) {
+      setStockReasonError("");
+      setStockAdjustmentReason("");
+      setIsStockReasonModalOpen(true);
+    }
   };
 
   // ── Derived ──
@@ -613,7 +699,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
 
         if (existingIndex === -1) {
           if (nextQty === 0) return prev;
-          return [
+          const next = [
             ...prev,
             {
               combination_key: `single-${optionId}`,
@@ -621,10 +707,14 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
               quantity: nextQty,
             },
           ];
+          combinationRowsRef.current = next;
+          return next;
         }
 
         if (nextQty === 0) {
-          return prev.filter((_, idx) => idx !== existingIndex);
+          const next = prev.filter((_, idx) => idx !== existingIndex);
+          combinationRowsRef.current = next;
+          return next;
         }
 
         const next = [...prev];
@@ -632,6 +722,7 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           ...next[existingIndex],
           quantity: nextQty,
         };
+        combinationRowsRef.current = next;
         return next;
       });
       setCombinationDirty(true);
@@ -646,16 +737,6 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
         <div className="align-items-center d-flex gap-2 mb-2">
           <h6 className="fw-semibold mb-0">Feature</h6>
           {priceDisplay && <span className="badge border ms-auto text-bg-light">{priceDisplay}</span>}
-        </div>
-        <div className="mb-2">
-          <label className="form-label mb-1 ui-small-muted" htmlFor={`feature-stock-reason-${inventoryId}`}>Reason for stock change</label>
-          <InputText
-            id={`feature-stock-reason-${inventoryId}`}
-            className="form-control ui-control-sm"
-            value={stockAdjustmentReason}
-            placeholder="Required when changing stock counts"
-            onChange={(e) => setStockAdjustmentReason(e.target.value)}
-          />
         </div>
 
         <div className="d-flex flex-column gap-2 mb-2 position-relative" ref={featureSearchRef}>
@@ -940,12 +1021,19 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                                 type="number"
                                 min={0}
                                 step="1"
-                                className="form-control ui-control-sm"
+                                className="form-control ui-control-sm feature-stock-input"
                                 style={{ width: 72, fontSize: "0.75rem", padding: "0 4px", textAlign: "right" }}
                                 value={getSingleFeatureOptionStock(feature.feature_id, opt.option_id)}
                                 placeholder="0"
                                 disabled={!opt.is_enabled}
                                 onChange={(e) => setSingleFeatureOptionStock(feature.feature_id, opt.option_id, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.target.blur();
+                                  }
+                                }}
+                                onBlur={handleStockInputBlur}
                               />
                             )}
                           </div>
@@ -1045,7 +1133,19 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
                               );
                             })}
                             <td>
-                              <InputNumber min={0} className="form-control ui-control-sm" value={row.quantity} onChange={(e) => updateCombinationQuantity(row.combination_key, e.target.value)} />
+                              <InputNumber
+                                min={0}
+                                className="form-control ui-control-sm feature-stock-input"
+                                value={row.quantity}
+                                onChange={(e) => updateCombinationQuantity(row.combination_key, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.target.blur();
+                                  }
+                                }}
+                                onBlur={handleStockInputBlur}
+                              />
                             </td>
                             <td className="text-end">
                               <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => removeCombinationRow(row.combination_key)}>
@@ -1109,6 +1209,67 @@ export default function FeatureSection({ inventoryId, onStockChange, onPriceRang
           </button>
         </div>
       )}
+
+      <Modal
+        isOpen={isStockReasonModalOpen}
+        onClose={handleCancelStockReason}
+        title="Reason for Stock Change"
+        centered
+        footer={
+          <Footer_Actions
+            start={
+              <Button_Toolbar
+                icon={CheckIcon}
+                label={saving ? "Applying…" : "Apply adjustment"}
+                onClick={handleConfirmStockReason}
+                className="btn-primary"
+                disabled={saving || !stockAdjustmentReason.trim()}
+              />
+            }
+            center={
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Cancel"
+                onClick={handleCancelStockReason}
+                className="btn-outline-secondary"
+                disabled={saving}
+              />
+            }
+          />
+        }
+      >
+        <div className="mb-2">
+          <div className="form-text mb-2">
+            Stock count is being adjusted
+            {(() => {
+              const prevTotal = calcTotalStock(itemFeatures, savedCombinationRowsRef.current);
+              const nextTotal = calcTotalStock(itemFeatures, combinationRowsRef.current);
+              const delta = nextTotal - prevTotal;
+              return (
+                <span>
+                  : from <strong>{prevTotal}</strong> to <strong>{nextTotal}</strong> ({delta >= 0 ? `+${delta}` : delta} units).
+                </span>
+              );
+            })()}
+          </div>
+          <label className="form-label" htmlFor={`stock-adjustment-reason-${inventoryId}`}>
+            Reason *
+          </label>
+          <InputTextarea
+            id={`stock-adjustment-reason-${inventoryId}`}
+            rows={3}
+            autoFocus
+            value={stockAdjustmentReason}
+            placeholder="Required: enter a reason for this stock change..."
+            onChange={(e) => {
+              setStockAdjustmentReason(e.target.value);
+              setStockReasonError("");
+            }}
+            maxLength={1000}
+          />
+        </div>
+        {stockReasonError && <div className="alert alert-danger mb-0 py-2">{stockReasonError}</div>}
+      </Modal>
     </div>
   );
 }

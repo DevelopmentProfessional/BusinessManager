@@ -25,6 +25,7 @@
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
+ *   2026-11-19 | GitHub Copilot | Synced effectiveStock with featureStock when features are present
  *   2026-09-11 | GitHub Copilot | Removed dead location relations code and resolved ESLint warnings
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-05-19 | GitHub Copilot | Added cost type/date editing and bundle/mix subtotal summaries
@@ -683,7 +684,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
   const [stockAdjustmentSaving, setStockAdjustmentSaving] = useState(false);
   const originalItemTypeRef = useRef("");
   // Feature-derived values (updated by FeatureSection callbacks)
-  const [, setFeatureStock] = useState(null); // total qty from features, or null
+  const [featureStock, setFeatureStock] = useState(null); // total qty from features, or null
   const [featuresPriceRange, setFeaturesPriceRange] = useState(null); // { min, max } or null
   const [salesPriceRange, setSalesPriceRange] = useState(null); // { min, max } or null — sales mode only
   const [formData, setFormData] = useState({
@@ -1127,7 +1128,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
     return <CubeIcon className="h-16 w-16" />;
   };
 
-  const effectiveStock = formData.quantity;
+  const effectiveStock = featureStock != null ? featureStock : formData.quantity;
   const isLowStock = formData.min_stock_level != null && effectiveStock <= formData.min_stock_level;
 
   // Reusable image display with navigation
@@ -1186,7 +1187,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
             {!isLocation && !isAsset && (
               <span className={`badge position-absolute bottom-0 end-0 m-3 ${isLowStock ? "bg-danger" : "bg-success"}`}>
-                {formData.quantity} in stock {isLowStock && "(Low)"}
+                {effectiveStock} in stock {isLowStock && "(Low)"}
               </span>
             )}
           </div>
@@ -1469,7 +1470,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     )}
                     {!isLocation && !isAsset && (
                       <div className="form-floating" style={equalFieldStyle}>
-                        <InputNumber id="quantity" name="quantity" value={formData.quantity} readOnly placeholder="Current Count" min="0" />
+                        <InputNumber id="quantity" name="quantity" value={effectiveStock} readOnly placeholder="Current Count" min="0" />
                         <label htmlFor="quantity">Count</label>
                       </div>
                     )}
@@ -1618,7 +1619,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   />
                   <div className="form-floating" style={equalFieldStyle}>
                     <InputDate id="detail_date_of_purchase" name="date_of_purchase" value={formData.date_of_purchase} onChange={handleChange} placeholder="Date of Purchase" />
-                    <label htmlFor="detail_date_of_purchase">Date of Purchase</label>
+                    <label htmlFor="detail_date_of_purchase">Purchase Date</label>
                   </div>
                 </div>
 
@@ -1634,7 +1635,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   />
                   <div className="form-floating" style={equalFieldStyle}>
                     <InputDate id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} placeholder="Date of Sale" />
-                    <label htmlFor="detail_date_of_sale">Date of Sale</label>
+                    <label htmlFor="detail_date_of_sale">Sale Date</label>
                   </div>
                 </div>
                 {saleDateError && <div className="alert alert-danger mb-2 mt-1 py-1 small">{saleDateError}</div>}
@@ -1718,7 +1719,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         <div className="mb-2">
           <label className="form-label" htmlFor="stock-adjustment-delta">Quantity change (+ or -)</label>
           <InputNumber id="stock-adjustment-delta" value={stockAdjustmentDelta} onChange={(e) => setStockAdjustmentDelta(e.target.value)} step={isResource ? "0.01" : "1"} />
-          <div className="form-text">Current stock: {formData.quantity}{formData.stock_unit ? ` ${formData.stock_unit}` : ""}. The adjustment cannot reduce stock below zero.</div>
+          <div className="form-text">Current stock: {effectiveStock}{formData.stock_unit ? ` ${formData.stock_unit}` : ""}. The adjustment cannot reduce stock below zero.</div>
         </div>
         {Number(stockAdjustmentDelta) > 0 && (
           <div className="mb-2">
