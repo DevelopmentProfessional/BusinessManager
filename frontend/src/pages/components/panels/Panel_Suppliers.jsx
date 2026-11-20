@@ -168,7 +168,13 @@ export default function Suppliers_Panel({ isOpen, onClose }) {
                   <div key={supplier.id} className="border-bottom" style={{ background: "var(--bs-body-bg)" }}>
                     {isExpanded && (
                       <div className="border-bottom pb-1 pt-0 px-0 supplier-procurement-accordion" style={{ maxHeight: "min(55vh, 24rem)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                        <Modal_Procurement supplierId={supplier.id} embedded onPOCreated={loadSuppliers} />
+                        <Modal_Procurement
+                          supplier={supplier}
+                          supplierId={supplier.id}
+                          appSettings={appSettings}
+                          embedded
+                          onPOCreated={loadSuppliers}
+                        />
                       </div>
                     )}
                     <div className="align-items-center d-flex gap-2 px-1 py-1">

@@ -1818,18 +1818,14 @@ textarea.form-control.ui-control-sm {
   height: var(--app-table-row-height, 2.25rem);
   cursor: pointer;
   vertical-align: middle;
-  border-bottom: 0.0625rem solid var(--bs-border-color);
 }
 
 /* Segmented name row within PageTableRow */
 .app-table-row--name {
-  height: auto !important;
-  border-bottom: none !important;
+  height: auto !important; 
 }
 
 .app-table-row--name .main-page-table-name-cell {
-  padding-top: 0.25rem !important;
-  padding-bottom: 0.05rem !important;
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
   vertical-align: bottom !important;

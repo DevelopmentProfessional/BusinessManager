@@ -575,6 +575,7 @@ export default function Suppliers() {
           supplierName={procurementSupplier.name}
           supplierId={procurementSupplier.id}
           settings={pageSettings}
+          appSettings={appSettings}
           view={procurementView}
           onViewChange={setProcurementView}
           embedded={false}

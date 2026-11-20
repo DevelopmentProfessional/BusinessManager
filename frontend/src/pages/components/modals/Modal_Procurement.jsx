@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { InputNumber, InputTextarea, InputDate } from "../Inputs";
 import { PlusIcon, XMarkIcon, CheckIcon, DocumentPlusIcon, EyeIcon } from "../../../icons";
-import api, { inventoryAPI, inventoryCategoriesAPI, documentsAPI, supplierProductsAPI } from "../../../services/api";
+import api, { inventoryAPI, inventoryCategoriesAPI, documentsAPI, purchaseOrdersAPI, supplierProductsAPI } from "../../../services/api";
 import { formatCurrency } from "../../../utils/formatters";
 import Modal from "./Modal";
 import Footer_Actions from "../footers/Footer_Actions";
@@ -14,6 +14,8 @@ import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import PageTableHeader from "../tables/Page_TableHeader";
 import PageTableRow from "../tables/Page_TableRow";
 import Table from "../tables/Table";
+import Modal_TemplateUse from "./Modal_TemplateUse";
+import useStore from "../../../services/useStore";
 
 const EMPTY_LINE = { supplier_product_id: "", inventory_id: "", quantity_ordered: 1, unit_price: 0 };
 
@@ -30,6 +32,7 @@ const Modal_Procurement = ({
   supplier,
   supplierName,
   settings = {},
+  appSettings = {},
   isOpen = true,
   onClose,
   embedded = true,
@@ -39,6 +42,7 @@ const Modal_Procurement = ({
   onPOCreated,
   initialLineItems = null,
 }) => {
+  const { user: currentUser } = useStore();
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [inventoryCategories, setInventoryCategories] = useState([]);
@@ -60,6 +64,7 @@ const Modal_Procurement = ({
   const [detailLoading, setDetailLoading] = useState(false);
   const [linkedDocs, setLinkedDocs] = useState([]);
   const [showDocUpload, setShowDocUpload] = useState(false);
+  const [showPoPreview, setShowPoPreview] = useState(false);
   const [formData, setFormData] = useState(() => ({
     line_items: Array.isArray(initialLineItems) && initialLineItems.length > 0
       ? initialLineItems.map((line) => ({
@@ -269,6 +274,11 @@ const Modal_Procurement = ({
   }, [lineSubtotal, supplier?.shipping_rate, supplier?.shipping_rate_type]);
 
   const orderTotal = lineSubtotal + importTaxTotal + shippingCost;
+  const canReceiveOrder = ["sent", "confirmed", "partially_received"].includes(detailPo?.status);
+  const hasReceiptQuantities = Boolean(detailPo?.line_items?.some((line) => num(receiptQuantities[line.id]) > 0));
+  const willCompleteOrder = Boolean(detailPo?.line_items?.length) && detailPo.line_items.every(
+    (line) => Number(line.quantity_received || 0) + num(receiptQuantities[line.id]) >= Number(line.quantity_ordered)
+  );
 
   const inventoryName = (id) => inventoryItems.find((i) => String(i.id) === String(id))?.name || "—";
   const supplierProductLabel = (product) => {
@@ -381,7 +391,7 @@ const Modal_Procurement = ({
     setProcurementError("");
     try {
       setSavingReceipt(true);
-      await api.post(`/purchase-orders/${detailPoId}/receive`, { items });
+      await purchaseOrdersAPI.receive(detailPoId, items);
       await Promise.all([loadDetail(detailPoId), loadPurchaseOrders(), loadInventoryItems()]);
       onPOCreated?.();
     } catch (error) {
@@ -417,8 +427,15 @@ const Modal_Procurement = ({
   };
 
   const openDetail = (po) => {
+    setShowPoPreview(false);
     setDetailPoId(po.id);
     setView("orders");
+  };
+
+  const closeDetail = () => {
+    setDetailPoId(null);
+    setDetailPo(null);
+    setShowPoPreview(false);
   };
 
   const renderCreateForm = () => (
@@ -635,21 +652,74 @@ const Modal_Procurement = ({
 
       <Modal
         isOpen={!!detailPoId}
-        onClose={() => { setDetailPoId(null); setDetailPo(null); }}
+        onClose={closeDetail}
         title={detailPo?.po_number || "Purchase order"}
         footer={
           <Footer_Actions
+            start={
+              <>
+                <Button_Toolbar
+                  icon={EyeIcon}
+                  label="Preview / print"
+                  onClick={() => setShowPoPreview(true)}
+                  disabled={!detailPo || detailLoading}
+                  className="btn-outline-secondary"
+                  title="Preview, print, or download this purchase order"
+                />
+                <Button_Toolbar
+                  icon={DocumentPlusIcon}
+                  label="Attach"
+                  onClick={() => setShowDocUpload(true)}
+                  disabled={!detailPo}
+                  className="btn-outline-secondary"
+                  title="Attach a document to this purchase order"
+                />
+              </>
+            }
             center={
+              <>
+                {detailPo?.status === "draft" && (
+                  <Button_Toolbar
+                    icon={CheckIcon}
+                    label={savingReceipt ? "Saving…" : "Mark as sent"}
+                    onClick={handleMarkSent}
+                    disabled={savingReceipt}
+                    className="btn-outline-primary"
+                    title="Mark this purchase order as sent to the supplier"
+                  />
+                )}
+                {["draft", "sent", "confirmed", "partially_received"].includes(detailPo?.status) && (
+                  <Button_Toolbar
+                    icon={PlusIcon}
+                    label="Add to order"
+                    onClick={handleAddOpenPoLine}
+                    disabled={savingReceipt || !newPoLine.supplier_product_id}
+                    className="btn-outline-primary"
+                    title="Add the selected supplier product to this order"
+                  />
+                )}
+              </>
+            }
+            end={
+              <>
+                {canReceiveOrder && (
+                  <Button_Toolbar
+                    icon={CheckIcon}
+                    label={savingReceipt ? "Saving…" : willCompleteOrder ? "Complete & update inventory" : "Receive & update inventory"}
+                    onClick={handleReceiveItems}
+                    disabled={savingReceipt || !hasReceiptQuantities}
+                    className="btn-primary"
+                    title="Receiving these quantities updates inventory immediately. Receiving all remaining quantities completes the purchase order."
+                  />
+                )}
               <Button_Toolbar
                 icon={XMarkIcon}
                 label="Close"
-                onClick={() => {
-                  setDetailPoId(null);
-                  setDetailPo(null);
-                }}
+                onClick={closeDetail}
                 className="btn-outline-secondary"
                 title="Close"
               />
+              </>
             }
           />
         }
@@ -682,11 +752,6 @@ const Modal_Procurement = ({
                     <div className="text-capitalize">{String(detailPo.status || "draft").replaceAll("_", " ")}</div>
                   </div>
                 </div>
-                {detailPo.status === "draft" && (
-                  <button type="button" className="btn btn-outline-primary btn-sm mb-2" onClick={handleMarkSent} disabled={savingReceipt}>
-                    {savingReceipt ? "Saving…" : "Mark as sent"}
-                  </button>
-                )}
                 {["draft", "sent", "confirmed", "partially_received"].includes(detailPo.status) && (
                   <div className="align-items-center border d-flex flex-wrap gap-2 mb-2 p-2 rounded">
                     <Dropdown_Custom
@@ -723,14 +788,6 @@ const Modal_Procurement = ({
                       onChange={(e) => setNewPoLine((prev) => ({ ...prev, unit_price: e.target.value }))}
                       aria-label="Purchase-unit price"
                     />
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={handleAddOpenPoLine}
-                      disabled={savingReceipt || !newPoLine.supplier_product_id}
-                    >
-                      Add to order
-                    </button>
                   </div>
                 )}
                 {detailPo.line_items?.length > 0 && (
@@ -774,23 +831,9 @@ const Modal_Procurement = ({
                     </table>
                   </div>
                 )}
-                {["sent", "confirmed", "partially_received"].includes(detailPo.status) && (
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm mb-3"
-                    onClick={handleReceiveItems}
-                    disabled={savingReceipt || !Object.values(receiptQuantities).some((quantity) => num(quantity) > 0)}
-                  >
-                    {savingReceipt ? "Saving…" : "Receive selected quantities"}
-                  </button>
-                )}
                 <div className="border-top pt-1">
                   <div className="align-items-center d-flex justify-content-between mb-2">
                     <span className="fw-semibold ui-text-sm">Documents</span>
-                    <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1" onClick={() => setShowDocUpload(true)}>
-                      <DocumentPlusIcon style={{ width: 14, height: 14 }} />
-                      <span>Attach</span>
-                    </button>
                   </div>
                   {linkedDocs.length === 0 ? (
                     <p className="mb-0 ui-small-muted">No documents linked.</p>
@@ -822,6 +865,19 @@ const Modal_Procurement = ({
         title="Attach document to purchase order"
         onUploaded={() => detailPoId && loadDetail(detailPoId)}
       />
+
+      {showPoPreview && detailPo && (
+        <Modal_TemplateUse
+          page="suppliers"
+          entity={supplier || { id: supplierId, name: supplierName }}
+          currentUser={currentUser}
+          settings={appSettings}
+          filterType="purchase_order"
+          initialTemplateType="purchase_order"
+          purchaseOrderId={detailPoId}
+          onClose={() => setShowPoPreview(false)}
+        />
+      )}
     </div>
   );
 

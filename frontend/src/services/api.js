@@ -698,6 +698,11 @@ export const purchaseOrdersAPI = {
   getDraftsForSupplier: (supplierId) =>
     api.get("/purchase-orders", { params: { status: "draft", supplier_id: supplierId } }),
   getById: (purchaseOrderId) => api.get(`/purchase-orders/${purchaseOrderId}`),
+  receive: (purchaseOrderId, items) => {
+    clearCache("inventory");
+    clearCache("inventory-low-stock");
+    return api.post(`/purchase-orders/${purchaseOrderId}/receive`, { items });
+  },
 };
 
 export const leaveRequestsAPI = {

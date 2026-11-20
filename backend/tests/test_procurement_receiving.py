@@ -99,6 +99,24 @@ def test_receive_purchase_order_adds_converted_stock_and_actual_cost_layer():
     assert session.committed
 
 
+def test_completing_purchase_order_updates_inventory_and_marks_order_received():
+    po, line, inventory, user = _receiving_setup()
+    session = Session([po, [line], inventory, [line]])
+
+    result = financial.receive_purchase_order(
+        po.id,
+        {"items": [{"line_id": str(line.id), "quantity": line.quantity_ordered}]},
+        session,
+        user,
+    )
+
+    assert inventory.quantity == 70
+    assert line.quantity_received == line.quantity_ordered
+    assert po.status == "received"
+    assert result["status"] == "received"
+    assert session.committed
+
+
 def test_receive_purchase_order_rejects_receipt_above_remaining_quantity():
     po, line, inventory, user = _receiving_setup(quantity_ordered=1)
     session = Session([po, [line]])

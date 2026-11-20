@@ -4,6 +4,7 @@ import { templatesAPI, clientsAPI, clientCartAPI, inventoryAPI, purchaseOrdersAP
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
 import useStore from "../../../services/useStore";
 import {
   renderTemplate,
@@ -45,7 +46,7 @@ const TYPE_BADGE_COLOR = {
  *  initialTemplateType – (optional) select this type first without filtering other templates
  *  onClose       – callback to close this modal
  */
-export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], catalogueItems = [], client, employee, service, filterType = null, initialTemplateType = null, onClose }) {
+export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], catalogueItems = [], client, employee, service, filterType = null, initialTemplateType = null, purchaseOrderId = null, onClose }) {
   const { hasPermission } = useStore();
   const canEditTemplates = hasPermission("templates", "write");
   const [templates, setTemplates] = useState([]);
@@ -53,6 +54,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const [selected, setSelected] = useState(null);
   const [renderedHtml, setRenderedHtml] = useState("");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorTemplate, setEditorTemplate] = useState(null);
   const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [clientInvoiceTx, setClientInvoiceTx] = useState(null);
@@ -178,6 +180,14 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       return undefined;
     }
 
+    if (purchaseOrderId) {
+      setPurchaseOrders([]);
+      setSelectedPurchaseOrderId(String(purchaseOrderId));
+      setPurchaseOrdersLoading(false);
+      setPurchaseOrderError("");
+      return undefined;
+    }
+
     setPurchaseOrdersLoading(true);
     setPurchaseOrderError("");
     purchaseOrdersAPI
@@ -208,11 +218,12 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     return () => {
       cancelled = true;
     };
-  }, [page, entity?.id]);
+  }, [page, entity?.id, purchaseOrderId]);
 
   useEffect(() => {
     let cancelled = false;
-    if (page !== "suppliers" || !selectedPurchaseOrderId) {
+    const activePurchaseOrderId = purchaseOrderId ? String(purchaseOrderId) : selectedPurchaseOrderId;
+    if (page !== "suppliers" || !activePurchaseOrderId) {
       setPurchaseOrder(null);
       setInventoryItems([]);
       setPurchaseOrderLoading(false);
@@ -224,7 +235,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     setInventoryItems([]);
     setPurchaseOrderError("");
     Promise.all([
-      purchaseOrdersAPI.getById(selectedPurchaseOrderId),
+      purchaseOrdersAPI.getById(activePurchaseOrderId),
       inventoryAPI.getAll(),
     ])
       .then(([orderResponse, inventoryResponse]) => {
@@ -234,7 +245,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         if (!order || String(order.supplier_id) !== String(entity?.id)) {
           throw new Error("The selected purchase order does not belong to this supplier.");
         }
-        if (String(order.status || "").toLowerCase() !== "draft") {
+        if (!purchaseOrderId && String(order.status || "").toLowerCase() !== "draft") {
           throw new Error("This purchase order is no longer a draft. Refresh the supplier's purchase orders and choose another.");
         }
         if (!Array.isArray(rows)) {
@@ -256,7 +267,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     return () => {
       cancelled = true;
     };
-  }, [page, selectedPurchaseOrderId, entity?.id]);
+  }, [page, purchaseOrderId, selectedPurchaseOrderId, entity?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -570,14 +581,28 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   };
 
   const handleSaveTemplate = async (data) => {
-    if (!selected?.id) return;
+    if (!selected) return;
     // Invalidate cached PDF for this template
     pdfCacheRef.current.clear();
-    const res = await templatesAPI.update(selected.id, data);
+    const isCopy = selected.is_standard;
+    const res = isCopy
+      ? await templatesAPI.create({ ...data, is_standard: false })
+      : await templatesAPI.update(selected.id, data);
     const updated = res?.data ?? res;
-    setTemplates((prev) => prev.map((tpl) => (tpl.id === selected.id ? updated : tpl)));
+    setTemplates((prev) => isCopy ? [updated, ...prev] : prev.map((tpl) => (tpl.id === selected.id ? updated : tpl)));
     setSelected(updated);
     setIsEditorOpen(false);
+    setEditorTemplate(null);
+  };
+
+  const handleOpenTemplateEditor = () => {
+    if (!selected) return;
+    setEditorTemplate(
+      selected.is_standard
+        ? { ...selected, id: null, is_standard: false, name: `${selected.name} (Copy)` }
+        : selected
+    );
+    setIsEditorOpen(true);
   };
 
   const visibleTemplates = filterType ? templates.filter((t) => t.template_type === filterType) : templates;
@@ -619,7 +644,8 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
           </div>
         }
         headerActions={
-          <div className="align-items-center d-flex gap-2">
+          !isPurchaseOrderTemplate && (
+            <div className="align-items-center d-flex gap-2">
             <Button_Toolbar
               icon={PrinterIcon}
               label=""
@@ -638,19 +664,46 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               className="btn-outline-secondary rounded-circle"
               title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
             />
-          </div>
+            </div>
+          )
         }
         noPadding={false}
         footer={
-          <div className="align-items-center d-flex gap-2 justify-content-start w-100">
-            {!isPayslip && canEditTemplates && !selected?.is_standard && (
+          <Footer_Actions
+            start={
+              <>
+                {isPurchaseOrderTemplate && (
+                  <>
+                    <Button_Toolbar
+                      icon={PrinterIcon}
+                      label="Print"
+                      onClick={handlePrint}
+                      disabled={!selected || purchaseOrderActionDisabled}
+                      className="btn-outline-secondary"
+                      title="Print purchase order"
+                    />
+                    <Button_Toolbar
+                      icon={ArrowDownTrayIcon}
+                      label={isDownloadingPdf ? "Downloading…" : "Download PDF"}
+                      onClick={handleDownloadPdf}
+                      disabled={!selected || isDownloadingPdf || purchaseOrderActionDisabled}
+                      className="btn-outline-secondary"
+                      title="Download purchase order as PDF"
+                    />
+                  </>
+                )}
+              </>
+            }
+            center={
+              <>
+            {!isPayslip && canEditTemplates && (
               <Button_Toolbar
                 icon={PencilSquareIcon}
-                label="Edit"
-                onClick={() => setIsEditorOpen(true)}
+                label={selected?.is_standard ? "Customize" : "Edit"}
+                onClick={handleOpenTemplateEditor}
                 disabled={!selected}
                 className="btn-outline-secondary"
-                title="Edit template"
+                title={selected?.is_standard ? "Create an editable copy of this template" : "Edit template"}
               />
             )}
 
@@ -711,6 +764,9 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
                 )}
               </div>
             )}
+            </>}
+            end={
+              <>
 
             {!isPayslip && (
               <Button_Toolbar
@@ -730,7 +786,9 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               className="btn-outline-secondary"
               title="Cancel"
             />
-          </div>
+              </>
+            }
+          />
         }
       >
         {/* Hidden iframe used solely for native window.print() */}
@@ -738,6 +796,16 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
         {page === "suppliers" && selected?.template_type === "purchase_order" && (
           <div className="border-bottom mb-2 pb-2">
+            {purchaseOrderId ? (
+              <>
+                <div className="form-label fw-medium mb-1">Purchase order</div>
+                <div className="small text-muted">
+                  {purchaseOrderLoading ? "Loading purchase order…" : purchaseOrder?.po_number || "Selected purchase order"}
+                  {purchaseOrder?.status ? ` · ${String(purchaseOrder.status).replaceAll("_", " ")}` : ""}
+                </div>
+              </>
+            ) : (
+              <>
             <label className="form-label fw-medium mb-1" htmlFor="supplier-purchase-order-select">Draft purchase order</label>
             {purchaseOrdersLoading ? (
               <div className="small text-muted">Loading draft purchase orders...</div>
@@ -761,6 +829,8 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
             {!purchaseOrdersLoading && purchaseOrders.length === 0 && !purchaseOrderError && (
               <div className="small text-muted mt-1">Create or extend a draft purchase order before preparing a supplier email.</div>
             )}
+              </>
+            )}
           </div>
         )}
 
@@ -780,7 +850,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         </div>
       </Modal>
 
-      {isEditorOpen && selected && <Modal_Template_Editor template={selected} onSave={handleSaveTemplate} onClose={() => setIsEditorOpen(false)} />}
+      {isEditorOpen && editorTemplate && <Modal_Template_Editor template={editorTemplate} onSave={handleSaveTemplate} onClose={() => { setIsEditorOpen(false); setEditorTemplate(null); }} />}
 
       {isEmailPreviewOpen && selected && (
         <Modal
