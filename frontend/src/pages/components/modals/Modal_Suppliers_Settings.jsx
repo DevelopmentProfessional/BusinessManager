@@ -35,6 +35,8 @@ export default function Modal_Suppliers_Settings({
   canManageAutomation = false,
   automationSettingsLoading = false,
   automationSettingsLoaded = false,
+  emailPolicyLoading = false,
+  emailPolicyLoaded = false,
   settingsError = "",
 }) {
   const [showTaxRates, setShowTaxRates] = useState(false);
@@ -52,7 +54,7 @@ export default function Modal_Suppliers_Settings({
         onClose={onClose}
         title="Supplier Page Controls"
         onSave={onSave}
-        saveDisabled={automationSettingsLoading}
+        saveDisabled={automationSettingsLoading || emailPolicyLoading || !emailPolicyLoaded}
       >
         {settingsError && <div className="alert alert-danger mb-0 py-2" role="alert">{settingsError}</div>}
 
@@ -66,6 +68,7 @@ export default function Modal_Suppliers_Settings({
               { key: "showPhone", label: "Show Phone", description: "Display supplier phone numbers" },
               { key: "showAddress", label: "Show Address", description: "Display supplier mailing addresses" },
               { key: "showHiddenSuppliers", label: "Show hidden suppliers", description: "Include hidden suppliers in the supplier list so they can be restored." },
+              { key: "requireVerifiedEmailBeforeSend", label: "Require verified supplier email before sending", description: "When enabled, block supplier emails until the contact confirms the address with a code. Off by default." },
             ]}
           />
         </Accordion>

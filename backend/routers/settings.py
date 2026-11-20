@@ -31,14 +31,14 @@ try:
     from backend.models import (
         AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, Company, UserRole
     )
-    from backend.routers.auth import get_current_user
+    from backend.routers.auth import get_current_user, require_page_permission
     from backend.seed_data import seed_demo_data
 except ModuleNotFoundError:
     from database import get_session
     from models import (
         AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, Company, UserRole
     )
-    from routers.auth import get_current_user
+    from routers.auth import get_current_user, require_page_permission
     from seed_data import seed_demo_data
 
 router = APIRouter()
@@ -384,6 +384,10 @@ def update_schedule_settings(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Admin access is required to change inventory automation settings.",
             )
+    if "require_client_email_verification_before_send" in update_data:
+        require_page_permission(current_user, session, "clients", "write")
+    if "require_supplier_email_verification_before_send" in update_data:
+        require_page_permission(current_user, session, "suppliers", "write")
 
     if "inventory_po_generation_mode" in update_data:
         mode = str(update_data["inventory_po_generation_mode"]).strip().lower()

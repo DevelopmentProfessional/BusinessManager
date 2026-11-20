@@ -39,6 +39,7 @@
 #   2026-07-26 | GitHub Copilot | Added manager-gated schedule refund initiation endpoint and protected schedule paid-state transitions
 #   2026-09-02 | GitHub Copilot | Scoped schedule list reads to own/attended appointments unless view-all access is granted
 #   2026-09-11 | GitHub Copilot | Made schedule-linked sales idempotent and rejected duplicate payment rows/items
+#   2026-11-20 | GitHub Copilot | Protected verified contact email state from generic CRUD updates
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -47,15 +48,12 @@ import inspect
 import uuid as uuid_module
 import jwt as pyjwt
 import logging
-import smtplib
-import ssl
 import json
 import math
 from datetime import datetime
 from urllib.parse import urlparse
 from typing import Type, Dict, Any, Optional
 from uuid import UUID
-from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, Header
 from fastapi.responses import FileResponse, Response
@@ -65,19 +63,8 @@ from sqlalchemy import and_, or_, func, text
 from sqlmodel import SQLModel, select as sql_select
 import stripe
 
-try:
-    import boto3
-    from botocore.exceptions import BotoCoreError, ClientError
-except ModuleNotFoundError:
-    boto3 = None
-
-    class BotoCoreError(Exception):
-        pass
-
-    class ClientError(Exception):
-        pass
-
 from ..database import get_session
+from ..email_delivery import EmailDeliveryError, send_email
 from ..models import *
 from .auth import get_current_user, get_current_company_id, get_user_permissions_list, has_page_permission
 from ..inventory_costing import (
@@ -122,6 +109,32 @@ def _render_html_template(template_html: str, variables: dict[str, Any]) -> str:
     return html
 
 
+def _sanitize_contact_verification_fields(model_class: Type[SQLModel], record_data: Dict[str, Any]) -> None:
+    if model_class in {Client, Supplier}:
+        for field in (
+            "email_verified",
+            "email_verification_code_hash",
+            "email_verification_expires_at",
+            "email_verification_sent_at",
+            "email_verification_attempts",
+        ):
+            record_data.pop(field, None)
+
+
+def _reset_contact_verification_if_email_changed(record, record_data: Dict[str, Any]) -> None:
+    if not isinstance(record, (Client, Supplier)) or "email" not in record_data:
+        return
+    old_email = (getattr(record, "email", None) or "").strip().lower()
+    new_email = (record_data.get("email") or "").strip().lower()
+    if old_email == new_email:
+        return
+    record.email_verified = False
+    record.email_verification_code_hash = None
+    record.email_verification_expires_at = None
+    record.email_verification_sent_at = None
+    record.email_verification_attempts = 0
+
+
 def _send_sale_receipt_email(session: Session, sale: SaleTransaction) -> bool:
     if not sale.client_id:
         return False
@@ -129,6 +142,16 @@ def _send_sale_receipt_email(session: Session, sale: SaleTransaction) -> bool:
     client = session.get(Client, sale.client_id)
     recipient = (getattr(client, "email", None) or "").strip() if client else ""
     if not recipient:
+        return False
+
+    company_settings = session.exec(
+        sql_select(AppSettings).where(AppSettings.company_id == (sale.company_id or ""))
+    ).first()
+    if not company_settings or not company_settings.sending_email or not company_settings.sending_email_verified:
+        logger.info("Skipping receipt email: the company sending email is not configured and verified.")
+        return False
+    if company_settings.require_client_email_verification_before_send and not client.email_verified:
+        logger.info("Skipping receipt email: the client email is not verified.")
         return False
 
     company = session.exec(
@@ -214,70 +237,16 @@ def _send_sale_receipt_email(session: Session, sale: SaleTransaction) -> bool:
     )
     subject = f"Payment receipt from {company_name}"
 
-    ses_sender = (
-        (os.getenv("AWS_SES_FROM_EMAIL") or "").strip()
-        or (os.getenv("SMTP_FROM_EMAIL") or "").strip()
-        or "no-reply@vadpivi.com"
-    )
-    ses_region = (os.getenv("AWS_SES_REGION") or os.getenv("AWS_REGION") or "us-east-1").strip()
-
-    if boto3 is not None and ses_sender:
-        try:
-            client_ses = boto3.client("sesv2", region_name=ses_region)
-            client_ses.send_email(
-                FromEmailAddress=ses_sender,
-                Destination={"ToAddresses": [recipient]},
-                Content={
-                    "Simple": {
-                        "Subject": {"Data": subject},
-                        "Body": {
-                            "Text": {"Data": text_body},
-                            "Html": {"Data": html_body},
-                        },
-                    }
-                },
-            )
-            return True
-        except (BotoCoreError, ClientError, Exception):
-            logger.exception("Failed to send POS receipt via SES")
-
-    smtp_host = (os.getenv("SMTP_HOST") or "").strip()
-    if not smtp_host:
-        return False
-
-    sender = (
-        (os.getenv("SMTP_FROM_EMAIL") or "").strip()
-        or (os.getenv("SMTP_USERNAME") or "").strip()
-        or ses_sender
-    )
-    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
-    smtp_username = (os.getenv("SMTP_USERNAME") or "").strip()
-    smtp_password = os.getenv("SMTP_PASSWORD") or ""
-    use_ssl = (os.getenv("SMTP_USE_SSL") or "").strip().lower() in {"1", "true", "yes", "on"}
-    use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
-
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = recipient
-    msg.set_content(text_body)
-    msg.add_alternative(html_body, subtype="html")
-
     try:
-        if use_ssl:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ssl.create_default_context(), timeout=20) as server:
-                if smtp_username:
-                    server.login(smtp_username, smtp_password)
-                server.send_message(msg)
-        else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
-                if use_tls:
-                    server.starttls(context=ssl.create_default_context())
-                if smtp_username:
-                    server.login(smtp_username, smtp_password)
-                server.send_message(msg)
+        send_email(
+            recipient=recipient,
+            subject=subject,
+            text_body=text_body,
+            html_body=html_body,
+            reply_to=company_settings.sending_email,
+        )
         return True
-    except Exception:
+    except EmailDeliveryError:
         logger.exception("Failed to send POS receipt via SMTP")
         return False
 
@@ -1511,6 +1480,7 @@ async def insert_with_file(
             raise HTTPException(status_code=400, detail="Invalid request body")
         _file_bytes = None
 
+    _sanitize_contact_verification_fields(model_class, record_data)
     is_inventory_table = table_name.lower() in ('inventory', 'item', 'items')
     asset_units_payload = record_data.pop('asset_units', None) if is_inventory_table else None
     supplier_product_payload = record_data.pop('supplier_product', None) if is_inventory_table else None
@@ -1779,6 +1749,7 @@ async def insert(
     model_class = get_model_class(table_name)
     _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
+    _sanitize_contact_verification_fields(model_class, record_data)
 
     membership_ids = None
     if table_name.lower() in ('client', 'clients'):
@@ -1959,6 +1930,7 @@ async def update_by_id(
     model_class = get_model_class(table_name)
     _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
+    _sanitize_contact_verification_fields(model_class, record_data)
     if model_class is Inventory and "quantity" in record_data:
         raise HTTPException(
             status_code=409,
@@ -1978,6 +1950,7 @@ async def update_by_id(
     record = session.exec(stmt).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
+    _reset_contact_verification_if_email_changed(record, record_data)
     if isinstance(record, Inventory) and "min_stock_level" in record_data:
         value = record_data["min_stock_level"]
         if value is not None and str(record.type or "").lower() != "resource":
@@ -2366,6 +2339,7 @@ async def update(
     model_class = get_model_class(table_name)
     _guard_managed_inventory_table(model_class)
     _require_isud_permission(current_user, session, table_name, "write")
+    _sanitize_contact_verification_fields(model_class, record_data)
     if model_class is Inventory and "quantity" in record_data:
         raise HTTPException(
             status_code=409,
@@ -2421,6 +2395,7 @@ async def update(
             raise HTTPException(status_code=404, detail=f"No matching records found in {table_name}")
 
         for record in records:
+            _reset_contact_verification_if_email_changed(record, record_data)
             for key, value in record_data.items():
                 if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
                     setattr(record, key, value)
@@ -2433,6 +2408,7 @@ async def update(
     if not record:
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
+    _reset_contact_verification_if_email_changed(record, record_data)
     for key, value in record_data.items():
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
             setattr(record, key, value)

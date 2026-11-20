@@ -4,7 +4,7 @@ import useStore from "./useStore";
 
 export const DEFAULT_PAGE_SETTINGS = {
   inventory: { showPrice: true, showCost: true, showCategory: true, showType: true, showStock: true, textSize: "medium" },
-  clients: { showEmail: true, showSubs: true, textSize: "medium" },
+  clients: { showEmail: true, showSubs: true, requireVerifiedEmailBeforeSend: false, textSize: "medium" },
   employees: { showRole: true, showDepartment: true, showChat: true, textSize: "medium" },
   documents: { showCategory: true, showTags: true, showType: true, showActions: true, textSize: "medium" },
   services: { showCategory: true, showPrice: true, showDuration: true, textSize: "medium" },
@@ -24,6 +24,7 @@ export const DEFAULT_PAGE_SETTINGS = {
     showPOImportTax: true,
     showPOShipping: true,
     showPONotes: true,
+    requireVerifiedEmailBeforeSend: false,
     textSize: "medium",
   },
   reports: { textSize: "medium" },

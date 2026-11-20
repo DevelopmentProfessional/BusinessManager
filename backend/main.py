@@ -50,11 +50,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules
+    from backend.routers import auth, isud, settings, email, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin", "backend.routers.company_registration", "backend.routers.discount_rules"}:
-        from routers import auth, isud, settings, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.email", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin", "backend.routers.company_registration", "backend.routers.discount_rules"}:
+        from routers import auth, isud, settings, email, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules  # type: ignore
     else:
         raise
 
@@ -254,6 +254,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(isud.router, prefix="/api/v1/isud", tags=["isud"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["settings"])
+app.include_router(email.router, prefix="/api/v1/email", tags=["email"])
 app.include_router(database_connections.router, prefix="/api/v1", tags=["database-connections"])
 app.include_router(tasks.router, prefix="/api/v1", tags=["tasks"])
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])

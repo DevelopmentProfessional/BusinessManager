@@ -85,12 +85,40 @@ export default function Clients() {
   const { isTrainingMode } = useViewMode();
   const { settings: pageSettings, savePageSettings } = usePageTableSettings("clients");
   const [pendingSettings, setPendingSettings] = useState(pageSettings);
+  const [emailPolicyError, setEmailPolicyError] = useState("");
+  const [emailPolicyLoading, setEmailPolicyLoading] = useState(false);
+  const [emailPolicyLoaded, setEmailPolicyLoaded] = useState(false);
 
   useEffect(() => {
-    if (showPageControls) {
-      setPendingSettings(pageSettings);
-    }
-  }, [showPageControls]);
+    if (!showPageControls) return undefined;
+    let active = true;
+    setPendingSettings(pageSettings);
+    setEmailPolicyError("");
+    setEmailPolicyLoading(true);
+    setEmailPolicyLoaded(false);
+    settingsAPI.getSettings()
+      .then((response) => {
+        if (!active) return;
+        const settings = response?.data ?? response ?? {};
+        setPendingSettings((previous) => ({
+          ...previous,
+          requireVerifiedEmailBeforeSend: settings.require_client_email_verification_before_send ?? false,
+        }));
+        setEmailPolicyLoaded(true);
+      })
+      .catch((error) => {
+        if (active) {
+          setEmailPolicyLoaded(false);
+          setEmailPolicyError(error?.response?.data?.detail || error?.message || "Unable to load client email policy.");
+        }
+      })
+      .finally(() => {
+        if (active) setEmailPolicyLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showPageControls, pageSettings]);
 
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -666,12 +694,26 @@ export default function Clients() {
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
         onSave={async () => {
-          await savePageSettings("clients", pendingSettings);
+          if (emailPolicyLoading || !emailPolicyLoaded) return false;
+          try {
+            await settingsAPI.updateSettings({
+              require_client_email_verification_before_send: pendingSettings.requireVerifiedEmailBeforeSend === true,
+            });
+            await savePageSettings("clients", pendingSettings);
+            setEmailPolicyError("");
+            return true;
+          } catch (error) {
+            setEmailPolicyError(error?.response?.data?.detail || error?.message || "Unable to save client email policy.");
+            return false;
+          }
         }}
         onOpenSubscriptions={() => setShowMembershipManager(true)}
         onOpenStatuses={() => setShowStatusManager(true)}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
+        settingsError={emailPolicyError}
+        settingsLoading={emailPolicyLoading}
+        settingsLoaded={emailPolicyLoaded}
       />
 
       <Modal_Client_Subscriptions

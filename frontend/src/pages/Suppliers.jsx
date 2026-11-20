@@ -70,6 +70,9 @@ export default function Suppliers() {
   const [automationSettingsLoading, setAutomationSettingsLoading] = useState(false);
   const [automationSettingsLoaded, setAutomationSettingsLoaded] = useState(false);
   const [settingsError, setSettingsError] = useState("");
+  const [emailPolicyError, setEmailPolicyError] = useState("");
+  const [emailPolicyLoading, setEmailPolicyLoading] = useState(false);
+  const [emailPolicyLoaded, setEmailPolicyLoaded] = useState(false);
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -80,6 +83,36 @@ export default function Suppliers() {
   useEffect(() => {
     if (showPageControls) setPendingSettings(pageSettings);
   }, [showPageControls, pageSettings]);
+
+  useEffect(() => {
+    if (!showPageControls) return undefined;
+    let active = true;
+    setEmailPolicyError("");
+    setEmailPolicyLoading(true);
+    setEmailPolicyLoaded(false);
+    settingsAPI.getSettings()
+      .then((response) => {
+        if (!active) return;
+        const settings = response?.data ?? response ?? {};
+        setPendingSettings((previous) => ({
+          ...previous,
+          requireVerifiedEmailBeforeSend: settings.require_supplier_email_verification_before_send ?? false,
+        }));
+        setEmailPolicyLoaded(true);
+      })
+      .catch((error) => {
+        if (active) {
+          setEmailPolicyLoaded(false);
+          setEmailPolicyError(supplierErrorMessage(error, "Unable to load supplier email policy."));
+        }
+      })
+      .finally(() => {
+        if (active) setEmailPolicyLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showPageControls]);
 
   useEffect(() => {
     if (!showPageControls || !canManageAutomation) return undefined;
@@ -598,11 +631,16 @@ export default function Suppliers() {
         isOpen={showPageControls}
         onClose={() => setShowPageControls(false)}
         onSave={async () => {
+          if (emailPolicyLoading || !emailPolicyLoaded) return false;
           try {
+            await settingsAPI.updateSettings({
+              require_supplier_email_verification_before_send: pendingSettings.requireVerifiedEmailBeforeSend === true,
+            });
             await savePageSettings("suppliers", pendingSettings);
             if (canManageAutomation && automationSettingsLoaded) {
               await settingsAPI.updateScheduleSettings(automationSettings);
             }
+            setEmailPolicyError("");
             setSettingsError("");
             return true;
           } catch (error) {
@@ -617,7 +655,9 @@ export default function Suppliers() {
         canManageAutomation={canManageAutomation}
         automationSettingsLoading={automationSettingsLoading}
         automationSettingsLoaded={automationSettingsLoaded}
-        settingsError={settingsError}
+        settingsError={emailPolicyError || settingsError}
+        emailPolicyLoading={emailPolicyLoading}
+        emailPolicyLoaded={emailPolicyLoaded}
       />
 
       <Modal_Bulk_Import_Sheet

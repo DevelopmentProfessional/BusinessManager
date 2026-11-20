@@ -2,8 +2,9 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon } from "../../../icons";
+import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon, EnvelopeIcon } from "../../../icons";
 import Button_App from "../buttons/Button_App";
+import Button_Toolbar from "../buttons/Button_Toolbar";
 import Modal from "../modals/Modal";
 import { documentsAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
@@ -14,7 +15,7 @@ const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
 
 const SECTION_BODY_MAX_HEIGHT = "min(52vh, calc(var(--vvp-height, 100dvh) - 14rem))";
 
-/** Profile-style accordion: content expands upward above the section header row. */
+/** Shared profile-style accordion scaffolding for company settings sections. */
 function SettingsSection({ open, onToggle, icon: Icon, iconClassName = "", title, titleExtra = null, children }) {
   return (
     <Accordion
@@ -46,6 +47,12 @@ const Panel_General = ({
   companyInfo,
   companyLoading,
   handleCompanyInfoChange,
+  sendingEmailVerificationCode = "",
+  setSendingEmailVerificationCode = () => {},
+  sendingEmailVerificationLoading = false,
+  sendingEmailVerificationStatus = "",
+  onRequestSendingEmailVerification = () => {},
+  onConfirmSendingEmailVerification = () => {},
   localBranding,
   brandingLogoUploading,
   logoPickerOpen = false,
@@ -170,6 +177,55 @@ const Panel_General = ({
             <label htmlFor="company_email">Company Email</label>
           </div>
           <div className="form-floating">
+            <InputText type="email" id="sending_email" value={companyInfo.sending_email || ""} onChange={(e) => handleCompanyInfoChange("sending_email", e.target.value)} className="form-control ui-control-sm" placeholder="Sending Email" />
+            <label htmlFor="sending_email">Sending Email</label>
+          </div>
+          <div className="col-span-2">
+            <div className="small text-muted mb-2">
+              Emails use the system's provider-authorized sender; replies go to this address after verification.
+            </div>
+            <div className="align-items-center d-flex flex-wrap gap-2 mb-2">
+              <span className={`badge ${companyInfo.sending_email_verified ? "bg-success" : "bg-secondary"}`}>
+                {companyInfo.sending_email_verified ? "Sending email verified" : "Sending email not verified"}
+              </span>
+              <Button_Toolbar
+                icon={EnvelopeIcon}
+                label={sendingEmailVerificationLoading ? "Sending..." : "Send code"}
+                onClick={onRequestSendingEmailVerification}
+                disabled={sendingEmailVerificationLoading || !companyInfo.sending_email?.trim()}
+                className="btn-outline-primary"
+                title="Send a verification code to the sending email address"
+              />
+            </div>
+            {!companyInfo.sending_email_verified && (
+              <div className="align-items-center d-flex flex-wrap gap-2 mb-2">
+                <InputText
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={sendingEmailVerificationCode}
+                  onChange={(event) => setSendingEmailVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                  className="form-control ui-control-sm"
+                  placeholder="8-digit code"
+                  aria-label="Sending email verification code"
+                />
+                <Button_Toolbar
+                  icon={CheckCircleIcon}
+                  label="Verify"
+                  onClick={onConfirmSendingEmailVerification}
+                  disabled={sendingEmailVerificationLoading || sendingEmailVerificationCode.length !== 8}
+                  className="btn-outline-success"
+                  title="Verify the sending email address"
+                />
+              </div>
+            )}
+            {sendingEmailVerificationStatus && (
+              <div className={`small ${/sent|verified/i.test(sendingEmailVerificationStatus) ? "text-success" : "text-danger"}`} role="status">
+                {sendingEmailVerificationStatus}
+              </div>
+            )}
+          </div>
+          <div className="form-floating">
             <InputText id="company_phone" value={companyInfo.company_phone} onChange={(e) => handleCompanyInfoChange("company_phone", e.target.value)} className="form-control ui-control-sm" placeholder="Company Phone" />
             <label htmlFor="company_phone">Company Phone</label>
           </div>
@@ -249,7 +305,7 @@ const Panel_General = ({
             <div className="ui-flex-center-gap-2">
               <label className={`btn btn-sm btn-outline-primary ${brandingLogoUploading ? "disabled" : ""}`}>
                 <ArrowUpTrayIcon className="ui-icon-4" style={{ width: 16, height: 16, marginRight: 6 }} />
-                {brandingLogoUploading ? "..." : "Upload"}
+                {brandingLogoUploading ? "..." : ""}
                 <InputFile accept="image/*" style={{ display: "none" }} onChange={(e) => handleUploadBrandingLogo(e.target.files?.[0] || null)} disabled={brandingLogoUploading} />
               </label>
               <button
@@ -261,7 +317,6 @@ const Panel_General = ({
                 }}
               >
                 <FolderIcon className="ui-icon-4" />
-                <span>Pick</span>
               </button>
               <button
                 type="button"

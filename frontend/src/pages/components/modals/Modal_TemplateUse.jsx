@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, CheckIcon, DocumentTextIcon } from "../../../icons";
-import { templatesAPI, clientsAPI, clientCartAPI, inventoryAPI, purchaseOrdersAPI } from "../../../services/api";
+import { templatesAPI, clientsAPI, clientCartAPI, inventoryAPI, purchaseOrdersAPI, emailAPI, settingsAPI } from "../../../services/api";
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "../buttons/Button_Toolbar";
@@ -57,6 +57,15 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const [editorTemplate, setEditorTemplate] = useState(null);
   const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSendError, setEmailSendError] = useState("");
+  const [recipientVerificationRequired, setRecipientVerificationRequired] = useState(false);
+  const [recipientVerificationCode, setRecipientVerificationCode] = useState("");
+  const [recipientVerificationStatus, setRecipientVerificationStatus] = useState("");
+  const [recipientVerificationLoading, setRecipientVerificationLoading] = useState(false);
+  const [recipientEmailVerified, setRecipientEmailVerified] = useState(Boolean(entity?.email_verified || client?.email_verified));
+  const [emailSettings, setEmailSettings] = useState(settings || {});
+  const [emailSettingsLoading, setEmailSettingsLoading] = useState(true);
   const [clientInvoiceTx, setClientInvoiceTx] = useState(null);
   const [clientInvoiceItems, setClientInvoiceItems] = useState([]);
   const [clientCartItems, setClientCartItems] = useState([]);
@@ -71,10 +80,58 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const templateDropupRef = useRef(null);
   const printIframeRef = useRef(null);
   const pdfCacheRef = useRef(new Map());
-  const companyName = settings?.company_name?.trim() || settings?.business_name?.trim() || "Invoice";
+  const companyName = emailSettings?.company_name?.trim() || emailSettings?.business_name?.trim() || "Invoice";
   const recipientEmail = (client?.email || entity?.email || employee?.email || "").trim();
+  const recipientType = page === "clients" ? "client"
+    : page === "suppliers" ? "supplier"
+      : page === "employees" ? "employee"
+        : client?.id ? "client"
+          : employee?.id ? "employee"
+            : "external";
+  const recipientId = page === "clients" || page === "suppliers" || page === "employees"
+    ? entity?.id
+    : client?.id || employee?.id;
+  const canVerifyRecipient = ["client", "supplier"].includes(recipientType) && Boolean(recipientId);
   const isPayslip = filterType === "payslip";
   const isPurchaseOrderTemplate = page === "suppliers" && selected?.template_type === "purchase_order";
+
+  useEffect(() => {
+    setRecipientEmailVerified(Boolean(entity?.email_verified || client?.email_verified));
+    setRecipientVerificationRequired(false);
+    setRecipientVerificationCode("");
+    setRecipientVerificationStatus("");
+    setEmailSendError("");
+  }, [recipientId, recipientEmail, entity?.email_verified, client?.email_verified]);
+
+  useEffect(() => {
+    let active = true;
+    settingsAPI.getSettings()
+      .then((response) => {
+        if (active) {
+          const data = response?.data ?? response ?? {};
+          setEmailSettings((previous) => ({ ...previous, ...data }));
+        }
+      })
+      .catch(() => {
+        if (active) setEmailSettings((previous) => ({ ...previous, ...(settings || {}) }));
+      })
+      .finally(() => {
+        if (active) setEmailSettingsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!settings) return;
+    setEmailSettings((previous) => ({ ...previous, ...settings }));
+  }, [
+    settings?.sending_email,
+    settings?.sending_email_verified,
+    settings?.company_name,
+    settings?.business_name,
+  ]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -547,36 +604,98 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     }
   };
 
-  const handleOpenEmailDraft = async () => {
+  const handleSendEmail = async () => {
     if (!selected) return;
+    setEmailSendError("");
+    if (emailSettingsLoading) {
+      setEmailSendError("Company email settings are still loading. Please try again.");
+      return;
+    }
+    if (!emailSettings?.sending_email || !emailSettings?.sending_email_verified) {
+      setEmailSendError("Add and verify the company's Sending Email in Profile > General Settings before sending.");
+      return;
+    }
+    if (!recipientEmail) {
+      setEmailSendError("Add an email address to this recipient before sending.");
+      return;
+    }
     try {
       if (isPurchaseOrderTemplate && (!purchaseOrder || purchaseOrderLoading || purchaseOrderError)) return;
+      setIsSendingEmail(true);
       let blob = pdfCacheRef.current.get(pdfCacheKey);
       if (!blob && iframeContent) {
         blob = await createPdfBlob(iframeContent);
         pdfCacheRef.current.set(pdfCacheKey, blob);
       }
 
-      if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], pdfFileName, { type: "application/pdf" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: emailSubject, text: emailBody, files: [file] });
-          return;
-        }
+      let attachmentBase64;
+      if (blob) {
+        attachmentBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+          reader.onerror = () => reject(reader.error || new Error("Unable to read the generated PDF attachment."));
+          reader.readAsDataURL(blob);
+        });
       }
 
-      const to = recipientEmail ? encodeURIComponent(recipientEmail) : "";
-      const subject = encodeURIComponent(emailSubject);
-      if (isPurchaseOrderTemplate && blob) {
-        downloadBlob(blob, pdfFileName);
-      }
-      const manualAttachmentNote = isPurchaseOrderTemplate
-        ? `A PDF copy was downloaded as ${pdfFileName}. Attach it before sending.`
-        : `Attachment: ${pdfFileName}`;
-      const body = encodeURIComponent(`${emailBody}\n\n${manualAttachmentNote}`);
-      window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_self");
+      await emailAPI.send({
+        page,
+        recipient_type: recipientType,
+        ...(recipientId ? { recipient_id: recipientId } : {}),
+        recipient_email: recipientEmail,
+        subject: emailSubject,
+        text_body: emailBody,
+        ...(attachmentBase64 ? { attachment_name: pdfFileName, attachment_base64: attachmentBase64 } : {}),
+      });
+      setIsEmailPreviewOpen(false);
+      onClose?.();
     } catch (error) {
-      console.error("Failed to prepare email draft:", error);
+      const detail = error?.response?.data?.detail;
+      if (detail?.code === "recipient_email_unverified") {
+        setRecipientVerificationRequired(true);
+        setEmailSendError(detail.message || "Verify this recipient's email before sending.");
+      } else if (detail?.code === "sender_email_unverified") {
+        setEmailSendError(detail.message || "Add and verify the company's Sending Email in Profile > General Settings before sending.");
+      } else {
+        setEmailSendError(typeof detail === "string" ? detail : error?.message || "Unable to send email.");
+      }
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const handleRequestRecipientVerification = async () => {
+    if (!canVerifyRecipient) return;
+    setRecipientVerificationLoading(true);
+    setRecipientVerificationStatus("");
+    try {
+      await emailAPI.requestContactEmailVerification(recipientType, recipientId);
+      setRecipientVerificationStatus("Verification code sent to the recipient.");
+      setRecipientVerificationCode("");
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      setRecipientVerificationStatus(typeof detail === "string" ? detail : error?.message || "Unable to send a verification code.");
+    } finally {
+      setRecipientVerificationLoading(false);
+    }
+  };
+
+  const handleConfirmRecipientVerification = async () => {
+    if (!canVerifyRecipient || recipientVerificationCode.length !== 8) return;
+    setRecipientVerificationLoading(true);
+    setRecipientVerificationStatus("");
+    try {
+      await emailAPI.confirmContactEmailVerification(recipientType, recipientId, recipientVerificationCode);
+      setRecipientEmailVerified(true);
+      setRecipientVerificationRequired(false);
+      setRecipientVerificationCode("");
+      setRecipientVerificationStatus("Recipient email verified. Send the email again to continue.");
+      setEmailSendError("");
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      setRecipientVerificationStatus(typeof detail === "string" ? detail : error?.message || "Unable to verify the recipient email.");
+    } finally {
+      setRecipientVerificationLoading(false);
     }
   };
 
@@ -859,7 +978,14 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
           title="Email Preview"
           footer={
             <div className="align-items-center d-flex gap-2 justify-content-start">
-              <Button_Toolbar icon={EnvelopeIcon} label="Email" onClick={handleOpenEmailDraft} disabled={!selected} className="btn-primary" title="Open email draft" />
+              <Button_Toolbar
+                icon={EnvelopeIcon}
+                label={emailSettingsLoading ? "Loading settings..." : isSendingEmail ? "Sending..." : "Send email"}
+                onClick={handleSendEmail}
+                disabled={!selected || isSendingEmail || emailSettingsLoading}
+                className="btn-primary"
+                title="Send this email with the generated PDF attachment"
+              />
               <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setIsEmailPreviewOpen(false)} className="btn-outline-secondary" title="Close" />
             </div>
           }
@@ -868,6 +994,51 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
             <div className="bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
               <div className="mb-1 small text-gray-500">To</div>
               <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No recipient email available"}</div>
+              {emailSendError && <div className="alert alert-danger mt-2 py-2 small" role="alert">{emailSendError}</div>}
+              {recipientVerificationRequired && canVerifyRecipient && (
+                <div className="border rounded mt-2 p-2">
+                  <div className="align-items-center d-flex flex-wrap gap-2 mb-2">
+                    <span className={`badge ${recipientEmailVerified ? "bg-success" : "bg-secondary"}`}>
+                      {recipientEmailVerified ? "Recipient email verified" : "Recipient email not verified"}
+                    </span>
+                    <Button_Toolbar
+                      icon={EnvelopeIcon}
+                      label={recipientVerificationLoading ? "Sending..." : "Send verification code"}
+                      onClick={handleRequestRecipientVerification}
+                      disabled={recipientVerificationLoading || recipientEmailVerified}
+                      className="btn-outline-primary"
+                      title="Send an email verification code to this contact"
+                    />
+                  </div>
+                  {!recipientEmailVerified && (
+                    <div className="align-items-center d-flex flex-wrap gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={8}
+                        value={recipientVerificationCode}
+                        onChange={(event) => setRecipientVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                        className="form-control form-control-sm"
+                        placeholder="8-digit code"
+                        aria-label="Recipient email verification code"
+                      />
+                      <Button_Toolbar
+                        icon={CheckIcon}
+                        label="Verify"
+                        onClick={handleConfirmRecipientVerification}
+                        disabled={recipientVerificationLoading || recipientVerificationCode.length !== 8}
+                        className="btn-outline-success"
+                        title="Verify the recipient email address"
+                      />
+                    </div>
+                  )}
+                  {recipientVerificationStatus && (
+                    <div className={`small mt-2 ${/sent|verified/i.test(recipientVerificationStatus) ? "text-success" : "text-danger"}`} role="status">
+                      {recipientVerificationStatus}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mb-1 mt-3 small text-gray-500">Subject</div>
               <div className="dark:text-white text-gray-900 text-sm">{emailSubject}</div>

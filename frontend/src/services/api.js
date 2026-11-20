@@ -887,6 +887,16 @@ export const settingsAPI = {
   createStripeTestCheckout: (amount = 0.5) => api.post("/settings/stripe/test-checkout", { amount }),
 };
 
+export const emailAPI = {
+  requestSendingEmailVerification: (email) => api.post("/email/sending-email/verification", { email }),
+  confirmSendingEmailVerification: (code) => api.post("/email/sending-email/verification/confirm", { code }),
+  requestContactEmailVerification: (entityType, entityId) =>
+    api.post("/email/contact-email/verification", { entity_type: entityType, entity_id: entityId }),
+  confirmContactEmailVerification: (entityType, entityId, code) =>
+    api.post("/email/contact-email/verification/confirm", { entity_type: entityType, entity_id: entityId, code }),
+  send: (data) => api.post("/email/send", data),
+};
+
 // Compatibility aliases mapped to canonical settings methods.
 settingsAPI.getSettings = settingsAPI.getScheduleSettings;
 settingsAPI.updateSettings = settingsAPI.updateScheduleSettings;

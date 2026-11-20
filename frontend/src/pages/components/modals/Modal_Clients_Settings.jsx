@@ -15,6 +15,9 @@ export default function Modal_Clients_Settings({
   onOpenStatuses,
   pendingSettings,
   setPendingSettings,
+  settingsError = "",
+  settingsLoading = false,
+  settingsLoaded = false,
 }) {
   return (
     <PageControlsModal
@@ -22,7 +25,9 @@ export default function Modal_Clients_Settings({
       onClose={onClose}
       title="Client Page Controls"
       onSave={onSave}
+      saveDisabled={settingsLoading || !settingsLoaded}
     >
+      {settingsError && <div className="alert alert-danger mb-2 py-2" role="alert">{settingsError}</div>}
       <Accordion variant="settings" header="Table preferences" defaultOpen>
         <div className="ui-small-muted mb-2">Configure the Clients page table view.</div>
         <TableSettingsControls
@@ -32,6 +37,7 @@ export default function Modal_Clients_Settings({
           toggles={[
             { key: "showEmail", label: "Show Client Email", description: "Display client email address under client name" },
             { key: "showSubs", label: "Show Subscription Column", description: "Display client membership tier column" },
+            { key: "requireVerifiedEmailBeforeSend", label: "Require verified client email before sending", description: "When enabled, block client emails until the contact confirms the address with a code. Off by default." },
           ]}
         />
       </Accordion>

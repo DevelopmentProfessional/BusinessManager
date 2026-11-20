@@ -18,19 +18,17 @@ export default function Accordion({
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const contentId = useId();
+  const headerId = `${contentId}-header`;
 
   if (variant === "settings") {
     const isOpen = typeof open === "boolean" ? open : internalOpen;
     const body = isOpen && (
       <div
         id={contentId}
-        className={`px-2 pt-2 pb-1 ${bodyClassName}`.trim()}
+        className={`profile-accordion-body ${bodyClassName}`.trim()}
         role="region"
-        style={{
-          borderTop: bodyPlacement === "below" ? "1px solid var(--bs-border-color)" : undefined,
-          borderBottom: bodyPlacement === "above" ? "1px solid var(--bs-border-color)" : undefined,
-          ...bodyStyle,
-        }}
+        aria-labelledby={headerId}
+        style={bodyStyle}
       >
         {children}
       </div>
@@ -40,8 +38,10 @@ export default function Accordion({
       <div className={`app-accordion-settings ${className}`.trim()}>
         {bodyPlacement === "above" && body}
         <button
+          id={headerId}
           type="button"
-          className="align-items-center bg-transparent border-0 d-flex justify-content-between px-1 py-0 text-start w-100"
+          className="profile-accordion-header"
+          data-active={isOpen}
           aria-expanded={isOpen}
           aria-controls={contentId}
           onClick={() => {

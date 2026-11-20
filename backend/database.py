@@ -1182,6 +1182,14 @@ def _ensure_app_settings_core_columns_if_needed():
         ("saturday_enabled",             "BOOLEAN",          "TRUE"),
         ("sunday_enabled",               "BOOLEAN",          "TRUE"),
         ("tax_rate",                     "DOUBLE PRECISION", "0.0"),
+        ("sending_email",                "VARCHAR",          None),
+        ("sending_email_verified",        "BOOLEAN",          "FALSE"),
+        ("sending_email_verification_code_hash", "VARCHAR",   None),
+        ("sending_email_verification_expires_at", "TIMESTAMP", None),
+        ("sending_email_verification_sent_at", "TIMESTAMP",  None),
+        ("sending_email_verification_attempts", "INTEGER",   "0"),
+        ("require_client_email_verification_before_send", "BOOLEAN", "FALSE"),
+        ("require_supplier_email_verification_before_send", "BOOLEAN", "FALSE"),
         ("portal_hero_title",            "VARCHAR",          None),
         ("portal_hero_subtitle",         "VARCHAR",          None),
         ("portal_hero_tagline",          "VARCHAR",          None),
@@ -1728,6 +1736,34 @@ def _ensure_client_auth_columns_if_needed():
                 print(f"  + Added column client.{col}")
 
 
+def _ensure_contact_email_verification_columns_if_needed():
+    """Add verification state for client and supplier contact addresses."""
+    with engine.begin() as conn:
+        for table in ("client", "supplier"):
+            has_table = conn.execute(text(
+                "SELECT EXISTS (SELECT FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name=:table_name)"
+            ), {"table_name": table}).scalar()
+            if not has_table:
+                continue
+
+            existing = {row[0] for row in conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name=:table_name"
+            ), {"table_name": table}).fetchall()}
+            columns = {
+                "email_verified": "BOOLEAN NOT NULL DEFAULT FALSE",
+                "email_verification_code_hash": "VARCHAR",
+                "email_verification_expires_at": "TIMESTAMP",
+                "email_verification_sent_at": "TIMESTAMP",
+                "email_verification_attempts": "INTEGER NOT NULL DEFAULT 0",
+            }
+            for col, definition in columns.items():
+                if col not in existing:
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {col} {definition}'))
+                    print(f"  + Added column {table}.{col}")
+
+
 def _ensure_client_membership_fk_cascade_if_needed():
     """Ensure client_membership.membership_id FK cascades on membership delete."""
     with engine.begin() as conn:
@@ -2018,6 +2054,7 @@ def create_db_and_tables():
     _ensure_procurement_catalog_columns_if_needed()
     _ensure_company_registration_columns_if_needed()
     _ensure_client_auth_columns_if_needed()
+    _ensure_contact_email_verification_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()
     _ensure_inventory_cost_fk_cascade_if_needed()
     _ensure_app_settings_stripe_columns_if_needed()

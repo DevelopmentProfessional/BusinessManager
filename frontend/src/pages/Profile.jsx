@@ -52,7 +52,7 @@ import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import { logComponentLoad, finalizePerformanceReport, getPerformanceSessionActive } from "../services/performanceTracker";
 import { UserIcon, CogIcon, PlusCircleIcon, CircleStackIcon, ChevronDownIcon, CurrencyDollarIcon, HeartIcon, CheckIcon, XMarkIcon } from "../icons";
-import { documentsAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI, paymentAccountsAPI } from "../services/api";
+import { documentsAPI, emailAPI, employeesAPI, leaveRequestsAPI, onboardingRequestsAPI, offboardingRequestsAPI, settingsAPI, schemaAPI, payrollAPI, adminAPI, insurancePlansAPI, profileAPI, paymentAccountsAPI } from "../services/api";
 import Button_InsuranceDocument from "./components/buttons/Button_InsuranceDocument";
 import { runAppSync } from "../services/appSync";
 import Modal_Signature from "./components/modals/Modal_Signature";
@@ -346,12 +346,17 @@ const Profile = () => {
   const [companyInfo, setCompanyInfo] = useState({
     company_name: "",
     company_email: "",
+    sending_email: "",
+    sending_email_verified: false,
     company_phone: "",
     company_address: "",
     company_timezone: "",
     tax_rate: 0,
   });
   const [companyLoading, setCompanyLoading] = useState(false);
+  const [sendingEmailVerificationCode, setSendingEmailVerificationCode] = useState("");
+  const [sendingEmailVerificationLoading, setSendingEmailVerificationLoading] = useState(false);
+  const [sendingEmailVerificationStatus, setSendingEmailVerificationStatus] = useState("");
   const [activeTooltip, setActiveTooltip] = useState(null);
 
   const [openAccordions, setOpenAccordions] = useState({
@@ -507,6 +512,8 @@ const Profile = () => {
           setCompanyInfo({
             company_name: res.data.company_name || "",
             company_email: res.data.company_email || "",
+            sending_email: res.data.sending_email || "",
+            sending_email_verified: res.data.sending_email_verified ?? false,
             company_phone: res.data.company_phone || "",
             company_address: res.data.company_address || "",
             company_timezone: res.data.company_timezone || "",
@@ -704,7 +711,53 @@ const Profile = () => {
   };
   const handleNotificationChange = (field, value) => setNotifications((prev) => ({ ...prev, [field]: value }));
 
-  const handleCompanyInfoChange = (field, value) => setCompanyInfo((prev) => ({ ...prev, [field]: value }));
+  const handleCompanyInfoChange = (field, value) => {
+    setCompanyInfo((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === "sending_email" && value !== prev.sending_email ? { sending_email_verified: false } : {}),
+    }));
+    if (field === "sending_email") {
+      setSendingEmailVerificationCode("");
+      setSendingEmailVerificationStatus("");
+    }
+  };
+
+  const handleRequestSendingEmailVerification = async () => {
+    setSendingEmailVerificationLoading(true);
+    setSendingEmailVerificationStatus("");
+    setSettingsError("");
+    try {
+      const response = await emailAPI.requestSendingEmailVerification(companyInfo.sending_email);
+      const data = response?.data ?? response;
+      setCompanyInfo((prev) => ({
+        ...prev,
+        sending_email: data.sending_email || prev.sending_email,
+        sending_email_verified: data.sending_email_verified ?? false,
+      }));
+      setSendingEmailVerificationStatus(data.already_verified ? "This sending email is already verified." : "Verification code sent. Enter the code from that email.");
+    } catch (error) {
+      setSendingEmailVerificationStatus(error?.response?.data?.detail || error?.message || "Could not send the verification code.");
+    } finally {
+      setSendingEmailVerificationLoading(false);
+    }
+  };
+
+  const handleConfirmSendingEmailVerification = async () => {
+    setSendingEmailVerificationLoading(true);
+    setSendingEmailVerificationStatus("");
+    try {
+      const response = await emailAPI.confirmSendingEmailVerification(sendingEmailVerificationCode);
+      const data = response?.data ?? response;
+      setCompanyInfo((prev) => ({ ...prev, sending_email: data.sending_email || prev.sending_email, sending_email_verified: true }));
+      setSendingEmailVerificationCode("");
+      setSendingEmailVerificationStatus("Sending email verified. Replies will go to this address.");
+    } catch (error) {
+      setSendingEmailVerificationStatus(error?.response?.data?.detail || error?.message || "Could not verify the sending email.");
+    } finally {
+      setSendingEmailVerificationLoading(false);
+    }
+  };
 
   const handleSaveCompanyInfo = async () => {
     setCompanyLoading(true);
@@ -1546,6 +1599,12 @@ const Profile = () => {
           companyLoading={companyLoading}
           handleCompanyInfoChange={handleCompanyInfoChange}
           handleSaveCompanyInfo={handleSaveCompanyInfo}
+          sendingEmailVerificationCode={sendingEmailVerificationCode}
+          setSendingEmailVerificationCode={setSendingEmailVerificationCode}
+          sendingEmailVerificationLoading={sendingEmailVerificationLoading}
+          sendingEmailVerificationStatus={sendingEmailVerificationStatus}
+          onRequestSendingEmailVerification={handleRequestSendingEmailVerification}
+          onConfirmSendingEmailVerification={handleConfirmSendingEmailVerification}
           localBranding={localBranding}
           brandingLogoUploading={brandingLogoUploading}
           logoPickerOpen={logoPickerOpen}

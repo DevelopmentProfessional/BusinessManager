@@ -42,6 +42,7 @@
 #   2026-07-26 | GitHub Copilot | Added initiate_refunds permission type for manager-approved appointment refund actions
 #   2026-09-11 | GitHub Copilot | Added employee compensation settings and pay-slip calculation snapshots
 #   2026-11-16 | GitHub Copilot | Added supplier catalog and FIFO receipt cost-layer models
+#   2026-11-20 | GitHub Copilot | Added company sender and contact email verification settings
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -355,6 +356,10 @@ class Client(BaseModel, table=True):
     status_id: Optional[UUID] = Field(default=None, foreign_key="client_status.id")
     # Account/Auth fields (optional, for future multi-role support)
     email_verified: bool = Field(default=False)
+    email_verification_code_hash: Optional[str] = Field(default=None)
+    email_verification_expires_at: Optional[datetime] = Field(default=None)
+    email_verification_sent_at: Optional[datetime] = Field(default=None)
+    email_verification_attempts: int = Field(default=0)
     password_hash: Optional[str] = Field(default=None)  # For future self-service account features
     reset_token: Optional[str] = Field(default=None)
     reset_token_expires: Optional[datetime] = Field(default=None)
@@ -514,6 +519,11 @@ class Supplier(BaseModel, table=True):
     shipping_rate_type: str = Field(default="fixed")
     shipping_rate: float = Field(default=0.0)
     is_hidden: bool = Field(default=False)
+    email_verified: bool = Field(default=False)
+    email_verification_code_hash: Optional[str] = Field(default=None)
+    email_verification_expires_at: Optional[datetime] = Field(default=None)
+    email_verification_sent_at: Optional[datetime] = Field(default=None)
+    email_verification_attempts: int = Field(default=0)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -756,6 +766,14 @@ class AppSettings(BaseModel, table=True):
     # Company info
     company_name: Optional[str] = Field(default=None)
     company_email: Optional[str] = Field(default=None)
+    sending_email: Optional[str] = Field(default=None)
+    sending_email_verified: bool = Field(default=False)
+    sending_email_verification_code_hash: Optional[str] = Field(default=None)
+    sending_email_verification_expires_at: Optional[datetime] = Field(default=None)
+    sending_email_verification_sent_at: Optional[datetime] = Field(default=None)
+    sending_email_verification_attempts: int = Field(default=0)
+    require_client_email_verification_before_send: bool = Field(default=False)
+    require_supplier_email_verification_before_send: bool = Field(default=False)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
     company_timezone: Optional[str] = Field(default=None)
@@ -1081,6 +1099,7 @@ class ClientRead(SQLModel):
     id: UUID
     name: str
     email: Optional[str] = None
+    email_verified: bool = False
     phone: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
@@ -1107,6 +1126,7 @@ class ClientRead(SQLModel):
             id=obj.id,
             name=obj.name,
             email=obj.email,
+            email_verified=bool(getattr(obj, "email_verified", False)),
             phone=obj.phone,
             address=obj.address,
             notes=obj.notes,
@@ -1235,6 +1255,7 @@ class SupplierRead(SQLModel):
     name: str
     contact_person: Optional[str] = None
     email: Optional[str] = None
+    email_verified: bool = False
     phone: Optional[str] = None
     address: Optional[str] = None
     shipping_rate_type: str = "fixed"
@@ -1871,6 +1892,8 @@ class AppSettingsUpdate(SQLModel):
     sunday_enabled: Optional[bool] = None
     company_name: Optional[str] = None
     company_email: Optional[str] = None
+    require_client_email_verification_before_send: Optional[bool] = None
+    require_supplier_email_verification_before_send: Optional[bool] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
     company_timezone: Optional[str] = None
@@ -1921,6 +1944,10 @@ class AppSettingsRead(SQLModel):
     sunday_enabled: bool
     company_name: Optional[str] = None
     company_email: Optional[str] = None
+    sending_email: Optional[str] = None
+    sending_email_verified: bool = False
+    require_client_email_verification_before_send: bool = False
+    require_supplier_email_verification_before_send: bool = False
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
     company_timezone: Optional[str] = None

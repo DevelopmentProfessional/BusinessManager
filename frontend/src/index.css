@@ -4469,9 +4469,9 @@ select.form-select {
 }
 
 .app-accordion-settings {
-  border: 0.0625rem solid var(--bs-border-color);
-  border-radius: 0.375rem;
-  background-color: var(--bs-body-bg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 /* ─── Page Controls Modal Action Group ─── */
