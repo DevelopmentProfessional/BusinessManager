@@ -274,9 +274,8 @@ function OfficeViewer({ document, documentType, onEdit }) {
         <div className="p-1 text-center">
           <DocumentIcon className="h-16 mb-4 mx-auto text-gray-400 w-16" />
           <p className="dark:text-gray-400 mb-4 text-gray-600">Preview not available for this file type.</p>
-          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 hover:bg-primary-700 inline-flex items-center p-1 rounded text-white" title="Download to view" aria-label="Download to view">
             <ArrowDownTrayIcon className="ui-icon-5" />
-            Download to View
           </a>
         </div>
       </div>
@@ -363,9 +362,8 @@ function UnknownViewer({ document, onEdit }) {
           <DocumentIcon className="h-16 mb-4 mx-auto text-gray-400 w-16" />
           <p className="dark:text-gray-400 mb-2 text-gray-600">{document.original_filename}</p>
           <p className="dark:text-gray-500 mb-4 text-gray-500 text-sm">Preview not available for this file type.</p>
-          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 hover:bg-primary-700 inline-flex items-center p-1 rounded text-white" title="Download" aria-label="Download">
             <ArrowDownTrayIcon className="ui-icon-5" />
-            Download
           </a>
         </div>
       </div>
@@ -429,9 +427,8 @@ function EditorArea({ document, documentType }) {
       <div className="flex h-full items-center justify-center p-1">
         <div className="text-center">
           <div className="bg-red-50 dark:bg-red-900/20 mb-4 p-1 rounded text-red-600">{error}</div>
-          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+          <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 hover:bg-primary-700 inline-flex items-center p-1 rounded text-white" title="Download instead" aria-label="Download instead">
             <ArrowDownTrayIcon className="ui-icon-5" />
-            Download Instead
           </a>
         </div>
       </div>
@@ -514,7 +511,7 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
   };
 
   return (
-    <Modal isOpen={isOpen && !!document} onClose={handleClose} noPadding={true} contentGravity="top">
+    <Modal isOpen={isOpen && !!document} onClose={handleClose} fullScreen={true} noPadding={true} contentGravity="top">
       <div className="bg-white dark:bg-gray-800 flex flex-col h-full w-full overflow-hidden">
         {/* Header */}
         <div className="app-modal-header bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex flex-shrink-0 items-center px-1 py-0">
@@ -570,9 +567,8 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
               <Button_Toolbar label="Workflow" onClick={() => onWorkflow(document)} className="btn-outline-primary" title="View workflow" />
             )}
 
-            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center p-1" title="Download" aria-label="Download">
               <ArrowDownTrayIcon className="ui-icon-4" />
-              Download
             </a>
 
             <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} className="btn-outline-secondary" title="Close" />

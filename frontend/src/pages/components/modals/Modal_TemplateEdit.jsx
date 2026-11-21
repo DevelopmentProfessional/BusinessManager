@@ -62,7 +62,7 @@ const TAB_IMAGES = "images";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function Modal_Template_Editor({ template, onSave, onClose, readOnly = false }) {
+export default function Modal_Template_Editor({ template, onSave, onClose, onCustomize, readOnly = false }) {
   const isNew = !template?.id;
   const isStandard = template?.is_standard === true;
 
@@ -116,10 +116,7 @@ export default function Modal_Template_Editor({ template, onSave, onClose, readO
       }),
     [accessiblePages]
   );
-  const visibleLayouts = useMemo(
-    () => sortedLayoutTemplates.filter((layout) => accessiblePages.length === 0 || layout.pages.some((page) => accessiblePages.includes(page))),
-    [accessiblePages, sortedLayoutTemplates]
-  );
+  const visibleLayouts = useMemo(() => sortedLayoutTemplates.filter((layout) => accessiblePages.length === 0 || layout.pages.some((page) => accessiblePages.includes(page))), [accessiblePages, sortedLayoutTemplates]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -262,7 +259,27 @@ export default function Modal_Template_Editor({ template, onSave, onClose, readO
         <div className="component-header">
           <div className="component-header-left">
             <DocumentTextIcon className="app-icon me-1 text-muted" aria-hidden="true" />
-            {readOnly ? "View Template" : isNew ? "New Template" : "Edit Template"}
+            {readOnly ? (
+              "View Template"
+            ) : isNew ? (
+              <>
+                <span className="text-nowrap">New Template</span>
+                <InputText
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setSaveStatus("idle");
+                  }}
+                  className="form-control form-control-sm ms-auto"
+                  placeholder="Template name"
+                  aria-label="Template name"
+                  style={{ maxWidth: "20rem" }}
+                />
+              </>
+            ) : (
+              "Edit Template"
+            )}
           </div>
           <div className="component-header-center"></div>
           <div className="component-header-right"></div>
@@ -450,12 +467,22 @@ export default function Modal_Template_Editor({ template, onSave, onClose, readO
           {/* Row 3: save/cancel */}
           <div className="border-top d-flex align-items-center justify-content-start gap-2 p-1 template-editor-actions w-100">
             {readOnly ? (
-              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close template preview" />
+              <>
+                {onCustomize && <Button_Toolbar icon={PencilIcon} label="" onClick={onCustomize} className="btn-primary" title="Create an editable copy of this template" />}
+                <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close template preview" />
+              </>
             ) : (
               <>
                 <Button_Toolbar icon={CheckIcon} label={saving ? "Saving…" : isNew ? "Add" : "Save"} onClick={handleSave} disabled={saving} className="btn-primary" title="Save Template" />
                 <Button_Toolbar icon={PencilIcon} label="" onClick={() => setShowTemplateDetails(true)} className="btn-outline-secondary" title="Edit template details" />
-                <Button_Toolbar icon={isEditorMinimized ? EyeIcon : EyeSlashIcon} label="" onClick={() => setIsEditorMinimized((previous) => !previous)} className="btn-outline-secondary" title={isEditorMinimized ? "Show rich text editor" : "Hide rich text editor"} aria-expanded={!isEditorMinimized} />
+                <Button_Toolbar
+                  icon={isEditorMinimized ? EyeIcon : EyeSlashIcon}
+                  label=""
+                  onClick={() => setIsEditorMinimized((previous) => !previous)}
+                  className="btn-outline-secondary"
+                  title={isEditorMinimized ? "Show rich text editor" : "Hide rich text editor"}
+                  aria-expanded={!isEditorMinimized}
+                />
                 <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} disabled={saving} className="btn-outline-secondary" title="Cancel" />
               </>
             )}
@@ -463,59 +490,61 @@ export default function Modal_Template_Editor({ template, onSave, onClose, readO
         </div>
         {/* /component-footer */}
       </div>
-      {!readOnly && <Modal
-        isOpen={showTemplateDetails}
-        onClose={() => setShowTemplateDetails(false)}
-        title="Template details"
-        footer={
-          <div className="d-flex gap-2 justify-content-end p-1">
-            <Button_Toolbar icon={CheckIcon} label="Done" onClick={() => setShowTemplateDetails(false)} className="btn-primary" title="Done editing template details" />
-          </div>
-        }
-      >
-        <div className="d-flex flex-column gap-2">
-          <div className="form-floating">
-            <InputText
-              type="text"
-              id="template-details-name"
-              value={name}
+      {!readOnly && (
+        <Modal
+          isOpen={showTemplateDetails}
+          onClose={() => setShowTemplateDetails(false)}
+          title="Template details"
+          footer={
+            <div className="d-flex gap-2 justify-content-end p-1">
+              <Button_Toolbar icon={CheckIcon} label="Done" onClick={() => setShowTemplateDetails(false)} className="btn-primary" title="Done editing template details" />
+            </div>
+          }
+        >
+          <div className="d-flex flex-column gap-2">
+            <div className="form-floating">
+              <InputText
+                type="text"
+                id="template-details-name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setSaveStatus("idle");
+                }}
+                className="form-control ui-control-sm"
+                placeholder="Template name"
+                aria-label="Template name"
+              />
+              <label htmlFor="template-details-name">Template name</label>
+            </div>
+            <Dropdown_Custom
+              value={templateType}
               onChange={(e) => {
-                setName(e.target.value);
+                setTemplateType(e.target.value);
                 setSaveStatus("idle");
               }}
-              className="form-control ui-control-sm"
-              placeholder="Template name"
-              aria-label="Template name"
+              className="form-select ui-control-sm"
+              floatingLabel="Type"
+              options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
             />
-            <label htmlFor="template-details-name">Template name</label>
+            <div className="form-floating">
+              <InputTextarea
+                id="template-details-description"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  setSaveStatus("idle");
+                }}
+                className="form-control ui-control-sm"
+                placeholder="Template description"
+                aria-label="Template description"
+                style={{ minHeight: "6rem" }}
+              />
+              <label htmlFor="template-details-description">Template description</label>
+            </div>
           </div>
-          <Dropdown_Custom
-            value={templateType}
-            onChange={(e) => {
-              setTemplateType(e.target.value);
-              setSaveStatus("idle");
-            }}
-            className="form-select ui-control-sm"
-            floatingLabel="Type"
-            options={sortedTemplateTypes.map((t) => ({ value: t.value, label: t.label }))}
-          />
-          <div className="form-floating">
-            <InputTextarea
-              id="template-details-description"
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                setSaveStatus("idle");
-              }}
-              className="form-control ui-control-sm"
-              placeholder="Template description"
-              aria-label="Template description"
-              style={{ minHeight: "6rem" }}
-            />
-            <label htmlFor="template-details-description">Template description</label>
-          </div>
-        </div>
-      </Modal>}
+        </Modal>
+      )}
       {/* /component */}
     </Modal>
   );

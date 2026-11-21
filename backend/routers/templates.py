@@ -25,6 +25,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from sqlalchemy import and_, or_
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from uuid import UUID
 import re
@@ -450,9 +451,12 @@ def create_template(
     try:
         session.commit()
         session.refresh(tpl)
-    except Exception as e:
+    except IntegrityError:
         session.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=409, detail="A template with this name already exists. Please choose a different name.")
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Unable to save the template.")
     return DocumentTemplateRead.model_validate(tpl)
 
 
@@ -479,9 +483,12 @@ def update_template(
     try:
         session.commit()
         session.refresh(tpl)
-    except Exception as e:
+    except IntegrityError:
         session.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=409, detail="A template with this name already exists. Please choose a different name.")
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Unable to save the template.")
     return DocumentTemplateRead.model_validate(tpl)
 
 
@@ -503,9 +510,9 @@ def delete_template(
     session.delete(tpl)
     try:
         session.commit()
-    except Exception as e:
+    except Exception:
         session.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Unable to delete the template.")
     return {"deleted": True}
 
 

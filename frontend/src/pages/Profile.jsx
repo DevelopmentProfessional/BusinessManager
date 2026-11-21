@@ -1694,8 +1694,8 @@ const Profile = () => {
                     <h6 className="fw-semibold mb-2 ui-text-sm">History</h6>
                     <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
                   </div>
-                  <div className="d-flex gap-2">
-                    <button type="button" className="btn btn-primary btn-sm flex-grow-1" onClick={() => openLeaveModal()}>
+                  <div className="d-flex gap-2 justify-content-start">
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => openLeaveModal()}>
                       <PlusCircleIcon className="h-4 me-1 w-4" style={{ display: "inline" }} />
                       Request
                     </button>

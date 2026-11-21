@@ -4,7 +4,7 @@ import React from "react";
 import { InputFile, InputText } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { ArrowUpTrayIcon, XMarkIcon } from "../../../icons";
+import { ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon } from "../../../icons";
 import { formatDateTime } from "../../../utils/dateFormatters";
 import { documentsAPI } from "../../../services/api";
 
@@ -45,14 +45,16 @@ export default function Modal_Document_History({
                     <td className="dark:text-gray-300 px-1 py-0 text-gray-700 text-sm">{h.note || "-"}</td>
                     <td className="px-1 py-0 text-sm">
                       <a
-                        className="dark:text-indigo-400 hover:text-indigo-800 text-indigo-600"
+                        className="dark:text-indigo-400 hover:text-indigo-800 p-1 text-indigo-600"
                         href={documentsAPI.historyFileUrl(h.id, {
                           download: true,
                         })}
                         target="_blank"
                         rel="noreferrer"
+                        title="Download"
+                        aria-label="Download"
                       >
-                        Download
+                        <ArrowDownTrayIcon className="ui-icon-4" />
                       </a>
                     </td>
                   </tr>

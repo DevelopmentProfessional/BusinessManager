@@ -53,6 +53,7 @@ export default function Dropdown_Custom({
   const [portalTarget, setPortalTarget] = useState(null);
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     setPortalTarget(getDropdownPortalHost());
@@ -92,6 +93,12 @@ export default function Dropdown_Custom({
       setHelpKey(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !portalTarget) return undefined;
+    const focusSearchInput = window.setTimeout(() => searchInputRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusSearchInput);
+  }, [isOpen, portalTarget]);
 
   useEffect(() => {
     if (!isOpen || !dropdownRef.current) {
@@ -185,16 +192,12 @@ export default function Dropdown_Custom({
       <input
         id={id || undefined}
         type="search"
-        value={isOpen ? searchTerm : displayValue}
+        value={displayValue}
         onFocus={() => {
           if (disabled) return;
           if (!isOpen) handleOpen();
         }}
-        onChange={(event) => {
-          if (disabled) return;
-          if (!isOpen) handleOpen();
-          setSearchTerm(event.target.value);
-        }}
+        readOnly
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.preventDefault();
@@ -305,6 +308,24 @@ export default function Dropdown_Custom({
               })}
             </div>
           )}
+
+          <div className="border-gray-200 border-top dark:border-gray-600 p-0">
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setIsOpen(false);
+                }
+              }}
+              className="form-control form-control-sm border-0 rounded-0 shadow-none"
+              placeholder={placeholder || "Search options..."}
+              aria-label={`Search ${effectiveFloatingLabel || "options"}`}
+            />
+          </div>
 
           {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle || typeof onCreateFromSearch === "function") && (
             <div className="bg-gray-50 border-gray-200 border-top d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 p-0">

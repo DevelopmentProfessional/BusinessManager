@@ -783,6 +783,17 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
               className="btn-outline-secondary rounded-circle"
               title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
             />
+            {!isPayslip && canEditTemplates && (
+              <Button_Toolbar
+                icon={PencilSquareIcon}
+                label=""
+                compact
+                onClick={handleOpenTemplateEditor}
+                disabled={!selected}
+                className="btn-outline-secondary rounded-circle"
+                title={selected?.is_standard ? "Customize template" : "Edit template"}
+              />
+            )}
             </div>
           )
         }
@@ -815,17 +826,6 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
             }
             center={
               <>
-            {!isPayslip && canEditTemplates && (
-              <Button_Toolbar
-                icon={PencilSquareIcon}
-                label={selected?.is_standard ? "Customize" : "Edit"}
-                onClick={handleOpenTemplateEditor}
-                disabled={!selected}
-                className="btn-outline-secondary"
-                title={selected?.is_standard ? "Create an editable copy of this template" : "Edit template"}
-              />
-            )}
-
             {!isPayslip && (
               <div className="app-dropup position-relative" ref={templateDropupRef}>
                 <Button_Toolbar

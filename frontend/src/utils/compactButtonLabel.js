@@ -118,7 +118,7 @@ export default function compactButtonLabel(label) {
     discounts: "Deals",
     insights: "Stats",
     templates: "Docs",
-    categories: "Cats",
+    categories: "Categories",
     insurance: "Insurance",
     history: "Past",
     signature: "Sign",

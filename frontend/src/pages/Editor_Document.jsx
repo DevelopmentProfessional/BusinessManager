@@ -208,9 +208,8 @@ export default function Editor_Document() {
             <EyeIcon className="h-4 inline mr-1 w-4" />
             Preview
           </button>
-          <button onClick={handleDownload} className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-50 px-1 py-1.5 rounded text-gray-700 text-sm transition-colors" title="Download">
-            <DocumentArrowDownIcon className="h-4 inline mr-1 w-4" />
-            Download
+          <button onClick={handleDownload} className="bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:text-gray-300 hover:bg-gray-50 p-1 rounded text-gray-700 text-sm transition-colors" title="Download" aria-label="Download">
+            <DocumentArrowDownIcon className="h-4 w-4" />
           </button>
           <button onClick={handleSave} disabled={isSaving} className="align-items-center bg-blue-600 d-flex dark:bg-blue-700 dark:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-blue-700 px-1 py-1.5 rounded text-sm text-white transition-colors" title="Save">
             {isSaving ? (

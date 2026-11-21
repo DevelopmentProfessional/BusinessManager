@@ -54,10 +54,11 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
     variant === "danger" ||
     variant === "delete";
 
+  const isDownload = normalizedLabel.toLowerCase().includes("download") || normalizedTitle.includes("download");
   const isAlwaysCircle = isCancel || isDelete;
   const training = isTrainingMode && !compact && !isAlwaysCircle;
   const displayLabel = typeof label === "string" ? buttonDisplayLabel(normalizedLabel) : normalizedLabel;
-  const showText = training && displayLabel.length > 0 && !isAlwaysCircle;
+  const showText = training && displayLabel.length > 0 && !isAlwaysCircle && !isDownload;
   const isIconOnly = !showText;
   const tooltipLabel = titleProp ?? (normalizedLabel || label);
   const iconClass = "app-icon flex-shrink-0";

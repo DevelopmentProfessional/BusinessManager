@@ -411,9 +411,8 @@ export default function Viewer_Xlsx({ document, onEdit }) {
         {error && (
           <div className="p-1">
             <div className="bg-red-50 dark:bg-red-900/20 mb-4 p-1 rounded text-red-600">{error}</div>
-            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 gap-2 hover:bg-primary-700 inline-flex items-center px-1 py-0 rounded text-white">
+            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="bg-primary-600 hover:bg-primary-700 inline-flex items-center p-1 rounded text-white" title="Download to view" aria-label="Download to view">
               <ArrowDownTrayIcon className="ui-icon-5" />
-              Download to View
             </a>
           </div>
         )}

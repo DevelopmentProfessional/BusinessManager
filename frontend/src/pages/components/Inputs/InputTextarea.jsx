@@ -13,6 +13,7 @@ const InputTextarea = forwardRef(function InputTextarea(
     onMouseUp,
     onTouchStart,
     onTouchEnd,
+    placeholder: _placeholder,
     ...props
   },
   ref

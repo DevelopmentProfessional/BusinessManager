@@ -367,10 +367,28 @@ export default function Documents() {
     handleEditTemplate(tpl);
   };
 
+  const handleCustomizeTemplate = (tpl) => {
+    if (!hasPermission("templates", "write") || !tpl?.is_standard) return;
+    setEditingTemplate({ ...tpl, id: null, is_standard: false, name: `${tpl.name} (Copy)` });
+    setTemplateReadOnly(false);
+    setIsTemplateEditorOpen(true);
+  };
+
   const handleSaveTemplate = async (data) => {
     if (!hasPermission("templates", "write")) {
       setError("You do not have permission to manage templates.");
       return;
+    }
+    const normalizedName = String(data?.name || "").trim().toLocaleLowerCase();
+    const duplicate = templates.some(
+      (tpl) =>
+        tpl.id !== editingTemplate?.id &&
+        String(tpl.name || "").trim().toLocaleLowerCase() === normalizedName
+    );
+    if (duplicate) {
+      const error = new Error("A template with this name already exists. Please choose a different name.");
+      error.response = { data: { detail: error.message } };
+      throw error;
     }
     if (editingTemplate?.id) {
       const res = await templatesAPI.update(editingTemplate.id, data);
@@ -1105,6 +1123,7 @@ export default function Documents() {
         <Modal_Template_Editor
           template={editingTemplate}
           readOnly={templateReadOnly}
+          onCustomize={templateReadOnly && hasPermission("templates", "write") ? () => handleCustomizeTemplate(editingTemplate) : undefined}
           onSave={handleSaveTemplate}
           onClose={() => {
             setIsTemplateEditorOpen(false);

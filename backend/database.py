@@ -1993,6 +1993,8 @@ def create_db_and_tables():
     _ensure_task_action_path_column_if_needed()
     _ensure_fifo_stock_movement_schema_if_needed()
     _ensure_fractional_inventory_schema_if_needed()
+    _ensure_client_auth_columns_if_needed()
+    _ensure_contact_email_verification_columns_if_needed()
 
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():
@@ -2053,8 +2055,6 @@ def create_db_and_tables():
     _ensure_supplier_shipping_and_category_tax_columns_if_needed()
     _ensure_procurement_catalog_columns_if_needed()
     _ensure_company_registration_columns_if_needed()
-    _ensure_client_auth_columns_if_needed()
-    _ensure_contact_email_verification_columns_if_needed()
     _ensure_client_membership_fk_cascade_if_needed()
     _ensure_inventory_cost_fk_cascade_if_needed()
     _ensure_app_settings_stripe_columns_if_needed()
