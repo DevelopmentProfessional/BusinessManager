@@ -558,7 +558,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                   </div>
 
                   {/* Core fields on the right */}
-                  <div className="d-flex flex-column flex-grow-1 gap-1">
+                  <div className="d-flex flex-column flex-grow-1 gap-2">
                     <div className="form-floating">
                       <InputText id="name" name="name" required value={formData.name} onChange={handleChange} placeholder="Service Name" />
                       <label htmlFor="name">Name *</label>
