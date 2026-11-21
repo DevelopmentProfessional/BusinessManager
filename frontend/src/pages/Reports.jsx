@@ -1238,9 +1238,14 @@ export default function Reports() {
                       closeOnSelect
                     />
                   </div>
-                  <button type="button" className="btn btn-primary btn-sm" disabled={activityPayProcessing || reportFilters.employeeId === "all" || !activityStartDate || !activityEndDate || Boolean(reportData?.compensation?.is_paid)} onClick={handleEmployeeActivityPay}>
-                    {activityPayProcessing ? "Paying…" : reportData?.compensation?.is_paid ? "Paid" : "Pay"}
-                  </button>
+                  <Button_Toolbar
+                    icon={BanknotesIcon}
+                    label={activityPayProcessing ? "Paying…" : reportData?.compensation?.is_paid ? "Paid" : "Pay"}
+                    disabled={activityPayProcessing || reportFilters.employeeId === "all" || !activityStartDate || !activityEndDate || Boolean(reportData?.compensation?.is_paid)}
+                    onClick={handleEmployeeActivityPay}
+                    className="btn-primary"
+                    title={reportData?.compensation?.is_paid ? "Already paid" : "Pay employee activity"}
+                  />
                 </div>
                 {activityPayError && <div className="alert alert-danger mb-0 py-1 small">{activityPayError}</div>}
                 {reportFilters.employeeId !== "all" && reportData?.compensation && (
@@ -1558,7 +1563,7 @@ export default function Reports() {
                         {eventTypeMenuOpen && (
                           <div
                             className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 overflow-auto position-absolute rounded-3 shadow-sm start-0"
-                            style={{ zIndex: 25, minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }}
+                            style={{ minWidth: "11rem", maxHeight: "16rem", marginBottom: "0.25rem" }}
                             role="listbox"
                           >
                             {FILTER_CONFIG.eventType.options.map((o) => {
@@ -1641,7 +1646,7 @@ export default function Reports() {
                   <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
                   {savedFiltersMenuOpen && (
-                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-2 p-1 position-absolute rounded-3 shadow-sm start-0" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto", zIndex: 20 }}>
+                    <div className="app-menu-panel bg-white border border-gray-200 bottom-100 dark:bg-gray-900 dark:border-gray-700 mb-2 p-1 position-absolute rounded-3 shadow-sm start-0" style={{ minWidth: isTrainingMode ? "16rem" : "12rem", maxHeight: "20rem", overflow: "auto" }}>
                       {savedFilters.filter((f) => f.report_id === selectedReport?.id).length === 0 ? (
                         <div className="app-menu-empty px-1 py-0 text-gray-500">No saved filters</div>
                       ) : (

@@ -529,19 +529,19 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       <div className="bg-light border dark:bg-gray-800 dark:border-gray-700 mt-1 p-0 rounded">
                         <div className="align-items-center d-flex gap-2 mb-2">
                           <div className="btn-group btn-group-sm">
-                            <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                            <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")}>
                               Camera
                             </button>
-                            <button type="button" className={`btn ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                            <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")}>
                               URL
                             </button>
                           </div>
-                          <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-link btn-sm ms-auto p-0" style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}>
+                          <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-link btn-sm ui-btn-compact-link ms-auto p-0">
                             ✕
                           </button>
                         </div>
                         {addImageMode === "camera" && (
-                          <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
+                          <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1 ui-btn-compact-icon">
                             {pendingPhotoUrl ? "Retake" : "Cam"}
                           </button>
                         )}

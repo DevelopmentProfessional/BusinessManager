@@ -4,6 +4,7 @@ import React from "react";
 import { InputFile, InputText } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
+import Table from "../tables/Table";
 import { ArrowDownTrayIcon, ArrowUpTrayIcon, XMarkIcon } from "../../../icons";
 import { formatDateTime } from "../../../utils/dateFormatters";
 import { documentsAPI } from "../../../services/api";
@@ -30,7 +31,7 @@ export default function Modal_Document_History({
       {isOpen && historyDoc && (
         <div className="space-y-4">
           <div className="border dark:border-gray-700 max-h-[40vh] overflow-auto rounded">
-            <table className="dark:divide-gray-700 divide-gray-200 divide-y min-w-full">
+            <Table responsive={false} className="dark:divide-gray-700 divide-gray-200 divide-y min-w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="dark:text-gray-400 font-medium px-1 py-0 text-gray-500 text-left text-xs tracking-wider uppercase">Date</th>
@@ -67,7 +68,7 @@ export default function Modal_Document_History({
                   </tr>
                 )}
               </tbody>
-            </table>
+            </Table>
           </div>
 
           <form onSubmit={onReplaceContent} className="space-y-2">

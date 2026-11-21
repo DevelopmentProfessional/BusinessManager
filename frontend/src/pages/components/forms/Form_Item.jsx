@@ -532,13 +532,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                 <div className="bg-light border dark:bg-gray-800 dark:border-gray-700 mt-1 p-0 rounded">
                   <div className="align-items-center d-flex gap-2 mb-2">
                     <div className="btn-group btn-group-sm">
-                      <button type="button" className={`btn ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                      <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")}>
                         Camera
                       </button>
-                      <button type="button" className={`btn ${addImageMode === "upload" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("upload")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                      <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "upload" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("upload")}>
                         Upload
                       </button>
-                      <button type="button" className={`btn ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")} style={{ fontSize: "0.72rem", padding: "2px 10px" }}>
+                      <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")}>
                         URL
                       </button>
                     </div>
@@ -547,14 +547,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       onClick={() => {
                         setAddImageMode(null);
                       }}
-                      className="btn btn-link btn-sm ms-auto p-0"
-                      style={{ fontSize: "0.75rem", color: "#6c757d", lineHeight: 1 }}
+                      className="btn btn-link btn-sm ui-btn-compact-link ms-auto p-0"
                     >
                       ✕
                     </button>
                   </div>
                   {addImageMode === "camera" && (
-                    <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
+                    <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1 ui-btn-compact-icon">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
                         <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
@@ -565,7 +564,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   {addImageMode === "upload" && (
                     <div>
                       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileSelect} />
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1" style={{ fontSize: "0.8rem" }}>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1 ui-btn-compact-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
                           <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />

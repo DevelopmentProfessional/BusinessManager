@@ -27,6 +27,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Table from "../tables/Table";
 import { XMarkIcon, CheckCircleIcon, XCircleIcon, TrashIcon } from "../../../icons";
 
 const PERMISSION_DESCRIPTIONS = {
@@ -133,7 +134,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
           <div className="mt-4">
             <h5 className={`mb-3 ${isDarkMode ? "text-light" : "text-dark"}`}>Current Permissions</h5>
             <div className="table-responsive">
-              <table className="table table-sm">
+              <Table responsive={false} className="table-sm">
                 <thead>
                   <tr>
                     <th className={isDarkMode ? "text-light" : "text-dark"}>Page</th>
@@ -175,7 +176,7 @@ export default function Modal_Permissions_User({ isOpen, onClose, userPermission
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </div>{/* /permissions table */}
           </div>{/* /component-body-inner */}

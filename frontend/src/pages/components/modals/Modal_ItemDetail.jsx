@@ -3,7 +3,7 @@
  * FILE: Modal_Detail_Item.jsx
  *
  * PURPOSE:
- *   Full-screen modal for viewing or editing an inventory item, operating
+ *   Standard modal for viewing or editing an inventory item, operating
  *   in two modes: "sales" (display + add-to-cart) and "inventory" (full
  *   edit form with image management, barcode scanning, and stock tracking).
  *
@@ -1177,15 +1177,8 @@ export default function Modal_Detail_Item({
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} title={!isSalesMode ? "Edit Item" : undefined} contentGravity="top">
       <div className="ui-page-shell">
-        {/* Header for Inventory Mode - Fixed at top */}
-        {!isSalesMode && (
-          <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
-            <h6 className="app-modal-title ui-heading-strong">Edit Item</h6>
-          </div>
-        )}
-
         {/* Sales Mode: Full-width image header */}
         {isSalesMode && (
           <div className="flex-shrink-0 position-relative">

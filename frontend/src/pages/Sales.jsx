@@ -308,9 +308,7 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
                 {config?.has_max_per_product && config?.max_per_product && ` · max ${config.max_per_product} per type`}
               </div>
             </div>
-            <button type="button" onClick={onClose} className="btn btn-unstyled text-muted" style={{ fontSize: 20 }}>
-              ×
-            </button>
+            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={onClose} className="btn-outline-secondary" title="Close mix selection" />
           </div>
           {/* Progress bar */}
           <div style={{ marginTop: 10 }}>
@@ -362,12 +360,8 @@ function MixSelectionModal({ mix, onConfirm, onClose }) {
             {mix.price_type === "percentage" && <span style={{ fontSize: "0.72rem", marginLeft: 4 }}>({mix.price_percentage}% of selections)</span>}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary">
-              Cancel
-            </button>
-            <button type="button" onClick={handleConfirm} disabled={remaining !== 0} className="btn btn-primary" style={{ opacity: remaining === 0 ? 1 : 0.6 }}>
-              Add
-            </button>
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel mix selection" />
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={handleConfirm} disabled={remaining !== 0} className="btn-primary" title="Add selected products" />
           </div>
         </div>
       </div>

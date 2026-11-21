@@ -993,7 +993,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               placeholder="Description (optional)"
                               style={{ fontSize: "0.82rem" }}
                             />
-                            <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="align-self-start btn btn-outline-primary btn-sm px-1" style={{ fontSize: "0.8rem" }}>
+                            <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="align-self-start btn btn-outline-primary btn-sm px-1 ui-btn-compact-icon">
                               {deptCreating ? "…" : "Add"}
                             </button>
                           </div>
@@ -1795,7 +1795,7 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                               <td className="text-danger text-end">-${Number((slip.insurance_deduction ?? 0) + (slip.other_deductions ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                               <td className="fw-semibold text-end">${Number(slip.net_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                               <td>
-                                <button type="button" className="btn btn-outline-secondary btn-sm px-1 py-0" style={{ fontSize: "0.7rem" }} onClick={() => setSelectedSlip(slip)}>
+                                <button type="button" className="btn btn-outline-secondary btn-sm px-1 py-0" onClick={() => setSelectedSlip(slip)}>
                                   View
                                 </button>
                               </td>
@@ -1831,11 +1831,10 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              className={`btn btn-sm rounded-pill text-nowrap flex-shrink-0 ${activeTab === tab.key ? "btn-primary" : "btn-outline-secondary"}`}
               onClick={() => setActiveTab(tab.key)}
               type="button"
               disabled={tab.disabled}
-              style={{ fontSize: "0.75rem", padding: "0.25rem 0.75rem" }}
+              className={`btn btn-sm rounded-pill text-nowrap flex-shrink-0 ui-btn-compact ${activeTab === tab.key ? "btn-primary" : "btn-outline-secondary"}`}
             >
               {tab.label}
             </button>

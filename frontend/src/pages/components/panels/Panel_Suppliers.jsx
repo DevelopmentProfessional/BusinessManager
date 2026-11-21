@@ -286,11 +286,11 @@ function SupplierForm({ supplier, onSubmit, className="" }) {
         <label htmlFor="sp_name">Name *</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">
-        <input type="email" id="sp_email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
+        <InputText type="email" id="sp_email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
         <label htmlFor="sp_email">Email</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">
-        <input type="tel" id="sp_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control ui-control-sm" placeholder="Phone" />
+        <InputText type="tel" id="sp_phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" />
         <label htmlFor="sp_phone">Phone</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">

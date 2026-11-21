@@ -756,7 +756,6 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
       isOpen={isOpen}
       onClose={onClose}
       title="Client Details"
-      noPadding={true}
       headerActions={
         canDelete && (
           <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={handleDelete} title="Delete client" aria-label="Delete client">
@@ -768,7 +767,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         <Footer_Actions start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />} center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />} />
       }
     >
-      <div className="flex-grow-1 min-h-0 pe-0 pt-1 px-1 text-gray-900 dark:text-gray-100">
+      <div className="flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
         {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
           {/* Avatar + name + tier */}
           <div className="align-items-center d-flex gap-3 mb-3">
@@ -816,12 +815,12 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <input type="email" id="dc_email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
+            <InputText type="email" id="dc_email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
             <label htmlFor="dc_email">Email</label>
           </div>
 
           <div className="form-floating ui-form-floating-mb2">
-            <input type="tel" id="dc_phone" name="phone" value={formData.phone} onChange={handleChange} className="form-control ui-control-sm" placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number format: (555) 555-5555" />
+            <InputText type="tel" id="dc_phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="(555) 555-5555" pattern="\(\d{3}\) \d{3}-\d{4}" title="Phone number format: (555) 555-5555" />
             <label htmlFor="dc_phone">Phone</label>
           </div>
 

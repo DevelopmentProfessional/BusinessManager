@@ -731,7 +731,7 @@ function SupplierForm({ supplier, settings, error, onSubmit }) {
         <label htmlFor="supplier-name">Name *</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">
-        <input type="email" id="supplier-email" name="email" value={formData.email} onChange={handleChange} className="form-control ui-control-sm" placeholder="Email" />
+        <InputText type="email" id="supplier-email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
         <label htmlFor="supplier-email">Email</label>
       </div>
       <div className="form-floating ui-form-floating-mb2">

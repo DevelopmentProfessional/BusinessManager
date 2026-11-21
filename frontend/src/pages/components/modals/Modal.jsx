@@ -21,6 +21,7 @@
  *   2026-11-16 | GitHub Copilot | Moved the default modal close action from the header to the footer
  *   2026-11-16 | GitHub Copilot | Removed the shared modal header close control
  *   2026-11-18 | GitHub Copilot | Adjusted modal body inner top padding to pt-3 (with p-2) for floating label visibility
+ *   2026-11-21 | GitHub Copilot | Standardized modal surfaces as flat and modal body spacing to pt-2
  * ============================================================
  */
 import React, { createContext, useContext } from "react";
@@ -100,7 +101,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
       <div className="app-modal-inline-container position-relative overflow-hidden w-100 h-100 d-flex flex-column border rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm" style={{ minHeight: "360px" }}>
         <ModalStackContext.Provider value={nextDepth}>
           {title && <ModalHeader title={title} actions={headerActions} />}
-          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "pt-3" : "p-2 pt-3"} no-scrollbar ${bodyClassName}`.trim()} style={bodyStyle}>
+          <div className={`flex-grow-1 min-h-0 overflow-auto ${noPadding ? "p-0" : "p-2 pt-2"} no-scrollbar ${bodyClassName}`.trim()} style={bodyStyle}>
             {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
           </div>
           {resolvedFooter && <ModalFooter>{resolvedFooter}</ModalFooter>}
@@ -121,7 +122,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
     <div className="app-modal-layer fixed inset-0 overflow-hidden" style={{ zIndex: layerZIndex, "--app-modal-content-z-index": modalContentZIndex }}>
       {Overlay}
       <div
-        className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-xl text-left transform transition-all w-full rounded-t-lg ${
+        className={`app-modal-dialog app-modal-sheet bg-white border-gray-200 border-t bottom-0 dark:bg-gray-800 dark:border-gray-700 fixed flex flex-col left-0 overflow-hidden right-0 shadow-none text-left transform transition-all w-full rounded-0 ${
           contentWidth ? "app-modal-dialog--content-width" : ""
         } ${
           fullScreen ? "max-h-screen max-h-[95vh] app-modal-dialog--fullscreen app-modal-sheet--fullscreen" : "max-h-[90vh]"
@@ -131,7 +132,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
         {title && <ModalHeader title={title} actions={headerActions} />}
         <div
           className={`app-modal-body app-modal-content app-modal-scroll-surface flex-grow-1 min-h-0 bg-white dark:bg-gray-800 no-scrollbar overflow-y-auto ${bodyClassName} ${
-            noPadding ? "p-0" : "p-2 pt-3"
+            noPadding ? "p-0" : "p-2 pt-2"
           }`.trim()}
           style={bodyStyle}
         >

@@ -70,6 +70,7 @@ import Panel_Profile_TimeOff from "./components/panels/Panel_Profile_TimeOff";
 import Badge_Status from "./components/badges/Badge_Status";
 import Modal_Profile_LeaveRequest from "./components/modals/Modal_Profile_LeaveRequest";
 import { QuestionMarkCircleIcon } from "../icons";
+import Table from "./components/tables/Table";
 
 // ─── Inline alignment icons for the footer-align triple toggle ───────────────
 const AlignLeftIcon = ({ className = "app-icon flex-shrink-0" }) => (
@@ -151,7 +152,7 @@ function LeaveRequestsTable({ requests, emptyMessage }) {
   }
   return (
     <div style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
-      <table className="mb-0 table table-hover table-sm" style={{ fontSize: "0.8rem" }}>
+      <Table responsive={false} className="table-hover table-sm" style={{ fontSize: "0.8rem" }}>
         <thead className="table-light">
           <tr>
             <th>Type</th>
@@ -174,7 +175,7 @@ function LeaveRequestsTable({ requests, emptyMessage }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }
@@ -1695,13 +1696,8 @@ const Profile = () => {
                     <LeaveRequestsTable requests={sortLeaveRequestsDesc([...vacationRequests, ...sickRequests].filter((r) => r.status !== "pending"))} emptyMessage="No leave history yet" />
                   </div>
                   <div className="d-flex gap-2 justify-content-start">
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => openLeaveModal()}>
-                      <PlusCircleIcon className="h-4 me-1 w-4" style={{ display: "inline" }} />
-                      Request
-                    </button>
-                    <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setLeaveManagementOpen(false)}>
-                      Close
-                    </button>
+                    <Button_Toolbar icon={PlusCircleIcon} label="Request" onClick={() => openLeaveModal()} className="btn-primary" title="Request leave" />
+                    <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setLeaveManagementOpen(false)} className="btn-outline-secondary" title="Close leave management" />
                   </div>
                 </>
               )}

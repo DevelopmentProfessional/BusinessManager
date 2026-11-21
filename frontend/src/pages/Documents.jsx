@@ -991,45 +991,27 @@ export default function Documents() {
                 {canReadDocuments && <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={() => setShowTemplates(false)} className="btn-app-secondary" title="Cancel" />}
               </Gate_Permission>
               {/* Type filter for templates */}
-              <div className="ui-pos-rel">
-                <Button_Toolbar
-                  icon={TagIcon}
-                  label="Type"
-                  onClick={() => setIsTemplateTypeFilterOpen((prev) => !prev)}
-                  className={`border-0 shadow-lg transition-all ${templateTypeFilter !== "all" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "btn-app-secondary"}`}
-                  data-active={templateTypeFilter !== "all"}
-                />
-                {isTemplateTypeFilterOpen && (
-                  <div className="app-menu-panel bg-white border border-gray-200 bottom-100 mb-2 p-0 position-absolute rounded-xl shadow-lg start-0 z-50" style={{ minWidth: "180px" }}>
-                    {[
-                      { value: "all", label: "All Types" },
-                      { value: "email", label: "Email" },
-                      { value: "invoice", label: "Invoice" },
-                      { value: "receipt", label: "Receipt" },
-                      { value: "memo", label: "Memo" },
-                      { value: "quote", label: "Quote" },
-                      { value: "payslip", label: "Payslip" },
-                      { value: "custom", label: "Custom" },
-                    ].map((option, index, arr) => {
-                      const isLast = index === arr.length - 1;
-                      const isSelected = templateTypeFilter === option.value;
-                      return (
-                        <div key={option.value} className={isLast ? "" : "mb-1"}>
-                          <button
-                            onClick={() => {
-                              setTemplateTypeFilter(option.value);
-                              setIsTemplateTypeFilterOpen(false);
-                            }}
-                            className={`app-menu-item d-block w-100 text-start px-1 py-0 rounded-lg transition-colors ${isSelected ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-900"}`}
-                          >
-                            {option.label}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <Filter_Menu
+                options={[
+                  { value: "all", label: "All Types" },
+                  { value: "email", label: "Email" },
+                  { value: "invoice", label: "Invoice" },
+                  { value: "receipt", label: "Receipt" },
+                  { value: "memo", label: "Memo" },
+                  { value: "quote", label: "Quote" },
+                  { value: "payslip", label: "Payslip" },
+                  { value: "custom", label: "Custom" },
+                ]}
+                value={templateTypeFilter}
+                onChange={setTemplateTypeFilter}
+                icon={TagIcon}
+                label="Type"
+                isOpen={isTemplateTypeFilterOpen}
+                setIsOpen={setIsTemplateTypeFilterOpen}
+                showHelp={false}
+                activeClass="bg-indigo-600 hover:bg-indigo-700 text-white"
+                inactiveClass="btn-app-secondary"
+              />
             </>
           ) : (
             /* Documents mode controls */
