@@ -42,6 +42,7 @@
 
 // ─── 1 IMPORTS & MODULE-LEVEL CONSTANTS ──────────────────────────────────────
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Navigate } from "react-router-dom";
 import {
   ChartBarIcon,
@@ -1383,7 +1384,7 @@ export default function Reports() {
             )}
 
             {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
-            {!fullScreenMode && (
+            {!fullScreenMode && typeof document !== "undefined" && createPortal(
               <div
                 className="align-items-center d-flex gap-2 justify-content-center reports-nav-floating"
                 style={{
@@ -1391,7 +1392,7 @@ export default function Reports() {
                   bottom: `${(footerHeight || 56) + 10}px`,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  zIndex: 20,
+                  zIndex: 1000,
                 }}
               >
                 <Button_Toolbar icon={ChevronLeftIcon} label="" compact onClick={() => handleNavigatePeriod(-1)} className="btn-outline-secondary rounded-circle" title="Previous period" />
@@ -1415,7 +1416,8 @@ export default function Reports() {
                 {!isEmployeeActivityReport && reportData?.labels?.length > 0 && (
                   <Button_Toolbar icon={ChevronUpDownIcon} label={showDataTable ? "Hide" : "Table"} onClick={() => setShowDataTable((v) => !v)} className={showDataTable ? "btn-primary" : "btn-outline-secondary"} title={showDataTable ? "Hide data table" : "Show data table"} />
                 )}
-              </div>
+              </div>,
+              document.body,
             )}
             {!fullScreenMode && !isEmployeeActivityReport && showDataTable && reportData?.labels?.length > 0 && (
               <div className="border border-gray-200 dark:border-gray-700 mt-2 overflow-auto rounded-lg" style={{ maxHeight: "16rem" }}>

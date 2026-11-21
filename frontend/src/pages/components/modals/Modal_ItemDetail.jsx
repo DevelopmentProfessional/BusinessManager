@@ -422,8 +422,12 @@ function MixSetupPanel({ mixId }) {
       {/* Header */}
       <div className="bg-pink-50 dark:bg-pink-950/40 border-b border-pink-200 dark:border-pink-900/60 d-flex align-items-center gap-2 px-2 py-1">
         <SparklesIcon className="text-pink-500 flex-shrink-0" style={{ width: 14, height: 14 }} />
-        <span className="fw-bold text-gray-800 dark:text-gray-200" style={{ fontSize: "0.8rem" }}>Mix Setup</span>
-        <span className="text-muted small ms-1" style={{ fontSize: "0.72rem" }}>Client picks from a list</span>
+        <span className="fw-bold text-gray-800 dark:text-gray-200" style={{ fontSize: "0.8rem" }}>
+          Mix Setup
+        </span>
+        <span className="text-muted small ms-1" style={{ fontSize: "0.72rem" }}>
+          Client picks from a list
+        </span>
       </div>
 
       <div style={{ padding: "8px 10px" }}>
@@ -596,8 +600,12 @@ function BundleComponentsPanel({ bundleId }) {
     <div className="border border-orange-300 dark:border-orange-800/60 mt-3 rounded-lg overflow-hidden bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
       <div className="bg-orange-50 dark:bg-orange-950/40 border-b border-orange-200 dark:border-orange-900/60 d-flex align-items-center gap-2 px-2 py-1">
         <CubeIcon className="text-orange-500 flex-shrink-0" style={{ width: 14, height: 14 }} />
-        <span className="fw-bold text-gray-800 dark:text-gray-200" style={{ fontSize: "0.8rem" }}>Bundle Components</span>
-        <span className="text-muted small ms-1" style={{ fontSize: "0.72rem" }}>Products included per unit sold</span>
+        <span className="fw-bold text-gray-800 dark:text-gray-200" style={{ fontSize: "0.8rem" }}>
+          Bundle Components
+        </span>
+        <span className="text-muted small ms-1" style={{ fontSize: "0.72rem" }}>
+          Products included per unit sold
+        </span>
       </div>
       <div style={{ padding: "8px 10px", minHeight: 60 }}>
         {loading && <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>Loading…</div>}
@@ -659,7 +667,23 @@ function BundleComponentsPanel({ bundleId }) {
 }
 
 // ─── 1 COMPONENT DEFINITION & STATE ────────────────────────────────────────
-export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "product", mode = "sales", onAddToCart, canAddToCart = true, onUpdateInventory, onStockAdjusted, onDelete: _onDelete, canDelete: _canDelete = false, isDeleting: _isDeleting = false, cartQuantity = 0, existingSkus = [], assetUnitsPerPage = 25 }) {
+export default function Modal_Detail_Item({
+  isOpen,
+  onClose,
+  item,
+  itemType = "product",
+  mode = "sales",
+  onAddToCart,
+  canAddToCart = true,
+  onUpdateInventory,
+  onStockAdjusted,
+  onDelete: _onDelete,
+  canDelete: _canDelete = false,
+  isDeleting: _isDeleting = false,
+  cartQuantity = 0,
+  existingSkus = [],
+  assetUnitsPerPage = 25,
+}) {
   const [quantity, setQuantity] = useState(1);
   const [images, setImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -1059,9 +1083,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         date_of_purchase: formData.date_of_purchase || null,
         date_of_sale: formData.date_of_sale || null,
         description: formData.description,
-        min_stock_level: formData.auto_min_stock_level
-          ? null
-          : Number(formData.min_stock_level || 0),
+        min_stock_level: formData.auto_min_stock_level ? null : Number(formData.min_stock_level || 0),
         auto_min_stock_level: Boolean(formData.auto_min_stock_level),
         stock_unit: formData.stock_unit.trim() || null,
         purchase_unit: formData.purchase_unit || "unit",
@@ -1245,7 +1267,11 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
             /* Inventory Mode - Image + Stock fields at top, form fields below */
             <>
               <form onSubmit={handleUpdateInventory} className="inventory-edit-form">
-                {inventorySaveError && <div className="alert alert-danger py-1 small" role="alert">{inventorySaveError}</div>}
+                {inventorySaveError && (
+                  <div className="alert alert-danger py-1 small" role="alert">
+                    {inventorySaveError}
+                  </div>
+                )}
                 {/* Top Section: Image and add-photo controls */}
                 <div className="mb-3" style={{ minHeight: "200px" }}>
                   {/* Image */}
@@ -1464,7 +1490,16 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                   <div className={inventoryRowClass}>
                     {!isLocation && !isAsset && (
                       <div className="form-floating position-relative" style={equalFieldStyle}>
-                        <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level ?? ""} onChange={handleChange} placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"} min="0" step={isResource ? "0.01" : "1"} disabled={formData.auto_min_stock_level} />
+                        <InputNumber
+                          id="min_stock_level"
+                          name="min_stock_level"
+                          value={formData.min_stock_level ?? ""}
+                          onChange={handleChange}
+                          placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"}
+                          min="0"
+                          step={isResource ? "0.01" : "1"}
+                          disabled={formData.auto_min_stock_level}
+                        />
                         <label htmlFor="min_stock_level">{isResource ? "Min" : "Min"}</label>
                       </div>
                     )}
@@ -1487,26 +1522,13 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                     <>
                       <div className={inventoryRowClass}>
                         <div style={equalFieldStyle}>
-                          <Dropdown_InventoryPurchaseUnit
-                            id="detail-purchase-unit"
-                            value={formData.purchase_unit}
-                            onChange={handleChange}
-                          />
+                          <Dropdown_InventoryPurchaseUnit id="detail-purchase-unit" value={formData.purchase_unit} onChange={handleChange} />
                         </div>
                         <div className="form-floating" style={equalFieldStyle}>
-                          <InputNumber
-                            id="detail-units-per-purchase-unit"
-                            name="units_per_purchase_unit"
-                            value={formData.units_per_purchase_unit}
-                            onChange={handleChange}
-                            min="1"
-                            step="1"
-                            placeholder="Stock units per package"
-                          />
+                          <InputNumber id="detail-units-per-purchase-unit" name="units_per_purchase_unit" value={formData.units_per_purchase_unit} onChange={handleChange} min="1" step="1" placeholder="Stock units per package" />
                           <label htmlFor="detail-units-per-purchase-unit">Stock per unit</label>
                         </div>
                       </div>
-                      <div className="form-text mb-2">Purchase-order default price is item cost multiplied by units per package.</div>
                     </>
                   )}
                   {isResource && (
@@ -1520,13 +1542,17 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
                       <InputCheckbox
                         id="detail-auto-stock-threshold"
                         checked={formData.auto_min_stock_level}
-                        onChange={(e) => setFormData((previous) => ({
-                          ...previous,
-                          auto_min_stock_level: e.target.checked,
-                          min_stock_level: e.target.checked ? null : (previous.min_stock_level ?? 10),
-                        }))}
+                        onChange={(e) =>
+                          setFormData((previous) => ({
+                            ...previous,
+                            auto_min_stock_level: e.target.checked,
+                            min_stock_level: e.target.checked ? null : (previous.min_stock_level ?? 10),
+                          }))
+                        }
                       />
-                      <label htmlFor="detail-auto-stock-threshold" className="form-check-label">Set threshold from usage history</label>
+                      <label htmlFor="detail-auto-stock-threshold" className="form-check-label">
+                        Set threshold from usage history
+                      </label>
                     </div>
                   )}
                   {!isLocation && !isAsset && (
@@ -1642,14 +1668,7 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
 
                 {String(formData.type || "").toUpperCase() !== "LOCATION" && (
                   <div className="mb-2 mt-2">
-                    <Dropdown_Custom
-                      id="detail_category"
-                      name="category"
-                      floatingLabel="Category"
-                      value={formData.category || ""}
-                      onChange={handleChange}
-                      options={[{ value: "", label: "— None —" }, ...itemCategories.map((category) => ({ value: category.name, label: category.name }))]}
-                    />
+                    <Dropdown_Custom id="detail_category" name="category" floatingLabel="Category" value={formData.category || ""} onChange={handleChange} options={[{ value: "", label: "— None —" }, ...itemCategories.map((category) => ({ value: category.name, label: category.name }))]} />
                   </div>
                 )}
               </form>
@@ -1717,19 +1736,28 @@ export default function Modal_Detail_Item({ isOpen, onClose, item, itemType = "p
         }
       >
         <div className="mb-2">
-          <label className="form-label" htmlFor="stock-adjustment-delta">Quantity change (+ or -)</label>
+          <label className="form-label" htmlFor="stock-adjustment-delta">
+            Quantity change (+ or -)
+          </label>
           <InputNumber id="stock-adjustment-delta" value={stockAdjustmentDelta} onChange={(e) => setStockAdjustmentDelta(e.target.value)} step={isResource ? "0.01" : "1"} />
-          <div className="form-text">Current stock: {effectiveStock}{formData.stock_unit ? ` ${formData.stock_unit}` : ""}. The adjustment cannot reduce stock below zero.</div>
+          <div className="form-text">
+            Current stock: {effectiveStock}
+            {formData.stock_unit ? ` ${formData.stock_unit}` : ""}. The adjustment cannot reduce stock below zero.
+          </div>
         </div>
         {Number(stockAdjustmentDelta) > 0 && (
           <div className="mb-2">
-            <label className="form-label" htmlFor="stock-adjustment-cost">Unit cost (optional)</label>
+            <label className="form-label" htmlFor="stock-adjustment-cost">
+              Unit cost (optional)
+            </label>
             <InputNumber id="stock-adjustment-cost" value={stockAdjustmentCost} onChange={(e) => setStockAdjustmentCost(e.target.value)} min="0" step="0.01" />
             <div className="form-text">Leave blank to use the item's current cost, when available.</div>
           </div>
         )}
         <div className="mb-2">
-          <label className="form-label" htmlFor="stock-adjustment-reason">Reason</label>
+          <label className="form-label" htmlFor="stock-adjustment-reason">
+            Reason
+          </label>
           <InputTextarea id="stock-adjustment-reason" rows={3} value={stockAdjustmentReason} onChange={(e) => setStockAdjustmentReason(e.target.value)} maxLength={1000} />
         </div>
         {stockAdjustmentError && <div className="alert alert-danger mb-0 py-2">{stockAdjustmentError}</div>}

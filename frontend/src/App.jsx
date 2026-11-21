@@ -88,7 +88,7 @@ const ProtectedRoute = ({ children, requiredPermission = null }) => {
 function App() {
   const { user, setUser, setToken, setPermissions, loadPersistedFilters, refetchPermissions, setAuthReady, setClients, setServices, setEmployees, setInventory, setAppointments } = useStore();
   const { initializeDarkMode, setDarkMode } = useDarkMode();
-  const { isTrainingMode, buttonTextSize, setTrainingMode, setButtonTextSize, setFooterAlign, setUiScale } = useViewMode();
+  const { isTrainingMode, buttonTextSize, setTrainingMode, setButtonTextSize, setFooterAlign } = useViewMode();
   useBranding();
 
   const startupPage = user?.startup_page || "schedule";
@@ -196,9 +196,33 @@ function App() {
     if (!user) return;
     if (user.button_text_size) setButtonTextSize(user.button_text_size);
     if (user.footer_align) setFooterAlign(user.footer_align);
-    if (Number.isFinite(Number(user.ui_scale))) setUiScale(user.ui_scale);
     useTableSettings.getState().loadFromUser(user);
-  }, [user, setButtonTextSize, setFooterAlign, setUiScale]);
+  }, [user, setButtonTextSize, setFooterAlign]);
+
+  // Reset the legacy application zoom preference now that app-level zoom is removed.
+  useEffect(() => {
+    if (!user || Number(user.ui_scale) === 100) return;
+
+    let cancelled = false;
+    const resetLegacyUiScale = async () => {
+      try {
+        const response = await api.put("/auth/me/profile", { ui_scale: 100 });
+        if (cancelled) return;
+        const updatedUser = response?.data ?? response;
+        const mergedUser = { ...user, ...(updatedUser && typeof updatedUser === "object" ? updatedUser : {}), ui_scale: 100 };
+        setUser(mergedUser);
+        if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(mergedUser));
+        if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(mergedUser));
+      } catch (error) {
+        console.warn("Failed to reset legacy application zoom preference:", error);
+      }
+    };
+
+    void resetLegacyUiScale();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, setUser]);
 
   useEffect(() => {
     if (user?.dark_mode !== undefined) {

@@ -338,9 +338,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     const description = (formData.description || "").trim();
     const image_url = addImageMode === "url" || !pendingPhotoUrl ? (formData.image_url || "").trim() : "";
     const location = (formData.location || "").trim();
-    const minStockLevel = formData.auto_min_stock_level
-      ? null
-      : Number(formData.min_stock_level || 0);
+    const minStockLevel = formData.auto_min_stock_level ? null : Number(formData.min_stock_level || 0);
     const qty = Number(formData.quantity) || 0;
     const safeQty = Number.isFinite(qty) && qty >= 0 ? qty : 0;
     if (type !== "RESOURCE" && (!Number.isInteger(safeQty) || (minStockLevel !== null && !Number.isInteger(minStockLevel)))) {
@@ -597,7 +595,16 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   </div>
                   <div className="d-flex gap-2 mb-1">
                     <div className="flex-grow-1 form-floating">
-                      <InputNumber id="min_stock_level" name="min_stock_level" value={formData.min_stock_level} onChange={handleChange} placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"} min="0" step={isResource ? "0.01" : "1"} disabled={formData.auto_min_stock_level} />
+                      <InputNumber
+                        id="min_stock_level"
+                        name="min_stock_level"
+                        value={formData.min_stock_level}
+                        onChange={handleChange}
+                        placeholder={formData.auto_min_stock_level ? "Learning from usage" : "Min Count"}
+                        min="0"
+                        step={isResource ? "0.01" : "1"}
+                        disabled={formData.auto_min_stock_level}
+                      />
                       <label htmlFor="min_stock_level">{isResource ? "Min" : "Min"}</label>
                     </div>
                     <div className="flex-grow-1 form-floating">
@@ -615,13 +622,17 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                     <InputCheckbox
                       id="auto_min_stock_level"
                       checked={formData.auto_min_stock_level}
-                      onChange={(e) => setFormData((previous) => ({
-                        ...previous,
-                        auto_min_stock_level: e.target.checked,
-                        min_stock_level: e.target.checked ? null : (previous.min_stock_level ?? 10),
-                      }))}
+                      onChange={(e) =>
+                        setFormData((previous) => ({
+                          ...previous,
+                          auto_min_stock_level: e.target.checked,
+                          min_stock_level: e.target.checked ? null : (previous.min_stock_level ?? 10),
+                        }))
+                      }
                     />
-                    <label htmlFor="auto_min_stock_level" className="form-check-label">Set threshold from usage history</label>
+                    <label htmlFor="auto_min_stock_level" className="form-check-label">
+                      Set threshold from usage history
+                    </label>
                   </div>
 
                   <div className="d-flex gap-2 mb-1">
@@ -697,16 +708,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
           <div className="d-flex gap-2 mb-2">
             <div className="flex-grow-1 mb-0">
-              <Dropdown_Custom
-                id="type"
-                name="type"
-                floatingLabel="Type"
-                className="ui-control-sm"
-                value={formData.type}
-                onChange={handleChange}
-                options={typeOptions}
-                closeOnSelect
-              />
+              <Dropdown_Custom id="type" name="type" floatingLabel="Type" className="ui-control-sm" value={formData.type} onChange={handleChange} options={typeOptions} closeOnSelect />
             </div>
 
             {/* Category picker — hidden for LOCATION type */}
@@ -731,26 +733,13 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
             <>
               <div className="align-items-start d-flex flex-wrap gap-2 mb-1">
                 <div className="flex-grow-1" style={{ minWidth: 200 }}>
-                  <Dropdown_InventoryPurchaseUnit
-                    id="purchase_unit"
-                    value={formData.purchase_unit}
-                    onChange={handleChange}
-                  />
+                  <Dropdown_InventoryPurchaseUnit id="purchase_unit" value={formData.purchase_unit} onChange={handleChange} />
                 </div>
                 <div className="flex-grow-1 form-floating" style={{ minWidth: 160 }}>
-                  <InputNumber
-                    id="units_per_purchase_unit"
-                    name="units_per_purchase_unit"
-                    min="1"
-                    step="1"
-                    value={formData.units_per_purchase_unit}
-                    onChange={handleChange}
-                    placeholder="Units per package"
-                  />
+                  <InputNumber id="units_per_purchase_unit" name="units_per_purchase_unit" min="1" step="1" value={formData.units_per_purchase_unit} onChange={handleChange} placeholder="Units per package" />
                   <label htmlFor="units_per_purchase_unit">Stock per unit</label>
                 </div>
               </div>
-              <div className="form-text mb-2">Purchase-order default price is item cost multiplied by units per package.</div>
             </>
           )}
 
@@ -770,7 +759,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                 />
               </div>
 
-              <div className="flex-grow-1 mb-0">
+              <div className="flex-grow-1 mb-0 position-relative">
                 <Dropdown_Custom
                   id="supplier_id"
                   name="supplier_id"
@@ -782,16 +771,17 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   placeholder="Select supplier"
                   closeOnSelect
                 />
+                <button
+                  type="button"
+                  className="align-items-center btn btn-outline-secondary btn-sm d-flex justify-content-center position-absolute top-50 translate-middle-y"
+                  style={{ right: "0.25rem", zIndex: 3 }}
+                  title="Add supplier"
+                  aria-label="Add supplier"
+                  onClick={() => setIsSupplierCreateOpen(true)}
+                >
+                  <PlusIcon className="ui-icon-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                className="align-items-center btn btn-outline-secondary btn-sm d-flex flex-shrink-0 justify-content-center"
-                title="Add supplier"
-                aria-label="Add supplier"
-                onClick={() => setIsSupplierCreateOpen(true)}
-              >
-                <PlusIcon className="ui-icon-5" />
-              </button>
             </div>
           )}
 
@@ -961,13 +951,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                       <span className="flex-grow-1 small">{comp.name}</span>
                       <span className="ui-small-muted">${(comp.cost ?? comp.price ?? 0).toFixed(2)} cost</span>
                       <span className="ui-small-muted">${comp.price?.toFixed(2)}</span>
-                      <InputNumber
-                        min="1"
-                        style={{ width: 60 }}
-                        value={comp.max_quantity || ""}
-                        placeholder="Max"
-                        onChange={(e) => setMixComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, max_quantity: e.target.value !== "" ? parseInt(e.target.value) : null } : c)))}
-                      />
+                      <InputNumber min="1" style={{ width: 60 }} value={comp.max_quantity || ""} placeholder="Max" onChange={(e) => setMixComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, max_quantity: e.target.value !== "" ? parseInt(e.target.value) : null } : c)))} />
                       <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => setMixComponents((prev) => prev.filter((c) => c.id !== comp.id))}>
                         ✕
                       </button>
@@ -1044,35 +1028,15 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
         <form id="item-new-supplier-form" onSubmit={handleCreateSupplier} className="p-1">
           {newSupplierError && <div className="alert alert-danger py-1 small">{newSupplierError}</div>}
           <div className="form-floating ui-form-floating-mb2">
-            <InputText
-              id="item-new-supplier-name"
-              className="form-control ui-control-sm"
-              value={newSupplierData.name}
-              onChange={(e) => setNewSupplierData((prev) => ({ ...prev, name: e.target.value }))}
-              required
-              placeholder="Supplier name"
-            />
+            <InputText id="item-new-supplier-name" className="form-control ui-control-sm" value={newSupplierData.name} onChange={(e) => setNewSupplierData((prev) => ({ ...prev, name: e.target.value }))} required placeholder="Supplier name" />
             <label htmlFor="item-new-supplier-name">Supplier name *</label>
           </div>
           <div className="form-floating ui-form-floating-mb2">
-            <InputText
-              id="item-new-supplier-email"
-              type="email"
-              className="form-control ui-control-sm"
-              value={newSupplierData.email}
-              onChange={(e) => setNewSupplierData((prev) => ({ ...prev, email: e.target.value }))}
-              placeholder="Email"
-            />
+            <InputText id="item-new-supplier-email" type="email" className="form-control ui-control-sm" value={newSupplierData.email} onChange={(e) => setNewSupplierData((prev) => ({ ...prev, email: e.target.value }))} placeholder="Email" />
             <label htmlFor="item-new-supplier-email">Email</label>
           </div>
           <div className="form-floating ui-form-floating-mb2">
-            <InputText
-              id="item-new-supplier-phone"
-              className="form-control ui-control-sm"
-              value={newSupplierData.phone}
-              onChange={(e) => setNewSupplierData((prev) => ({ ...prev, phone: e.target.value }))}
-              placeholder="Phone"
-            />
+            <InputText id="item-new-supplier-phone" className="form-control ui-control-sm" value={newSupplierData.phone} onChange={(e) => setNewSupplierData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Phone" />
             <label htmlFor="item-new-supplier-phone">Phone</label>
           </div>
         </form>

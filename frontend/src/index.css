@@ -55,8 +55,6 @@
   --app-active-color: #3b82f6;
   --app-active-color-hover: #2563eb;
   --app-active-color-rgb: 59, 130, 246;
-  --app-ui-scale: 1;
-
   /* Bootstrap primary bridge so existing btn/active variants follow app active color */
   --bs-primary: var(--app-active-color);
   --bs-primary-rgb: var(--app-active-color-rgb);
@@ -99,7 +97,7 @@
 
   /* Floating Labels */
   --app-floating-label-font-size: 1rem;
-  --app-floating-label-background: transparent;
+  --app-floating-label-background: var(--bs-body-bg);
 
   /* Dropups & Dropdowns */
   --app-dropdown-min-width: 11rem;
@@ -193,7 +191,6 @@ body,
   /* JS-measured visual viewport height takes over when keyboard is open */
   height: var(--vvp-height, 100dvh);
   overflow: hidden;
-  zoom: var(--app-ui-scale, 1);
 }
 
 /* ==========================================================================
@@ -521,7 +518,7 @@ textarea {
   width: var(--app-select-icon-size) !important;
   height: var(--app-select-icon-size) !important;
   border-radius: 9999px !important;
-  border: 0.0625rem solid var(--bs-border-color);
+  border: 0 !important;
   background: transparent;
   color: var(--bs-secondary-color);
   display: inline-flex !important;
@@ -1348,6 +1345,74 @@ textarea {
   box-sizing: border-box;
 }
 
+.app-color-picker-field {
+  position: relative;
+  min-width: 0;
+}
+
+.app-color-picker-field > .form-control {
+  width: 100%;
+  padding-right: 2.25rem !important;
+}
+
+.app-color-picker-trigger {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: 0.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.app-color-picker-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.app-color-picker-popover {
+  position: fixed;
+  z-index: 1000;
+  top: 50%;
+  left: 50%;
+  width: 14rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -50%);
+}
+
+.app-color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.35rem;
+}
+
+.app-color-picker-swatch {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  outline: 1px solid rgba(0, 0, 0, 0.18);
+  outline-offset: 1px;
+  cursor: pointer;
+}
+
+.app-color-picker-swatch[aria-selected="true"] {
+  outline: 2px solid var(--bs-body-color);
+  outline-offset: 2px;
+}
+
 /* ─── 20. TOOLBARS & ACTION GROUPS ─── */
 .app-toolbar {
   display: flex;
@@ -1823,21 +1888,22 @@ textarea.form-control.ui-control-sm {
 /* Segmented name row within PageTableRow */
 .app-table-row--name {
   height: auto !important; 
+  border-bottom: 0 !important;
 }
 
 .app-table-row--name .main-page-table-name-cell {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+  padding-bottom: 0 !important;
   vertical-align: bottom !important;
   white-space: normal !important;
   word-break: break-word !important;
   overflow-wrap: break-word !important;
   line-height: 1.25 !important;
+  border-bottom: 0 !important;
 }
 
-.app-table-row--details {
-  border-top: none !important;
-}
+
 
 .app-table-row--details td {
   padding-top: 0.1rem !important;
@@ -2775,7 +2841,7 @@ body.training-mode .app-nav-bottom-global-menu .btn.rounded-pill {
   bottom: calc(var(--app-footer-padding-y, 0.125rem) + env(safe-area-inset-bottom, 0rem)) !important;
   right: calc(var(--app-nav-bottom-right-inset, 0.25rem) + env(safe-area-inset-right, 0rem)) !important;
   left: auto !important;
-  z-index: 1050 !important;
+  z-index: 1500 !important;
 }
 
 body:not(.training-mode) .app-nav-bottom-toggle.rounded-pill {
@@ -3122,14 +3188,13 @@ input[type="number"],
 .form-floating > label,
 .form-floating > .app-floating-label {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 0.35rem;
+  left: 1.25rem;
   z-index: 2;
   height: auto !important;
   width: auto !important;
-  padding-left: 1.25rem !important;
-  padding-right: 0.35rem !important;
-  padding-top: 0.35rem;
+  padding: 0 !important;
+  margin: 0 !important;
   font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
   line-height: 1.1;
   background-color: var(--app-floating-label-background, transparent);
@@ -3194,8 +3259,7 @@ input[type="number"],
 
 .inventory-edit-form .form-floating > label,
 .inventory-edit-form .form-floating > .app-floating-label {
-  padding-left: 1.25rem !important;
-  padding-right: 0;
+  padding: 0 !important;
   width: max-content;
   max-width: none;
   white-space: nowrap;

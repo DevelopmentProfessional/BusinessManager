@@ -29,7 +29,7 @@ function classNames(...classes) {
 }
 
 /** Bottom-right +Nav toggle and expanded menu share this layer (above page footers at 1050). */
-const APP_NAV_Z_INDEX = 1100;
+const APP_NAV_Z_INDEX = 1500;
 
 export default function Layout({ children }) {
   const [expandedMenuOpen, setExpandedMenuOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function Layout({ children }) {
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
-  const { isTrainingMode, buttonTextSize, uiScale } = useViewMode();
+  const { isTrainingMode, buttonTextSize } = useViewMode();
 
   // Restore any pending undo notification after page refresh
   useEffect(() => {
@@ -109,14 +109,6 @@ export default function Layout({ children }) {
   useEffect(() => {
     applyButtonDimensions(buttonTextSize, isTrainingMode);
   }, [buttonTextSize, isTrainingMode]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    document.documentElement.style.setProperty("--app-ui-scale", String(uiScale / 100));
-    return () => {
-      document.documentElement.style.removeProperty("--app-ui-scale");
-    };
-  }, [uiScale]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;

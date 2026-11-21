@@ -2,7 +2,7 @@
 // Renders the general settings panel for managers/admins: application info, company info, branding, notifications, and client portal branding.
 
 import React from "react";
-import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, Squares2X2Icon, ArrowPathIcon, MagnifyingGlassPlusIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon, EnvelopeIcon } from "../../../icons";
+import { InformationCircleIcon, BriefcaseIcon, SwatchIcon, BellIcon, CheckCircleIcon, ArrowUpTrayIcon, Squares2X2Icon, ArrowPathIcon, ClockIcon, CircleStackIcon, FolderIcon, XMarkIcon, XCircleIcon, CreditCardIcon, EnvelopeIcon } from "../../../icons";
 import Button_App from "../buttons/Button_App";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Modal from "../modals/Modal";
@@ -10,25 +10,14 @@ import { documentsAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputCheckbox, InputNumber, InputText, InputFile, InputColor } from "../Inputs";
 import { Accordion } from "../accordions";
-
-const APP_ZOOM_LEVELS = [90, 100, 110, 125, 150];
+import ColorPickerField from "../fields/ColorPickerField";
 
 const SECTION_BODY_MAX_HEIGHT = "min(52vh, calc(var(--vvp-height, 100dvh) - 14rem))";
 
 /** Shared profile-style accordion scaffolding for company settings sections. */
 function SettingsSection({ open, onToggle, icon: Icon, iconClassName = "", title, titleExtra = null, children }) {
   return (
-    <Accordion
-      variant="settings"
-      header={title}
-      open={open}
-      onToggle={onToggle}
-      icon={Icon}
-      iconClassName={iconClassName}
-      titleExtra={titleExtra}
-      bodyPlacement="above"
-      bodyStyle={{ maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}
-    >
+    <Accordion variant="settings" header={title} open={open} onToggle={onToggle} icon={Icon} iconClassName={iconClassName} titleExtra={titleExtra} bodyPlacement="above" bodyStyle={{ maxHeight: SECTION_BODY_MAX_HEIGHT, overflowY: "auto" }}>
       {children}
     </Accordion>
   );
@@ -38,9 +27,6 @@ const Panel_General = ({
   panelStyle,
   openAccordions,
   toggleAccordion,
-  uiScale,
-  setUiScale,
-  cycleUiScale,
   syncLoading,
   handleManualSync,
   user,
@@ -118,25 +104,6 @@ const Panel_General = ({
             </div>
           </div>
           <div className="col-12">
-            <div className="align-items-center bg-light d-flex flex-wrap gap-2 justify-content-between mb-2 p-0 rounded">
-              <div className="ui-flex-center-gap-2">
-                <MagnifyingGlassPlusIcon className="h-4 text-primary w-4" />
-                <span className="fw-medium small">App Zoom</span>
-              </div>
-              <div className="align-items-center d-flex flex-wrap gap-2">
-                <button type="button" onClick={cycleUiScale} className="align-items-center btn btn-outline-secondary btn-sm d-flex gap-2" title="Increase zoom to the next preset">
-                  <MagnifyingGlassPlusIcon className="ui-icon-4" />
-                  <span>{uiScale}%</span>
-                </button>
-                <Dropdown_Custom
-                  value={uiScale}
-                  onChange={(e) => setUiScale(Number(e.target.value))}
-                  className="form-select ui-control-sm"
-                  style={{ width: "7rem" }}
-                  options={APP_ZOOM_LEVELS.map((zoomLevel) => ({ value: zoomLevel, label: `${zoomLevel}%` }))}
-                />
-              </div>
-            </div>
             {/* Admin-only: Check/Start Database Button */}
             {user?.role === "admin" && (
               <div className="align-items-center d-flex gap-2 mt-2">
@@ -181,13 +148,9 @@ const Panel_General = ({
             <label htmlFor="sending_email">Sending Email</label>
           </div>
           <div className="col-span-2">
-            <div className="small text-muted mb-2">
-              Emails use the system's provider-authorized sender; replies go to this address after verification.
-            </div>
+            <div className="small text-muted mb-2">Emails use the system's provider-authorized sender; replies go to this address after verification.</div>
             <div className="align-items-center d-flex flex-wrap gap-2 mb-2">
-              <span className={`badge ${companyInfo.sending_email_verified ? "bg-success" : "bg-secondary"}`}>
-                {companyInfo.sending_email_verified ? "Sending email verified" : "Sending email not verified"}
-              </span>
+              <span className={`badge ${companyInfo.sending_email_verified ? "bg-success" : "bg-secondary"}`}>{companyInfo.sending_email_verified ? "Sending email verified" : "Sending email not verified"}</span>
               <Button_Toolbar
                 icon={EnvelopeIcon}
                 label={sendingEmailVerificationLoading ? "Sending..." : "Send code"}
@@ -209,14 +172,7 @@ const Panel_General = ({
                   placeholder="8-digit code"
                   aria-label="Sending email verification code"
                 />
-                <Button_Toolbar
-                  icon={CheckCircleIcon}
-                  label="Verify"
-                  onClick={onConfirmSendingEmailVerification}
-                  disabled={sendingEmailVerificationLoading || sendingEmailVerificationCode.length !== 8}
-                  className="btn-outline-success"
-                  title="Verify the sending email address"
-                />
+                <Button_Toolbar icon={CheckCircleIcon} label="Verify" onClick={onConfirmSendingEmailVerification} disabled={sendingEmailVerificationLoading || sendingEmailVerificationCode.length !== 8} className="btn-outline-success" title="Verify the sending email address" />
               </div>
             )}
             {sendingEmailVerificationStatus && (
@@ -239,15 +195,7 @@ const Panel_General = ({
           </div>
           <div className="d-flex gap-1 align-items-center">
             <div className="form-floating flex-grow-1">
-              <InputText
-                type="text"
-                id="company_timezone"
-                value={companyInfo.company_timezone || ""}
-                onChange={(e) => handleCompanyInfoChange("company_timezone", e.target.value)}
-                className="form-control ui-control-sm"
-                placeholder="Time Zone (e.g. America/New_York)"
-                list="common-timezones-list"
-              />
+              <InputText type="text" id="company_timezone" value={companyInfo.company_timezone || ""} onChange={(e) => handleCompanyInfoChange("company_timezone", e.target.value)} className="form-control ui-control-sm" placeholder="Time Zone (e.g. America/New_York)" list="common-timezones-list" />
               <label htmlFor="company_timezone">Time Zone</label>
               <datalist id="common-timezones-list">
                 <option value="America/New_York">Eastern Time (US & Canada)</option>
@@ -271,18 +219,17 @@ const Panel_General = ({
                 <option value="UTC">UTC</option>
               </datalist>
             </div>
-            <button
-              type="button"
-              className="btn btn-outline-secondary btn-sm text-nowrap"
-              style={{ height: "calc(3.5rem + 0.125rem)" }}
+            <Button_App
+              icon={ClockIcon}
+              label="Detect time zone"
+              compact
+              className="btn-outline-secondary"
               onClick={() => {
                 const detected = (typeof Intl !== "undefined" && Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
                 handleCompanyInfoChange("company_timezone", detected);
               }}
               title="Auto-detect current time zone from your browser"
-            >
-              Auto-detect
-            </button>
+            />
           </div>
         </div>
         <p className="mb-2 text-muted text-xs">e.g. 8.5 for 8.5%</p>
@@ -357,10 +304,7 @@ const Panel_General = ({
               <label className="flex font-medium items-center mb-1 text-sm">
                 {label} <HelpIcon id={helpId} text={helpText} />
               </label>
-              <div className="ui-flex-items-gap-2">
-                <InputColor value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="flex-shrink-0" />
-                <InputText value={localBranding[key]} onChange={(e) => handleBrandingChange(key, e.target.value)} className="border flex-1 font-mono min-w-0 px-0 py-1 rounded text-xs" />
-              </div>
+              <ColorPickerField value={localBranding[key]} onChange={(value) => handleBrandingChange(key, value)} />
             </div>
           ))}
         </div>
@@ -418,20 +362,82 @@ const Panel_General = ({
           <div className="alert alert-secondary mb-2 py-1 small">Bank accounts are stored encrypted and displayed masked. Live transfers and card-provider connections remain disabled until a provider is selected.</div>
           <div className="border mb-2 p-1 rounded">
             <div className="fw-semibold mb-2 small">Business funding / receiving accounts</div>
-            {companyPaymentAccountsLoading ? <div className="small text-muted">Loading accounts…</div> : companyPaymentAccounts.map((account) => (
-              <div key={account.id} className="align-items-center border-bottom d-flex gap-2 py-1">
-                <div className="flex-grow-1 small"><div className="fw-semibold">{account.label} {account.is_default && <span className="badge bg-primary ms-1">Default</span>}</div><div className="text-muted">{account.account_type === "bank_account" ? "Bank account" : "Provider account"} · {account.last4 ? `•••• ${account.last4}` : "details saved"} · {account.status.replaceAll("_", " ")}</div></div>
-                {account.status !== "disabled" && <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => handleDisableCompanyPaymentAccount(account)}>Disable</button>}
-              </div>
-            ))}
+            {companyPaymentAccountsLoading ? (
+              <div className="small text-muted">Loading accounts…</div>
+            ) : (
+              companyPaymentAccounts.map((account) => (
+                <div key={account.id} className="align-items-center border-bottom d-flex gap-2 py-1">
+                  <div className="flex-grow-1 small">
+                    <div className="fw-semibold">
+                      {account.label} {account.is_default && <span className="badge bg-primary ms-1">Default</span>}
+                    </div>
+                    <div className="text-muted">
+                      {account.account_type === "bank_account" ? "Bank account" : "Provider account"} · {account.last4 ? `•••• ${account.last4}` : "details saved"} · {account.status.replaceAll("_", " ")}
+                    </div>
+                  </div>
+                  {account.status !== "disabled" && (
+                    <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => handleDisableCompanyPaymentAccount(account)}>
+                      Disable
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
             <div className="row ui-row-g2 mt-1">
-              <div className="col-md-3"><Dropdown_Custom value={companyPaymentAccountForm.account_type} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_type: e.target.value }))} options={[{ value: "bank_account", label: "Bank account" }, { value: "card_provider", label: "Provider account" }]} /></div>
-              <div className="col-md-3"><Dropdown_Custom value={companyPaymentAccountForm.purpose} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, purpose: e.target.value }))} options={[{ value: "both", label: "Funding & receiving" }, { value: "funding", label: "Funding" }, { value: "receiving", label: "Receiving" }]} /></div>
-              <div className="col-md-3"><InputText value={companyPaymentAccountForm.label} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, label: e.target.value }))} placeholder="Label" /></div>
-              <div className="col-md-3"><InputText value={companyPaymentAccountForm.account_holder_name} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_holder_name: e.target.value }))} placeholder="Account holder" /></div>
-              {companyPaymentAccountForm.account_type === "bank_account" ? <><div className="col-md-4"><InputText value={companyPaymentAccountForm.bank_name} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, bank_name: e.target.value }))} placeholder="Bank name" /></div><div className="col-md-4"><InputText type="password" value={companyPaymentAccountForm.account_number} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_number: e.target.value }))} placeholder="Account number" autoComplete="off" /></div><div className="col-md-4"><InputText type="password" value={companyPaymentAccountForm.routing_number} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, routing_number: e.target.value }))} placeholder="Routing number" autoComplete="off" /></div></> : <div className="col-md-8"><InputText value={companyPaymentAccountForm.provider_account_id} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, provider_account_id: e.target.value }))} placeholder="Provider account ID" autoComplete="off" /></div>}
-              <div className="align-items-center col-md-3 d-flex"><label className="small"><input type="checkbox" className="me-1" checked={!!companyPaymentAccountForm.is_default} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, is_default: e.target.checked }))} /> Default account</label></div>
-              <div className="col-12"><button type="button" className="btn btn-success btn-sm" onClick={handleAddCompanyPaymentAccount} disabled={companyPaymentAccountSaving}>{companyPaymentAccountSaving ? "Saving…" : "Add business account"}</button></div>
+              <div className="col-md-3">
+                <Dropdown_Custom
+                  value={companyPaymentAccountForm.account_type}
+                  onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_type: e.target.value }))}
+                  options={[
+                    { value: "bank_account", label: "Bank account" },
+                    { value: "card_provider", label: "Provider account" },
+                  ]}
+                />
+              </div>
+              <div className="col-md-3">
+                <Dropdown_Custom
+                  value={companyPaymentAccountForm.purpose}
+                  onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, purpose: e.target.value }))}
+                  options={[
+                    { value: "both", label: "Funding & receiving" },
+                    { value: "funding", label: "Funding" },
+                    { value: "receiving", label: "Receiving" },
+                  ]}
+                />
+              </div>
+              <div className="col-md-3">
+                <InputText value={companyPaymentAccountForm.label} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, label: e.target.value }))} placeholder="Label" />
+              </div>
+              <div className="col-md-3">
+                <InputText value={companyPaymentAccountForm.account_holder_name} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_holder_name: e.target.value }))} placeholder="Account holder" />
+              </div>
+              {companyPaymentAccountForm.account_type === "bank_account" ? (
+                <>
+                  <div className="col-md-4">
+                    <InputText value={companyPaymentAccountForm.bank_name} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, bank_name: e.target.value }))} placeholder="Bank name" />
+                  </div>
+                  <div className="col-md-4">
+                    <InputText type="password" value={companyPaymentAccountForm.account_number} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, account_number: e.target.value }))} placeholder="Account number" autoComplete="off" />
+                  </div>
+                  <div className="col-md-4">
+                    <InputText type="password" value={companyPaymentAccountForm.routing_number} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, routing_number: e.target.value }))} placeholder="Routing number" autoComplete="off" />
+                  </div>
+                </>
+              ) : (
+                <div className="col-md-8">
+                  <InputText value={companyPaymentAccountForm.provider_account_id} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, provider_account_id: e.target.value }))} placeholder="Provider account ID" autoComplete="off" />
+                </div>
+              )}
+              <div className="align-items-center col-md-3 d-flex">
+                <label className="small">
+                  <input type="checkbox" className="me-1" checked={!!companyPaymentAccountForm.is_default} onChange={(e) => setCompanyPaymentAccountForm((current) => ({ ...current, is_default: e.target.checked }))} /> Default account
+                </label>
+              </div>
+              <div className="col-12">
+                <button type="button" className="btn btn-success btn-sm" onClick={handleAddCompanyPaymentAccount} disabled={companyPaymentAccountSaving}>
+                  {companyPaymentAccountSaving ? "Saving…" : "Add business account"}
+                </button>
+              </div>
             </div>
           </div>
           <div className="alert alert-info mb-2 py-1 small">Configure Stripe card payments here. Stripe checkout has no monthly fee by default; you only pay per successful transaction.</div>
@@ -477,7 +483,15 @@ const Panel_General = ({
             </div>
 
             <div className="form-floating ui-form-floating-mb2">
-              <InputText type="password" id="stripe_test_secret_key" value={stripeSettings.stripe_test_secret_key || ""} onChange={(e) => handleStripeSettingsChange("stripe_test_secret_key", e.target.value)} className="form-control ui-control-sm" placeholder="sk_test_..." autoComplete="new-password" />
+              <InputText
+                type="password"
+                id="stripe_test_secret_key"
+                value={stripeSettings.stripe_test_secret_key || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_test_secret_key", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="sk_test_..."
+                autoComplete="new-password"
+              />
               <label htmlFor="stripe_test_secret_key">Test Secret Key</label>
             </div>
 
@@ -511,7 +525,15 @@ const Panel_General = ({
             </div>
 
             <div className="form-floating ui-form-floating-mb2">
-              <InputText type="password" id="stripe_live_secret_key" value={stripeSettings.stripe_live_secret_key || ""} onChange={(e) => handleStripeSettingsChange("stripe_live_secret_key", e.target.value)} className="form-control ui-control-sm" placeholder="sk_live_..." autoComplete="new-password" />
+              <InputText
+                type="password"
+                id="stripe_live_secret_key"
+                value={stripeSettings.stripe_live_secret_key || ""}
+                onChange={(e) => handleStripeSettingsChange("stripe_live_secret_key", e.target.value)}
+                className="form-control ui-control-sm"
+                placeholder="sk_live_..."
+                autoComplete="new-password"
+              />
               <label htmlFor="stripe_live_secret_key">Live Secret Key</label>
             </div>
 

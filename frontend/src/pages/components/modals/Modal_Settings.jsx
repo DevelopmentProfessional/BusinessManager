@@ -2,10 +2,10 @@
 // Renders the personal settings accordion panel: dark mode, theme color, footer alignment, signature, training mode toggle, startup page, and logout.
 
 import React, { useState } from "react";
-import { SunIcon, MoonIcon, CalendarDaysIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, AdjustmentsHorizontalIcon, HomeIcon } from "../../../icons";
+import { SunIcon, MoonIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, AdjustmentsHorizontalIcon, HomeIcon } from "../../../icons";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import Modal_ColorPicker from "./Modal_ColorPicker";
+import ColorPickerField from "../fields/ColorPickerField";
 import Modal_StartupPage, { STARTUP_PAGE_OPTIONS } from "./Modal_StartupPage";
 import Footer_Settings from "../footers/Footer_Settings";
 import api from "../../../services/api";
@@ -20,11 +20,8 @@ const Modal_Settings = ({
   employeeColor,
   pendingColor,
   setPendingColor,
-  colorPickerOpen,
-  setColorPickerOpen,
   colorUpdating,
-  colorMessage,
-  handleColorSave,
+  handleColorChange,
   FooterAlignIcon,
   cycleFooterAlign,
   user,
@@ -54,6 +51,13 @@ const Modal_Settings = ({
   const [startupSaving, setStartupSaving] = useState(false);
   const [startupMessage, setStartupMessage] = useState("");
   const [startupNotice, setStartupNotice] = useState("");
+
+  const handleInlineColorChange = (value) => {
+    setPendingColor(value);
+    if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(value || "").trim())) {
+      handleColorChange(value);
+    }
+  };
 
   const handleStartupSave = async (newPage) => {
     setStartupSaving(true);
@@ -156,9 +160,7 @@ const Modal_Settings = ({
             </span>
           );
         })}
-        {dbLoading && (
-          <LoadingSpinner label="Updating settings" size="sm" />
-        )}
+        {dbLoading && <LoadingSpinner label="Updating settings" size="sm" />}
       </div>
       <div className="mb-2 small text-muted">
         App Version {appVersion || "0.0.0"} (Build: {appBuildLabel || "N/A"})
@@ -172,32 +174,9 @@ const Modal_Settings = ({
       <div className="align-items-center d-flex flex-wrap gap-1 justify-content-start mb-3" style={{ minHeight: "3rem" }}>
         <Button_Toolbar icon={isDarkMode ? MoonIcon : SunIcon} label={isDarkMode ? "Light" : "Dark"} onClick={toggleDarkMode} className={`settings-accordion-btn ${isDarkMode ? "text-white" : ""}`} style={{ backgroundColor: isDarkMode ? "#3B82F6" : "#F59E0B", border: "none" }} />
 
-        <Button_Toolbar
-          icon={CalendarDaysIcon}
-          label="Color"
-          onClick={() => {
-            setPendingColor(employeeColor);
-            setColorPickerOpen(true);
-          }}
-          className="settings-accordion-btn"
-          style={{ backgroundColor: employeeColor, border: "0px solid var(--bs-border-color, #dee2e6)", color: "white" }}
-          disabled={colorUpdating}
-          aria-haspopup="dialog"
-          aria-expanded={colorPickerOpen}
-        />
-
-        <Modal_ColorPicker
-          isOpen={colorPickerOpen}
-          onClose={() => {
-            setPendingColor(employeeColor);
-            setColorPickerOpen(false);
-          }}
-          pendingColor={pendingColor}
-          onPendingColorChange={setPendingColor}
-          onSave={handleColorSave}
-          saving={colorUpdating}
-          message={colorMessage}
-        />
+        <div className="settings-accordion-btn" style={{ width: "6rem" }}>
+          <ColorPickerField value={pendingColor || employeeColor} onChange={handleInlineColorChange} disabled={colorUpdating} className="w-100" />
+        </div>
 
         <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="btn-outline-secondary settings-accordion-btn" title="Cycle footer alignment" />
 
@@ -237,14 +216,7 @@ const Modal_Settings = ({
           aria-expanded={startupModalOpen}
         />
 
-        <Modal_StartupPage
-          isOpen={startupModalOpen}
-          onClose={() => setStartupModalOpen(false)}
-          currentStartupPage={startupPage}
-          onSave={handleStartupSave}
-          saving={startupSaving}
-          message={startupMessage}
-        />
+        <Modal_StartupPage isOpen={startupModalOpen} onClose={() => setStartupModalOpen(false)} currentStartupPage={startupPage} onSave={handleStartupSave} saving={startupSaving} message={startupMessage} />
 
         <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="btn-outline-secondary settings-accordion-btn" title="Log out" />
       </div>

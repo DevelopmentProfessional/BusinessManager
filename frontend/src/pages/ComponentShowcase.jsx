@@ -95,7 +95,6 @@ import Modal_ItemDetail from "./components/modals/Modal_ItemDetail";
 import Modal_EmployeePay from "./components/modals/Modal_EmployeePay";
 import Modal_EmployeeRequests from "./components/modals/Modal_EmployeeRequests";
 import Modal_ForecastCalculator from "./components/modals/Modal_ForecastCalculator";
-import Modal_ColorPicker from "./components/modals/Modal_ColorPicker";
 import Modal_StartupPage from "./components/modals/Modal_StartupPage";
 import Modal_UserPermissions from "./components/modals/Modal_UserPermissions";
 import Modal_UserCreate from "./components/modals/Modal_UserCreate";
@@ -1137,11 +1136,8 @@ export default function ComponentShowcase() {
                   employeeColor="#3B82F6"
                   pendingColor="#3B82F6"
                   setPendingColor={noop}
-                  colorPickerOpen={false}
-                  setColorPickerOpen={noop}
                   colorUpdating={false}
-                  colorMessage=""
-                  handleColorSave={noop}
+                  handleColorChange={noop}
                   FooterAlignIcon={Bars3BottomLeftIcon}
                   cycleFooterAlign={noop}
                   user={mockEmployee}
@@ -1590,17 +1586,6 @@ export default function ComponentShowcase() {
             <Modal_ForecastCalculator
               isOpen={true}
               onClose={noop}
-            />
-          </ComponentCard>
-        )}
-
-        {isCardVisible("Modal_ColorPicker.jsx", "Modals") && (
-          <ComponentCard title="Modal_ColorPicker.jsx" category="Modals" width="380px" height="380px" sandbox={true}>
-            <Modal_ColorPicker
-              isOpen={true}
-              onClose={noop}
-              currentColor="#3b82f6"
-              onSelectColor={noop}
             />
           </ComponentCard>
         )}

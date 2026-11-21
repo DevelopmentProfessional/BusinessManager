@@ -185,7 +185,7 @@ const Profile = () => {
   const userRef = useRef(user);
   userRef.current = user;
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const { isTrainingMode, toggleViewMode, buttonTextSize, setButtonTextSize, footerAlign, setFooterAlign, uiScale, setUiScale } = useViewMode();
+  const { isTrainingMode, toggleViewMode, buttonTextSize, setButtonTextSize, footerAlign, setFooterAlign } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
   const FooterAlignIcon = footerAlign === "center" ? AlignCenterIcon : footerAlign === "right" ? AlignRightIcon : AlignLeftIcon;
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
@@ -228,22 +228,6 @@ const Profile = () => {
     setButtonTextSize(nextSize);
     void persistCurrentUserProfile({ button_text_size: nextSize }).catch(() => {});
   }, [buttonTextSize, setButtonTextSize, persistCurrentUserProfile]);
-
-  const setPersistedUiScale = useCallback(
-    (scale) => {
-      setUiScale(scale);
-      void persistCurrentUserProfile({ ui_scale: Number(scale) }).catch(() => {});
-    },
-    [setUiScale, persistCurrentUserProfile]
-  );
-
-  const cyclePersistedUiScale = useCallback(() => {
-    const zoomLevels = [90, 100, 110, 125, 150];
-    const currentIndex = zoomLevels.indexOf(uiScale);
-    const nextScale = zoomLevels[currentIndex >= 0 ? (currentIndex + 1) % zoomLevels.length : 1];
-    setUiScale(nextScale);
-    void persistCurrentUserProfile({ ui_scale: nextScale }).catch(() => {});
-  }, [uiScale, setUiScale, persistCurrentUserProfile]);
 
   const setPersistedStartupPage = useCallback(
     async (page) => {
@@ -289,7 +273,6 @@ const Profile = () => {
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [employeeColor, setEmployeeColor] = useState(user?.color || "#3B82F6");
   const [pendingColor, setPendingColor] = useState(user?.color || "#3B82F6");
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorUpdating, setColorUpdating] = useState(false);
   const [colorMessage, setColorMessage] = useState("");
   const [openAccordion, setOpenAccordion] = useState("");
@@ -437,8 +420,8 @@ const Profile = () => {
   useEffect(() => {
     const savedColor = user?.color || "#3B82F6";
     setEmployeeColor(savedColor);
-    if (!colorPickerOpen) setPendingColor(savedColor);
-  }, [user?.color, colorPickerOpen]);
+    setPendingColor(savedColor);
+  }, [user?.color]);
 
   // ─── 5 LAYOUT MEASUREMENT EFFECTS ────────────────────────────────────────
   useEffect(() => {
@@ -1228,6 +1211,7 @@ const Profile = () => {
       setColorMessage(detail);
       const fallbackColor = user?.color || "#3B82F6";
       setEmployeeColor(fallbackColor);
+      setPendingColor(fallbackColor);
       applyActiveColorTheme(fallbackColor);
       setTimeout(() => setColorMessage(""), 3000);
       return false;
@@ -1249,11 +1233,6 @@ const Profile = () => {
     } catch {
       // Local theme already toggled; profile refresh on the next launch will re-seed it.
     }
-  };
-
-  const handleColorSave = async () => {
-    const ok = await handleColorChange(pendingColor);
-    if (ok) setColorPickerOpen(false);
   };
 
   // ─── 14 PERFORMANCE TRACKING EFFECT ──────────────────────────────────────
@@ -1523,11 +1502,8 @@ const Profile = () => {
                         employeeColor={employeeColor}
                         pendingColor={pendingColor}
                         setPendingColor={setPendingColor}
-                        colorPickerOpen={colorPickerOpen}
-                        setColorPickerOpen={setColorPickerOpen}
                         colorUpdating={colorUpdating}
-                        colorMessage={colorMessage}
-                        handleColorSave={handleColorSave}
+                        handleColorChange={handleColorChange}
                         FooterAlignIcon={FooterAlignIcon}
                         cycleFooterAlign={cyclePersistedFooterAlign}
                         user={user}
@@ -1589,9 +1565,6 @@ const Profile = () => {
           panelStyle={generalPanelStyle}
           openAccordions={openAccordions}
           toggleAccordion={toggleAccordion}
-          uiScale={uiScale}
-          setUiScale={setPersistedUiScale}
-          cycleUiScale={cyclePersistedUiScale}
           syncLoading={syncLoading}
           handleManualSync={handleManualSync}
           user={user}
