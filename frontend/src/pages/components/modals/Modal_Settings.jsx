@@ -1,0 +1,229 @@
+// FILE: Modal_Settings.jsx
+// Renders the personal settings accordion panel: dark mode, theme color, footer alignment, signature, training mode toggle, startup page, and logout.
+
+import React, { useState } from "react";
+import { SunIcon, MoonIcon, PencilIcon, ArrowLeftOnRectangleIcon, BookOpenIcon, Squares2X2Icon, AdjustmentsHorizontalIcon, HomeIcon } from "../../../icons";
+import { PencilSquareIcon } from "@heroicons/react/24/solid";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import ColorPickerField from "../fields/ColorPickerField";
+import Modal_StartupPage, { STARTUP_PAGE_OPTIONS } from "./Modal_StartupPage";
+import Footer_Settings from "../footers/Footer_Settings";
+import api from "../../../services/api";
+import { LoadingSpinner } from "../feedback";
+
+const Modal_Settings = ({
+  embedded = false,
+  isMobile,
+  row1PanelBottom,
+  isDarkMode,
+  toggleDarkMode,
+  employeeColor,
+  pendingColor,
+  setPendingColor,
+  colorUpdating,
+  handleColorChange,
+  FooterAlignIcon,
+  cycleFooterAlign,
+  user,
+  setSignatureModalOpen,
+  isTrainingMode,
+  toggleViewMode,
+  buttonTextSize,
+  cycleButtonTextSize,
+  handleLogout,
+  currentDbEnvironment,
+  dbLoading,
+  dbMessage,
+  dbError,
+  handleSwitchEnvironment,
+  DB_ENVIRONMENTS,
+  environmentLastUpdated,
+  appVersion,
+  appBuildLabel,
+  HelpIcon: _HelpIcon,
+  onClose,
+  onSave,
+  showCloseButton = true,
+  startupPage,
+  setStartupPage,
+}) => {
+  const [startupModalOpen, setStartupModalOpen] = useState(false);
+  const [startupSaving, setStartupSaving] = useState(false);
+  const [startupMessage, setStartupMessage] = useState("");
+  const [startupNotice, setStartupNotice] = useState("");
+
+  const handleInlineColorChange = (value) => {
+    setPendingColor(value);
+    if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(value || "").trim())) {
+      handleColorChange(value);
+    }
+  };
+
+  const handleStartupSave = async (newPage) => {
+    setStartupSaving(true);
+    setStartupMessage("");
+    const option = STARTUP_PAGE_OPTIONS.find((o) => o.value === newPage);
+    const label = option?.label || newPage;
+    try {
+      if (setStartupPage) {
+        await setStartupPage(newPage);
+      }
+      if (user?.id) {
+        try {
+          await api.put(`/isud/user/${user.id}`, { startup_page: newPage });
+        } catch (_) {}
+      }
+      setStartupMessage(`Startup page updated to ${label}!`);
+      setStartupNotice(`Startup page updated to ${label}!`);
+      setTimeout(() => {
+        setStartupModalOpen(false);
+        setStartupMessage("");
+      }, 500);
+      setTimeout(() => {
+        setStartupNotice("");
+      }, 4000);
+    } catch (err) {
+      console.error("handleStartupSave error:", err);
+      const merged = { ...user, startup_page: newPage };
+      if (localStorage.getItem("user")) localStorage.setItem("user", JSON.stringify(merged));
+      if (sessionStorage.getItem("user")) sessionStorage.setItem("user", JSON.stringify(merged));
+      setStartupNotice(`Startup page updated to ${label}!`);
+      setStartupModalOpen(false);
+    } finally {
+      setStartupSaving(false);
+    }
+  };
+
+  const containerStyle = embedded
+    ? {
+        position: "relative",
+        width: "100%",
+        height: "auto",
+        overflowY: "visible",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        backgroundColor: "transparent",
+        zIndex: "auto",
+        paddingTop: 0,
+        paddingLeft: 0,
+        paddingRight: 0,
+        paddingBottom: 0,
+        boxShadow: "none",
+        display: "flex",
+        flexDirection: "column",
+      }
+    : {
+        position: "fixed",
+        top: 0,
+        bottom: `${row1PanelBottom}px`,
+        left: 0,
+        right: 0,
+        width: "100%",
+        height: `calc(var(--vvp-height, 100dvh) - ${row1PanelBottom}px)`,
+        overflowY: "auto",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        backgroundColor: "var(--bs-body-bg)",
+        zIndex: 1000,
+        paddingTop: "1rem",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+        paddingBottom: "0.25rem",
+        boxShadow: "0 -2px 10px rgba(0,0,0,0.1)",
+        display: "flex",
+        flexDirection: "column",
+      };
+
+  return (
+    <div className={embedded ? "" : "accordion-popup"} style={containerStyle}>
+      <div className="align-items-center d-flex flex-wrap gap-1 mb-2 mt-2">
+        <span className="me-1 small text-muted">Environment Production (Last Updated: {environmentLastUpdated || "N/A"})</span>
+        {Object.entries(DB_ENVIRONMENTS).map(([key, env]) => {
+          const isCurrent = key === currentDbEnvironment;
+          return (
+            <span
+              key={key}
+              role="radio"
+              aria-checked={isCurrent}
+              tabIndex={0}
+              className={`badge rounded-pill px-1 py-0 ${isCurrent ? "bg-primary text-white" : "bg-transparent text-secondary border"}`}
+              style={{ cursor: isCurrent || dbLoading ? "default" : "pointer", fontSize: "0.8rem", transition: "all 0.15s ease", userSelect: "none" }}
+              onClick={() => !isCurrent && !dbLoading && handleSwitchEnvironment(key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  !isCurrent && !dbLoading && handleSwitchEnvironment(key);
+                }
+              }}
+            >
+              {env.name}
+            </span>
+          );
+        })}
+        {dbLoading && <LoadingSpinner label="Updating settings" size="sm" />}
+      </div>
+      <div className="mb-2 small text-muted">
+        App Version {appVersion || "0.0.0"} (Build: {appBuildLabel || "N/A"})
+      </div>
+      {startupNotice && <div className="mt-1 small text-success">{startupNotice}</div>}
+      {dbMessage && <div className="mt-1 small text-success">{dbMessage}</div>}
+      {dbError && <div className="mt-1 small text-danger">{dbError}</div>}
+
+      {!embedded && <div style={{ flexGrow: isMobile ? 0 : 1, minHeight: isMobile ? 0 : undefined }}></div>}
+
+      <div className="align-items-center d-flex flex-wrap gap-1 justify-content-start mb-3" style={{ minHeight: "3rem" }}>
+        <Button_Toolbar icon={isDarkMode ? MoonIcon : SunIcon} label={isDarkMode ? "Light" : "Dark"} onClick={toggleDarkMode} className={`settings-accordion-btn ${isDarkMode ? "text-white" : ""}`} style={{ backgroundColor: isDarkMode ? "#3B82F6" : "#F59E0B", border: "none" }} />
+
+        <div className="settings-accordion-btn" style={{ width: "6rem" }}>
+          <ColorPickerField value={pendingColor || employeeColor} onChange={handleInlineColorChange} disabled={colorUpdating} className="w-100" />
+        </div>
+
+        <Button_Toolbar icon={FooterAlignIcon} label="Align" onClick={cycleFooterAlign} className="btn-outline-secondary settings-accordion-btn" title="Cycle footer alignment" />
+
+        <Button_Toolbar icon={user?.signature_data || user?.signature_url ? PencilSquareIcon : PencilIcon} label="Sign" onClick={() => setSignatureModalOpen(true)} className="btn-outline-secondary settings-accordion-btn" title="Signature" />
+
+        <Button_Toolbar
+          icon={isTrainingMode ? Squares2X2Icon : BookOpenIcon}
+          label={isTrainingMode ? "Icons" : "Train"}
+          onClick={async () => {
+            const nextTrainingMode = !isTrainingMode;
+            toggleViewMode();
+            if (user?.id) {
+              try {
+                await api.put(`/isud/user/${user.id}`, {
+                  training_mode: nextTrainingMode,
+                  training_mode_explicit: true,
+                });
+              } catch (_) {}
+            }
+          }}
+          className="btn-outline-secondary settings-accordion-btn"
+          title={isTrainingMode ? "Switch to compact mode" : "Switch to training mode"}
+        />
+
+        <Button_Toolbar icon={AdjustmentsHorizontalIcon} label="Size" onClick={cycleButtonTextSize} className="btn-outline-secondary settings-accordion-btn" title={`Text size: ${buttonTextSize}`} />
+
+        <Button_Toolbar
+          icon={HomeIcon}
+          label="Home"
+          onClick={() => {
+            setStartupMessage("");
+            setStartupModalOpen(true);
+          }}
+          className="btn-outline-secondary settings-accordion-btn"
+          title="Startup Page"
+          aria-haspopup="dialog"
+          aria-expanded={startupModalOpen}
+        />
+
+        <Modal_StartupPage isOpen={startupModalOpen} onClose={() => setStartupModalOpen(false)} currentStartupPage={startupPage} onSave={handleStartupSave} saving={startupSaving} message={startupMessage} />
+
+        <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="btn-outline-secondary settings-accordion-btn" title="Log out" />
+      </div>
+
+      {(onSave || onClose) && <Footer_Settings onSave={onSave || onClose} onClose={onClose} showClose={showCloseButton} />}
+    </div>
+  );
+};
+
+export default Modal_Settings;
