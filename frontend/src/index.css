@@ -3186,7 +3186,7 @@ input[type="number"],
 .form-floating > label,
 .form-floating > .app-floating-label {
   position: absolute;
-  top: 1rem;
+  top: 0.35rem;
   left: 1.25rem;
   z-index: 2;
   height: auto !important;

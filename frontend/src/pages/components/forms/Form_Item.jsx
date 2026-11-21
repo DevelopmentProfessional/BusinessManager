@@ -478,7 +478,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
 
       {/* ─── 6 RENDER: IMAGE AREA + 7 STOCK FIELDS ──────────────────────────────── */}
       {/* Container_Scrollable Content Area */}
-      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
         <form id="item-form" onSubmit={handleSubmit} className="inventory-edit-form">
           {/* Top Section: Image placeholder (left) + Stock fields (right) */}
           <div className="d-flex gap-3 mb-3" style={{ minHeight: "200px" }}>

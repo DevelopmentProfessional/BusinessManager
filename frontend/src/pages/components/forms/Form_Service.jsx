@@ -487,8 +487,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Details ── */}
         {activeTab === "details" && (
-          <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto text-gray-900">
-            <div className="d-flex flex-column px-1" style={{ minHeight: "100%", justifyContent: "flex-end" }}>
+          <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
+            <div className="d-flex flex-column" style={{ minHeight: "100%", justifyContent: "flex-end" }}>
               <form id="service-details-form" onSubmit={handleSubmit}>
                 {/* Top Section: Image (left) + Core fields (right) */}
                 <div className="d-flex gap-3 mb-2" style={{ minHeight: "180px" }}>

@@ -661,7 +661,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
       {/* ─── 6 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable body — content floats to bottom */}
-      <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto px-1 text-gray-900">
+      <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
         <div className="flex-grow-1" />
         <form id="schedule-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 pb-0 pt-1">
           {(formData.appointment_type === "one_time" || formData.appointment_type === "series") && (

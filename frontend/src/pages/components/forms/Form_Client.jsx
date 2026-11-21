@@ -145,7 +145,7 @@ export default function Form_Client({ client, initialName = "", onSubmit, onCanc
 
       {/* ─── 5 RENDER: FORM BODY ────────────────────────────────────────────────── */}
       {/* Scrollable content */}
-      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-1 px-1 text-gray-900">
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
         <form id="client-form" onSubmit={handleSubmit}>
           <div className="form-floating ui-form-floating-mb2">
             <InputText id="fc_name" name="name" required value={formData.name} onChange={handleChange} className={fieldErrors.name ? "is-invalid" : ""} placeholder="Name" />
