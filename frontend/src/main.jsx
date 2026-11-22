@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "react-datepicker/dist/react-datepicker.css";
 import "./index.css";
 
 // Unregister any service workers left from previous builds

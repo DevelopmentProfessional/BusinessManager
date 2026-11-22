@@ -1283,6 +1283,12 @@ class AttendanceRead(SQLModel):
     model_config = {"from_attributes": True}
 
 
+class AttendanceStatusRead(SQLModel):
+    is_clocked_in: bool
+    current_record: Optional[AttendanceRead] = None
+    today_hours: float = 0.0
+
+
 # ─── 17b2 INVENTORY READ / IMAGE SCHEMAS ───────────────────────────────────────
 class InventoryRead(SQLModel):
     """Schema for reading inventory items (includes images and supplier name)"""

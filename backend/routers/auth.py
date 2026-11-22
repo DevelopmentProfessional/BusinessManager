@@ -16,6 +16,7 @@
 #                                   — verify_token + get_current_user FastAPI deps
 #   [4] Login / Token Endpoints     — /initialize, /login, /logout
 #   [5] User CRUD Endpoints         — /me, /users (create, list, get, update, lock/unlock)
+#  [5b] Attendance                 — /attendance/me, /attendance/clock-in, /attendance/clock-out
 #   [6] Password Management         — /reset-password, /change-password, /admin/reset-password,
 #                                     /admin/unlock-account, /admin/lock-account,
 #                                     /admin/account-status, /admin/normalize-permissions,
@@ -34,6 +35,7 @@
 #   2026-07-26 | GitHub Copilot | Added initiate_refunds permission aliasing and admin permission expansion
 #   2026-09-11 | GitHub Copilot | Normalized and validated permission updates before PostgreSQL enum persistence
 #   2026-09-11 | GitHub Copilot | Allowed employees:admin assignment, company-scoped permissions, and idempotent re-grants
+#   2026-11-22 | GitHub Copilot | Added self-service attendance status and clock-in/out endpoints
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -54,7 +56,8 @@ from backend.models import (
     User, UserCreate, UserUpdate, UserRead, UserPermission, UserPermissionCreate,
     UserPermissionUpdate, UserPermissionRead, LoginRequest, LoginResponse,
     PasswordResetRequest, PasswordChangeRequest, UserRole, PermissionType,
-    Role, RolePermission, RoleCreate, RoleUpdate, RoleRead, RolePermissionCreate, RolePermissionRead
+    Role, RolePermission, RoleCreate, RoleUpdate, RoleRead, RolePermissionCreate, RolePermissionRead,
+    Attendance, AttendanceRead, AttendanceStatusRead
 )
 
 # ─── [2] JWT CONFIGURATION AND HELPERS ────────────────────────────────────────
@@ -553,6 +556,103 @@ def get_current_user_permissions(
     # Use list-producing helper for current user
     permissions = get_user_permissions_list(current_user, session)
     return {"permissions": permissions}
+
+# ─── [5b] SELF-SERVICE ATTENDANCE ENDPOINTS ────────────────────────────────────
+def _get_open_attendance_record(session: Session, current_user: User) -> Optional[Attendance]:
+    return session.exec(
+        select(Attendance)
+        .where(
+            Attendance.user_id == current_user.id,
+            Attendance.company_id == current_user.company_id,
+            Attendance.clock_in.is_not(None),
+            Attendance.clock_out.is_(None),
+        )
+        .order_by(Attendance.clock_in.desc())
+    ).first()
+
+
+@router.get("/attendance/me", response_model=AttendanceStatusRead)
+def get_current_attendance_status(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    require_page_permission(current_user, session, "attendance", "read")
+
+    now = datetime.utcnow()
+    open_record = _get_open_attendance_record(session, current_user)
+    today_start = datetime.combine(now.date(), datetime.min.time())
+    tomorrow_start = today_start + timedelta(days=1)
+    today_records = session.exec(
+        select(Attendance).where(
+            Attendance.user_id == current_user.id,
+            Attendance.company_id == current_user.company_id,
+            Attendance.date >= today_start,
+            Attendance.date < tomorrow_start,
+        )
+    ).all()
+
+    today_hours = 0.0
+    for record in today_records:
+        if record.clock_out is None:
+            continue
+        if record.total_hours is not None:
+            today_hours += record.total_hours
+        elif record.clock_in is not None:
+            today_hours += max((record.clock_out - record.clock_in).total_seconds(), 0) / 3600
+
+    return AttendanceStatusRead(
+        is_clocked_in=open_record is not None,
+        current_record=open_record,
+        today_hours=round(today_hours, 2),
+    )
+
+
+@router.post("/attendance/clock-in", response_model=AttendanceRead)
+def clock_in_attendance(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    require_page_permission(current_user, session, "attendance", "write")
+
+    open_record = _get_open_attendance_record(session, current_user)
+    if open_record is not None:
+        return open_record
+
+    now = datetime.utcnow()
+    record = Attendance(
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        date=now,
+        clock_in=now,
+    )
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+
+@router.post("/attendance/clock-out", response_model=AttendanceRead)
+def clock_out_attendance(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    require_page_permission(current_user, session, "attendance", "write")
+
+    record = _get_open_attendance_record(session, current_user)
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You are not currently clocked in",
+        )
+
+    now = datetime.utcnow()
+    record.clock_out = now
+    record.total_hours = round(max((now - record.clock_in).total_seconds(), 0) / 3600, 2)
+    record.updated_at = now
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
 
 # ─── [6] PASSWORD MANAGEMENT ENDPOINTS ────────────────────────────────────────
 # Admin endpoints for user management

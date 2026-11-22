@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ClockIcon, PlayIcon, StopIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
 import { attendanceAPI } from "../../../services/api";
@@ -8,12 +8,49 @@ export default function Widget_Attendance({ compact = false }) {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [clockActionLoading, setClockActionLoading] = useState(false);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [error, setError] = useState("");
   const [todayHours, setTodayHours] = useState(null);
+  const canAccessAttendance = hasPermission("attendance", "read") || hasPermission("attendance", "write");
 
-  // No auto-load on mount - attendance is click-based only
+  useEffect(() => {
+    let active = true;
+
+    if (!user?.id || !canAccessAttendance) {
+      setAttendanceLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setAttendanceLoading(true);
+    setError("");
+    attendanceAPI.me()
+      .then(({ data }) => {
+        if (!active) return;
+        if (typeof data?.is_clocked_in !== "boolean" || typeof data?.today_hours !== "number") {
+          throw new Error("Attendance status response was invalid");
+        }
+        setIsClockedIn(data.is_clocked_in);
+        setCurrentRecord(data.current_record || null);
+        setTodayHours(data.today_hours);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.response?.data?.detail || err.message || "Failed to load attendance status");
+      })
+      .finally(() => {
+        if (active) setAttendanceLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, canAccessAttendance]);
 
   const handleClockAction = async () => {
+    if (attendanceLoading || clockActionLoading) return;
+
     if (!user?.id) {
       setError("You must be logged in");
       return;
@@ -30,24 +67,22 @@ export default function Widget_Attendance({ compact = false }) {
     try {
       if (isClockedIn) {
         const response = await attendanceAPI.clockOut();
+        if (typeof response?.data?.total_hours !== "number") {
+          throw new Error("Clock-out response was invalid");
+        }
         setIsClockedIn(false);
         setCurrentRecord(null);
-        // Update today's hours from response if available
-        if (response?.data?.total_hours !== undefined) {
-          setTodayHours((prev) => (prev || 0) + response.data.total_hours);
-        }
+        setTodayHours((prev) => (prev || 0) + response.data.total_hours);
       } else {
         const response = await attendanceAPI.clockIn();
-        setIsClockedIn(true);
-        // Set current record from response
-        if (response?.data) {
-          setCurrentRecord(response.data);
-        } else {
-          setCurrentRecord({ clock_in: new Date().toISOString() });
+        if (!response?.data?.clock_in) {
+          throw new Error("Clock-in response was invalid");
         }
+        setIsClockedIn(true);
+        setCurrentRecord(response.data);
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || (isClockedIn ? "Failed to clock out" : "Failed to clock in");
+      const errorMessage = err.response?.data?.detail || err.message || (isClockedIn ? "Failed to clock out" : "Failed to clock in");
       setError(errorMessage);
     } finally {
       setClockActionLoading(false);
@@ -79,7 +114,7 @@ export default function Widget_Attendance({ compact = false }) {
     return elapsed;
   };
 
-  if (!hasPermission("attendance", "read") && !hasPermission("attendance", "write")) {
+  if (!canAccessAttendance) {
     return null;
   }
 
@@ -91,12 +126,12 @@ export default function Widget_Attendance({ compact = false }) {
           <div className="ui-flex-items-gap-2">
             <ClockIcon className={`h-5 w-5 ${isClockedIn ? "text-green-500" : "text-gray-400"}`} />
             <div>
-              <div className="font-medium text-sm">{isClockedIn ? "Clocked In" : "Clocked Out"}</div>
+              <div className="font-medium text-sm">{attendanceLoading ? "Checking status…" : isClockedIn ? "Clocked In" : "Clocked Out"}</div>
               {isClockedIn && currentRecord && <div className="text-gray-500 text-xs">Since {formatTime(currentRecord.clock_in)}</div>}
             </div>
           </div>
-          <button onClick={handleClockAction} disabled={clockActionLoading} className={`px-1 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 ${isClockedIn ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-green-100 text-green-700 hover:bg-green-200"} disabled:opacity-50`}>
-            {clockActionLoading ? (
+          <button onClick={handleClockAction} disabled={clockActionLoading || attendanceLoading} className={`px-1 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 ${isClockedIn ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-green-100 text-green-700 hover:bg-green-200"} disabled:opacity-50`}>
+            {clockActionLoading || attendanceLoading ? (
               <span className="animate-spin border-2 border-current border-t-transparent h-4 rounded-full w-4" />
             ) : isClockedIn ? (
               <>
@@ -139,7 +174,7 @@ export default function Widget_Attendance({ compact = false }) {
 
       <div className="bg-gray-50 dark:bg-gray-700 flex items-center justify-between mb-4 p-1 rounded-lg">
         <div>
-          <div className={`text-sm font-medium ${isClockedIn ? "text-green-600" : "text-gray-500"}`}>Status: {isClockedIn ? "Clocked In" : "Clocked Out"}</div>
+          <div className={`text-sm font-medium ${isClockedIn ? "text-green-600" : "text-gray-500"}`}>Status: {attendanceLoading ? "Checking…" : isClockedIn ? "Clocked In" : "Clocked Out"}</div>
           {isClockedIn && currentRecord && <div className="text-gray-500 text-xs">Since {formatTime(currentRecord.clock_in)}</div>}
         </div>
         <div className={`w-3 h-3 rounded-full ${isClockedIn ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
@@ -147,10 +182,10 @@ export default function Widget_Attendance({ compact = false }) {
 
       <button
         onClick={handleClockAction}
-        disabled={clockActionLoading}
+        disabled={clockActionLoading || attendanceLoading}
         className={`w-full py-0 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${isClockedIn ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"} disabled:opacity-50`}
       >
-        {clockActionLoading ? (
+        {clockActionLoading || attendanceLoading ? (
           <>
             <span className="animate-spin border-2 border-t-transparent border-white h-5 rounded-full w-5" />
             …

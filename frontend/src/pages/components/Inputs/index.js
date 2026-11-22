@@ -2,6 +2,7 @@ export { default as InputText } from "./InputText";
 export { default as InputNumber } from "./InputNumber";
 export { default as InputDate } from "./InputDate";
 export { default as InputDateTime } from "./InputDateTime";
+export { default as InputTime } from "./InputTime";
 export { default as InputTextarea } from "./InputTextarea";
 export { default as InputButton } from "./InputButton";
 export { default as InputDropup } from "./InputDropup";

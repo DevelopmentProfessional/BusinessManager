@@ -15,7 +15,7 @@ import { settingsAPI } from "../../../services/api";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { Accordion } from "../accordions";
-import { InputCheckbox, InputNumber } from "../Inputs";
+import { InputCheckbox, InputNumber, InputTime } from "../Inputs";
 
 const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ userId, HelpIcon, onSaved, onSavingChange, hideFooter = false }, ref) {
   const [settings, setSettings] = useState(null);
@@ -166,7 +166,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
         <div className="row g-2">
           <div className="col-6">
             <div className="form-floating">
-              <input type="time" id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className="form-control form-control-sm" placeholder="Start of Day" />
+              <InputTime id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className="form-control form-control-sm" placeholder="Start of Day" />
               <label htmlFor="start_of_day">
                 Start of Day
               </label>
@@ -174,7 +174,7 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
           </div>
           <div className="col-6">
             <div className="form-floating">
-              <input type="time" id="end_of_day" value={formData.end_of_day} onChange={(e) => handleInputChange("end_of_day", e.target.value)} className="form-control form-control-sm" placeholder="End of Day" />
+              <InputTime id="end_of_day" value={formData.end_of_day} onChange={(e) => handleInputChange("end_of_day", e.target.value)} className="form-control form-control-sm" placeholder="End of Day" />
               <label htmlFor="end_of_day">
                 End of Day
               </label>

@@ -1761,8 +1761,56 @@ textarea.form-control.ui-control-sm {
   border-color: var(--bs-secondary);
 }
 
-.ui-form-floating-mb2 {
-  margin-bottom: 0.5rem;
+/* Keep floating labels clear of the field above, even in margin-reset stacks. */
+.form-floating:not(.mb-0),
+.ui-form-floating-mb2:not(.mb-0) {
+  margin-bottom: 0.75rem !important;
+}
+
+.form-control:not(textarea),
+textarea.form-control,
+.form-select,
+.app-dropdown-root,
+.app-textarea-wrapper {
+  margin-bottom: 0.75rem;
+}
+
+.form-floating > .form-control,
+.form-floating > .form-select,
+.form-floating > .app-textarea-wrapper {
+  margin-bottom: 0;
+}
+
+[class*="space-y-"]:has(> .form-floating:not(.mb-0)) {
+  display: flex;
+  flex-direction: column;
+}
+
+.d-flex.gap-2:has(.form-floating) {
+  margin-bottom: 0.75rem !important;
+}
+
+.d-flex.gap-2:has(.form-floating) .form-floating {
+  margin-bottom: 0 !important;
+}
+
+.form-control:focus:not(.is-invalid):not(:invalid),
+.form-select:focus:not(.is-invalid):not(:invalid) {
+  border-color: var(--app-active-color, var(--bs-primary)) !important;
+  box-shadow: none !important;
+}
+
+.form-control.is-invalid:focus,
+.form-control.is-invalid:focus-visible,
+.form-control:invalid:focus,
+.form-control:invalid:focus-visible,
+.form-select.is-invalid:focus,
+.form-select.is-invalid:focus-visible,
+.form-select:invalid:focus,
+.form-select:invalid:focus-visible {
+  border-color: var(--bs-form-invalid-border-color, #dc3545) !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 /* Global description textarea styling */
@@ -3177,6 +3225,9 @@ input[type="url"],
 input[type="password"],
 input[type="date"],
 input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
 input[type="number"],
 .form-control:not(textarea),
 .form-select {
@@ -3184,6 +3235,126 @@ input[type="number"],
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   font-size: var(--app-input-font-size) !important;
+}
+
+.app-date-picker-wrapper {
+  display: block;
+  width: 100%;
+  margin-bottom: 0 !important;
+}
+
+.app-date-picker-wrapper .react-datepicker__input-container,
+.app-date-picker-wrapper .react-datepicker__input-container input {
+  display: block;
+  width: 100%;
+}
+
+.app-date-picker-wrapper .react-datepicker__input-container input.form-control {
+  margin-bottom: 0 !important;
+}
+
+.app-date-picker-wrapper .react-datepicker__input-container.react-datepicker__view-calendar-icon input.form-control {
+  padding-left: 1.25rem !important;
+  padding-right: 2.5rem !important;
+}
+
+.app-date-picker-wrapper .react-datepicker__input-container .app-date-picker-icon {
+  top: 50%;
+  right: 0.75rem;
+  left: auto;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  color: var(--bs-secondary-color);
+  transform: translateY(-50%);
+}
+
+.form-floating > .app-date-picker-wrapper {
+  height: var(--app-input-height);
+}
+
+.form-floating > .app-date-picker-wrapper input.form-control {
+  padding: 0.85rem 1.25rem 0.15rem !important;
+  height: var(--app-input-height) !important;
+  min-height: var(--app-input-height) !important;
+  border-radius: 9999px !important;
+}
+
+.app-themed-datepicker-popper {
+  z-index: var(--app-inner-popover-z-index, 1800) !important;
+  margin-top: 0 !important;
+}
+
+.app-themed-datepicker {
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color) !important;
+  border-radius: var(--app-dropdown-border-radius, 0.75rem) !important;
+  background-color: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.app-themed-datepicker .react-datepicker__header,
+.app-themed-datepicker .react-datepicker__header--time,
+.app-themed-datepicker .react-datepicker__time-container,
+.app-themed-datepicker .react-datepicker__time,
+.app-themed-datepicker .react-datepicker__month-container {
+  border-color: var(--bs-border-color) !important;
+  background-color: var(--bs-body-bg) !important;
+}
+
+.app-themed-datepicker .react-datepicker__header {
+  border-bottom: 1px solid var(--bs-border-color) !important;
+}
+
+.app-themed-datepicker .react-datepicker__current-month,
+.app-themed-datepicker .react-datepicker-time__header,
+.app-themed-datepicker .react-datepicker__day-name,
+.app-themed-datepicker .react-datepicker__day,
+.app-themed-datepicker .react-datepicker__time-list-item {
+  color: var(--bs-body-color) !important;
+}
+
+.app-themed-datepicker .react-datepicker__day--outside-month,
+.app-themed-datepicker .react-datepicker__day--disabled,
+.app-themed-datepicker .react-datepicker__time-list-item--disabled {
+  color: var(--bs-secondary-color) !important;
+}
+
+.app-themed-datepicker .react-datepicker__navigation-icon::before {
+  border-color: var(--bs-secondary-color) !important;
+}
+
+.app-themed-datepicker .react-datepicker__day:hover,
+.app-themed-datepicker .react-datepicker__time-list-item:hover {
+  background-color: color-mix(in srgb, var(--app-active-color) 16%, var(--bs-body-bg)) !important;
+}
+
+.app-themed-datepicker .react-datepicker__day--today:not(.react-datepicker__day--selected) {
+  color: var(--app-active-color) !important;
+  font-weight: 700;
+}
+
+.app-themed-datepicker .react-datepicker__day--keyboard-selected,
+.app-themed-datepicker .react-datepicker__time-list-item--selected {
+  background-color: color-mix(in srgb, var(--app-active-color) 20%, var(--bs-body-bg)) !important;
+  color: var(--app-active-color) !important;
+}
+
+.app-themed-datepicker .react-datepicker__day--selected,
+.app-themed-datepicker .react-datepicker__day--selected:hover {
+  border-radius: 0.5rem;
+  background-color: var(--app-active-color) !important;
+  color: #fff !important;
+}
+
+.app-themed-datepicker .react-datepicker__today-button {
+  border-top: 1px solid var(--bs-border-color) !important;
+  background-color: var(--bs-body-bg) !important;
+  color: var(--app-active-color) !important;
+  line-height: 1.5;
+  padding: 0.4rem 0;
 }
 
 /* Floating label adjustments for pill-shaped inputs */
@@ -3211,18 +3382,26 @@ input[type="number"],
   top: 0.35rem;
   left: 1.25rem;
   z-index: 2;
+  display: inline-block;
   height: auto !important;
   width: auto !important;
+  border: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   font-size: var(--app-floating-label-font-size, var(--app-input-font-size, 0.75rem)) !important;
-  line-height: 1.1;
-  background-color: var(--app-floating-label-background, transparent);
+  line-height: 1;
+  background-color: var(--app-floating-label-background, var(--bs-body-bg, #fff)) !important;
   transform: scale(0.85) translateY(-1rem) !important;
-  opacity: 0.85;
+  opacity: 1 !important;
   transform-origin: 0 0;
   pointer-events: none;
   transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.form-floating > label::after,
+.form-floating > .app-floating-label::after {
+  display: none !important;
+  content: none !important;
 }
 
 .form-floating > .app-floating-label,
@@ -3239,7 +3418,7 @@ input[type="number"],
 .form-floating.has-value > .app-floating-label,
 .form-floating.is-open > .app-floating-label {
   transform: scale(0.85) translateY(-1rem) !important;
-  opacity: 0.85;
+  opacity: 1;
 }
 
 /* Action icons inside form inputs (scanner, clear, date indicators) */
@@ -3259,12 +3438,6 @@ input[type="number"],
   border: none !important;
   background: transparent !important;
   color: var(--bs-secondary-color) !important;
-}
-
-.form-floating input[type="date"]::-webkit-calendar-picker-indicator {
-  margin-right: 0.25rem !important;
-  padding: 0 !important;
-  cursor: pointer;
 }
 
 /* Inventory edit form: tighter field padding and non-truncated floating labels. */

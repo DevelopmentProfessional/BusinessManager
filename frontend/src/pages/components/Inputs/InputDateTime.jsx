@@ -1,6 +1,5 @@
-import React from "react";
-import FormControl from "../fields/FormControl";
+import ThemedDatePicker from "./ThemedDatePicker";
 
 export default function InputDateTime({ className = "", ...props }) {
-  return <FormControl {...props} type="datetime-local" className={`form-control ui-control-sm ${className}`.trim()} />;
+  return <ThemedDatePicker {...props} mode="datetime" className={className} type="datetime-local" />;
 }
