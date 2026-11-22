@@ -18,7 +18,7 @@ export default function Modal_Reports_Settings({
     <PageControlsModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Report Page Controls"
+      title="Report Page Settings"
       onSave={onSave}
     >
       <div className="mb-2 ui-small-muted">Configure report display and export options.</div>

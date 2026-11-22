@@ -358,7 +358,7 @@ export default function Suppliers() {
           <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
             <EmptyState
               title="Supplier table is hidden"
-              description="Use Supplier Page Controls to show the supplier list."
+              description="Use Supplier Page Settings to show the supplier list."
             />
           </div>
         ) : visibleSuppliers.length === 0 ? (
@@ -379,7 +379,7 @@ export default function Suppliers() {
             <colgroup>
               <col className="app-col-select" />
               <col className="app-col-flex" />
-              {pageSettings.showAddress !== false && <col className="app-col-flex" />}
+              {pageSettings.showAddress !== false && <col className="app-col-action-120" />}
               <col className="app-col-action-80" />
             </colgroup>
             <tbody>
@@ -461,7 +461,7 @@ export default function Suppliers() {
             className: "app-col-select p-0 text-center",
           },
           { label: "Supplier", className: "app-col-flex", sortKey: "name" },
-          ...(pageSettings.showAddress !== false ? [{ label: "Address", className: "app-col-flex", sortKey: "address" }] : []),
+          ...(pageSettings.showAddress !== false ? [{ label: "Address", className: "app-col-action-120", sortKey: "address" }] : []),
           { label: "Actions", className: "app-col-action-80 text-center" },
         ]}
         sortColumn={sortColumn}

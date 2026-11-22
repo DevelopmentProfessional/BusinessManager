@@ -881,6 +881,7 @@ textarea {
   display: flex !important;
   flex-direction: column !important;
   max-height: 90vh !important;
+  max-height: min(90dvh, var(--vvp-height, 90dvh)) !important;
   overflow: hidden !important;
   box-shadow: none;
 }
@@ -890,8 +891,10 @@ textarea {
   top: 0 !important;
   bottom: 0 !important;
   height: 100vh !important;
+  height: var(--vvp-height, 100dvh) !important;
   max-width: 100% !important;
   max-height: 100vh !important;
+  max-height: var(--vvp-height, 100dvh) !important;
   border-top-left-radius: 0 !important;
   border-top-right-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
@@ -1773,6 +1776,11 @@ textarea.form-control,
 .app-dropdown-root,
 .app-textarea-wrapper {
   margin-bottom: 0.75rem;
+}
+
+/* Main page footer search inputs are aligned within the compact footer row. */
+.app-footer-search .app-search-input.form-control {
+  margin-bottom: 0 !important;
 }
 
 .form-floating > .form-control,
@@ -4089,6 +4097,10 @@ textarea.form-control {
 
 .app-col-flex {
   width: auto;
+}
+
+.app-col-action-50 {
+  width: 3.125rem;
 }
 
 .app-col-action-56 {

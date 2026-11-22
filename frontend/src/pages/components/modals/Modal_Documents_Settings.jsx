@@ -9,7 +9,7 @@ import TableSettingsControls from "../tables/TableSettingsControls";
 
 export default function Modal_Documents_Settings({ isOpen, onClose, onSave, onOpenCategories, onOpenStatuses, pendingSettings, setPendingSettings }) {
   return (
-    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Document Page Controls" onSave={onSave}>
+    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Document Page Settings" onSave={onSave}>
       <Accordion variant="settings" header="Table preferences" defaultOpen>
         <div className="ui-small-muted mb-2">Search, filters, upload, and templates are managed from the page footer.</div>
         <TableSettingsControls

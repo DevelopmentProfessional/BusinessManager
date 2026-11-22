@@ -375,7 +375,6 @@ export default function Inventory() {
   const handleSubmitUpdate = async (inventoryId, updateData) => {
     try {
       await inventoryAPI.update(inventoryId, updateData);
-      // Reload inventory to get updated data
       loadInventoryData();
       closeModal();
       clearError();

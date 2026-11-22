@@ -23,7 +23,7 @@ export default function Modal_Clients_Settings({
     <PageControlsModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Client Page Controls"
+      title="Client Page Settings"
       onSave={onSave}
       saveDisabled={settingsLoading || !settingsLoaded}
     >

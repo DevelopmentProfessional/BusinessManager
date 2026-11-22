@@ -1076,7 +1076,7 @@ export default function Modal_Detail_Item({
       await onUpdateInventory?.(item.id, {
         name: formData.name,
         sku: formData.sku,
-        // When features manage price, preserve the existing fixed price (don't override with range)
+        // When features manage price, preserve the existing fixed price (don't override by range)
         price: parseFloat(formData.price) || 0,
         cost: formData.cost !== "" && formData.cost != null ? parseFloat(formData.cost) : null,
         cost_type: formData.cost_type || "one_time",
@@ -1177,7 +1177,7 @@ export default function Modal_Detail_Item({
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={!isSalesMode ? "Edit Item" : undefined} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} title={!isSalesMode ? "Edit Item" : undefined} showFooterClose={false} contentGravity="top">
       <div className="ui-page-shell">
         {/* Sales Mode: Full-width image header */}
         {isSalesMode && (

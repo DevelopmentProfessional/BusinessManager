@@ -20,7 +20,7 @@ export default function Modal_Employees_Settings({
     <PageControlsModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Employee Page Controls"
+      title="Employee Page Settings"
       onSave={onSave}
     >
       <Accordion variant="settings" header="Table preferences" defaultOpen>

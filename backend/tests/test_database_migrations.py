@@ -243,6 +243,21 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
     )
     monkeypatch.setattr(
         database,
+        "_ensure_client_auth_columns_if_needed",
+        lambda: calls.append("repair_client_auth"),
+    )
+    monkeypatch.setattr(
+        database,
+        "_ensure_contact_email_verification_columns_if_needed",
+        lambda: calls.append("repair_contact_email"),
+    )
+    monkeypatch.setattr(
+        database,
+        "_ensure_app_settings_core_columns_if_needed",
+        lambda: calls.append("repair_app_settings_core"),
+    )
+    monkeypatch.setattr(
+        database,
         "_schema_is_current",
         lambda: calls.append("schema_current") or True,
     )
@@ -264,6 +279,9 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
         "repair_task_action_path",
         "repair_fifo_stock_movement",
         "repair_fractional_inventory",
+        "repair_client_auth",
+        "repair_contact_email",
+        "repair_app_settings_core",
         "schema_current",
         "required_artifacts",
     ]

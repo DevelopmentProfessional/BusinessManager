@@ -21,7 +21,7 @@ export default function Modal_Sales_Settings({
     <PageControlsModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Sales Page Controls"
+      title="Sales Page Settings"
       onOpen={onOpen}
     >
       <div className="mb-2 ui-small-muted">Use these controls to manage the sales experience on this page.</div>

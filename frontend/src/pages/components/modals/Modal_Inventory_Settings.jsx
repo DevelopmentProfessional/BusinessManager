@@ -10,7 +10,7 @@ import TableSettingsControls from "../tables/TableSettingsControls";
 
 export default function Modal_Inventory_Settings({ isOpen, onClose, onSave, onOpenCategories, assetUnitsPerPage, onAssetUnitsPerPageChange, assetUnitsPageSizeOptions = [10, 25, 50, 100], pendingSettings, setPendingSettings }) {
   return (
-    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Inventory Page Controls" onSave={onSave}>
+    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Inventory Page Settings" onSave={onSave}>
       <Accordion variant="settings" header="Table preferences" defaultOpen>
         <div className="mb-2" style={{ maxWidth: "13rem" }}>
           <Dropdown_Custom

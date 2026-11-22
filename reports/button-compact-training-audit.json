@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-21T07:51:18.221Z",
+  "generatedAt": "2026-11-22T22:08:31.613Z",
   "scannedRoot": "frontend/src",
-  "totalSourceFilesScanned": 198,
+  "totalSourceFilesScanned": 200,
   "totalFindings": 0,
   "summaryByIssue": {},
   "summaryByFile": [],

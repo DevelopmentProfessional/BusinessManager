@@ -48,6 +48,7 @@
 #   2026-11-16 | GitHub Copilot | Added optional task action paths
 #   2026-11-16 | GitHub Copilot | Added supplier catalog and purchase-order line snapshot migrations
 #   2026-11-16 | GitHub Copilot | Added audited stock movement and FIFO consumption schema
+#   2026-11-22 | GitHub Copilot | Repair core app_settings columns before schema-version fast path
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -1995,6 +1996,7 @@ def create_db_and_tables():
     _ensure_fractional_inventory_schema_if_needed()
     _ensure_client_auth_columns_if_needed()
     _ensure_contact_email_verification_columns_if_needed()
+    _ensure_app_settings_core_columns_if_needed()
 
     # Skip migrations only when the version marker and required artifacts match reality.
     if _schema_is_current() and _required_schema_artifacts_present():
@@ -2058,7 +2060,6 @@ def create_db_and_tables():
     _ensure_client_membership_fk_cascade_if_needed()
     _ensure_inventory_cost_fk_cascade_if_needed()
     _ensure_app_settings_stripe_columns_if_needed()
-    _ensure_app_settings_core_columns_if_needed()
     _ensure_inventory_core_columns_if_needed()
     _ensure_inventory_purchase_packaging_columns_if_needed()
     _ensure_service_image_url_if_needed()

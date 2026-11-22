@@ -18,7 +18,7 @@ export default function Modal_Schedule_Settings({
     <PageControlsModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Schedule Page Controls"
+      title="Schedule Page Settings"
       saving={saving}
       onSave={onSave}
     >

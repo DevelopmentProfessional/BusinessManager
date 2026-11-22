@@ -52,7 +52,7 @@ export default function Modal_Suppliers_Settings({
       <PageControlsModal
         isOpen={isOpen}
         onClose={onClose}
-        title="Supplier Page Controls"
+        title="Supplier Page Settings"
         onSave={onSave}
         saveDisabled={automationSettingsLoading || emailPolicyLoading || !emailPolicyLoaded}
       >
