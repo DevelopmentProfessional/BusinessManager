@@ -207,7 +207,7 @@ def get_revenue_report(
         stmt_tx = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
         transactions = session.exec(stmt_tx).all()
         for tx in transactions:
-            dt = tx.created_at
+            dt = tx.paid_at or tx.created_at
             if dt is None:
                 continue
             if start and dt < start:
@@ -536,7 +536,7 @@ def get_sales_report(
         stmt = select(SaleTransaction).where(SaleTransaction.company_id == current_user.company_id)
         txs = session.exec(stmt).all()
         for tx in txs:
-            dt = tx.created_at
+            dt = tx.paid_at or tx.created_at
             if dt is None:
                 continue
             if start and dt < start:
@@ -741,7 +741,7 @@ def get_employee_activity_report(
             items_by_transaction.setdefault(str(item.sale_transaction_id), []).append(item.item_name)
 
     for transaction in transactions:
-        sale_date = transaction.created_at
+        sale_date = transaction.paid_at or transaction.created_at
         if sale_date is None:
             continue
         if start and sale_date < start:

@@ -174,7 +174,7 @@ const Modal_Settings = ({
       <div className="align-items-center d-flex flex-wrap gap-1 justify-content-start mb-3" style={{ minHeight: "3rem" }}>
         <Button_Toolbar icon={isDarkMode ? MoonIcon : SunIcon} label={isDarkMode ? "Light" : "Dark"} onClick={toggleDarkMode} className={`settings-accordion-btn ${isDarkMode ? "text-white" : ""}`} style={{ backgroundColor: isDarkMode ? "#3B82F6" : "#F59E0B", border: "none" }} />
 
-        <div className="settings-accordion-btn" style={{ width: "6rem" }}>
+        <div className="settings-accordion-btn mb-0" style={{ width: "6rem" }}>
           <ColorPickerField value={pendingColor || employeeColor} onChange={handleInlineColorChange} disabled={colorUpdating} className="w-100" />
         </div>
 

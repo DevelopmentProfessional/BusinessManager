@@ -42,12 +42,12 @@ def seed_demo_data(session: Session, force: bool = False, company_id: str = "dem
     try:
         from backend.models import (
             Client, Supplier, Inventory, Service, User, Schedule, UserRole,
-            SaleTransaction, SaleTransactionItem,
+            SaleTransaction, SaleTransactionItem, Attendance, ClientOrder, ClientOrderItem, Task,
         )
     except ModuleNotFoundError:
         from models import (
             Client, Supplier, Inventory, Service, User, Schedule, UserRole,
-            SaleTransaction, SaleTransactionItem,
+            SaleTransaction, SaleTransactionItem, Attendance, ClientOrder, ClientOrderItem, Task,
         )
 
     now = datetime.utcnow()
@@ -82,7 +82,14 @@ def seed_demo_data(session: Session, force: bool = False, company_id: str = "dem
         dict(name="Hair Dryer Pro", sku="HDR-001", price=149.99, category="Equipment",
              type="asset", quantity=5, min_stock_level=2, cost=75.00),
         dict(name="Styling Chair", sku="CHR-001", price=499.99, category="Furniture",
-             type="asset", quantity=8, min_stock_level=4, cost=200.00),
+             type="asset", quantity=8, min_stock_level=4, cost=200.00, cost_type="one_time",
+             date_of_purchase=now - timedelta(days=120)),
+        dict(name="Studio Facility Lease", sku="FAC-001", price=0.0, category="Facilities",
+             type="location", quantity=1, min_stock_level=0, cost=2500.00, cost_type="recurring",
+             date_of_purchase=now - timedelta(days=365)),
+        dict(name="POS & Booking Software Subscription", sku="SFT-001", price=0.0, category="Software",
+             type="resource", quantity=1, min_stock_level=0, cost=299.00, cost_type="recurring",
+             date_of_purchase=now - timedelta(days=365)),
     ]
 
     inv_records = []
@@ -322,6 +329,7 @@ def seed_demo_data(session: Session, force: bool = False, company_id: str = "dem
                 company_id=company_id,
             )
             txn.created_at = sale_date
+            txn.paid_at = sale_date
             session.add(txn)
             session.flush()
 
@@ -337,8 +345,112 @@ def seed_demo_data(session: Session, force: bool = False, company_id: str = "dem
                     unit_price=item_obj.price,
                     quantity=line["qty"],
                     line_total=line_total,
+                    created_at=sale_date,
                     company_id=company_id,
                 )
                 session.add(txn_item)
+
+    session.flush()
+
+    # ── 8. ATTENDANCE RECORDS ────────────────────────────────────────────────
+    if employee_records:
+        for day_offset in range(-60, 1):
+            target_date = now.date() + timedelta(days=day_offset)
+            if target_date.weekday() >= 5:
+                continue
+            for emp in employee_records:
+                exists = session.exec(
+                    select(Attendance).where(
+                        Attendance.user_id == emp.id,
+                        Attendance.company_id == company_id,
+                        Attendance.date == datetime(target_date.year, target_date.month, target_date.day, 9, 0, 0),
+                    )
+                ).first()
+                if exists:
+                    continue
+                clock_in = datetime(target_date.year, target_date.month, target_date.day, 8, 55, 0)
+                clock_out = datetime(target_date.year, target_date.month, target_date.day, 17, 15, 0)
+                session.add(Attendance(
+                    id=uuid4(),
+                    user_id=emp.id,
+                    company_id=company_id,
+                    date=datetime(target_date.year, target_date.month, target_date.day, 9, 0, 0),
+                    clock_in=clock_in,
+                    clock_out=clock_out,
+                    total_hours=8.33,
+                    notes="Standard demo shift",
+                ))
+
+    session.flush()
+
+    # ── 9. PORTAL ORDERS ─────────────────────────────────────────────────────
+    if client_records and inv_records:
+        for step in range(3, 90, 7):
+            order_date = (now - timedelta(days=step)).replace(hour=14, minute=0, second=0)
+            client = client_records[step % len(client_records)]
+            product = inv_records[step % len(inv_records)]
+            exists = session.exec(
+                select(ClientOrder).where(
+                    ClientOrder.client_id == client.id,
+                    ClientOrder.created_at == order_date,
+                    ClientOrder.company_id == company_id,
+                )
+            ).first()
+            if exists:
+                continue
+
+            order = ClientOrder(
+                id=uuid4(),
+                client_id=client.id,
+                company_id=company_id,
+                status="delivered" if step > 10 else "ordered",
+                subtotal=product.price,
+                tax_amount=round(product.price * 0.08, 2),
+                total=round(product.price * 1.08, 2),
+                payment_method="card",
+                paid_at=order_date,
+                created_at=order_date,
+            )
+            session.add(order)
+            session.flush()
+
+            session.add(ClientOrderItem(
+                id=uuid4(),
+                order_id=order.id,
+                item_id=product.id,
+                item_type="product",
+                item_name=product.name,
+                unit_price=product.price,
+                quantity=1,
+                line_total=product.price,
+                company_id=company_id,
+            ))
+
+    session.flush()
+
+    # ── 10. TASKS ────────────────────────────────────────────────────────────
+    if employee_records:
+        task_titles = [
+            "Weekly Equipment Sanitization",
+            "Inventory Restock Verification",
+            "Client Consultation Prep",
+            "Monthly Station Maintenance",
+            "Customer Feedback Review",
+        ]
+        for step in range(4, 90, 8):
+            task_date = (now - timedelta(days=step)).replace(hour=10, minute=0, second=0)
+            emp = employee_records[step % len(employee_records)]
+            title = task_titles[(step // 8) % len(task_titles)]
+            session.add(Task(
+                id=uuid4(),
+                company_id=company_id,
+                title=f"{title} ({emp.first_name})",
+                description="Seeded task for report validation",
+                status="completed" if step > 14 else "in_progress",
+                priority="medium",
+                assigned_to_id=emp.id,
+                due_date=task_date + timedelta(days=7),
+                created_at=task_date,
+            ))
 
     session.commit()

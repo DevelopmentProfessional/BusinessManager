@@ -1389,7 +1389,7 @@ export default function Reports() {
             )}
 
             {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
-            {!fullScreenMode && typeof document !== "undefined" && createPortal(
+            {!fullScreenMode && !reportMenuOpen && typeof document !== "undefined" && createPortal(
               <div
                 className="align-items-center d-flex gap-2 justify-content-center reports-nav-floating"
                 style={{

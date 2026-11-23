@@ -131,6 +131,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
         PaySlip, ProcurementOrder, ProcurementOrderLine, ProductLocation,
         SaleTransaction, SaleTransactionItem, Schedule, Service,
         ServiceEmployee, ServiceLocation, Supplier, User, UserRole,
+        Attendance, ClientOrder, ClientOrderItem, Task,
     )
 
     # 1. Tenant identity.
@@ -155,34 +156,46 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             "phone": "+1 555 010 2000", "address": "Denver, CO",
         })
 
-    # 4. Every supported inventory type, including three service locations.
+    # 4. Every supported inventory type, including recurring operating expenses and locations.
     inventory_specs = [
-        ("Business Assessment Toolkit", "product", "PRD-BA-001", 149.0, 40, 55.0, "Client Resources", "HQ Stockroom"),
-        ("Executive Strategy Workbook", "product", "PRD-ES-002", 79.0, 65, 24.0, "Client Resources", "HQ Stockroom"),
-        ("Change Management Playbook", "product", "PRD-CM-003", 129.0, 35, 44.0, "Client Resources", "Remote Store"),
-        ("Printed Workshop Materials", "resource", "RES-WM-001", 18.0, 250, 7.0, "Workshop Supplies", "HQ Stockroom"),
-        ("Name Badges and Lanyards", "resource", "RES-NB-002", 3.5, 400, 1.1, "Workshop Supplies", "Remote Store"),
-        ("Meeting Room Stationery", "resource", "RES-MS-003", 12.0, 80, 4.0, "Office Supplies", "Client Site Locker"),
-        ("Portable Presentation Display", "asset", "AST-PD-001", 1250.0, 3, 780.0, "Equipment", "HQ Stockroom"),
-        ("Workshop Camera Kit", "asset", "AST-CK-002", 900.0, 2, 550.0, "Equipment", "Remote Store"),
-        ("Facilitation Laptop", "asset", "AST-FL-003", 1800.0, 6, 1100.0, "Equipment", "HQ Stockroom"),
-        ("Northstar HQ - Denver", "location", "LOC-DEN-001", 0.0, 1, 0.0, "Locations", "Northstar HQ"),
-        ("Client Collaboration Center", "location", "LOC-CCC-002", 0.0, 1, 0.0, "Locations", "Client Site Locker"),
-        ("Remote Workshop Hub", "location", "LOC-RWH-003", 0.0, 1, 0.0, "Locations", "Remote Store"),
-        ("Leadership Offsite Package", "bundle", "BND-LO-001", 950.0, 10, 500.0, "Packages", "HQ Stockroom"),
-        ("Workshop Format Mix", "mix", "MIX-WF-001", 125.0, 20, 45.0, "Packages", "Remote Store"),
-        ("Legacy Consulting Guide", "item", "ITM-LCG-001", 49.0, 25, 16.0, "Client Resources", "HQ Stockroom"),
+        ("Business Assessment Toolkit", "product", "PRD-BA-001", 149.0, 40, 55.0, "Client Resources", "HQ Stockroom", "one_time", 45),
+        ("Executive Strategy Workbook", "product", "PRD-ES-002", 79.0, 65, 24.0, "Client Resources", "HQ Stockroom", "one_time", 75),
+        ("Change Management Playbook", "product", "PRD-CM-003", 129.0, 35, 44.0, "Client Resources", "Remote Store", "one_time", 110),
+        ("Printed Workshop Materials", "resource", "RES-WM-001", 18.0, 250, 7.0, "Workshop Supplies", "HQ Stockroom", "one_time", 20),
+        ("Name Badges and Lanyards", "resource", "RES-NB-002", 3.5, 400, 1.1, "Workshop Supplies", "Remote Store", "one_time", 140),
+        ("Meeting Room Stationery", "resource", "RES-MS-003", 12.0, 80, 4.0, "Office Supplies", "Client Site Locker", "one_time", 35),
+        ("Portable Presentation Display", "asset", "AST-PD-001", 1250.0, 3, 780.0, "Equipment", "HQ Stockroom", "one_time", 280),
+        ("Workshop Camera Kit", "asset", "AST-CK-002", 900.0, 2, 550.0, "Equipment", "Remote Store", "one_time", 190),
+        ("Facilitation Laptop", "asset", "AST-FL-003", 1800.0, 6, 1100.0, "Equipment", "HQ Stockroom", "one_time", 240),
+        ("Executive Tablet Fleet", "asset", "AST-TF-004", 1100.0, 4, 720.0, "Equipment", "HQ Stockroom", "one_time", 60),
+        ("Northstar HQ - Denver", "location", "LOC-DEN-001", 0.0, 1, 0.0, "Locations", "Northstar HQ", "one_time", 365),
+        ("Client Collaboration Center", "location", "LOC-CCC-002", 0.0, 1, 0.0, "Locations", "Client Site Locker", "one_time", 365),
+        ("Remote Workshop Hub", "location", "LOC-RWH-003", 0.0, 1, 0.0, "Locations", "Remote Store", "one_time", 365),
+        ("Office Suite Lease - Denver HQ", "location", "LOC-OFC-001", 0.0, 1, 3200.0, "Facilities", "Northstar HQ", "recurring", 365),
+        ("Cloud Infrastructure & Systems", "resource", "REC-CLD-001", 0.0, 1, 850.0, "Technology", "Northstar HQ", "recurring", 365),
+        ("Enterprise Market Research Feeds", "resource", "REC-DAT-002", 0.0, 1, 620.0, "Subscriptions", "Northstar HQ", "recurring", 365),
+        ("Client Presentation Tech Rental", "asset", "REC-EQP-003", 0.0, 1, 450.0, "Equipment", "HQ Stockroom", "recurring", 365),
+        ("Leadership Offsite Package", "bundle", "BND-LO-001", 950.0, 10, 500.0, "Packages", "HQ Stockroom", "one_time", 80),
+        ("Workshop Format Mix", "mix", "MIX-WF-001", 125.0, 20, 45.0, "Packages", "Remote Store", "one_time", 50),
+        ("Legacy Consulting Guide", "item", "ITM-LCG-001", 49.0, 25, 16.0, "Client Resources", "HQ Stockroom", "one_time", 150),
     ]
     inventory = {}
-    for name, item_type, sku, price, quantity, cost, category, location in inventory_specs:
+    for name, item_type, sku, price, quantity, cost, category, location, cost_type, days_ago in inventory_specs:
         supplier = suppliers["OfficeWorks Business Supply"] if item_type in {"product", "resource", "item", "location"} else suppliers["Summit Technology Group"]
-        inventory[name] = _get_or_add(session, Inventory, {"company_id": COMPANY_ID, "name": name}, {
+        inv_record = _get_or_add(session, Inventory, {"company_id": COMPANY_ID, "name": name}, {
             "company_id": COMPANY_ID, "name": name, "sku": sku, "type": item_type,
             "price": price, "quantity": quantity, "cost": cost, "category": category,
             "location": location, "supplier_id": supplier.id,
             "description": f"{name} for Northstar consulting operations.",
-            "date_of_purchase": now - timedelta(days=90), "procurement_lead_days": 10,
+            "cost_type": cost_type,
+            "date_of_purchase": now - timedelta(days=days_ago), "procurement_lead_days": 10,
         })
+        if inv_record.cost_type != cost_type or inv_record.cost != cost:
+            inv_record.cost_type = cost_type
+            inv_record.cost = cost
+            inv_record.date_of_purchase = now - timedelta(days=days_ago)
+            session.add(inv_record)
+        inventory[name] = inv_record
         _get_or_add(session, InventoryCost, {"inventory_id": inventory[name].id}, {
             "inventory_id": inventory[name].id, "standard_cost": cost,
             "actual_cost": cost, "acquisition_cost": cost, "reorder_quantity": max(quantity // 2, 1),
@@ -333,6 +346,18 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
         if row[0] is not None
     }
 
+    # Backfill created_at on any existing SaleTransaction where created_at > paid_at (aligns historical sales)
+    existing_sales_to_fix = session.exec(
+        select(SaleTransaction).where(
+            SaleTransaction.company_id == COMPANY_ID,
+            SaleTransaction.paid_at.is_not(None),
+        )
+    ).all()
+    for stx in existing_sales_to_fix:
+        if stx.paid_at and stx.created_at and stx.created_at.date() > stx.paid_at.date():
+            stx.created_at = stx.paid_at
+            session.add(stx)
+
     # 8A. Sales attached to completed appointments.
     for index, schedule in enumerate(all_schedules):
         if schedule.status != "completed":
@@ -362,12 +387,16 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             total=round(subtotal + tax, 2),
             payment_method=payment_method,
             paid_at=schedule.appointment_date,
+            created_at=schedule.appointment_date,
             company_id=COMPANY_ID,
         )
         session.add(sale)
         schedule.sale_transaction_id = sale.id
         schedule.is_paid = True
         existing_sale_schedule_ids.add(schedule.id)
+
+        has_addon = (index % 4 == 0)
+        options_json = json.dumps([{"is_billable": True, "quantity": 1, "price_delta": 45.0, "name": "Executive Summary Deck"}]) if has_addon else None
 
         session.add(SaleTransactionItem(
             id=uuid4(),
@@ -378,6 +407,8 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             unit_price=service.price,
             quantity=1,
             line_total=service.price,
+            options_json=options_json,
+            created_at=schedule.appointment_date,
             company_id=COMPANY_ID,
         ))
 
@@ -391,6 +422,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
                 unit_price=product_record.price,
                 quantity=1,
                 line_total=product_record.price,
+                created_at=schedule.appointment_date,
                 company_id=COMPANY_ID,
             ))
 
@@ -431,6 +463,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             total=round(subtotal + tax, 2),
             payment_method=payment_method,
             paid_at=sale_date,
+            created_at=sale_date,
             company_id=COMPANY_ID,
         )
         session.add(direct_sale)
@@ -445,6 +478,7 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
             unit_price=product_record.price,
             quantity=quantity,
             line_total=round(product_record.price * quantity, 2),
+            created_at=sale_date,
             company_id=COMPANY_ID,
         ))
 
@@ -601,6 +635,130 @@ def seed_consulting_company(session: Session, company_id: str = COMPANY_ID) -> N
                 notes=SEED_TAG, company_id=COMPANY_ID,
             ))
             existing_slip_keys.add((str(user.id), period_start))
+
+    session.flush()
+
+    # 12. Attendance tracking records across past 120 days (~4 months of daily clock-in/out).
+    existing_attendance_days = {
+        (str(row[0]), row[1].date() if hasattr(row[1], "date") else row[1])
+        for row in session.exec(
+            select(Attendance.user_id, Attendance.date).where(Attendance.company_id == COMPANY_ID)
+        ).all()
+    }
+    for day_offset in range(-120, 1):
+        target_date = now.date() + timedelta(days=day_offset)
+        if target_date.weekday() >= 5:
+            continue
+        for idx, user in enumerate(users.values()):
+            if (abs(day_offset) + idx) % 19 == 0:
+                continue
+            if (str(user.id), target_date) in existing_attendance_days:
+                continue
+            clock_in = datetime(target_date.year, target_date.month, target_date.day, 8, 45 + (idx % 25), 0)
+            clock_out = datetime(target_date.year, target_date.month, target_date.day, 17, 10 + (idx % 30), 0)
+            hours = round((clock_out - clock_in).total_seconds() / 3600.0, 2)
+            session.add(Attendance(
+                id=uuid4(),
+                company_id=COMPANY_ID,
+                user_id=user.id,
+                date=datetime(target_date.year, target_date.month, target_date.day, 9, 0, 0),
+                clock_in=clock_in,
+                clock_out=clock_out,
+                total_hours=hours,
+                notes=f"{SEED_TAG}: Standard business shift",
+            ))
+            existing_attendance_days.add((str(user.id), target_date))
+
+    session.flush()
+
+    # 13. Client Portal orders across past 12 months (~50 orders with portal items).
+    existing_orders = session.exec(
+        select(ClientOrder.id).where(ClientOrder.company_id == COMPANY_ID)
+    ).all()
+
+    if len(existing_orders) < 25:
+        portal_item_keys = [
+            "Executive Strategy Workbook",
+            "Business Assessment Toolkit",
+            "Change Management Playbook",
+            "Printed Workshop Materials",
+        ]
+        for step in range(8, 360, 7):
+            order_date = (now - timedelta(days=step)).replace(hour=11 + (step % 6), minute=20, second=0)
+            client = clients[step % len(clients)]
+            consultant = consultants[step % len(consultants)]
+            item_record = inventory[portal_item_keys[(step // 7) % len(portal_item_keys)]]
+            qty = 1 if (step % 3 != 0) else 2
+            subtotal = round(item_record.price * qty, 2)
+            tax = round(subtotal * 0.0825, 2)
+            total = round(subtotal + tax, 2)
+            status = "delivered" if step > 14 else ("processing" if step > 4 else "ordered")
+
+            order = ClientOrder(
+                id=uuid4(),
+                company_id=COMPANY_ID,
+                client_id=client.id,
+                employee_id=consultant.id,
+                status=status,
+                subtotal=subtotal,
+                tax_amount=tax,
+                total=total,
+                payment_method="card",
+                paid_at=order_date,
+                created_at=order_date,
+                fulfilled_at=order_date + timedelta(days=2) if status == "delivered" else None,
+            )
+            session.add(order)
+            session.flush()
+
+            session.add(ClientOrderItem(
+                id=uuid4(),
+                order_id=order.id,
+                item_id=item_record.id,
+                item_type="product",
+                item_name=item_record.name,
+                unit_price=item_record.price,
+                quantity=qty,
+                line_total=subtotal,
+                company_id=COMPANY_ID,
+            ))
+
+    session.flush()
+
+    # 14. Tasks across past 12 months (completed vs open tasks over time).
+    existing_tasks = session.exec(
+        select(Task.id).where(Task.company_id == COMPANY_ID)
+    ).all()
+
+    if len(existing_tasks) < 20:
+        task_templates = [
+            ("Client Strategy Assessment & Diagnostic", "Review operational metrics and deliver preliminary findings."),
+            ("Executive Workshop Preparation", "Finalize slide deck, agenda, and participant workbook materials."),
+            ("Operating Model Review & Gap Analysis", "Audit current workflows and benchmark against industry standards."),
+            ("Leadership Alignment Interviews", "Conduct stakeholder interviews across department leads."),
+            ("Quarterly Performance Advisory Report", "Compile deliverable package and executive presentation."),
+            ("Post-Engagement Review & Action Plan", "Synthesize feedback and establish follow-up milestones."),
+        ]
+        for step in range(5, 360, 9):
+            task_date = (now - timedelta(days=step)).replace(hour=9, minute=0, second=0)
+            consultant = consultants[step % len(consultants)]
+            title_tpl, desc_tpl = task_templates[(step // 9) % len(task_templates)]
+            client = clients[step % len(clients)]
+            is_completed = (step > 21)
+            status = "completed" if is_completed else ("in_progress" if (step % 2 == 0) else "pending")
+            priority = "high" if (step % 4 == 0) else ("medium" if (step % 3 == 0) else "low")
+
+            session.add(Task(
+                id=uuid4(),
+                company_id=COMPANY_ID,
+                title=f"{title_tpl} ({client.name})",
+                description=f"{desc_tpl} Client: {client.name}",
+                status=status,
+                priority=priority,
+                assigned_to_id=consultant.id,
+                due_date=task_date + timedelta(days=14),
+                created_at=task_date,
+            ))
 
     session.commit()
 
