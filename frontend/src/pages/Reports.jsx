@@ -450,6 +450,7 @@ export default function Reports() {
   const [activityPayError, setActivityPayError] = useState("");
   const [reportRefreshKey, setReportRefreshKey] = useState(0);
   const eventTypeRef = useRef(null);
+  const savedFiltersRef = useRef(null);
   const footerRef = useRef(null);
   const [footerHeight, setFooterHeight] = useState(0);
   const [isMobile, setIsMobile] = useState(() => getMobileEnvironment().isMobileViewport);
@@ -986,6 +987,14 @@ export default function Reports() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [eventTypeMenuOpen]);
 
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (savedFiltersRef.current && !savedFiltersRef.current.contains(e.target)) setSavedFiltersMenuOpen(false);
+    };
+    if (savedFiltersMenuOpen) document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [savedFiltersMenuOpen]);
+
   const canUseStatus = ["appointments", "weekly-activity"].includes(selectedReport?.id || "");
   const canUseEventType = selectedReport?.id === "appointments";
   const isEmployeeActivityReport = selectedReport?.id === "employee-activity";
@@ -1389,7 +1398,7 @@ export default function Reports() {
             )}
 
             {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
-            {!fullScreenMode && !reportMenuOpen && typeof document !== "undefined" && createPortal(
+            {!fullScreenMode && !reportMenuOpen && !savedFiltersMenuOpen && !eventTypeMenuOpen && typeof document !== "undefined" && createPortal(
               <div
                 className="align-items-center d-flex gap-2 justify-content-center reports-nav-floating"
                 style={{
@@ -1642,7 +1651,7 @@ export default function Reports() {
                   </button>
                 )}
                 {/* Saved Filters Dropup */}
-                <div className="ui-pos-rel">
+                <div ref={savedFiltersRef} className="ui-pos-rel">
                   <Button_Toolbar icon={FunnelIcon} label={isTrainingMode ? "Filters" : ""} onClick={() => setSavedFiltersMenuOpen((prev) => !prev)} className="btn-outline-secondary" />
 
                   {savedFiltersMenuOpen && (
