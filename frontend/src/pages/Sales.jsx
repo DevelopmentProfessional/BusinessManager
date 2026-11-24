@@ -58,7 +58,8 @@ import Modal_History_Sales from "./components/modals/Modal_SalesHistory";
 import Modal_Feature_Select_Sales from "./components/modals/Modal_SalesFeatureSelect";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
-import { InputDate } from "./components/Inputs";
+import Dropup_Menu from "./components/dropdowns/Dropup_Menu";
+import { InputDate, InputText } from "./components/Inputs";
 import { getDisplayImageUrl } from "./components/utils/Utils_Image";
 import useViewMode from "../services/useViewMode";
 import { sortItemsAlphabetically } from "../utils/displaySort";
@@ -469,6 +470,7 @@ export default function Sales() {
   const [showPageControls, setShowPageControls] = useState(false);
   const [appSettings, setAppSettings] = useState(null);
   const [showSalesFilterDropdown, setShowSalesFilterDropdown] = useState(false);
+  const salesFilterAnchorRef = useRef(null);
   const [filterClientSearch, setFilterClientSearch] = useState("");
   const [successNotice, setSuccessNotice] = useState("");
   const [subscriptionStartDate, setSubscriptionStartDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -2049,7 +2051,7 @@ export default function Sales() {
               />
 
               {/* Unified Sales Filter Button */}
-              <div className="ui-pos-rel">
+              <div ref={salesFilterAnchorRef} className="ui-pos-rel">
                 <Button_Toolbar
                   icon={FunnelIcon}
                   label="Filter"
@@ -2061,8 +2063,11 @@ export default function Sales() {
                   data-active={salesFilterActive}
                 />
 
-                {showSalesFilterDropdown && (
-                  <div className="app-card app-menu-panel bottom-100 mb-2 p-0 position-absolute start-0 z-50" style={{ minWidth: "20rem", maxWidth: "calc(100vw - 2rem)" }}>
+                <Dropup_Menu
+                  anchorRef={salesFilterAnchorRef}
+                  open={showSalesFilterDropdown}
+                  className="app-card p-1 sales-filter-dropdown"
+                >
                     <div className="align-items-center d-flex justify-content-between mb-2">
                       <div className="app-menu-summary fw-semibold text-muted">Sales Filter</div>
                       <button
@@ -2082,7 +2087,7 @@ export default function Sales() {
 
                     <div className="mb-2">
                       <label className="app-menu-summary d-block mb-1 text-muted">Client</label>
-                      <input type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100" />
+                      <InputText type="text" placeholder={selectedClient ? `Selected: ${selectedClient.name}` : "Search clients..."} value={filterClientSearch} onChange={(e) => setFilterClientSearch(e.target.value)} className="app-search-input w-100 mb-0" />
                       {filterClientSearch && (
                         <div className="app-card app-menu-panel mt-1" style={{ maxHeight: "11rem", overflowY: "auto" }}>
                           {filteredFilterClients.map((c) => (
@@ -2116,10 +2121,9 @@ export default function Sales() {
 
                     <div>
                       <label className="app-menu-summary d-block mb-1 text-muted">Subscription start date</label>
-                      <InputDate value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} />
+                      <InputDate className="mb-0" value={subscriptionStartDate} onChange={(e) => setSubscriptionStartDate(e.target.value)} />
                     </div>
-                  </div>
-                )}
+                </Dropup_Menu>
               </div>
 
               {/* Deals Button */}

@@ -31,6 +31,13 @@ const TYPE_BADGE_COLOR = {
   custom: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
+const usesCatalogueVariables = (template) => (
+  template?.template_type === "catalogue"
+  || template?.content?.includes("{{#catalogue.items}}")
+  || template?.content?.includes("{{catalogue.")
+  || template?.content?.includes("{{catalogue_item.")
+);
+
 /**
  * Props:
  *  page          – 'clients' | 'employees' | 'sales' | 'schedule' | 'suppliers'
@@ -39,6 +46,7 @@ const TYPE_BADGE_COLOR = {
  *  settings      – AppSettings object
  *  items         – (optional) sale transaction items for sales page
  *  catalogueItems – (optional) selected services or products for a catalogue
+ *  selectedEntities – (optional) selected page records to combine in one document
  *  client        – (optional) client for sales/schedule page
  *  employee      – (optional) employee for schedule page
  *  service       – (optional) service for schedule page
@@ -46,7 +54,7 @@ const TYPE_BADGE_COLOR = {
  *  initialTemplateType – (optional) select this type first without filtering other templates
  *  onClose       – callback to close this modal
  */
-export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], catalogueItems = [], client, employee, service, filterType = null, initialTemplateType = null, purchaseOrderId = null, onClose }) {
+export default function Modal_TemplateUse({ page, entity, currentUser, settings, items = [], catalogueItems = [], selectedEntities = [], client, employee, service, filterType = null, initialTemplateType = null, purchaseOrderId = null, onClose }) {
   const { hasPermission } = useStore();
   const canEditTemplates = hasPermission("templates", "write");
   const [templates, setTemplates] = useState([]);
@@ -81,6 +89,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const printIframeRef = useRef(null);
   const pdfCacheRef = useRef(new Map());
   const companyName = emailSettings?.company_name?.trim() || emailSettings?.business_name?.trim() || "Invoice";
+  const isMultiEntitySelection = selectedEntities.length > 1;
   const recipientEmail = (client?.email || entity?.email || employee?.email || "").trim();
   const recipientType = page === "clients" ? "client"
     : page === "suppliers" ? "supplier"
@@ -230,7 +239,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
   useEffect(() => {
     let cancelled = false;
-    if (page !== "suppliers" || !entity?.id) {
+    if (page !== "suppliers" || !entity?.id || isMultiEntitySelection) {
       setPurchaseOrders([]);
       setSelectedPurchaseOrderId("");
       setPurchaseOrdersLoading(false);
@@ -275,7 +284,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     return () => {
       cancelled = true;
     };
-  }, [page, entity?.id, purchaseOrderId]);
+  }, [page, entity?.id, purchaseOrderId, isMultiEntitySelection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -330,7 +339,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     let cancelled = false;
 
     const loadLatestClientInvoice = async () => {
-      if (page !== "clients" || !entity?.id) {
+      if (page !== "clients" || !entity?.id || isMultiEntitySelection) {
         setClientInvoiceTx(null);
         setClientInvoiceItems([]);
         setClientCartItems([]);
@@ -382,12 +391,34 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     return () => {
       cancelled = true;
     };
-  }, [page, entity?.id]);
+  }, [page, entity?.id, isMultiEntitySelection]);
 
-  const buildVars = useCallback(() => {
-    if (catalogueItems.length > 0) return buildCatalogueVariables(catalogueItems, page, currentUser, settings);
+  const buildVars = useCallback((targetEntity = entity) => {
+    const templateSettings = { ...emailSettings, ...(settings || {}) };
+    if (usesCatalogueVariables(selected) && catalogueItems.length > 0) {
+      return buildCatalogueVariables(catalogueItems, page, currentUser, templateSettings);
+    }
     if (page === "clients") {
-      const baseVars = buildClientVariables(entity, currentUser, settings);
+      const baseVars = buildClientVariables(targetEntity, currentUser, templateSettings);
+      if (isMultiEntitySelection) {
+        return {
+          ...baseVars,
+          "invoice.number": "",
+          "invoice.date": "",
+          "invoice.subtotal": "",
+          "invoice.discount": "",
+          "invoice.discount_amount": "",
+          "invoice.tax": "",
+          "invoice.total": "",
+          "invoice.totals_table": "",
+          "invoice.items": "",
+          "invoice.items.table": "",
+          "invoice.items.compact_feature_table": "",
+          "invoice.items.dense_table": "",
+          "invoice.items.feature_table": "",
+          "invoice.payment_method": "",
+        };
+      }
       const cartItems = (clientCartItems || []).map((item) => {
         const qty = Number(item?.quantity) || 1;
         const unitPrice = Number(item?.unit_price ?? item?.price) || 0;
@@ -406,10 +437,10 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
       if (cartItems.length > 0) {
         const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0);
-        const taxRate = toTaxRateDecimal(settings?.tax_rate);
+        const taxRate = toTaxRateDecimal(templateSettings?.tax_rate);
         const taxAmount = subtotal * taxRate;
         txForInvoice = {
-          id: `CART-${entity?.id || "CLIENT"}`,
+          id: `CART-${targetEntity?.id || "CLIENT"}`,
           created_at: new Date().toISOString(),
           subtotal,
           tax_amount: taxAmount,
@@ -419,28 +450,35 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         itemsForInvoice = cartItems;
       }
 
-      const invoiceVars = buildSalesVariables(txForInvoice, entity, currentUser, settings, itemsForInvoice);
+      const invoiceVars = buildSalesVariables(txForInvoice, targetEntity, currentUser, templateSettings, itemsForInvoice);
       return { ...invoiceVars, ...baseVars };
     }
-    if (page === "employees" && filterType === "payslip") return buildPayslipVariables(entity, employee || currentUser, currentUser, settings);
-    if (page === "employees") return buildEmployeeVariables(entity, currentUser, settings);
-    if (page === "sales") return buildSalesVariables(entity, client || entity, currentUser, settings, items);
-    if (page === "schedule") return buildScheduleVariables(entity, client, employee, service, currentUser, settings);
-    if (page === "services") return buildServiceVariables(entity, currentUser, settings);
-    if (page === "inventory") return buildInventoryVariables(entity, currentUser, settings);
-    if (page === "suppliers") return buildPurchaseOrderVariables(purchaseOrder, entity, currentUser, settings, inventoryItems);
+    if (page === "employees" && filterType === "payslip") return buildPayslipVariables(targetEntity, employee || currentUser, currentUser, templateSettings);
+    if (page === "employees") return buildEmployeeVariables(targetEntity, currentUser, templateSettings);
+    if (page === "sales") return buildSalesVariables(targetEntity, client || targetEntity, currentUser, templateSettings, items);
+    if (page === "schedule") return buildScheduleVariables(targetEntity, client, employee, service, currentUser, templateSettings);
+    if (page === "services") return buildServiceVariables(targetEntity, currentUser, templateSettings);
+    if (page === "inventory") return buildInventoryVariables(targetEntity, currentUser, templateSettings);
+    if (page === "suppliers") return buildPurchaseOrderVariables(isMultiEntitySelection ? null : purchaseOrder, targetEntity, currentUser, templateSettings, inventoryItems);
     return {};
-  }, [page, entity, currentUser, settings, items, catalogueItems, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal, purchaseOrder, inventoryItems]);
+  }, [page, entity, currentUser, settings, emailSettings, selected, items, catalogueItems, selectedEntities, isMultiEntitySelection, client, employee, service, filterType, clientCartItems, clientInvoiceTx, clientInvoiceItems, parseSelectedOptions, toTaxRateDecimal, purchaseOrder, inventoryItems]);
 
   useEffect(() => {
     if (!selected) {
       setRenderedHtml("");
       return;
     }
-    const vars = buildVars();
-    const rendered = renderTemplate(selected.content, vars);
-    setRenderedHtml(normalizeImageAlignment(rendered));
-  }, [selected, buildVars, normalizeImageAlignment]);
+    const isCombinedCatalogue = usesCatalogueVariables(selected) && catalogueItems.length > 0;
+    if (isMultiEntitySelection && !isCombinedCatalogue) {
+      const rendered = selectedEntities.map((record, index) => {
+        const pageBreak = index === 0 ? "" : ' style="break-before:page;page-break-before:always;"';
+        return `<div${pageBreak}>${renderTemplate(selected.content, buildVars(record))}</div>`;
+      }).join("");
+      setRenderedHtml(normalizeImageAlignment(rendered));
+      return;
+    }
+    setRenderedHtml(normalizeImageAlignment(renderTemplate(selected.content, buildVars())));
+  }, [selected, buildVars, normalizeImageAlignment, selectedEntities, catalogueItems, isMultiEntitySelection]);
 
   const pdfFileName = useMemo(() => {
     const safeName = (selected?.name || companyName || "invoice")
@@ -451,8 +489,9 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     const purchaseOrderSuffix = isPurchaseOrderTemplate && purchaseOrder?.po_number
       ? `_${String(purchaseOrder.po_number).replace(/[^a-z0-9\-_]/gi, "")}`
       : "";
-    return `${safeName || "invoice"}${purchaseOrderSuffix}.pdf`;
-  }, [selected?.name, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number]);
+    const selectionSuffix = isMultiEntitySelection ? `_selected_${selectedEntities.length}` : "";
+    return `${safeName || "invoice"}${purchaseOrderSuffix}${selectionSuffix}.pdf`;
+  }, [selected?.name, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number, isMultiEntitySelection, selectedEntities.length]);
 
   const emailSubject = useMemo(
     () => isPurchaseOrderTemplate && purchaseOrder?.po_number
@@ -607,6 +646,10 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const handleSendEmail = async () => {
     if (!selected) return;
     setEmailSendError("");
+    if (isMultiEntitySelection) {
+      setEmailSendError("Email is unavailable for a combined document with multiple selected records.");
+      return;
+    }
     if (emailSettingsLoading) {
       setEmailSendError("Company email settings are still loading. Please try again.");
       return;
@@ -725,25 +768,36 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   };
 
   const visibleTemplates = filterType ? templates.filter((t) => t.template_type === filterType) : templates;
+  const getTemplateUnavailableReason = useCallback((template) => {
+    if (page === "employees" && selectedEntities.length > 0 && template.template_type === "payslip") {
+      return "Select a pay slip from the employee profile to use this template.";
+    }
+    if (page === "clients" && isMultiEntitySelection && ["invoice", "receipt"].includes(template.template_type)) {
+      return "Select one client or use a Sales transaction to generate transaction documents.";
+    }
+    if (page === "suppliers" && isMultiEntitySelection && template.template_type === "purchase_order") {
+      return "Select one supplier to choose a purchase order for this template.";
+    }
+    if (page === "inventory" && selectedEntities.length > 0 && usesCatalogueVariables(template) && catalogueItems.length === 0) {
+      return "Select at least one product to generate a catalogue.";
+    }
+    return "";
+  }, [page, selectedEntities.length, isMultiEntitySelection, catalogueItems.length]);
 
   useEffect(() => {
     if (!loading && visibleTemplates.length > 0 && !selected) {
-      setSelected(visibleTemplates.find((template) => template.template_type === initialTemplateType) || visibleTemplates[0]);
+      setSelected(
+        visibleTemplates.find((template) => template.template_type === initialTemplateType && !getTemplateUnavailableReason(template))
+        || visibleTemplates.find((template) => !getTemplateUnavailableReason(template))
+        || null
+      );
     }
-  }, [loading, selected, visibleTemplates, initialTemplateType]);
+  }, [loading, selected, visibleTemplates, initialTemplateType, getTemplateUnavailableReason]);
 
-  const handleUseAction = () => {
-    if (!selected) return;
-    if (isPurchaseOrderTemplate || selected.template_type === "email" || recipientEmail) {
-      setIsEmailPreviewOpen(true);
-    } else {
-      handlePrint();
-    }
-  };
-
+  const selectedEntityKey = selectedEntities.map((record) => record?.id ?? record?.name ?? "").join(",");
   const pdfCacheKey = isPurchaseOrderTemplate && purchaseOrder?.id
-    ? `${selected?.id}:${purchaseOrder.id}`
-    : selected?.id;
+    ? `${selected?.id}:${purchaseOrder.id}:${selectedEntityKey}`
+    : `${selected?.id}:${selectedEntityKey}`;
   const purchaseOrderActionDisabled = isPurchaseOrderTemplate
     && (purchaseOrdersLoading || purchaseOrderLoading || !purchaseOrder || Boolean(purchaseOrderError));
 
@@ -762,149 +816,122 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
             )}
           </div>
         }
-        headerActions={
-          !isPurchaseOrderTemplate && (
-            <div className="align-items-center d-flex gap-2">
-            <Button_Toolbar
-              icon={PrinterIcon}
-              label=""
-              compact
-              onClick={handlePrint}
-              disabled={!selected || purchaseOrderActionDisabled}
-              className="btn-outline-secondary rounded-circle"
-              title="Print"
-            />
-            <Button_Toolbar
-              icon={ArrowDownTrayIcon}
-              label=""
-              compact
-              onClick={handleDownloadPdf}
-              disabled={!selected || isDownloadingPdf || purchaseOrderActionDisabled}
-              className="btn-outline-secondary rounded-circle"
-              title={isDownloadingPdf ? "Downloading..." : "Download PDF"}
-            />
-            {!isPayslip && canEditTemplates && (
-              <Button_Toolbar
-                icon={PencilSquareIcon}
-                label=""
-                compact
-                onClick={handleOpenTemplateEditor}
-                disabled={!selected}
-                className="btn-outline-secondary rounded-circle"
-                title={selected?.is_standard ? "Customize template" : "Edit template"}
-              />
-            )}
-            </div>
-          )
-        }
         noPadding={false}
         footer={
           <Footer_Actions
             start={
               <>
-                {isPurchaseOrderTemplate && (
-                  <>
+                {!isPayslip && (
+                  <div className="app-dropup position-relative" ref={templateDropupRef}>
                     <Button_Toolbar
-                      icon={PrinterIcon}
-                      label="Print"
-                      onClick={handlePrint}
-                      disabled={!selected || purchaseOrderActionDisabled}
-                      className="btn-outline-secondary"
-                      title="Print purchase order"
+                      icon={DocumentTextIcon}
+                      label="Templates"
+                      onClick={() => setTemplateDropupOpen((v) => !v)}
+                      className="btn-outline-secondary app-menu-trigger"
+                      aria-expanded={templateDropupOpen}
+                      aria-haspopup="listbox"
+                      title="Choose template"
                     />
-                    <Button_Toolbar
-                      icon={ArrowDownTrayIcon}
-                      label={isDownloadingPdf ? "Downloading…" : "Download PDF"}
-                      onClick={handleDownloadPdf}
-                      disabled={!selected || isDownloadingPdf || purchaseOrderActionDisabled}
-                      className="btn-outline-secondary"
-                      title="Download purchase order as PDF"
-                    />
-                  </>
-                )}
-              </>
-            }
-            center={
-              <>
-            {!isPayslip && (
-              <div className="app-dropup position-relative" ref={templateDropupRef}>
-                <Button_Toolbar
-                  icon={DocumentTextIcon}
-                  label={selected?.name ? `Temp: ${selected.name}` : "Temp"}
-                  onClick={() => setTemplateDropupOpen((v) => !v)}
-                  className="btn-outline-secondary app-menu-trigger"
-                  aria-expanded={templateDropupOpen}
-                  aria-haspopup="listbox"
-                  title={selected?.name || "Template options"}
-                />
 
-                {templateDropupOpen && (
-                  <div
-                    className="app-menu-panel bg-white bottom-100 dark:bg-gray-900 mb-2 p-1 position-absolute shadow-lg start-0"
-                    style={{
-                      zIndex: 900,
-                      minWidth: "14rem",
-                      maxWidth: "22rem",
-                      maxHeight: "min(50vh, 22rem)",
-                      overflowY: "auto",
-                    }}
-                    role="listbox"
-                  >
-                    {visibleTemplates.length === 0 ? (
-                      <div className="px-2 py-1 text-gray-500 text-xs">No templates available</div>
-                    ) : (
-                      visibleTemplates.map((tpl) => (
-                        <div
-                          key={tpl.id}
-                          role="option"
-                          tabIndex={0}
-                          aria-selected={selected?.id === tpl.id}
-                          onClick={() => {
-                            setSelected(tpl);
-                            setTemplateDropupOpen(false);
-                          }}
-                          className={`app-menu-item d-flex align-items-center justify-content-between gap-2 px-2 py-1 rounded cursor-pointer ${
-                            selected?.id === tpl.id ? "bg-primary text-white" : "hover:bg-gray-100 dark:hover:bg-gray-800 text-body"
-                          }`}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <span className="text-truncate text-xs font-medium">{tpl.name}</span>
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-xxs font-medium flex-shrink-0 ${
-                              selected?.id === tpl.id ? "bg-white/20 text-white" : TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom
-                            }`}
-                          >
-                            {tpl.template_type}
-                          </span>
-                        </div>
-                      ))
+                    {templateDropupOpen && (
+                      <div
+                        className="app-menu-panel bg-white bottom-100 dark:bg-gray-900 mb-2 p-1 position-absolute shadow-lg start-0"
+                        style={{
+                          zIndex: 900,
+                          minWidth: "14rem",
+                          maxWidth: "22rem",
+                          maxHeight: "min(50vh, 22rem)",
+                          overflowY: "auto",
+                        }}
+                        role="listbox"
+                      >
+                        {visibleTemplates.length === 0 ? (
+                          <div className="px-2 py-1 text-gray-500 text-xs">No templates available</div>
+                        ) : (
+                          visibleTemplates.map((tpl) => (
+                            <div
+                              key={tpl.id}
+                              role="option"
+                              tabIndex={0}
+                              aria-selected={selected?.id === tpl.id}
+                              aria-disabled={Boolean(getTemplateUnavailableReason(tpl))}
+                              onClick={() => {
+                                if (getTemplateUnavailableReason(tpl)) return;
+                                setSelected(tpl);
+                                setTemplateDropupOpen(false);
+                              }}
+                              title={getTemplateUnavailableReason(tpl) || tpl.name}
+                              className={`app-menu-item d-flex align-items-center justify-content-between gap-2 px-2 py-1 rounded ${
+                                getTemplateUnavailableReason(tpl)
+                                  ? "cursor-not-allowed opacity-50 text-muted"
+                                  : selected?.id === tpl.id
+                                    ? "bg-primary text-white cursor-pointer"
+                                    : "hover:bg-gray-100 dark:hover:bg-gray-800 text-body cursor-pointer"
+                              }`}
+                              style={{ cursor: getTemplateUnavailableReason(tpl) ? "not-allowed" : "pointer" }}
+                            >
+                              <span className="text-truncate text-xs font-medium">{tpl.name}</span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-xxs font-medium flex-shrink-0 ${
+                                  selected?.id === tpl.id ? "bg-white/20 text-white" : TYPE_BADGE_COLOR[tpl.template_type] || TYPE_BADGE_COLOR.custom
+                                }`}
+                              >
+                                {tpl.template_type}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
-              </div>
-            )}
-            </>}
-            end={
-              <>
-
-            {!isPayslip && (
-              <Button_Toolbar
-                icon={selected?.template_type === "email" || isPurchaseOrderTemplate ? EnvelopeIcon : CheckIcon}
-                label={isPurchaseOrderTemplate ? "Prepare email" : selected?.template_type === "email" ? "Send" : "Use"}
-                onClick={handleUseAction}
-                disabled={!selected || purchaseOrderActionDisabled}
-                className="btn-primary"
-                title={isPurchaseOrderTemplate ? "Review the purchase order and prepare a manual email draft" : selected?.template_type === "email" ? "Send message" : "Use template"}
-              />
-            )}
-
-            <Button_Toolbar
-              icon={XMarkIcon}
-              label="Cancel"
-              onClick={onClose}
-              className="btn-outline-secondary"
-              title="Cancel"
-            />
+                <Button_Toolbar
+                  icon={PrinterIcon}
+                  label=""
+                  compact
+                  onClick={handlePrint}
+                  disabled={!selected || purchaseOrderActionDisabled}
+                  className="btn-outline-secondary"
+                  title="Print"
+                />
+                <Button_Toolbar
+                  icon={ArrowDownTrayIcon}
+                  label=""
+                  compact
+                  onClick={handleDownloadPdf}
+                  disabled={!selected || isDownloadingPdf || purchaseOrderActionDisabled}
+                  className="btn-outline-secondary"
+                  title={isDownloadingPdf ? "Downloading PDF" : "Download PDF"}
+                />
+                {!isPayslip && !isMultiEntitySelection && (isPurchaseOrderTemplate || selected?.template_type === "email" || recipientEmail) && (
+                  <Button_Toolbar
+                    icon={EnvelopeIcon}
+                    label=""
+                    compact
+                    onClick={() => setIsEmailPreviewOpen(true)}
+                    disabled={!selected || purchaseOrderActionDisabled}
+                    className="btn-outline-secondary"
+                    title="Review and send email"
+                  />
+                )}
+                {!isPayslip && canEditTemplates && (
+                  <Button_Toolbar
+                    icon={PencilSquareIcon}
+                    label=""
+                    compact
+                    onClick={handleOpenTemplateEditor}
+                    disabled={!selected}
+                    className="btn-outline-secondary"
+                    title={selected?.is_standard ? "Customize template" : "Edit template"}
+                  />
+                )}
+                <Button_Toolbar
+                  icon={XMarkIcon}
+                  label="Cancel"
+                  onClick={onClose}
+                  className="btn-outline-secondary"
+                  title="Cancel"
+                />
               </>
             }
           />
@@ -912,6 +939,21 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
       >
         {/* Hidden iframe used solely for native window.print() */}
         <iframe ref={printIframeRef} srcDoc={iframeContent} style={{ display: "none" }} title="Print frame" />
+
+        <div
+          className="bg-white border-bottom dark:bg-gray-800 mb-2 py-2"
+          style={{ position: "sticky", top: 0, zIndex: 30 }}
+        >
+          <div className="fw-semibold min-w-0 text-body text-truncate">
+            {selected?.name || (loading ? "Loading templates..." : "Select a template")}
+          </div>
+        </div>
+
+        {isMultiEntitySelection && (
+          <div className="alert alert-info py-1 small" role="status">
+            This document combines {selectedEntities.length} selected records. Email is available only for one selected record.
+          </div>
+        )}
 
         {page === "suppliers" && selected?.template_type === "purchase_order" && (
           <div className="border-bottom mb-2 pb-2">
@@ -971,7 +1013,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
       {isEditorOpen && editorTemplate && <Modal_Template_Editor template={editorTemplate} onSave={handleSaveTemplate} onClose={() => { setIsEditorOpen(false); setEditorTemplate(null); }} />}
 
-      {isEmailPreviewOpen && selected && (
+      {isEmailPreviewOpen && selected && !isMultiEntitySelection && (
         <Modal
           isOpen={isEmailPreviewOpen}
           onClose={() => setIsEmailPreviewOpen(false)}

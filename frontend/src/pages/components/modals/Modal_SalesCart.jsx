@@ -28,8 +28,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Gate_Permission from "../layout/Gate_Permission";
 import Footer_Actions from "../footers/Footer_Actions";
-import { getDisplayImageUrl } from "../utils/Utils_Image";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, SparklesIcon, CubeIcon, DocumentTextIcon } from "../../../icons";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, DocumentTextIcon, TrashIcon } from "../../../icons";
 
 const CLIENT_DROPUP_Z_INDEX = 1200;
 
@@ -108,24 +107,19 @@ function ClientSearchDropupPortal({ anchorRef, open, clients, onSelect, onAddNew
 
 // ─── 1 CARTITEM SUB-COMPONENT ──────────────────────────────────────────────
 const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove, canEdit = false }) => {
-  const isService = item.itemType === "service";
-  const isBundle = item.itemType === "bundle";
   const isMix = item.itemType === "mix";
-  const imageUrl = getDisplayImageUrl(item);
 
   // Build a compact mix selection summary: "3× White, 7× Black"
   const mixSummary = isMix && item.mixSelections?.length > 0 ? item.mixSelections.map((s) => `${s.quantity}× ${s.product_name}`).join(", ") : null;
 
   const grossLineTotal = (item.price || 0) * (item.quantity || 1);
   const discountVal = Number(itemDiscount?.discountAmount || 0);
-  const hasDiscount = discountVal > 0;
   const netLineTotal = Math.max(0, grossLineTotal - discountVal);
-  const effectiveUnitPrice = (grossLineTotal - discountVal) / (item.quantity || 1);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 flex gap-1 items-center rounded-lg">
+    <div className="bg-gray-50 dark:bg-gray-800 flex gap-0.5 items-center rounded-lg">
       {/* Delete button — leftmost */}
-      {canEdit && <div className="flex-shrink-0 px-1">
+      {canEdit && <div className="flex-shrink-0 px-0.5">
         <button
           onClick={() => onRemove(item.cartKey)}
           className="bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/50 flex h-7 hover:bg-red-200 items-center justify-center rounded-full transition-colors w-7"
@@ -135,26 +129,9 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove, canEdit = fa
         </button>
       </div>}
 
-      {/* Mini Image/Icon */}
-      <div className={`w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden ${isService ? "bg-primary-100 dark:bg-primary-900" : isBundle ? "bg-orange-100 dark:bg-orange-900" : isMix ? "bg-pink-100 dark:bg-pink-900" : "bg-secondary-100 dark:bg-secondary-900"}`}>
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={item.name}
-            className="h-full object-center object-cover w-full"
-            onError={(e) => {
-              e.target.style.display = "none";
-              const fallback = e.target.nextElementSibling;
-              if (fallback) fallback.style.display = "flex";
-            }}
-          />
-        ) : null}
-        <div className={`w-full h-full flex items-center justify-center ${imageUrl ? "hidden" : "flex"}`}>{isService ? <SparklesIcon className="h-6 text-primary-500 w-6" /> : <CubeIcon className={`h-6 w-6 ${isBundle ? "text-orange-500" : isMix ? "text-pink-500" : "text-secondary-500"}`} />}</div>
-      </div>
-
       {/* Item Info */}
-      <div className="flex-1 min-w-0 pr-1">
-        <h4 className="dark:text-white font-medium text-gray-900 text-sm truncate mb-0" title={item.name}>
+      <div className="flex-1 min-w-0">
+        <h4 className="dark:text-white font-medium leading-tight line-clamp-2 mb-0 text-gray-900 text-sm" title={item.name}>
           {item.name}
         </h4>
         {mixSummary && (
@@ -162,19 +139,11 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove, canEdit = fa
             {mixSummary}
           </p>
         )}
-        <p className="ui-muted-xs mb-0">
-          {hasDiscount ? (
-            <span className="text-success font-medium">${effectiveUnitPrice.toFixed(2)}</span>
-          ) : (
-            `$${item.price?.toFixed(2)}`
-          )}{" "}
-          × {item.quantity}
-        </p>
       </div>
 
       {/* Quantity Controls */}
       {canEdit ? (
-        <div className="ui-flex-items-gap-1 flex-shrink-0">
+        <div className="align-items-center d-flex flex-shrink-0" style={{ gap: "0.125rem" }}>
           <button onClick={() => onUpdateQuantity(item.cartKey, item.quantity - 1)} className="bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 flex h-7 hover:bg-gray-300 items-center justify-center rounded-full transition-colors w-7">
             <MinusIcon className="dark:text-gray-300 h-4 text-gray-600 w-4" />
           </button>
@@ -188,16 +157,8 @@ const CartItem = ({ item, itemDiscount, onUpdateQuantity, onRemove, canEdit = fa
       )}
 
       {/* Total */}
-      <div className="flex-shrink-0 text-right ps-1">
-        {hasDiscount && (
-          <p className="line-through text-muted text-xs mb-0">${grossLineTotal.toFixed(2)}</p>
-        )}
+      <div className="flex-shrink-0 text-right">
         <p className="dark:text-white font-semibold text-gray-900 text-sm mb-0">${netLineTotal.toFixed(2)}</p>
-        {hasDiscount && (
-          <span className="badge bg-success" style={{ fontSize: "0.58rem", padding: "1px 4px" }}>
-            -${discountVal.toFixed(2)}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -285,17 +246,7 @@ export default function Modal_Cart_Sales({
             Cart ({cartItemCount})
           </div>
           <div className="component-header-center"></div>
-          <div className="component-header-right">
-            {canWriteSales && cart.length > 0 && (
-              <button
-                onClick={clearCart}
-                className="btn btn-circle btn-outline-danger btn-sm"
-                title="Clear cart"
-              >
-                <XMarkIcon className="ui-icon-4" />
-              </button>
-            )}
-          </div>
+          <div className="component-header-right"></div>
         </div>
 
         <div className="component-body">
@@ -376,7 +327,7 @@ export default function Modal_Cart_Sales({
 
             {/* ─── 5 CART ITEMS LIST ──────────────────────────────────────── */}
             {/* Cart Items */}
-            <div className="flex-1 max-h-[35vh] overflow-y-auto p-1 space-y-1">
+            <div className="flex-1 max-h-[35vh] overflow-y-auto p-0.5 space-y-1">
               {cart.map((item) => (
                 <CartItem
                   key={item.cartKey}
@@ -478,6 +429,7 @@ export default function Modal_Cart_Sales({
                         value={tipAmount}
                         onChange={(e) => setTipAmount(e.target.value)}
                         className="bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 px-0 py-1 rounded-lg text-gray-900 text-right text-sm w-24"
+                        style={{ marginBottom: 0 }}
                       />
                     </div>
                   </div>
@@ -497,6 +449,16 @@ export default function Modal_Cart_Sales({
           <Footer_Actions
             start={
               <div className="align-items-center d-flex flex-wrap gap-2">
+                {canWriteSales && cart.length > 0 && (
+                  <Button_Toolbar
+                    icon={TrashIcon}
+                    label=""
+                    compact
+                    onClick={clearCart}
+                    className="btn-outline-danger"
+                    title="Clear cart"
+                  />
+                )}
                 {canWriteSales && (
                   <Button_Toolbar
                     icon={DocumentTextIcon}

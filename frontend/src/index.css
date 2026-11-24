@@ -183,9 +183,9 @@ body,
 
 .app-shell {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
+  top: var(--vvp-offset-top, 0px);
+  left: var(--vvp-offset-left, 0px);
+  width: var(--vvp-width, 100%);
   /* 100vh fallback first for browsers that don't support dvh */
   height: 100vh;
   /* JS-measured visual viewport height takes over when keyboard is open */
@@ -863,11 +863,11 @@ textarea {
 .app-modal-dialog,
 .app-modal-sheet {
   position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
+  bottom: var(--vvp-bottom-inset, 0px) !important;
+  left: var(--vvp-offset-left, 0px) !important;
+  right: auto !important;
   z-index: 1;
-  width: 100% !important;
+  width: var(--vvp-width, 100%) !important;
   background: var(--bs-body-bg) !important;
   border-top-left-radius: var(--app-modal-border-radius, 0.75rem) !important;
   border-top-right-radius: var(--app-modal-border-radius, 0.75rem) !important;
@@ -888,8 +888,8 @@ textarea {
 
 .app-modal-dialog--fullscreen,
 .app-modal-sheet--fullscreen {
-  top: 0 !important;
-  bottom: 0 !important;
+  top: var(--vvp-offset-top, 0px) !important;
+  bottom: auto !important;
   height: 100vh !important;
   height: var(--vvp-height, 100dvh) !important;
   max-width: 100% !important;
@@ -1778,6 +1778,11 @@ textarea.form-control,
 .app-dropdown-root,
 .app-textarea-wrapper {
   margin-bottom: 0.75rem;
+}
+
+.app-menu-panel.sales-filter-dropdown .form-control,
+.app-menu-panel.sales-filter-dropdown .app-dropdown-root {
+  margin-bottom: 0 !important;
 }
 
 /* Main page footer search inputs are aligned within the compact footer row. */
@@ -3271,6 +3276,25 @@ input[type="number"],
   display: block;
   width: 100%;
   margin-bottom: 0 !important;
+}
+
+.app-date-time-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.app-date-time-input__field {
+  min-width: 0;
+}
+
+.app-date-time-input__label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .app-date-picker-wrapper .react-datepicker__input-container,

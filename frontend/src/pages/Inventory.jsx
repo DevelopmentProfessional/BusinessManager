@@ -525,10 +525,6 @@ export default function Inventory() {
       return n;
     });
   const allVisibleSelectedInv = filteredInventory.length > 0 && filteredInventory.every((i) => selectedIds.has(i.id));
-  const selectedCatalogueProducts = useMemo(
-    () => inventory.filter((item) => selectedIds.has(item.id) && String(item.type || "PRODUCT").toUpperCase() === "PRODUCT"),
-    [inventory, selectedIds]
-  );
   const handleSelectAllInv = () => {
     if (allVisibleSelectedInv) {
       setSelectedIds(new Set());
@@ -682,10 +678,9 @@ export default function Inventory() {
               </span>
               <Button_Icon
                 icon={DocumentTextIcon}
-                label="Generate catalogue"
-                onClick={() => setCatalogueItems(selectedCatalogueProducts)}
-                disabled={selectedCatalogueProducts.length === 0}
-                title="Generate a catalogue from selected products"
+                label="Use template"
+                onClick={() => setCatalogueItems(inventory.filter((item) => selectedIds.has(item.id)))}
+                title="Generate a document using templates available to Inventory"
               />
               <Gate_Permission page="inventory" permission="write">
                 <Button_Icon icon={PencilSquareIcon} label="Edit selected items" variant="primary" onClick={() => setShowMultiEdit(true)} />
@@ -846,11 +841,11 @@ export default function Inventory() {
       {catalogueItems?.length > 0 && (
         <Modal_TemplateUse
           page="inventory"
-          entity={{ name: "Product Catalogue" }}
-          catalogueItems={catalogueItems}
+          entity={catalogueItems[0]}
+          selectedEntities={catalogueItems}
+          catalogueItems={catalogueItems.filter((item) => String(item.type || "PRODUCT").toUpperCase() === "PRODUCT")}
           currentUser={currentUser}
           settings={{}}
-          filterType="catalogue"
           initialTemplateType="catalogue"
           onClose={() => setCatalogueItems(null)}
         />

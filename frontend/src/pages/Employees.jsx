@@ -58,7 +58,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon } from "../icons";
+import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
@@ -80,6 +80,7 @@ import Modal_Requests_Employee from "./components/modals/Modal_EmployeeRequests"
 import Modal_InsurancePlans from "./components/modals/Modal_InsurancePlans";
 import Chat_Employee from "./components/widgets/Chat_Employee";
 import Modal_Wages from "./components/modals/Modal_Wages";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Modal_Pay_Employee from "./components/modals/Modal_EmployeePay";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
@@ -143,6 +144,7 @@ export default function Employees() {
   const [isRoleFilterOpen, setIsRoleFilterOpen] = useState(false);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [templateEntities, setTemplateEntities] = useState([]);
   const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
@@ -1104,6 +1106,12 @@ export default function Employees() {
               <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
                 {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
               </span>
+              <Button_Icon
+                icon={DocumentTextIcon}
+                label="Use template"
+                onClick={() => setTemplateEntities(employees.filter((employee) => selectedIds.has(employee.id)))}
+                title="Generate one combined document using templates available to Employees"
+              />
               <Button_Icon icon={PencilSquareIcon} label="Edit selected employees" variant="primary" onClick={() => setShowMultiEdit(true)} />
               <Gate_Permission
                 page="employees"
@@ -1434,6 +1442,16 @@ export default function Employees() {
         onSave={handleEmpMultiEditSave}
         saving={multiSaving}
       />
+      {templateEntities.length > 0 && (
+        <Modal_TemplateUse
+          page="employees"
+          entity={templateEntities[0]}
+          selectedEntities={templateEntities}
+          currentUser={currentUser}
+          settings={{}}
+          onClose={() => setTemplateEntities([])}
+        />
+      )}
     </div>
   );
 }

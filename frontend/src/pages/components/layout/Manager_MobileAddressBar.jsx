@@ -120,6 +120,12 @@ export default function Manager_MobileAddressBar() {
       root.style.setProperty("--mobile-app-height", `${Math.round(viewportHeight)}px`);
     };
 
+    const isEditingFieldFocused = () => {
+      const activeElement = document.activeElement;
+      return activeElement instanceof HTMLElement &&
+        (activeElement.matches("input, textarea, select") || activeElement.isContentEditable);
+    };
+
     const hideAddressBar = () => {
       const env = getMobileEnvironment();
 
@@ -132,7 +138,7 @@ export default function Manager_MobileAddressBar() {
       applyModeClasses();
       syncViewportHeight();
 
-      if (!env.isStandalone) {
+      if (!env.isStandalone && !isEditingFieldFocused()) {
         window.scrollTo(0, 1);
       }
     };

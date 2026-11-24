@@ -112,13 +112,34 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
+    const viewport = window.visualViewport;
+    const root = document.documentElement;
     const update = () => {
-      document.documentElement.style.setProperty("--vvp-height", `${window.visualViewport.height}px`);
+      const offsetLeft = Math.max(0, Math.round(viewport.offsetLeft));
+      const offsetTop = Math.max(0, Math.round(viewport.offsetTop));
+      const width = Math.max(0, Math.round(viewport.width));
+      const height = Math.max(0, Math.round(viewport.height));
+      const bottomInset = Math.max(0, Math.round(window.innerHeight - offsetTop - viewport.height));
+
+      root.style.setProperty("--vvp-offset-left", `${offsetLeft}px`);
+      root.style.setProperty("--vvp-offset-top", `${offsetTop}px`);
+      root.style.setProperty("--vvp-width", `${width}px`);
+      root.style.setProperty("--vvp-height", `${height}px`);
+      root.style.setProperty("--vvp-bottom-inset", `${bottomInset}px`);
     };
-    window.visualViewport.addEventListener("resize", update);
+    window.addEventListener("resize", update, { passive: true });
+    viewport.addEventListener("resize", update, { passive: true });
+    viewport.addEventListener("scroll", update, { passive: true });
     update();
     return () => {
-      window.visualViewport.removeEventListener("resize", update);
+      window.removeEventListener("resize", update);
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+      root.style.removeProperty("--vvp-offset-left");
+      root.style.removeProperty("--vvp-offset-top");
+      root.style.removeProperty("--vvp-width");
+      root.style.removeProperty("--vvp-height");
+      root.style.removeProperty("--vvp-bottom-inset");
     };
   }, []);
 

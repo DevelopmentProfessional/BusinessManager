@@ -604,9 +604,11 @@ export default function Documents() {
 
   const handleSubmitDocument = async (documentData) => {
     const results = [];
-    for (const file of documentData.files) {
+    for (const fileEntry of documentData.files) {
+      const file = fileEntry?.file || fileEntry;
+      const description = fileEntry?.file ? fileEntry.description : documentData.description;
       try {
-        results.push({ status: "fulfilled", value: await documentsAPI.upload(file, documentData.description) });
+        results.push({ status: "fulfilled", value: await documentsAPI.upload(file, description) });
       } catch (reason) {
         results.push({ status: "rejected", reason });
       }
@@ -617,13 +619,14 @@ export default function Documents() {
     const failureMessages = [];
 
     results.forEach((result, index) => {
-      const file = documentData.files[index];
+      const fileEntry = documentData.files[index];
+      const file = fileEntry?.file || fileEntry;
       if (result.status === "fulfilled" && result.value?.data?.id) {
         uploadedDocuments.push(result.value.data);
         return;
       }
 
-      failedFiles.push(file);
+      failedFiles.push(fileEntry);
       const detail = result.status === "rejected" ? result.reason?.response?.data?.detail : null;
       const reason = typeof detail === "string" ? detail : result.status === "rejected" ? result.reason?.message : null;
       failureMessages.push(`${file.name}: ${reason || "Upload failed."}`);

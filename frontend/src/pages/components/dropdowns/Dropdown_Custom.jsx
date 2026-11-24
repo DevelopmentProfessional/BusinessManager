@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { PlusIcon } from "../../../icons";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
+import { getViewportClampedMenuBounds } from "./menuPosition";
 
 function getDropdownPortalHost() {
   if (typeof document === "undefined" || !document.body) return null;
@@ -111,16 +112,13 @@ export default function Dropdown_Custom({
       const gap = 4;
       const estimatedMenuHeight = 260;
       const shouldOpenUpward = openUpward && triggerRect.top >= estimatedMenuHeight;
-      const viewport = window.visualViewport;
-      const viewportLeft = viewport?.offsetLeft ?? 0;
-      const viewportWidth = viewport?.width ?? window.innerWidth;
-      const maxWidth = Math.max(1, viewportWidth - 16);
+      const bounds = getViewportClampedMenuBounds(triggerRect, { sideMargin: 8 });
       setMenuPosition({
-        left: Math.min(Math.max(triggerRect.left, viewportLeft + 8), viewportLeft + viewportWidth - Math.min(Math.max(triggerRect.width, 176), maxWidth) - 8),
+        left: bounds.left,
         top: shouldOpenUpward ? undefined : triggerRect.bottom + gap,
         bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + gap : undefined,
-        minWidth: Math.min(Math.max(triggerRect.width, 176), maxWidth),
-        maxWidth,
+        minWidth: bounds.width,
+        maxWidth: bounds.maxWidth,
         maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - gap : window.innerHeight - triggerRect.bottom - gap),
       });
     };
@@ -194,11 +192,11 @@ export default function Dropdown_Custom({
 
   useEffect(() => {
     if (!isOpen || !menuPosition || !menuRef.current) return;
-    const viewport = window.visualViewport;
-    const viewportLeft = viewport?.offsetLeft ?? 0;
-    const viewportWidth = viewport?.width ?? window.innerWidth;
     const menuWidth = menuRef.current.getBoundingClientRect().width;
-    const left = Math.max(viewportLeft + 8, Math.min(menuPosition.left, viewportLeft + viewportWidth - menuWidth - 8));
+    const { left } = getViewportClampedMenuBounds(
+      { left: menuPosition.left, width: menuWidth },
+      { minWidth: menuWidth, maxWidth: menuWidth, sideMargin: 8 }
+    );
     if (Math.abs(left - menuPosition.left) > 0.5) {
       setMenuPosition((current) => current && { ...current, left });
     }

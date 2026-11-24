@@ -780,10 +780,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   )}
                 </div>
                 <div className="col-6">
-                  <div className="form-floating">
-                    <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
-                    <label htmlFor="appointment_datetime">Date & Time</label>
-                  </div>
+                  <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
                 </div>
               </div>
@@ -860,10 +857,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
                 </div>
                 <div className="col-6">
-                  <div className="form-floating">
-                    <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
-                    <label htmlFor="appointment_datetime">Date & Time</label>
-                  </div>
+                  <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
                 </div>
               </div>
@@ -954,10 +948,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
                 </div>
                 <div className="col-6">
-                  <div className="form-floating">
-                    <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
-                    <label htmlFor="appointment_datetime">Date & Time</label>
-                  </div>
+                  <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
                   {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
                 </div>
               </div>

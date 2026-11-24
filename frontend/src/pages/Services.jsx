@@ -66,7 +66,6 @@ export default function Services() {
 
   // ─── 3  STATE / REF DECLARATIONS ─────────────────────────────────────────
   const [editingService, setEditingService] = useState(null);
-  const [templateService, setTemplateService] = useState(null);
   const [catalogueItems, setCatalogueItems] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -367,9 +366,6 @@ export default function Services() {
                       <span className="badge bg-info-subtle rounded-pill text-info">{service.duration_minutes || 30}m</span>
                     </td>
                   )}
-                  <td className="main-page-table-data text-center" onClick={(e) => e.stopPropagation()}>
-                    <Button_Icon icon={DocumentTextIcon} label={`Use template for ${service.name}`} variant="ghost" onClick={() => setTemplateService(service)} />
-                  </td>
                 </PageTableRow>
               ))}
             </tbody>
@@ -389,8 +385,9 @@ export default function Services() {
             </span>
             <Button_Icon
               icon={DocumentTextIcon}
-              label="Generate catalogue"
+              label="Use template"
               onClick={() => setCatalogueItems(services.filter((service) => selectedIds.has(service.id)))}
+              title="Generate a document using templates available to Services"
             />
             <Button_Icon icon={PencilSquareIcon} label="Edit selected services" variant="primary" onClick={() => setShowMultiEdit(true)} />
             <Gate_Permission
@@ -411,7 +408,6 @@ export default function Services() {
           { label: "Service", className: "app-col-flex", sortKey: "name" },
           ...(pageSettings.showPrice !== false ? [{ label: "Price", className: "app-col-action-80", sortKey: "price" }] : []),
           ...(pageSettings.showDuration !== false ? [{ label: "Duration", className: "app-col-action-70" }] : []),
-          { label: "Template", className: "app-col-action-50" },
         ]}
         sortColumn={sortColumn}
         sortAsc={sortAsc}
@@ -511,24 +507,15 @@ export default function Services() {
         onSubmit={handleSubmitService}
         onBulkImport={handleBulkImportServices}
       />
-      {templateService && (
-        <Modal_TemplateUse
-          page="services"
-          entity={templateService}
-          service={templateService}
-          currentUser={currentUser}
-          settings={{}}
-          onClose={() => setTemplateService(null)}
-        />
-      )}
       {catalogueItems?.length > 0 && (
         <Modal_TemplateUse
           page="services"
-          entity={{ name: "Service Catalogue" }}
+          entity={catalogueItems[0]}
+          selectedEntities={catalogueItems}
           catalogueItems={catalogueItems}
+          service={catalogueItems[0]}
           currentUser={currentUser}
           settings={{}}
-          filterType="catalogue"
           initialTemplateType="catalogue"
           onClose={() => setCatalogueItems(null)}
         />

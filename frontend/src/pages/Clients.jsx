@@ -47,13 +47,14 @@ import Modal_Detail_Client from "./components/modals/Modal_ClientDetail";
 import Modal_Clients_Settings from "./components/modals/Modal_Clients_Settings";
 import Modal_Client_Create from "./components/modals/Modal_Client_Create";
 import Gate_Permission from "./components/layout/Gate_Permission";
-import { PlusIcon, StarIcon, XMarkIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon } from "../icons";
+import { PlusIcon, StarIcon, XMarkIcon, Cog6ToothIcon, TicketIcon, PencilIcon, CheckCircleIcon, XCircleIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
 import Modal_MultiEdit from "./components/modals/Modal_MultiEdit";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
 import Modal_Client_Subscriptions from "./components/modals/Modal_Client_Subscriptions";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import PageLayout from "./components/layout/Page_Layout";
 import PageTableFooter from "./components/footers/Page_TableFooter";
 import PageTableHeader from "./components/tables/Page_TableHeader";
@@ -122,6 +123,7 @@ export default function Clients() {
 
   const scrollRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [templateEntities, setTemplateEntities] = useState([]);
   const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
   const [multiSaving, setMultiSaving] = useState(false);
@@ -568,6 +570,12 @@ export default function Clients() {
             <span className="fw-semibold ui-text-sm" style={{ color: "var(--app-active-color)" }}>
               {selectedIds.size} selected item{selectedIds.size !== 1 ? "s" : ""}
             </span>
+            <Button_Icon
+              icon={DocumentTextIcon}
+              label="Use template"
+              onClick={() => setTemplateEntities(clients.filter((client) => selectedIds.has(client.id)))}
+              title="Generate one combined document using templates available to Clients"
+            />
             <Button_Icon icon={PencilSquareIcon} label="Edit selected clients" variant="primary" onClick={() => setShowMultiEdit(true)} />
             <Gate_Permission
               page="clients"
@@ -731,6 +739,16 @@ export default function Clients() {
         onSave={handleMultiEditSave}
         saving={multiSaving}
       />
+      {templateEntities.length > 0 && (
+        <Modal_TemplateUse
+          page="clients"
+          entity={templateEntities[0]}
+          selectedEntities={templateEntities}
+          currentUser={user}
+          settings={{}}
+          onClose={() => setTemplateEntities([])}
+        />
+      )}
     </PageLayout>
   );
 }

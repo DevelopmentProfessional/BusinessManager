@@ -18,6 +18,14 @@ import Modal_TemplateUse from "./Modal_TemplateUse";
 import useStore from "../../../services/useStore";
 
 const EMPTY_LINE = { supplier_product_id: "", inventory_id: "", quantity_ordered: 1, unit_price: 0 };
+const PO_STATUS_BADGE_CLASS = {
+  draft: "bg-secondary",
+  sent: "bg-primary",
+  confirmed: "bg-info text-dark",
+  partially_received: "bg-warning text-dark",
+  received: "bg-success",
+  cancelled: "bg-danger",
+};
 
 const num = (v) => {
   const n = Number(v);
@@ -568,7 +576,6 @@ const Modal_Procurement = ({
 
   const renderPoList = () => {
     const columns = [
-      { key: "po-number", label: "PO#", className: "app-col-flex" },
       ...(settings.showPODate !== false ? [{ key: "date", label: "Date", className: "app-col-action-90" }] : []),
       ...(settings.showPOStatus !== false ? [{ key: "status", label: "Status", className: "app-col-action-90" }] : []),
       ...(settings.showPOAmount !== false ? [{ key: "amount", label: "Sum", className: "app-col-action-90 text-end" }] : []),
@@ -612,25 +619,35 @@ const Modal_Procurement = ({
                   </td>
                 </PageTableRow>
               ) : (
-                purchaseOrders.map((po) => (
-                  <PageTableRow key={po.id}>
-                    <td className="font-monospace main-page-table-data small">{po.po_number}</td>
-                    {settings.showPODate !== false && (
-                      <td className="main-page-table-data small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
-                    )}
-                    {settings.showPOStatus !== false && (
-                      <td className="main-page-table-data small text-capitalize">{String(po.status || "draft").replaceAll("_", " ")}</td>
-                    )}
-                    {settings.showPOAmount !== false && (
-                      <td className="fw-medium main-page-table-data small text-end">{formatCurrency(po.total_amount)}</td>
-                    )}
-                    <td className="main-page-table-data text-center">
-                      <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" title="View purchase order" onClick={() => openDetail(po)}>
-                        <EyeIcon className="ui-icon-4" />
-                      </button>
-                    </td>
-                  </PageTableRow>
-                ))
+                purchaseOrders.map((po) => {
+                  const poStatus = String(po.status || "draft").toLowerCase();
+                  return (
+                    <PageTableRow
+                      key={po.id}
+                      name={<span className="font-monospace fw-medium text-break">{po.po_number || "Purchase order"}</span>}
+                      colSpan={columns.length}
+                    >
+                      {settings.showPODate !== false && (
+                        <td className="main-page-table-data small">{po.order_date ? new Date(po.order_date).toLocaleDateString() : "—"}</td>
+                      )}
+                      {settings.showPOStatus !== false && (
+                        <td className="main-page-table-data small">
+                          <span className={`badge rounded-pill ${PO_STATUS_BADGE_CLASS[poStatus] || "bg-secondary"}`}>
+                            {poStatus.replaceAll("_", " ")}
+                          </span>
+                        </td>
+                      )}
+                      {settings.showPOAmount !== false && (
+                        <td className="fw-medium main-page-table-data small text-end">{formatCurrency(po.total_amount)}</td>
+                      )}
+                      <td className="main-page-table-data text-center">
+                        <button type="button" className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0" title="View purchase order" onClick={() => openDetail(po)}>
+                          <EyeIcon className="ui-icon-4" />
+                        </button>
+                      </td>
+                    </PageTableRow>
+                  );
+                })
               )}
             </tbody>
           </Table>

@@ -62,6 +62,7 @@ export default function Suppliers() {
   const [procurementView, setProcurementView] = useState("orders");
   const [initialPoLineItems, setInitialPoLineItems] = useState(null);
   const [communicationSupplier, setCommunicationSupplier] = useState(null);
+  const [templateSuppliers, setTemplateSuppliers] = useState([]);
   const [appSettings, setAppSettings] = useState({});
   const [automationSettings, setAutomationSettings] = useState({
     inventory_po_generation_mode: "scheduled",
@@ -485,6 +486,13 @@ export default function Suppliers() {
               <span className="ui-small-muted">
                 {selectedSupplierIds.length} selected supplier{selectedSupplierIds.length === 1 ? "" : "s"}
               </span>
+              <Button_Toolbar
+                icon={DocumentTextIcon}
+                label="Use template"
+                onClick={() => setTemplateSuppliers(selectedSuppliers)}
+                className="btn-app-secondary"
+                title="Generate one combined document using templates available to Suppliers"
+              />
               <Gate_Permission page="suppliers" permission="write">
                 <Button_Toolbar
                   icon={allSelectedHidden ? EyeIcon : EyeSlashIcon}
@@ -624,6 +632,16 @@ export default function Suppliers() {
           currentUser={user}
           settings={appSettings}
           onClose={() => setCommunicationSupplier(null)}
+        />
+      )}
+      {templateSuppliers.length > 0 && (
+        <Modal_TemplateUse
+          page="suppliers"
+          entity={templateSuppliers[0]}
+          selectedEntities={templateSuppliers}
+          currentUser={user}
+          settings={appSettings}
+          onClose={() => setTemplateSuppliers([])}
         />
       )}
 

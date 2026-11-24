@@ -7,6 +7,7 @@ import Button_Toolbar from "../buttons/Button_Toolbar";
 import compactButtonLabel from "../../../utils/compactButtonLabel";
 import { TagIcon } from "../../../icons";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
+import { getViewportClampedMenuBounds } from "./menuPosition";
 
 function getDropdownPortalHost() {
   if (typeof document === "undefined" || !document.body) return null;
@@ -43,6 +44,7 @@ export default function Filter_Menu({
   const [helpKey, setHelpKey] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
   const [portalTarget, setPortalTarget] = useState(null);
   const [menuPosition, setMenuPosition] = useState(null);
 
@@ -71,24 +73,43 @@ export default function Filter_Menu({
       const triggerRect = dropdownRef.current.getBoundingClientRect();
       const estimatedMenuHeight = 260;
       const shouldOpenUpward = triggerRect.top >= estimatedMenuHeight;
+      const bounds = getViewportClampedMenuBounds(triggerRect, { sideMargin: 8 });
       setMenuPosition({
-        left: triggerRect.left,
+        left: bounds.left,
         top: shouldOpenUpward ? undefined : triggerRect.bottom + 8,
         bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + 8 : undefined,
-        minWidth: Math.min(Math.max(triggerRect.width, 176), window.innerWidth - 16),
+        minWidth: bounds.width,
+        maxWidth: bounds.maxWidth,
         maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - 8 : window.innerHeight - triggerRect.bottom - 8),
       });
     };
 
+    const viewport = window.visualViewport;
     updateMenuPosition();
     window.addEventListener("resize", updateMenuPosition);
     window.addEventListener("scroll", updateMenuPosition, true);
+    viewport?.addEventListener("resize", updateMenuPosition);
+    viewport?.addEventListener("scroll", updateMenuPosition);
 
     return () => {
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
+      viewport?.removeEventListener("resize", updateMenuPosition);
+      viewport?.removeEventListener("scroll", updateMenuPosition);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !menuPosition || !menuRef.current) return;
+    const menuWidth = menuRef.current.getBoundingClientRect().width;
+    const { left } = getViewportClampedMenuBounds(
+      { left: menuPosition.left, width: menuWidth },
+      { minWidth: menuWidth, maxWidth: menuPosition.maxWidth, sideMargin: 8 }
+    );
+    if (Math.abs(left - menuPosition.left) > 0.5) {
+      setMenuPosition((current) => current && { ...current, left });
+    }
+  }, [isOpen, menuPosition, filteredOptions.length]);
 
   const handleSelect = (option) => {
     if (multiSelect) {
@@ -122,6 +143,7 @@ export default function Filter_Menu({
       {isOpen && menuPosition && portalTarget &&
         createPortal(
         <div
+          ref={menuRef}
           className="app-dropdown-portal-menu app-dropdown--min app-menu-panel bg-white dark:bg-gray-800 p-0 position-fixed shadow-lg"
           style={{
             ...dropdownStyle,
@@ -130,7 +152,7 @@ export default function Filter_Menu({
             bottom: menuPosition.bottom === undefined ? "auto" : `${menuPosition.bottom}px`,
             width: "max-content",
             minWidth: `${menuPosition.minWidth}px`,
-            maxWidth: "calc(100vw - 1rem)",
+            maxWidth: `${menuPosition.maxWidth}px`,
             maxHeight: `${menuPosition.maxHeight}px`,
           }}
         >

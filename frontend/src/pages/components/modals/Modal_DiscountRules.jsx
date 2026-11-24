@@ -505,12 +505,12 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
             <div className="g-2 mb-2 row">
               <div className="col-12">
-                <label className="form-label mb-0 small">Start Date & Time * (Required)</label>
-                <InputDateTime value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
+                <div className="form-label mb-0 small">Start Date &amp; Time * (Required)</div>
+                <InputDateTime dateLabel="Start date" timeLabel="Start time" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
               </div>
               <div className="col-12">
-                <label className="form-label mb-0 small">End Date & Time (Optional)</label>
-                <InputDateTime value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
+                <div className="form-label mb-0 small">End Date &amp; Time (Optional)</div>
+                <InputDateTime dateLabel="End date" timeLabel="End time" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
               </div>
             </div>
 

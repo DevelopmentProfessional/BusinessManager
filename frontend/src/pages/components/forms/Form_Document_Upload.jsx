@@ -14,7 +14,6 @@ function formatFileSize(bytes) {
 
 export default function Form_Document_Upload({ onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    description: "",
     files: [],
   });
   const [uploading, setUploading] = useState(false);
@@ -24,7 +23,7 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
-    const firstFile = formData.files[0];
+    const firstFile = formData.files[0]?.file;
     if (!firstFile || !firstFile.type.startsWith("image/")) {
       setPreviewUrl(null);
       return;
@@ -34,16 +33,21 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
     return () => URL.revokeObjectURL(url);
   }, [formData.files]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleDescriptionChange = (fileIndex, description) => {
+    setFormData((prev) => ({
+      ...prev,
+      files: prev.files.map((entry, index) => index === fileIndex ? { ...entry, description } : entry),
+    }));
     if (error) setError(null);
   };
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length) {
-      setFormData((prev) => ({ ...prev, files: [...prev.files, ...selectedFiles] }));
+      setFormData((prev) => ({
+        ...prev,
+        files: [...prev.files, ...selectedFiles.map((file) => ({ file, description: "" }))],
+      }));
     }
     e.target.value = "";
     if (error) setError(null);
@@ -65,7 +69,10 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
     setDragActive(false);
     const droppedFiles = Array.from(e.dataTransfer.files || []);
     if (droppedFiles.length) {
-      setFormData((prev) => ({ ...prev, files: [...prev.files, ...droppedFiles] }));
+      setFormData((prev) => ({
+        ...prev,
+        files: [...prev.files, ...droppedFiles.map((file) => ({ file, description: "" }))],
+      }));
       if (error) setError(null);
     }
   };
@@ -98,7 +105,7 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
     }
   };
 
-  const firstFile = formData.files[0];
+  const firstFile = formData.files[0]?.file;
 
   return (
     <form onSubmit={handleSubmit} className="ui-page-shell">
@@ -112,15 +119,34 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
               {firstFile.type.startsWith("image/") && previewUrl && <img src={previewUrl} alt="Selected file preview" className="mb-2 mx-auto rounded" style={{ maxHeight: "8rem" }} />}
               <div className="d-flex flex-column gap-1 mb-2 text-start">
                 {formData.files.map((file, index) => (
-                  <div key={`${file.name}-${file.size}-${file.lastModified}-${index}`} className="align-items-center border rounded d-flex gap-1 justify-content-between p-1">
-                    <div className="align-items-center d-flex gap-1 min-w-0">
-                      <DocumentIcon className="app-icon flex-shrink-0 text-muted" aria-hidden="true" />
-                      <span className="small text-truncate" title={file.name}>{file.name}</span>
-                      <span className="flex-shrink-0 ui-small-muted">{formatFileSize(file.size)}</span>
+                  <div key={`${file.file.name}-${file.file.size}-${file.file.lastModified}-${index}`} className="border rounded p-1">
+                    <div className="align-items-center d-flex gap-1 justify-content-between">
+                      <div className="align-items-center d-flex gap-1 min-w-0">
+                        <DocumentIcon className="app-icon flex-shrink-0 text-muted" aria-hidden="true" />
+                        <span className="small text-truncate" title={file.file.name}>{file.file.name}</span>
+                        <span className="flex-shrink-0 ui-small-muted">{formatFileSize(file.file.size)}</span>
+                      </div>
+                      <button type="button" className="btn btn-outline-secondary btn-sm flex-shrink-0 p-0" onClick={() => handleRemoveFile(index)} disabled={uploading} aria-label={`Remove ${file.file.name}`}>
+                        <XMarkIcon className="app-icon" aria-hidden="true" />
+                      </button>
                     </div>
-                    <button type="button" className="btn btn-outline-secondary btn-sm flex-shrink-0 p-0" onClick={() => handleRemoveFile(index)} disabled={uploading} aria-label={`Remove ${file.name}`}>
-                      <XMarkIcon className="app-icon" aria-hidden="true" />
-                    </button>
+                    <div className="mt-1">
+                      <label htmlFor={`documents-upload-description-${index}`} className="mb-1 small text-muted">
+                        Description (optional)
+                      </label>
+                      <InputTextarea
+                        id={`documents-upload-description-${index}`}
+                        name={`description-${index}`}
+                        rows={2}
+                        autoResize={false}
+                        resizable={false}
+                        value={file.description}
+                        onChange={(e) => handleDescriptionChange(index, e.target.value)}
+                        className="ui-control-sm"
+                        style={{ minHeight: "3.5rem" }}
+                        disabled={uploading}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -140,11 +166,6 @@ export default function Form_Document_Upload({ onSubmit, onCancel }) {
         </div>
 
         <p className="mb-0 mt-2 small text-muted">Supported: PDF, DOC/DOCX, XLS/XLSX, CSV, PPT/PPTX, TXT, JPG/PNG/GIF</p>
-
-        <div className="form-floating mt-3">
-          <InputTextarea id="documents-upload-description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea" placeholder="Description" disabled={uploading} />
-          <label htmlFor="documents-upload-description">Description (optional)</label>
-        </div>
 
         {error && <div className="alert alert-danger mb-0 mt-2 py-0 small">{error}</div>}
       </div>
