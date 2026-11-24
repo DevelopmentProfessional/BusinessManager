@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
-import Button_Toolbar from "../buttons/Button_Toolbar";
+import Button_App from "../buttons/Button_App";
 import Filter_CatalogCheckboxes from "../dropdowns/Filter_CatalogCheckboxes";
 import Filter_SourceToggle from "../dropdowns/Filter_SourceToggle";
 import { ClockIcon, ChevronDownIcon, XMarkIcon, CheckIcon, EyeIcon, EyeSlashIcon, DocumentTextIcon } from "../../../icons";
@@ -138,9 +138,9 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
           </div>
 
           <div className="align-items-center d-flex flex-wrap gap-1 pt-1">
-            <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-app-primary" />
-            <Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-app-cancel" />
-            <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-app-secondary" />
+            <Button_App icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} variant="primary" />
+            <Button_App icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} variant="cancel" />
+            <Button_App icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} variant="secondary" />
           </div>
         </div>
       </div>
@@ -225,7 +225,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
           </div>
           <div className="component-header-center"></div>
           <div className="component-header-right">
-            <Button_Toolbar
+            <Button_App
               icon={showFilters ? EyeSlashIcon : EyeIcon}
               label={showFilters ? "Hide filters" : "Show filters"}
               compact
@@ -233,7 +233,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
               title={showFilters ? "Hide filters and clear button" : "Show filters and clear button"}
               aria-expanded={showFilters}
               aria-label={showFilters ? "Hide sales history filters" : "Show sales history filters"}
-              className="btn-outline-secondary"
+              variant="secondary"
             />
           </div>
         </div>
@@ -327,11 +327,11 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                               ))}
                               {onCreateDocument && (
                                 <div className="border-top mt-2 pt-2">
-                                  <Button_Toolbar
+                                  <Button_App
                                     icon={DocumentTextIcon}
                                     label="Invoice / receipt"
                                     onClick={() => onCreateDocument(sale, loadedItems)}
-                                    className="btn-outline-secondary"
+                                    variant="secondary"
                                     title="Create or email an invoice, receipt, or quote"
                                   />
                                 </div>

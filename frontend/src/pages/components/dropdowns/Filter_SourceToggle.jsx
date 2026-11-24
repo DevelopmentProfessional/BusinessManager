@@ -1,4 +1,5 @@
 import React from "react";
+import Button_App from "../buttons/Button_App";
 
 const DEFAULT_OPTIONS = [
   ["all", "All"],
@@ -13,9 +14,14 @@ export default function Filter_SourceToggle({ value, onChange, options = DEFAULT
   return (
     <div className={`btn-group btn-group-${size} flex-shrink-0 ${className}`.trim()} role="group" aria-label="Sale source">
       {options.map(([optionValue, label]) => (
-        <button key={optionValue} type="button" className={`btn app-btn ${value === optionValue ? "app-btn--primary" : "app-btn--secondary"}`} onClick={() => onChange?.(optionValue)}>
-          {label}
-        </button>
+        <Button_App
+          key={optionValue}
+          label={label}
+          showLabel
+          variant={value === optionValue ? "primary" : "secondary"}
+          aria-pressed={value === optionValue}
+          onClick={() => onChange?.(optionValue)}
+        />
       ))}
     </div>
   );

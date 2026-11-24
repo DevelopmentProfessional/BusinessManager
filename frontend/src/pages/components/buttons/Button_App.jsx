@@ -34,7 +34,7 @@ function adjustTrainingMargins(className) {
     .join(" ");
 }
 
-export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, type = "button", title: titleProp, style, ...rest }) {
+export default function Button_App({ icon: Icon, label, onClick, variant, className = "", disabled = false, badge, compact = false, showLabel = false, type = "button", title: titleProp, style, ...rest }) {
   const { isTrainingMode } = useViewMode();
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
   const normalizedTitle = typeof titleProp === "string" ? titleProp.trim().toLowerCase() : "";
@@ -58,7 +58,7 @@ export default function Button_App({ icon: Icon, label, onClick, variant, classN
   const isAlwaysCircle = isCancel || isDelete;
   const training = isTrainingMode && !compact && !isAlwaysCircle;
   const displayLabel = typeof label === "string" ? buttonDisplayLabel(normalizedLabel) : normalizedLabel;
-  const showText = training && displayLabel.length > 0 && !isAlwaysCircle && !isDownload;
+  const showText = (training || showLabel) && displayLabel.length > 0 && !isAlwaysCircle && !isDownload;
   const isIconOnly = !showText;
   const tooltipLabel = titleProp ?? (normalizedLabel || label);
   const iconClass = "app-icon flex-shrink-0";
