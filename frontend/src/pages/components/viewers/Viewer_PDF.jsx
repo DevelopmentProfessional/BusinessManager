@@ -23,7 +23,7 @@
  * ============================================================
  */
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -41,20 +41,50 @@ export default function Viewer_PDF({ document, onEdit }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [fileData, setFileData] = useState(null);
+  const [retrying, setRetrying] = useState(false);
+  const loadAttemptRef = useRef(0);
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(null);
+
+  useEffect(() => {
+    loadAttemptRef.current += 1;
+    setNumPages(null);
+    setPageNumber(1);
+    setScale(1.0);
+    setLoadError(null);
+    setFileData(null);
+    setRetrying(false);
+  }, [document.id]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages: total }) => {
     setNumPages(total);
     setPageNumber(1);
-    setLoadError(false);
+    setLoadError(null);
   }, []);
 
-  const onDocumentLoadError = useCallback((err) => {
-    console.error("react-pdf load error, falling back to iframe", err);
-    setLoadError(true);
-  }, []);
+  const onDocumentLoadError = useCallback(async (err) => {
+    if (fileData) {
+      console.error("react-pdf could not render the downloaded PDF", err);
+      setLoadError(err);
+      return;
+    }
+
+    const attempt = loadAttemptRef.current;
+    setRetrying(true);
+    try {
+      const response = await documentsAPI.getFileContent(document.id);
+      if (attempt !== loadAttemptRef.current) return;
+      setFileData(new Uint8Array(response.data));
+    } catch (retryError) {
+      if (attempt !== loadAttemptRef.current) return;
+      console.error("Unable to load PDF for preview", { initialError: err, retryError });
+      setLoadError(retryError);
+    } finally {
+      if (attempt === loadAttemptRef.current) setRetrying(false);
+    }
+  }, [document.id, fileData]);
 
   // ─── 3 NAVIGATION & ZOOM HELPERS ─────────────────────────────────────────────
 
@@ -96,6 +126,7 @@ export default function Viewer_PDF({ document, onEdit }) {
   }, []);
 
   const fileUrl = documentsAPI.fileUrl(document.id);
+  const pdfFile = useMemo(() => (fileData ? { data: fileData } : fileUrl), [fileData, fileUrl]);
 
   // ─── 4 IFRAME FALLBACK RENDER ─────────────────────────────────────────────────
 
@@ -115,7 +146,20 @@ export default function Viewer_PDF({ document, onEdit }) {
           </div>
         </div>
         <div className="flex-1">
-          <iframe title="PDF Preview" src={fileUrl} className="border-0 h-full w-full" />
+          <div className="flex flex-col h-full">
+            <p className="dark:text-gray-300 p-3 text-gray-600 text-sm">
+              This PDF could not be rendered in the preview. Open or download the original file to view it.
+            </p>
+            <div className="ui-flex-items-gap-2 px-3">
+              <a className="btn btn-primary" href={fileUrl} rel="noreferrer" target="_blank">
+                Open in new tab
+              </a>
+              <a className="btn btn-outline-secondary" href={documentsAPI.fileUrl(document.id, { download: true })}>
+                Download PDF
+              </a>
+            </div>
+            <iframe title="PDF Preview" src={fileUrl} className="border-0 flex-1 min-h-0 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -184,30 +228,38 @@ export default function Viewer_PDF({ document, onEdit }) {
 
       {/* PDF Content */}
       <div ref={measuredRef} className="bg-white flex flex-1 justify-center min-h-0 overflow-auto p-1">
-        <Document
-          file={fileUrl}
-          onLoadSuccess={onDocumentLoadSuccess}
-          onLoadError={onDocumentLoadError}
-          loading={
-            <div className="flex h-32 items-center justify-center">
-              <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
-            </div>
-          }
-        >
-          <Page
-            pageNumber={pageNumber}
-            scale={scale}
-            width={scale === 1.0 && containerWidth ? containerWidth - 48 : undefined}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
+        {retrying ? (
+          <div aria-live="polite" className="flex h-32 items-center justify-center">
+            <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
+            <span className="dark:text-gray-300 ml-3 text-gray-600 text-sm">Retrying PDF preview…</span>
+          </div>
+        ) : (
+          <Document
+            key={document.id}
+            file={pdfFile}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
             loading={
               <div className="flex h-32 items-center justify-center">
-                <div className="animate-spin border-b-2 border-primary-600 h-6 rounded-full w-6"></div>
+                <div className="animate-spin border-b-2 border-primary-600 h-8 rounded-full w-8"></div>
               </div>
             }
-            className="shadow-lg"
-          />
-        </Document>
+          >
+            <Page
+              pageNumber={pageNumber}
+              scale={scale}
+              width={scale === 1.0 && containerWidth ? containerWidth - 48 : undefined}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+              loading={
+                <div className="flex h-32 items-center justify-center">
+                  <div className="animate-spin border-b-2 border-primary-600 h-6 rounded-full w-6"></div>
+                </div>
+              }
+              className="shadow-lg"
+            />
+          </Document>
+        )}
       </div>
     </div>
   );

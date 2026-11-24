@@ -767,7 +767,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
         <Footer_Actions start={<Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSubmit} className="btn-outline-secondary" title="Save changes" />} center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onClose} className="btn-outline-secondary" title="Cancel" />} />
       }
     >
-      <div className="flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
+      <div className="client-detail-modal-fields flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
         {/* ─── 7 AVATAR & ACTION BUTTONS ───────────────────────────────── */}
           {/* Avatar + name + tier */}
           <div className="align-items-center d-flex gap-3 mb-3">

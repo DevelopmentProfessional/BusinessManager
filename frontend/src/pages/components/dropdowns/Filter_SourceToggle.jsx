@@ -11,9 +11,9 @@ const DEFAULT_OPTIONS = [
  */
 export default function Filter_SourceToggle({ value, onChange, options = DEFAULT_OPTIONS, size = "sm", className="" }) {
   return (
-    <div className={`btn-group btn-group-${size} flex-shrink-0 ms-2 me-1 ${className}`.trim()} role="group" aria-label="Sale source">
+    <div className={`btn-group btn-group-${size} flex-shrink-0 ${className}`.trim()} role="group" aria-label="Sale source">
       {options.map(([optionValue, label]) => (
-        <button key={optionValue} type="button" className={`btn ${value === optionValue ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => onChange?.(optionValue)}>
+        <button key={optionValue} type="button" className={`btn app-btn ${value === optionValue ? "app-btn--primary" : "app-btn--secondary"}`} onClick={() => onChange?.(optionValue)}>
           {label}
         </button>
       ))}

@@ -127,8 +127,6 @@ export default function Clients() {
   const [multiSaving, setMultiSaving] = useState(false);
   const [sortColumn, setSortColumn] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
-  const [internalActionCounts, setInternalActionCounts] = useState({});
-  const [portalActionCounts, setPortalActionCounts] = useState({});
   const sortedMemberships = useMemo(() => sortItemsAlphabetically(memberships, ["name", "billing_frequency"]), [memberships]);
 
   const multiEditFields = useMemo(() => {
@@ -222,7 +220,6 @@ export default function Clients() {
       const clientsData = response?.data ?? response;
       if (Array.isArray(clientsData)) {
         setClients(clientsData);
-        loadPurchaseHistoryCounts(clientsData);
         clearError();
       } else {
         console.error("Invalid clients data format:", clientsData);
@@ -255,36 +252,6 @@ export default function Clients() {
     } catch (err) {
       console.warn("Failed to load client statuses", err);
     }
-  };
-
-  // Statuses that require internal staff action (red badge)
-  const INTERNAL_ACTION_STATUSES = new Set(["ordered", "processing"]);
-  // Statuses that require client action on the portal (yellow badge)
-  const PORTAL_ACTION_STATUSES = new Set(["payment_pending", "ready_for_pickup"]);
-
-  const loadPurchaseHistoryCounts = async (clientsList) => {
-    const results = await Promise.all(
-      clientsList.map(async (client) => {
-        try {
-          const portalRes = await clientsAPI.getPortalOrders(client.id).catch(() => ({ data: [] }));
-          const orders = Array.isArray(portalRes?.data) ? portalRes.data : [];
-          const internal = orders.filter((o) => INTERNAL_ACTION_STATUSES.has(o.status)).length;
-          const portal = orders.filter((o) => PORTAL_ACTION_STATUSES.has(o.status)).length;
-          return [client.id, internal, portal];
-        } catch {
-          return [client.id, 0, 0];
-        }
-      })
-    );
-
-    const internalCounts = {};
-    const portalCounts = {};
-    for (const [id, internal, portal] of results) {
-      internalCounts[id] = internal;
-      portalCounts[id] = portal;
-    }
-    setInternalActionCounts(internalCounts);
-    setPortalActionCounts(portalCounts);
   };
 
   // ─── [5] CRUD HANDLERS ──────────────────────────────────────────────────────
@@ -570,24 +537,8 @@ export default function Clients() {
                       <Toggle_MultiSelectIcon selected={selectedIds.has(client.id)} onToggle={() => toggleSelectCl(client.id)} title="Select client" />
                     </td>
 
-                    {/* Contact + action badges */}
-                    <td className="main-page-table-data" style={{ position: "relative", overflow: "visible" }}>
-                      {/* Red badge — top-left, straddles left border, shown only when > 0 */}
-                      {internalActionCounts[client.id] > 0 && (
-                        <span className="badge bg-danger rounded-circle" style={{ position: "absolute", left: "-9px", top: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, zIndex: 2, textAlign: "center" }} title="Pending internal staff action">
-                          {internalActionCounts[client.id]}
-                        </span>
-                      )}
-                      {/* Yellow badge — bottom-left, straddles left border, shown only when > 0 */}
-                      {portalActionCounts[client.id] > 0 && (
-                        <span
-                          className="badge rounded-circle"
-                          style={{ position: "absolute", left: "-9px", bottom: "4px", minWidth: "18px", height: "18px", fontSize: "0.6rem", lineHeight: "18px", padding: 0, backgroundColor: "#f59e0b", zIndex: 2, textAlign: "center" }}
-                          title="Pending client portal action"
-                        >
-                          {portalActionCounts[client.id]}
-                        </span>
-                      )}
+                    {/* Contact */}
+                    <td className="main-page-table-data">
                       <div className="d-flex flex-wrap align-items-center gap-1 small text-muted text-break text-wrap-word">{contactText}</div>
                     </td>
 

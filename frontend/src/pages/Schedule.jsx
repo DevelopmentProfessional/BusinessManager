@@ -128,6 +128,7 @@ const parseScheduleServiceAddons = (rawValue) => {
         quantity: Math.max(0, parseInt(addon?.quantity ?? 0, 10) || 0),
         is_billable: addon?.is_billable !== false,
         linked_inventory_id: addon?.linked_inventory_id || null,
+        linked_product_id: addon?.linked_product_id || null,
         consume_inventory: Boolean(addon?.consume_inventory),
         consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
       }))

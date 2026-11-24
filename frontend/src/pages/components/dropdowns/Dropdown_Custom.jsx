@@ -111,11 +111,16 @@ export default function Dropdown_Custom({
       const gap = 4;
       const estimatedMenuHeight = 260;
       const shouldOpenUpward = openUpward && triggerRect.top >= estimatedMenuHeight;
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportWidth = viewport?.width ?? window.innerWidth;
+      const maxWidth = Math.max(1, viewportWidth - 16);
       setMenuPosition({
-        left: triggerRect.left,
+        left: Math.min(Math.max(triggerRect.left, viewportLeft + 8), viewportLeft + viewportWidth - Math.min(Math.max(triggerRect.width, 176), maxWidth) - 8),
         top: shouldOpenUpward ? undefined : triggerRect.bottom + gap,
         bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + gap : undefined,
-        minWidth: Math.min(Math.max(triggerRect.width, 176), window.innerWidth - 16),
+        minWidth: Math.min(Math.max(triggerRect.width, 176), maxWidth),
+        maxWidth,
         maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - gap : window.innerHeight - triggerRect.bottom - gap),
       });
     };
@@ -123,10 +128,14 @@ export default function Dropdown_Custom({
     updateMenuPosition();
     window.addEventListener("resize", updateMenuPosition);
     window.addEventListener("scroll", updateMenuPosition, true);
+    window.visualViewport?.addEventListener("resize", updateMenuPosition);
+    window.visualViewport?.addEventListener("scroll", updateMenuPosition);
 
     return () => {
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
+      window.visualViewport?.removeEventListener("resize", updateMenuPosition);
+      window.visualViewport?.removeEventListener("scroll", updateMenuPosition);
     };
   }, [isOpen, openUpward]);
 
@@ -182,6 +191,18 @@ export default function Dropdown_Custom({
 
   // Filter options based on search term
   const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value, option.searchText)) : sortedOptions;
+
+  useEffect(() => {
+    if (!isOpen || !menuPosition || !menuRef.current) return;
+    const viewport = window.visualViewport;
+    const viewportLeft = viewport?.offsetLeft ?? 0;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const menuWidth = menuRef.current.getBoundingClientRect().width;
+    const left = Math.max(viewportLeft + 8, Math.min(menuPosition.left, viewportLeft + viewportWidth - menuWidth - 8));
+    if (Math.abs(left - menuPosition.left) > 0.5) {
+      setMenuPosition((current) => current && { ...current, left });
+    }
+  }, [isOpen, menuPosition, filteredOptions.length]);
 
   return (
     <div
@@ -241,7 +262,7 @@ export default function Dropdown_Custom({
             bottom: menuPosition.bottom === undefined ? "auto" : `${menuPosition.bottom}px`,
             width: "max-content",
             minWidth: `${menuPosition.minWidth}px`,
-            maxWidth: "calc(100vw - 1rem)",
+            maxWidth: `${menuPosition.maxWidth}px`,
             maxHeight: `${menuPosition.maxHeight}px`,
           }}
         >

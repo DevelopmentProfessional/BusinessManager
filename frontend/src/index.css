@@ -3175,6 +3175,18 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
   gap: 0.35rem;
 }
 
+.sales-history-price-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.sales-history-filter-grid .sales-history-price-range .form-control {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
 .sales-history-component-footer__left {
   flex: 1 1 auto !important;
   min-width: 0;
@@ -3392,6 +3404,14 @@ input[type="number"],
 .app-dropdown-root.form-floating > .ui-dropdown-trigger {
   font-size: var(--app-dropdown-font-size, 0.5rem) !important;
   text-align: left !important;
+}
+
+.client-detail-modal-fields {
+  --app-floating-label-background: #fff;
+}
+
+.dark .client-detail-modal-fields {
+  --app-floating-label-background: #1f2937;
 }
 
 .form-floating > label,

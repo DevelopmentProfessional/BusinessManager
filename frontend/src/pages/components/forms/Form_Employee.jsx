@@ -41,6 +41,7 @@
  *   2026-11-15 | GitHub Copilot | Replaced the inline department toggle with the shared icon button
  *   2026-11-16 | GitHub Copilot | Added Suppliers to employee permission options
  *   2026-11-16 | GitHub Copilot | Anchored employee permission controls at the bottom of the tab
+ *   2026-11-24 | GitHub Copilot | Load performance counts from schedule and attendance APIs
  * ============================================================
  */
 
@@ -49,7 +50,7 @@ import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon, PlusIcon
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Button_Icon from "../buttons/Button_Icon";
 import Footer_Actions from "../footers/Footer_Actions";
-import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI, paymentAccountsAPI } from "../../../services/api";
+import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI, paymentAccountsAPI, scheduleAPI, attendanceAPI } from "../../../services/api";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
 import api from "../../../services/api";
 import { showConfirm } from "../../../services/showConfirm";
@@ -222,6 +223,11 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const [newPermission, setNewPermission] = useState({ page: "", permission: "" });
   const [permError, setPermError] = useState("");
   const [permSuccess, setPermSuccess] = useState("");
+
+  // Performance summary state
+  const [performanceMetrics, setPerformanceMetrics] = useState({ schedules: null, attendance: null });
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [performanceError, setPerformanceError] = useState("");
 
   // Signature state
   const [showSignaturePad, setShowSignaturePad] = useState(false);
@@ -418,6 +424,55 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     if (activeTab === "permissions" && employee?.id) {
       fetchUserPermissions(employee.id);
     }
+  }, [activeTab, employee?.id]);
+
+  useEffect(() => {
+    if (activeTab !== "performance" || !employee?.id) {
+      setPerformanceMetrics({ schedules: null, attendance: null });
+      setPerformanceError("");
+      setPerformanceLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setPerformanceLoading(true);
+    setPerformanceError("");
+
+    const loadPerformanceMetrics = async () => {
+      const results = await Promise.allSettled([
+        scheduleAPI.getByEmployee(employee.id),
+        attendanceAPI.getByUser(employee.id),
+      ]);
+      if (cancelled) return;
+
+      const nextMetrics = { schedules: null, attendance: null };
+      const errors = [];
+      const metricKeys = ["schedules", "attendance"];
+      const metricLabels = ["appointments", "attendance records"];
+
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          const data = result.value?.data ?? result.value;
+          if (Array.isArray(data)) {
+            nextMetrics[metricKeys[index]] = data.length;
+          } else {
+            errors.push(`Unable to load ${metricLabels[index]}: unexpected response.`);
+          }
+        } else {
+          const detail = result.reason?.response?.data?.detail || result.reason?.message || "Please try again.";
+          errors.push(`Unable to load ${metricLabels[index]}: ${detail}`);
+        }
+      });
+
+      setPerformanceMetrics(nextMetrics);
+      setPerformanceError(errors.join(" "));
+      setPerformanceLoading(false);
+    };
+
+    void loadPerformanceMetrics();
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, employee?.id]);
 
   useEffect(() => {
@@ -1307,7 +1362,9 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     <div className="card">
                       <div className="card-body py-1 text-center">
                         <div className="ui-small-muted">Scheduled Appointments</div>
-                        <div className="fs-4 fw-bold">{employee.schedules?.length ?? "—"}</div>
+                        <div className="fs-4 fw-bold">
+                          {performanceLoading ? "…" : performanceMetrics.schedules ?? "—"}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1315,10 +1372,19 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
                     <div className="card">
                       <div className="card-body py-1 text-center">
                         <div className="ui-small-muted">Attendance Records</div>
-                        <div className="fs-4 fw-bold">{employee.attendance_records?.length ?? "—"}</div>
+                        <div className="fs-4 fw-bold">
+                          {performanceLoading ? "…" : performanceMetrics.attendance ?? "—"}
+                        </div>
                       </div>
                     </div>
                   </div>
+                  {performanceError && (
+                    <div className="col-12">
+                      <div className="alert alert-warning mb-0" role="alert">
+                        {performanceError}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Review History placeholder */}
                   <div className="col-12 mt-2">

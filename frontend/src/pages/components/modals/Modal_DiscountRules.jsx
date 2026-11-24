@@ -255,22 +255,6 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
     return list.filter((item) => (item.name || "").toLowerCase().includes(q));
   }, [inventory, services, productSearch]);
 
-  const isExpired = (endDateStr) => {
-    if (!endDateStr) return false;
-    const end = new Date(endDateStr);
-    return !Number.isNaN(end.getTime()) && end < new Date();
-  };
-
-  const getDealTypeBadge = (dealType) => {
-    if (dealType === "cart_auto") {
-      return <span className="badge bg-primary">Auto Cart</span>;
-    }
-    if (dealType === "cart_selectable") {
-      return <span className="badge bg-info text-dark">Selectable Cart</span>;
-    }
-    return <span className="badge bg-secondary">Product</span>;
-  };
-
   const getAppliesToLabel = (rule) => {
     if (rule.deal_type === "cart_auto" || rule.deal_type === "cart_selectable") {
       return "Entire Cart";
@@ -290,6 +274,32 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
     }
   };
 
+  const getDealNameColor = (rule) => {
+    if (rule.deal_type !== "product") return "text-body";
+    if (rule.applies_to === "all_services") return "text-primary";
+    if (["all_products", "all_packages"].includes(rule.applies_to)) return "text-secondary";
+    if (rule.applies_to !== "selected") return "text-body";
+
+    let itemIds = [];
+    try {
+      itemIds = Array.isArray(rule.item_ids) ? rule.item_ids : JSON.parse(rule.item_ids || "[]");
+    } catch {
+      return "text-body";
+    }
+    if (!Array.isArray(itemIds)) return "text-body";
+
+    const selectedTypes = new Set(
+      itemIds.map((id) => {
+        if (services.some((service) => String(service.id) === String(id))) return "service";
+        if (inventory.some((item) => String(item.id) === String(id))) return "product";
+        return "mixed";
+      })
+    );
+    if (selectedTypes.size === 1 && selectedTypes.has("service")) return "text-primary";
+    if (selectedTypes.size === 1 && selectedTypes.has("product")) return "text-secondary";
+    return "text-body";
+  };
+
   const showEditor = editPanelOpen;
 
   return (
@@ -299,7 +309,7 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
       title={
         <span className="align-items-center d-flex">
           <TagIcon className="app-icon me-1 text-primary" />
-          Discount Rules & Deals
+          Deals
         </span>
       }
       footer={
@@ -357,62 +367,41 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               <thead className="table-light">
                 <tr>
                   <th>Name</th>
-                  <th>Scope</th>
                   <th>Discount</th>
-                  <th>Applies to</th>
-                  <th>End Date</th>
-                  <th>Status</th>
+                  <th>Scope</th>
                   <th className="text-end" style={{ width: 48 }} />
                 </tr>
               </thead>
               <tbody>
                 {rules.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-2 small text-center text-muted">
+                    <td colSpan={4} className="py-2 small text-center text-muted">
                       No discount rules yet. Click New to create your first deal.
                     </td>
                   </tr>
                 ) : (
                   rules.map((rule) => {
-                    const expired = isExpired(rule.end_date);
                     return (
                       <tr
                         key={rule.id}
-                        role={canWriteDeals ? "button" : undefined}
-                        tabIndex={canWriteDeals ? 0 : -1}
                         className={editingId === rule.id ? "table-primary" : ""}
-                        onClick={canWriteDeals ? () => startEdit(rule) : undefined}
-                        onKeyDown={canWriteDeals ? (e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            startEdit(rule);
-                          }
-                        } : undefined}
-                        style={{ cursor: canWriteDeals ? "pointer" : "default" }}
                       >
-                        <td className="fw-medium">{rule.name}</td>
-                        <td>{getDealTypeBadge(rule.deal_type)}</td>
+                        <td className="fw-medium">
+                          {canWriteDeals ? (
+                            <button
+                              type="button"
+                              className={`btn btn-link fw-medium p-0 text-start text-decoration-none ${getDealNameColor(rule)}`}
+                              onClick={() => startEdit(rule)}
+                            >
+                              {rule.name}
+                            </button>
+                          ) : (
+                            <span className={getDealNameColor(rule)}>{rule.name}</span>
+                          )}
+                        </td>
                         <td>{rule.discount_type === "percentage" ? `${rule.discount_value}%` : formatCurrency(rule.discount_value)}</td>
                         <td>{getAppliesToLabel(rule)}</td>
-                        <td>
-                          {rule.end_date ? (
-                            <span className={expired ? "text-danger" : ""}>
-                              {rule.end_date.slice(0, 10)}
-                            </span>
-                          ) : (
-                            <span className="text-muted">—</span>
-                          )}
-                        </td>
-                        <td>
-                          {expired ? (
-                            <span className="badge bg-danger">Expired</span>
-                          ) : rule.is_active ? (
-                            <span className="badge bg-success">Active</span>
-                          ) : (
-                            <span className="badge bg-secondary">Inactive</span>
-                          )}
-                        </td>
-                        <td className="text-end" onClick={(e) => e.stopPropagation()}>
+                        <td className="text-end">
                           {canDeleteDeals && (
                             <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
                               <TrashIcon style={{ width: 14, height: 14 }} />

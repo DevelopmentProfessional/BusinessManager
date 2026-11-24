@@ -12,7 +12,7 @@
  *   [1] Constants          — TABS array
  *   [2] State              — form fields; lookup data (inventory, employees);
  *                            relationship lists (resources, assets, employees,
- *                            locations); image state; "add row" state
+ *                            locations); linked included items; image state
  *   [3] Effects            — populate form on edit; load inventory and employee
  *                            lookups; load service relations when service.id exists
  *   [4] Derived Data       — filtered inventory sets (locationItems, resourceItems,
@@ -33,6 +33,7 @@
  *   2026-06-13 | GitHub Copilot | Added initialName support for global create-from-search service modal
  *   2026-07-31 | GitHub Copilot | Added editable service add-ons (name, price delta, default quantity)
  *   2026-09-11 | GitHub Copilot | Removed unused lookup/context state tied to lint cleanup
+ *   2026-11-24 | GitHub Copilot | Replaced add-on details with linked included items
  * ============================================================
  */
 
@@ -112,6 +113,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
             price_delta: Number(addon?.price_delta || 0),
             default_quantity: Math.max(0, parseInt(addon?.default_quantity ?? 0, 10) || 0),
             linked_inventory_id: addon?.linked_inventory_id || "",
+            linked_product_id: addon?.linked_product_id || "",
             consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
             is_billable: addon?.is_billable !== false,
             consume_inventory: Boolean(addon?.consume_inventory),
@@ -199,6 +201,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   // ── Derived data ─────────────────────────────────────────────────
   const locationItems = inventory.filter((i) => i.type === "location");
   const resourceItems = inventory.filter((i) => ["resource", "product", "item"].includes(i.type));
+  const serviceAddonResourceItems = inventory.filter((i) => String(i.type || "").toLowerCase() === "resource");
+  const serviceAddonProductItems = inventory.filter((i) => ["product", "item"].includes(String(i.type || "").toLowerCase()));
   const assetItems = inventory.filter((i) => i.type === "asset");
 
   const linkedResourceIds = new Set(resources.map((r) => r.inventory_id));
@@ -206,7 +210,12 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   const linkedEmployeeIds = new Set(svcEmployees.map((e) => e.user_id));
   const linkedLocationIds = new Set(locations.map((l) => l.inventory_id));
 
-  const inventoryName = (id) => inventory.find((i) => i.id === id)?.name ?? "—";
+  const inventoryName = (id) => inventory.find((i) => String(i.id) === String(id))?.name ?? "—";
+  const getServiceAddonResourceId = (addon) =>
+    serviceAddonResourceItems.some((item) => String(item.id) === String(addon.linked_inventory_id)) ? addon.linked_inventory_id : "";
+  const getServiceAddonProductId = (addon) =>
+    addon.linked_product_id ||
+    (serviceAddonProductItems.some((item) => String(item.id) === String(addon.linked_inventory_id)) ? addon.linked_inventory_id : "");
   const employeeName = (id) => {
     const e = employees.find((e) => e.id === id);
     return e ? `${e.first_name} ${e.last_name}` : "—";
@@ -231,16 +240,30 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   const handleSubmit = (e) => {
     e.preventDefault();
     const cleanedAddons = serviceAddons
-      .map((addon, index) => ({
-        id: addon.id || `addon-${index + 1}`,
-        name: String(addon.name || "").trim(),
-        price_delta: Number(addon.price_delta || 0),
-        default_quantity: Math.max(0, parseInt(addon.default_quantity ?? 0, 10) || 0),
-        linked_inventory_id: addon.linked_inventory_id || null,
-        consume_quantity_per_unit: Math.max(0, Number(addon.consume_quantity_per_unit || 0)),
-        is_billable: addon.is_billable !== false,
-        consume_inventory: Boolean(addon.consume_inventory),
-      }))
+      .map((addon, index) => {
+        const linkedInventoryId = getServiceAddonResourceId(addon);
+        const linkedProductId = getServiceAddonProductId(addon);
+        const linkedNames = [
+          linkedInventoryId ? inventoryName(linkedInventoryId) : "",
+          linkedProductId ? inventoryName(linkedProductId) : "",
+        ].filter((name) => name && name !== "—");
+        const fallbackName = [
+          linkedInventoryId ? "Linked resource" : "",
+          linkedProductId ? "Linked product" : "",
+        ].filter(Boolean).join(" + ");
+
+        return {
+          id: addon.id || `addon-${index + 1}`,
+          name: linkedNames.join(" + ") || String(addon.name || "").trim() || fallbackName,
+          price_delta: Number(addon.price_delta || 0),
+          default_quantity: Math.max(0, parseInt(addon.default_quantity ?? 0, 10) || 0),
+          linked_inventory_id: linkedInventoryId || null,
+          linked_product_id: linkedProductId || null,
+          consume_quantity_per_unit: Math.max(0, Number(addon.consume_quantity_per_unit || 0)),
+          is_billable: addon.is_billable !== false,
+          consume_inventory: Boolean(addon.consume_inventory),
+        };
+      })
       .filter((addon) => addon.name.length > 0);
 
     const submitData = {
@@ -264,7 +287,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   };
 
   const addServiceAddonRow = () => {
-    setServiceAddons((prev) => [...prev, { id: `addon-${Date.now()}`, name: "", price_delta: 0, default_quantity: 0, linked_inventory_id: "", consume_quantity_per_unit: 0, is_billable: true, consume_inventory: false }]);
+    setServiceAddons((prev) => [...prev, { id: `addon-${Date.now()}`, name: "", price_delta: 0, default_quantity: 0, linked_inventory_id: "", linked_product_id: "", consume_quantity_per_unit: 0, is_billable: true, consume_inventory: false }]);
   };
 
   const updateServiceAddonRow = (index, field, value) => {
@@ -276,6 +299,28 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         if (field === "consume_quantity_per_unit") return { ...addon, consume_quantity_per_unit: Math.max(0, Number(value || 0)) };
         if (field === "is_billable") return { ...addon, is_billable: Boolean(value) };
         if (field === "consume_inventory") return { ...addon, consume_inventory: Boolean(value) };
+        if (field === "linked_inventory_id" || field === "linked_product_id") {
+          const linkedInventoryId = field === "linked_inventory_id" ? value : getServiceAddonResourceId(addon);
+          const linkedProductId = field === "linked_product_id" ? value : getServiceAddonProductId(addon);
+          const hasLinkedItem = Boolean(linkedInventoryId || linkedProductId);
+          const linkedNames = [
+            linkedInventoryId ? inventoryName(linkedInventoryId) : "",
+            linkedProductId ? inventoryName(linkedProductId) : "",
+          ].filter((name) => name && name !== "—");
+          const previousLinkedNames = [
+            getServiceAddonResourceId(addon) ? inventoryName(getServiceAddonResourceId(addon)) : "",
+            getServiceAddonProductId(addon) ? inventoryName(getServiceAddonProductId(addon)) : "",
+          ].filter((name) => name && name !== "—");
+          return {
+            ...addon,
+            linked_inventory_id: linkedInventoryId,
+            linked_product_id: linkedProductId,
+            name: linkedNames.join(" + ") || (addon.name === previousLinkedNames.join(" + ") ? "" : addon.name),
+            default_quantity: hasLinkedItem ? Math.max(1, Number(addon.default_quantity || 0)) : addon.default_quantity,
+            consume_inventory: hasLinkedItem,
+            consume_quantity_per_unit: hasLinkedItem ? Math.max(1, Number(addon.consume_quantity_per_unit || 0)) : addon.consume_quantity_per_unit,
+          };
+        }
         return { ...addon, [field]: value };
       })
     );
@@ -480,18 +525,17 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
       {/* Camera modal */}
       {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onClose={() => setIsCameraOpen(false)} />}
 
-      {/* ── Tab content area â€“ no scroll here, each tab manages its own ── */}
-      <div className="d-flex flex-column flex-grow-1 overflow-hidden">
+      {/* ── Scrollable Tab Content Body ── */}
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
         {/* Tab error */}
-        {tabError && <div className="alert alert-danger flex-shrink-0 mb-0 mt-2 mx-3 px-0 py-1 small">{tabError}</div>}
+        {tabError && <div className="alert alert-danger flex-shrink-0 mb-2 mx-1 px-2 py-1 small">{tabError}</div>}
 
         {/* ── Details ── */}
         {activeTab === "details" && (
-          <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
-            <div className="d-flex flex-column" style={{ minHeight: "100%", justifyContent: "flex-end" }}>
-              <form id="service-details-form" onSubmit={handleSubmit}>
-                {/* Top Section: Image (left) + Core fields (right) */}
-                <div className="d-flex gap-3 mb-2" style={{ minHeight: "180px" }}>
+          <div>
+            <form id="service-details-form" onSubmit={handleSubmit}>
+              {/* Top Section: Image (left) + Core fields (right) */}
+              <div className="d-flex gap-3 mb-2" style={{ minHeight: "180px" }}>
                   {/* Image area */}
                   <div className="flex-shrink-0" style={{ width: "45%" }}>
                     {/* Preview */}
@@ -591,60 +635,51 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
                 <div className="border mb-3 rounded" style={{ fontSize: "0.85rem" }}>
                   <div className="align-items-center bg-light border-bottom d-flex dark:bg-gray-800 justify-content-between px-1 py-0 rounded-top">
-                    <span className="dark:text-gray-200 fw-semibold text-gray-800">Service Add-ons</span>
+                    <span className="dark:text-gray-200 fw-semibold text-gray-800">Included Items</span>
                     <button type="button" className="btn btn-primary btn-sm" onClick={addServiceAddonRow}>
                       <PlusIcon style={{ width: 14, height: 14 }} />
                     </button>
                   </div>
                   <div className="p-1">
                     {serviceAddons.length === 0 ? (
-                      <div className="fst-italic small text-muted">No add-ons yet. Add items like broken nail repair or extra sauce.</div>
+                      <div className="fst-italic small text-muted">Link the products or resources included with this service.</div>
                     ) : (
-                      <Table className="table-sm" responsive={false}>
+                      <Table className="table-sm">
                         <thead>
                           <tr>
-                            <th>Name</th>
-                            <th style={{ width: 96 }}>Price +/-</th>
-                            <th style={{ width: 88 }}>Default Qty</th>
-                            <th style={{ width: 170 }}>Linked Resource</th>
-                            <th style={{ width: 110 }}>Consume / svc</th>
-                            <th style={{ width: 86 }}>Billable</th>
-                            <th style={{ width: 86 }}>Consume</th>
-                            <th style={{ width: 52 }}></th>
+                            <th style={{ minWidth: 88, width: 88 }}>Default Qty</th>
+                            <th style={{ minWidth: 170, width: 170 }}>Linked Resource</th>
+                            <th style={{ minWidth: 170, width: 170 }}>Linked Product</th>
+                            <th style={{ minWidth: 52, width: 52 }} />
                           </tr>
                         </thead>
                         <tbody>
                           {serviceAddons.map((addon, index) => (
                             <tr key={addon.id || index} className="align-middle">
-                              <td>
-                                <InputText className="form-control ui-control-sm" value={addon.name} onChange={(e) => updateServiceAddonRow(index, "name", e.target.value)} placeholder="e.g. Broken nail" />
-                              </td>
-                              <td>
-                                <InputNumber step="0.01" className="form-control ui-control-sm" value={addon.price_delta} onChange={(e) => updateServiceAddonRow(index, "price_delta", e.target.value)} />
-                              </td>
-                              <td>
+                              <td style={{ minWidth: 88 }}>
                                 <InputNumber min="0" step="1" className="form-control ui-control-sm" value={addon.default_quantity} onChange={(e) => updateServiceAddonRow(index, "default_quantity", e.target.value)} />
                               </td>
-                              <td>
+                              <td style={{ minWidth: 170 }}>
                                 <Dropdown_Custom
                                   className="ui-control-sm"
-                                  value={addon.linked_inventory_id || ""}
+                                  value={getServiceAddonResourceId(addon)}
                                   onChange={(e) => updateServiceAddonRow(index, "linked_inventory_id", e.target.value)}
-                                  options={[{ value: "", label: "None" }, ...resourceItems.map((inv) => ({ value: inv.id, label: inv.name }))]}
+                                  options={[{ value: "", label: "None" }, ...serviceAddonResourceItems.map((inv) => ({ value: inv.id, label: inv.name }))]}
                                   placeholder="Linked resource"
                                   closeOnSelect
                                 />
                               </td>
-                              <td>
-                                <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={addon.consume_quantity_per_unit || 0} onChange={(e) => updateServiceAddonRow(index, "consume_quantity_per_unit", e.target.value)} />
+                              <td style={{ minWidth: 170 }}>
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  value={getServiceAddonProductId(addon)}
+                                  onChange={(e) => updateServiceAddonRow(index, "linked_product_id", e.target.value)}
+                                  options={[{ value: "", label: "None" }, ...serviceAddonProductItems.map((item) => ({ value: item.id, label: item.name }))]}
+                                  placeholder="Linked product"
+                                  closeOnSelect
+                                />
                               </td>
-                              <td className="text-center">
-                                <InputCheckbox checked={addon.is_billable !== false} onChange={(e) => updateServiceAddonRow(index, "is_billable", e.target.checked)} />
-                              </td>
-                              <td className="text-center">
-                                <InputCheckbox checked={Boolean(addon.consume_inventory)} onChange={(e) => updateServiceAddonRow(index, "consume_inventory", e.target.checked)} />
-                              </td>
-                              <td>
+                              <td style={{ minWidth: 52 }}>
                                 <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => removeServiceAddonRow(index)}>
                                   <XMarkIcon style={{ width: 16, height: 16 }} />
                                 </button>
@@ -748,14 +783,13 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 </div>
               )}
             </div>
-          </div>
         )}
 
         {/* ── Resources ── */}
         {activeTab === "resources" && service && (
-          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
-            {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
               {relLoading ? (
                 <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
@@ -795,8 +829,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 </table>
               )}
             </div>
-            {/* Sticky add row */}
-            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
               <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   name="inventory_id"
@@ -821,9 +855,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Assets ── */}
         {activeTab === "assets" && service && (
-          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
-            {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
               {relLoading ? (
                 <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
@@ -859,8 +893,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 </table>
               )}
             </div>
-            {/* Sticky add row */}
-            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
               <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   name="inventory_id"
@@ -883,9 +917,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Employees ── */}
         {activeTab === "employees" && service && (
-          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
-            {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
               {relLoading ? (
                 <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
@@ -906,8 +940,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 </ul>
               )}
             </div>
-            {/* Sticky add row */}
-            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
               <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   className="flex-grow-1 ui-control-sm"
@@ -932,9 +966,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
         {/* ── Locations ── */}
         {activeTab === "locations" && service && (
-          <div className="bg-white d-flex dark:bg-gray-900 dark:text-gray-100 flex-column flex-grow-1 overflow-hidden text-gray-900">
-            {/* Scrollable list - top-aligned for form-style editing */}
-            <div className="d-flex flex-column flex-grow-1 min-h-0 no-scrollbar overflow-auto pt-0 px-1">
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
               {relLoading ? (
                 <div className="py-1 text-center">
                   <div className="spinner-border spinner-border-sm" />
@@ -954,8 +988,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                 </ul>
               )}
             </div>
-            {/* Sticky add row */}
-            <div className="border-gray-200 border-top dark:border-gray-700 flex-shrink-0 px-1 py-0">
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
               <div className="ui-flex-center-gap-2">
                 <Dropdown_Custom
                   name="inventory_id"

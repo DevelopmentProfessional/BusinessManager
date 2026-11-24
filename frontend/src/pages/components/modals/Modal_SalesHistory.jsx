@@ -129,16 +129,18 @@ function SalesHistoryFilterFooter({ isOpen, historyFilters, setHistoryFilters, o
               floatingLabel="Status"
               options={[{ value: "", label: "All statuses" }, ...Object.entries(STATUS_LABELS).map(([statusValue, statusLabel]) => ({ value: statusValue, label: statusLabel }))]}
             />
-            <InputNumber min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="rounded-pill" aria-label="Minimum total" />
-            <InputNumber min="0" step="0.01" value={local.maxPrice} onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))} placeholder="Max $" className="rounded-pill" aria-label="Maximum total" />
+            <div className="sales-history-price-range">
+              <InputNumber min="0" step="0.01" value={local.minPrice} onChange={(e) => setLocal((prev) => ({ ...prev, minPrice: e.target.value }))} placeholder="Min $" className="rounded-pill" aria-label="Minimum total" />
+              <InputNumber min="0" step="0.01" value={local.maxPrice} onChange={(e) => setLocal((prev) => ({ ...prev, maxPrice: e.target.value }))} placeholder="Max $" className="rounded-pill" aria-label="Maximum total" />
+            </div>
             <InputDate value={local.startDate} onChange={(e) => setLocal((prev) => ({ ...prev, startDate: e.target.value }))} className="rounded-pill" aria-label="From date" />
             <InputDate value={local.endDate} onChange={(e) => setLocal((prev) => ({ ...prev, endDate: e.target.value }))} className="rounded-pill" aria-label="To date" />
           </div>
 
           <div className="align-items-center d-flex flex-wrap gap-1 pt-1">
-            <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-outline-secondary" />
-            <Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-outline-secondary" />
-            <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-outline-secondary" />
+            <Button_Toolbar icon={CheckIcon} label="Apply" title="Apply filters" onClick={handleApply} className="btn-app-primary" />
+            <Button_Toolbar icon={XMarkIcon} label="Close" title="Close sales history" onClick={onClose} className="btn-app-cancel" />
+            <Button_Toolbar icon={XMarkIcon} label="Clear" title="Clear all filters" onClick={handleClear} className="btn-app-secondary" />
           </div>
         </div>
       </div>
@@ -282,7 +284,7 @@ export default function Modal_History_Sales({ isOpen, onClose, filteredHistory, 
                           {sale.source === "portal" && (
                             <div className="align-items-center app-footer-toolbar border-bottom d-flex flex-wrap mb-2 pb-0">
                               {(NEXT_PORTAL_STATUSES[effectiveStatus] || []).map((nextStatus) => (
-                                <button key={`${sale.id}-${nextStatus}`} type="button" onClick={() => handlePortalStatusUpdate(sale, nextStatus)} className="btn ui-btn-outline-secondary-sm" disabled={statusUpdatingId === sale.id}>
+                                <button key={`${sale.id}-${nextStatus}`} type="button" onClick={() => handlePortalStatusUpdate(sale, nextStatus)} className="btn app-btn app-btn--secondary" disabled={statusUpdatingId === sale.id}>
                                   {STATUS_LABELS[nextStatus] || nextStatus}
                                 </button>
                               ))}

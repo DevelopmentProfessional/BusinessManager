@@ -618,6 +618,7 @@ export const documentsAPI = {
   historyFileUrl: (historyId, { download = true } = {}) => `${api.defaults.baseURL}/documents/history/${historyId}/download${download ? "?download=true" : ""}`,
   history: () => Promise.resolve({ data: [] }),
   replaceContent: () => Promise.reject(new Error("Replace content: use document editor component")),
+  getFileContent: (id) => api.get(`/documents/${id}/file`, { responseType: "arraybuffer" }),
   listAssignments: (documentId) => api.get(`/documents/${documentId}/assignments`),
   addAssignment: (documentId, entityId, entityType = "employee") =>
     api.post(`/documents/${documentId}/assignments`, {

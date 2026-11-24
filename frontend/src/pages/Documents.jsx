@@ -35,6 +35,7 @@
  *   2026-07-24 | GitHub Copilot | Replaced row delete buttons with selection-first bulk delete and combined selected edit/delete actions
  *   2026-09-11 | GitHub Copilot | Removed unused imports and dead handlers to clear ESLint warnings
  *   2026-11-08 | GitHub Copilot | Made template rows clickable to open the template editor
+ *   2026-11-24 | GitHub Copilot | Added multi-file document uploads with per-file retry handling
  * ============================================================
  */
 
@@ -602,16 +603,53 @@ export default function Documents() {
   };
 
   const handleSubmitDocument = async (documentData) => {
-    try {
-      await documentsAPI.upload(documentData.file, documentData.description);
-      loadDocuments();
-      closeModal();
-      clearError();
-    } catch (err) {
-      const errorMsg = err?.response?.data?.detail || err?.message || "Failed to upload document";
-      setError(errorMsg);
-      throw err; // Re-throw so DocumentUploadForm can catch it
+    const results = [];
+    for (const file of documentData.files) {
+      try {
+        results.push({ status: "fulfilled", value: await documentsAPI.upload(file, documentData.description) });
+      } catch (reason) {
+        results.push({ status: "rejected", reason });
+      }
     }
+
+    const uploadedDocuments = [];
+    const failedFiles = [];
+    const failureMessages = [];
+
+    results.forEach((result, index) => {
+      const file = documentData.files[index];
+      if (result.status === "fulfilled" && result.value?.data?.id) {
+        uploadedDocuments.push(result.value.data);
+        return;
+      }
+
+      failedFiles.push(file);
+      const detail = result.status === "rejected" ? result.reason?.response?.data?.detail : null;
+      const reason = typeof detail === "string" ? detail : result.status === "rejected" ? result.reason?.message : null;
+      failureMessages.push(`${file.name}: ${reason || "Upload failed."}`);
+    });
+
+    if (uploadedDocuments.length) {
+      setDocuments((prev) => {
+        const existingIds = new Set(prev.map((doc) => String(doc.id)));
+        return [...uploadedDocuments.filter((doc) => !existingIds.has(String(doc.id))), ...prev];
+      });
+    }
+
+    if (failedFiles.length) {
+      const successCount = documentData.files.length - failedFiles.length;
+      return {
+        failedFiles,
+        errorMessage: `${successCount} of ${documentData.files.length} files uploaded. ${failureMessages.join(" ")}`,
+      };
+    }
+
+    if (uploadedDocuments.length !== documentData.files.length) {
+      throw new Error("The server did not return document details for every uploaded file.");
+    }
+
+    closeModal();
+    clearError();
   };
 
   const handleDeleteSelectedDocuments = async () => {

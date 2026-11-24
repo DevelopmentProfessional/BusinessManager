@@ -9,15 +9,16 @@
  */
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArchiveBoxIcon, ArrowTopRightOnSquareIcon, BellIcon, CalendarDaysIcon, ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, DocumentPlusIcon } from "../../../icons";
+import { ArchiveBoxIcon, ArrowTopRightOnSquareIcon, BellIcon, CalendarDaysIcon, ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, DocumentPlusIcon, ShoppingCartIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
-import { chatAPI, inventoryAPI, notificationsAPI, purchaseOrdersAPI, supplierProductsAPI, suppliersAPI, tasksAPI } from "../../../services/api";
+import { chatAPI, clientOrdersAPI, inventoryAPI, notificationsAPI, purchaseOrdersAPI, supplierProductsAPI, suppliersAPI, tasksAPI } from "../../../services/api";
 import { EmptyState, LoadingSpinner } from "../feedback";
 import Accordion from "../accordions/Accordion";
 import Modal from "./Modal";
 
 const EMPTY_DATA = {
   tasks: [],
+  orders: [],
   inventory: [],
   purchaseOrders: [],
   suppliers: [],
@@ -66,6 +67,7 @@ export default function Modal_Notifications({ isOpen, onClose }) {
   const appointments = useStore((state) => state.appointments);
   const hasPermission = useStore((state) => state.hasPermission);
   const canViewLowStock = hasPermission("inventory", "write_all");
+  const canViewOrders = hasPermission("sales", "read") || hasPermission("clients", "read");
   const [data, setData] = useState(EMPTY_DATA);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState([]);
@@ -94,6 +96,10 @@ export default function Modal_Notifications({ isOpen, onClose }) {
           Array.isArray(value.offboarding_requests),
       },
     ];
+
+    if (canViewOrders) {
+      sources.push({ key: "orders", label: "client orders", load: () => clientOrdersAPI.getAll(), isValid: Array.isArray });
+    }
 
     if (canViewLowStock) {
       sources.push({ key: "inventory", label: "inventory levels", load: () => inventoryAPI.getAll(), isValid: Array.isArray });
@@ -135,7 +141,7 @@ export default function Modal_Notifications({ isOpen, onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, user?.id, canViewLowStock]);
+  }, [isOpen, user?.id, canViewLowStock, canViewOrders]);
 
   const upcomingAppointments = useMemo(() => {
     const now = Date.now();
@@ -281,7 +287,12 @@ export default function Modal_Notifications({ isOpen, onClose }) {
     [data.chats, employees]
   );
 
-  const totalItems = data.tasks.length + upcomingAppointments.length + lowStockBySupplier.totalCount + data.purchaseOrders.length + changedRequests.length + chatThreads.length;
+  const pendingOrders = useMemo(() => {
+    const ordersList = Array.isArray(data.orders) ? data.orders : [];
+    return ordersList.filter((order) => ["ordered", "processing"].includes(String(order.status || "").toLowerCase()));
+  }, [data.orders]);
+
+  const totalItems = data.tasks.length + upcomingAppointments.length + lowStockBySupplier.totalCount + data.purchaseOrders.length + changedRequests.length + chatThreads.length + pendingOrders.length;
 
   return (
     <Modal
@@ -341,6 +352,31 @@ export default function Modal_Notifications({ isOpen, onClose }) {
                   <div className="small">
                     {appointment.notes && <p className="mb-1">{appointment.notes}</p>}
                     <ActionLink to="/schedule" onClick={onClose}>Open calendar</ActionLink>
+                  </div>
+                </Accordion>
+              ))}
+            </div>
+          </Accordion>
+        )}
+
+        {pendingOrders.length > 0 && (
+          <Accordion header={<SectionHeader icon={ShoppingCartIcon} label="Client orders" count={pendingOrders.length} />}>
+            <div className="d-flex flex-column gap-2">
+              {pendingOrders.map((order) => (
+                <Accordion
+                  key={order.id}
+                  header={
+                    <span>
+                      {order.client_name ? `${order.client_name} — ` : ""}Order #{String(order.id).slice(0, 8)}
+                      <span className="badge bg-danger ms-1 text-capitalize">{String(order.status || "").replaceAll("_", " ")}</span>
+                    </span>
+                  }
+                >
+                  <div className="small">
+                    <div>Total: ${Number(order.total || 0).toFixed(2)}</div>
+                    <div>Status: <span className="text-capitalize">{String(order.status || "").replaceAll("_", " ")}</span></div>
+                    {formatDate(order.created_at) && <div>Placed: {formatDate(order.created_at)}</div>}
+                    <ActionLink to="/sales" onClick={onClose}>Open sales</ActionLink>
                   </div>
                 </Accordion>
               ))}

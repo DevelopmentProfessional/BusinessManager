@@ -32,6 +32,8 @@
  *   2026-09-11 | GitHub Copilot | Removed unused imports and added scoped effect dependency suppressions for stable POS flow
  *   2026-09-11 | GitHub Copilot | Moved checkout handoff effects below callback initialization to prevent payment-route TDZ crashes
  *   2026-09-11 | GitHub Copilot | Reused schedule purchase transactions and skipped duplicate checkout side effects
+ *   2026-11-24 | GitHub Copilot | Include linked service items in direct sales
+ *   2026-11-24 | GitHub Copilot | Scope card-view preference to each company
  * ============================================================
  */
 
@@ -60,6 +62,30 @@ import { InputDate } from "./components/Inputs";
 import { getDisplayImageUrl } from "./components/utils/Utils_Image";
 import useViewMode from "../services/useViewMode";
 import { sortItemsAlphabetically } from "../utils/displaySort";
+
+const getDefaultServiceItems = (service) => {
+  try {
+    const raw = service?.addons_json;
+    const definitions = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!Array.isArray(definitions)) return [];
+    return definitions
+      .map((item) => ({
+        id: item?.id,
+        name: String(item?.name || "").trim(),
+        price_delta: Number(item?.price_delta || 0),
+        quantity: Math.max(0, parseInt(item?.default_quantity ?? 0, 10) || 0),
+        linked_inventory_id: item?.linked_inventory_id || null,
+        linked_product_id: item?.linked_product_id || null,
+        consume_quantity_per_unit: Math.max(0, Number(item?.consume_quantity_per_unit || 0)),
+        is_billable: item?.is_billable !== false,
+        consume_inventory: Boolean(item?.consume_inventory),
+      }))
+      .filter((item) => item.quantity > 0 && (item.linked_inventory_id || item.linked_product_id));
+  } catch (error) {
+    console.warn("Sales: could not read linked service items", error);
+    return [];
+  }
+};
 
 // ─── 2  ITEM CARD COMPONENT ────────────────────────────────────────────────
 // Unified Product/Service Card Component
@@ -458,14 +484,40 @@ export default function Sales() {
       return { templateId: null, templateName: "", action: "select" };
     }
   });
-  // Card view mode: 'full' | 'compact' | 'mixed' — persisted in localStorage
-  const [cardViewMode, setCardViewMode] = useState(() => {
+  const cardViewStorageKey = user?.company_id ? `sales_card_view_${String(user.company_id)}` : "sales_card_view";
+  const [cardViewMode, setCardViewMode] = useState("compact");
+  useEffect(() => {
     try {
-      return localStorage.getItem("sales_card_view") || "full";
+      const savedMode = localStorage.getItem(cardViewStorageKey);
+      if (savedMode) {
+        setCardViewMode(savedMode);
+        return;
+      }
+
+      if (user?.company_id) {
+        const legacyMode = localStorage.getItem("sales_card_view");
+        const legacyCompanyId = localStorage.getItem("sales_card_view_company");
+        if (legacyMode && !legacyCompanyId) {
+          localStorage.setItem(cardViewStorageKey, legacyMode);
+          localStorage.setItem("sales_card_view_company", String(user.company_id));
+          setCardViewMode(legacyMode);
+          return;
+        }
+      }
+
+      setCardViewMode("compact");
     } catch {
-      return "full";
+      setCardViewMode("compact");
     }
-  });
+  }, [cardViewStorageKey, user?.company_id]);
+  const updateCardViewMode = (mode) => {
+    setCardViewMode(mode);
+    try {
+      localStorage.setItem(cardViewStorageKey, mode);
+    } catch {
+      // Keep the in-memory setting if browser storage is unavailable.
+    }
+  };
   const [rcptTemplates, setRcptTemplates] = useState([]);
   const [historyFilters, setHistoryFilters] = useState({
     showServices: true,
@@ -1029,12 +1081,13 @@ export default function Sales() {
     const cartKey = `${itemType}-${item.id}`;
     const existing = cart.find((c) => c.cartKey === cartKey);
     const price = overridePrice != null ? overridePrice : item.price;
+    const defaultServiceItems = !existing && itemType === "service" && selectedOptions === null ? getDefaultServiceItems(item) : [];
     let updatedItem;
     if (existing) {
       updatedItem = { ...existing, quantity, price, ...(selectedOptions ? { selectedOptions } : {}) };
       setCart(cart.map((c) => (c.cartKey === cartKey ? updatedItem : c)));
     } else {
-      updatedItem = { ...item, cartKey, itemType, quantity, price, selectedOptions: selectedOptions ?? [] };
+      updatedItem = { ...item, cartKey, itemType, quantity, price, selectedOptions: selectedOptions ?? defaultServiceItems };
       setCart([...cart, updatedItem]);
     }
     syncItemToDb(updatedItem, selectedClient?.id);
@@ -2303,7 +2356,7 @@ export default function Sales() {
             .catch(() => {});
         }}
         cardViewMode={cardViewMode}
-        setCardViewMode={setCardViewMode}
+        setCardViewMode={updateCardViewMode}
         receiptSettings={receiptSettings}
         setReceiptSettings={setReceiptSettings}
         rcptTemplates={rcptTemplates}

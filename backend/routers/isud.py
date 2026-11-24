@@ -40,6 +40,7 @@
 #   2026-09-02 | GitHub Copilot | Scoped schedule list reads to own/attended appointments unless view-all access is granted
 #   2026-09-11 | GitHub Copilot | Made schedule-linked sales idempotent and rejected duplicate payment rows/items
 #   2026-11-20 | GitHub Copilot | Protected verified contact email state from generic CRUD updates
+#   2026-11-24 | GitHub Copilot | Deduct linked products as well as resources for service sales
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -349,9 +350,14 @@ def _consume_sale_transaction_inventory(session: Session, sale_transaction_id) -
                     if not isinstance(addon, dict) or not addon.get("consume_inventory"):
                         continue
                     inventory_id = addon.get("linked_inventory_id")
+                    product_id = addon.get("linked_product_id")
                     consume_per_unit = float(addon.get("consume_quantity_per_unit") or 0)
                     addon_quantity = float(addon.get("quantity") or 0)
-                    add_deduction(inventory_id, consume_per_unit * addon_quantity * qty_sold)
+                    units_to_consume = consume_per_unit * addon_quantity * qty_sold
+                    for linked_inventory_id in {inventory_id, product_id} - {None, ""}:
+                        add_deduction(linked_inventory_id, units_to_consume)
+                    if product_id:
+                        add_product_resources(UUID(str(product_id)), units_to_consume)
 
     for inventory_id, quantity in deductions.items():
         inventory = session.get(Inventory, inventory_id)

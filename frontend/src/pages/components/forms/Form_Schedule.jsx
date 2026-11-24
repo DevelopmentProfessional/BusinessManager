@@ -162,6 +162,7 @@ const parseServiceAddonDefinitions = (service) => {
         price_delta: Number(addon?.price_delta || 0),
         default_quantity: Math.max(0, parseInt(addon?.default_quantity ?? 0, 10) || 0),
         linked_inventory_id: addon?.linked_inventory_id || null,
+        linked_product_id: addon?.linked_product_id || null,
         consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
         is_billable: addon?.is_billable !== false,
         consume_inventory: Boolean(addon?.consume_inventory),
@@ -184,6 +185,7 @@ const parseSelectedServiceAddons = (rawValue) => {
         price_delta: Number(addon?.price_delta || 0),
         quantity: Math.max(0, parseInt(addon?.quantity ?? 0, 10) || 0),
         linked_inventory_id: addon?.linked_inventory_id || null,
+        linked_product_id: addon?.linked_product_id || null,
         consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
         is_billable: addon?.is_billable !== false,
         consume_inventory: Boolean(addon?.consume_inventory),
@@ -446,6 +448,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           name: definition.name,
           price_delta: definition.price_delta,
           linked_inventory_id: definition.linked_inventory_id,
+          linked_product_id: definition.linked_product_id,
           consume_quantity_per_unit: definition.consume_quantity_per_unit,
           is_billable: definition.is_billable,
           consume_inventory: definition.consume_inventory,
@@ -461,6 +464,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         name: definition.name,
         price_delta: definition.price_delta,
         linked_inventory_id: definition.linked_inventory_id,
+        linked_product_id: definition.linked_product_id,
         consume_quantity_per_unit: definition.consume_quantity_per_unit,
         is_billable: definition.is_billable,
         consume_inventory: definition.consume_inventory,
@@ -504,6 +508,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
         name: addon.name,
         price_delta: addon.price_delta,
         linked_inventory_id: addon.linked_inventory_id,
+        linked_product_id: addon.linked_product_id,
         consume_quantity_per_unit: addon.consume_quantity_per_unit,
         is_billable: addon.is_billable,
         consume_inventory: addon.consume_inventory,
@@ -628,6 +633,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           price_delta: Number(addon.price_delta || 0),
           quantity: Math.max(0, parseInt(addon.quantity ?? 0, 10) || 0),
           linked_inventory_id: addon.linked_inventory_id || null,
+          linked_product_id: addon.linked_product_id || null,
           consume_quantity_per_unit: Math.max(0, Number(addon.consume_quantity_per_unit || 0)),
           is_billable: addon.is_billable !== false,
           consume_inventory: Boolean(addon.consume_inventory),
@@ -984,15 +990,17 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
           {typeConfig.needsService && selectedServiceAddons.length > 0 && (
             <div className="border p-0 rounded" style={{ fontSize: "0.78rem" }}>
-              <p className="dark:text-gray-400 fw-semibold mb-1 text-gray-600">Service Add-ons</p>
+              <p className="dark:text-gray-400 fw-semibold mb-1 text-gray-600">Included Items</p>
               <div className="d-flex flex-column gap-1">
                 {selectedServiceAddons.map((addon) => (
                   <div key={addon.id} className="align-items-center d-flex justify-content-between">
                     <div className="d-flex flex-column">
                       <span className="dark:text-gray-200 text-gray-800">{addon.name}</span>
-                      <span className="text-muted" style={{ fontSize: "0.68rem" }}>
-                        {addon.price_delta >= 0 ? "+" : "-"}${Math.abs(Number(addon.price_delta || 0)).toFixed(2)} each
-                      </span>
+                      {addon.price_delta !== 0 && addon.is_billable !== false && (
+                        <span className="text-muted" style={{ fontSize: "0.68rem" }}>
+                          Price adjustment: {addon.price_delta >= 0 ? "+" : "-"}${Math.abs(Number(addon.price_delta || 0)).toFixed(2)} each
+                        </span>
+                      )}
                     </div>
                     <div className="align-items-center d-flex gap-1">
                       <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => adjustServiceAddonQuantity(addon.id, -1)}>

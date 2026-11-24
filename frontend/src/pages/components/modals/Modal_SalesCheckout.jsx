@@ -311,7 +311,7 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
                   {(selectedClient?.email || selectedClient?.phone) && <div className="dark:text-gray-400 text-gray-500 text-xs">{[selectedClient?.email, selectedClient?.phone].filter(Boolean).join(" • ")}</div>}
                   {checkoutContext?.serviceName && <div className="dark:text-emerald-300 mt-1 text-emerald-700 text-xs">Service: {checkoutContext.serviceName}</div>}
                   {Array.isArray(checkoutContext?.serviceAddons) && checkoutContext.serviceAddons.length > 0 && (
-                    <div className="dark:text-gray-400 text-gray-500 text-xs">Add-ons: {checkoutContext.serviceAddons.map((addon) => `${addon.name}${addon.quantity > 1 ? ` x${addon.quantity}` : ""}`).join(" • ")}</div>
+                    <div className="dark:text-gray-400 text-gray-500 text-xs">Included items: {checkoutContext.serviceAddons.map((addon) => `${addon.name}${addon.quantity > 1 ? ` x${addon.quantity}` : ""}`).join(" • ")}</div>
                   )}
                   {checkoutDateLabel && <div className="dark:text-gray-400 text-gray-500 text-xs">Appointment: {checkoutDateLabel}</div>}
                   {checkoutContext?.appointmentStatus && <div className="dark:text-gray-400 text-gray-500 text-xs">Status: {checkoutContext.appointmentStatus}</div>}

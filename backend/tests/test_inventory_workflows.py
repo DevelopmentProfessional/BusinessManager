@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from types import SimpleNamespace
 from uuid import uuid4
@@ -43,6 +44,59 @@ def test_sale_inventory_consumption_is_idempotent():
     isud._consume_sale_transaction_inventory(session, sale_id)
 
     assert session.exec_calls == 0
+
+
+def test_service_sale_consumes_both_linked_included_item_types(monkeypatch):
+    sale_id = uuid4()
+    service_id = uuid4()
+    resource_id = uuid4()
+    product_id = uuid4()
+    sale = SimpleNamespace(
+        id=sale_id,
+        company_id="company-1",
+        inventory_consumed_at=None,
+    )
+    sale_item = SimpleNamespace(
+        id=uuid4(),
+        item_type="service",
+        item_id=service_id,
+        quantity=2,
+        options_json=json.dumps(
+            [
+                {
+                    "linked_inventory_id": str(resource_id),
+                    "linked_product_id": str(product_id),
+                    "consume_inventory": True,
+                    "consume_quantity_per_unit": 1,
+                    "quantity": 2,
+                }
+            ]
+        ),
+    )
+    session = Session(
+        records={
+            sale_id: sale,
+            resource_id: SimpleNamespace(id=resource_id),
+            product_id: SimpleNamespace(id=product_id),
+        },
+        results=(
+            [sale_item],
+            [],
+            [SimpleNamespace(resource_id=resource_id, quantity_per_batch=0.5)],
+        ),
+    )
+    consumed = []
+    monkeypatch.setattr(
+        isud,
+        "consume_inventory_fifo",
+        lambda _session, inventory, quantity, *_args, **_kwargs: consumed.append(
+            (inventory.id, quantity)
+        ),
+    )
+
+    isud._consume_sale_transaction_inventory(session, sale_id)
+
+    assert dict(consumed) == {resource_id: 6, product_id: 4}
 
 
 def test_inventory_adjustment_requires_a_reason_before_database_access():
