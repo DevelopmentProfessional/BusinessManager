@@ -70,7 +70,7 @@ export function ModalFooter({ children, className = "" }) {
 
 // ─── DEFAULT EXPORT ─────────────────────────────────────────────────────────
 
-export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showFooterClose = true, headerActions = null, contentGravity = "top", container = null, contentWidth = false, bodyClassName = "", bodyStyle }) {
+export default function Modal({ isOpen, onClose, children, title, fullScreen = false, centered = false, noPadding = false, footer = null, showFooterClose = true, headerActions = null, contentGravity = "bottom", container = null, contentWidth = false, bodyClassName = "", bodyStyle }) {
   const currentDepth = useContext(ModalStackContext);
   const nextDepth = currentDepth + 1;
   const containerContext = useContext(ModalContainerContext);
@@ -136,7 +136,7 @@ export default function Modal({ isOpen, onClose, children, title, fullScreen = f
           }`.trim()}
           style={bodyStyle}
         >
-          {children}
+          {contentGravity === "bottom" ? <div className={gravityClass}>{children}</div> : children}
         </div>
         {resolvedFooter && <ModalFooter>{resolvedFooter}</ModalFooter>}
       </div>

@@ -12,7 +12,7 @@ export default function Modal_Service_Form({
   onBulkImport,
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Service
           service={service}

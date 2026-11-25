@@ -20,7 +20,6 @@ export default function Modal_Document_Sign({
       isOpen={isOpen}
       onClose={onClose}
       title="Sign Document"
-      contentGravity="top"
       footer={
         <div className="d-flex gap-2 justify-content-start align-items-center">
           {signaturePreview ? (

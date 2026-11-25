@@ -10,7 +10,7 @@ export default function Modal_Document_Form({
   onSubmit,
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && <Form_Document_Upload onSubmit={onSubmit} onCancel={onClose} />}
     </Modal>
   );

@@ -221,7 +221,6 @@ export default function Modal_Checkout_Sales({ isOpen, onClose, cart = [], disco
       onClose={handleClose}
       noPadding={true}
       centered={true}
-      contentGravity="top"
       footer={
         !paymentSuccess ? (
           <div className="d-flex gap-2 justify-content-start align-items-center">

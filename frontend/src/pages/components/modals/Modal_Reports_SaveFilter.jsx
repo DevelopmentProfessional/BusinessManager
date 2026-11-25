@@ -17,7 +17,6 @@ export default function Modal_Reports_SaveFilter({
       isOpen={isOpen}
       onClose={onClose}
       title="Save Filter"
-      contentGravity="top"
       footer={
         <Footer_Actions
           start={<Button_Toolbar icon={CheckIcon} label="Save" className="btn-primary" onClick={onSave} disabled={!filterName?.trim()} title="Save filter" />}

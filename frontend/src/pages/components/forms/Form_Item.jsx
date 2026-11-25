@@ -1016,7 +1016,6 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
         isOpen={isSupplierCreateOpen}
         onClose={() => setIsSupplierCreateOpen(false)}
         title="Add Supplier"
-        contentGravity="top"
         footer={
           <Footer_Actions
             start={<Button_Toolbar icon={CheckIcon} label="Save" type="submit" form="item-new-supplier-form" className="btn-outline-secondary" title="Save supplier" />}
@@ -1042,7 +1041,7 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
       </Modal>
 
       {/* Barcode Scanner Modal */}
-      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true} contentGravity="top">
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
         <Scanner_Barcode onDetected={handleBarcodeDetected} onCancel={() => setIsScannerOpen(false)} />
       </Modal>
     </div>

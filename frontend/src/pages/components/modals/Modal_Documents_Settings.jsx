@@ -7,9 +7,9 @@ import { Accordion } from "../accordions";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import TableSettingsControls from "../tables/TableSettingsControls";
 
-export default function Modal_Documents_Settings({ isOpen, onClose, onSave, onOpenCategories, onOpenStatuses, pendingSettings, setPendingSettings }) {
+export default function Modal_Documents_Settings({ isOpen, onClose, onSave, onOpenCategories, onOpenStatuses, subpageContent, pendingSettings, setPendingSettings }) {
   return (
-    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Document Page Settings" onSave={onSave}>
+    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Document Page Settings" onSave={onSave} subpageContent={subpageContent}>
       <Accordion variant="settings" header="Table preferences" defaultOpen>
         <div className="ui-small-muted mb-2">Search, filters, upload, and templates are managed from the page footer.</div>
         <TableSettingsControls
@@ -31,20 +31,14 @@ export default function Modal_Documents_Settings({ isOpen, onClose, onSave, onOp
             icon={TagIcon}
             label="Categories"
             title="Manage document categories"
-            onClick={() => {
-              onClose();
-              onOpenCategories?.();
-            }}
+            onClick={() => onOpenCategories?.()}
             className="btn-primary"
           />
           <Button_Toolbar
             icon={CheckCircleIcon}
             label="Status"
             title="Manage document statuses"
-            onClick={() => {
-              onClose();
-              onOpenStatuses?.();
-            }}
+            onClick={() => onOpenStatuses?.()}
             className="btn-primary"
           />
         </div>

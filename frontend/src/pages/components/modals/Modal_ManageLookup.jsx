@@ -2,17 +2,21 @@
 // Reusable manager modal for simple company-scoped lookup lists (name + description),
 // e.g. client/employee/document statuses and service categories.
 // Mirrors the Manage Subscriptions modal pattern on the Clients page.
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { InputText, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { showConfirm } from "../../../services/showConfirm";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
-import { CheckCircleIcon, XCircleIcon, PencilIcon, XMarkIcon, CheckIcon, PlusIcon, TrashIcon } from "../../../icons";
+import SettingsMasterDetail, { SettingsMasterDetailTable } from "../layout/Settings_MasterDetail";
+import { XMarkIcon, CheckIcon, PlusIcon } from "../../../icons";
+
+const NEW_ITEM_ID = "new";
 
 export default function Modal_ManageLookup({
   isOpen,
   onClose,
+  container,
   title,
   // Label for a single entry, e.g. "status" or "category"
   entityLabel = "entry",
@@ -24,122 +28,160 @@ export default function Modal_ManageLookup({
   api,
 }) {
   const [form, setForm] = useState({ name: "", description: "" });
-  const [editingId, setEditingId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const sortedItems = sortItemsAlphabetically(items || [], ["name"]);
+  const sortedItems = useMemo(() => sortItemsAlphabetically(items || [], ["name"]), [items]);
+  const selectedItem = sortedItems.find((item) => String(item.id) === String(selectedId));
 
-  const resetForm = () => {
+  const startNew = () => {
     setForm({ name: "", description: "" });
-    setEditingId(null);
+    setSelectedId(NEW_ITEM_ID);
+    setError("");
   };
 
-  const handleSave = async () => {
+  useEffect(() => {
+    if (selectedId === NEW_ITEM_ID) {
+      setForm({ name: "", description: "" });
+      return;
+    }
+    if (!selectedItem) {
+      setForm({ name: "", description: "" });
+      return;
+    }
+    setForm({ name: selectedItem.name || "", description: selectedItem.description || "" });
+  }, [selectedId, selectedItem?.id]);
+
+  const closeManager = () => {
+    setForm({ name: "", description: "" });
+    setSelectedId(null);
+    setError("");
+    onClose();
+  };
+  const closeDetail = () => {
+    setForm({ name: "", description: "" });
+    setSelectedId(null);
+    setError("");
+  };
+
+  const handleSave = async (event) => {
+    event?.preventDefault();
     const name = form.name.trim();
     if (!name || saving) return;
     setSaving(true);
+    setError("");
     try {
       const payload = { name, description: form.description || null };
-      if (editingId) {
-        await api.update(editingId, payload);
+      if (selectedId !== NEW_ITEM_ID) {
+        await api.update(selectedId, payload);
+        await onItemsChanged?.();
       } else {
-        await api.create(payload);
+        const response = await api.create(payload);
+        const created = response?.data ?? response;
+        await onItemsChanged?.();
+        setSelectedId(created?.id ?? null);
       }
-      resetForm();
-      await onItemsChanged?.();
     } catch (err) {
-      console.error(`Failed to save ${entityLabel}`, err);
+      setError(err?.response?.data?.detail || err?.message || `Failed to save ${entityLabel}.`);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEdit = (item) => {
-    setEditingId(item.id);
-    setForm({ name: item.name || "", description: item.description || "" });
-  };
-
   const handleDelete = async (itemId) => {
     if (!(await showConfirm(`Delete this ${entityLabel}?`))) return;
+    setError("");
     try {
       await api.delete(itemId);
-      if (editingId === itemId) resetForm();
+      if (String(selectedId) === String(itemId)) setSelectedId(null);
       await onItemsChanged?.();
     } catch (err) {
-      console.error(`Failed to delete ${entityLabel}`, err);
+      setError(err?.response?.data?.detail || err?.message || `Failed to delete ${entityLabel}.`);
     }
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {
-        resetForm();
-        onClose();
-      }}
+      container={container}
+      onClose={closeManager}
       title={title}
       centered={true}
-      contentGravity="top"
+      contentGravity="bottom"
       footer={
-        <div className="d-flex gap-2 justify-content-start align-items-center">
+        selectedId !== null ? (
+          <div className="d-flex gap-2 justify-content-start align-items-center">
+            <Button_Toolbar type="submit" form="lookup-entry-form" icon={CheckIcon} label={selectedId === NEW_ITEM_ID ? "Create" : "Save"} disabled={saving} className="btn-primary" title={`Save ${entityLabel}`} />
+            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
+          </div>
+        ) : (
           <Button_Toolbar
             icon={XMarkIcon}
-            label="Close"
-            onClick={() => {
-              resetForm();
-              onClose();
-            }}
+            label={container === "inline" ? "Back to Settings" : "Close"}
+            onClick={closeManager}
             className="btn-outline-secondary"
-            title="Close"
+            title={container === "inline" ? "Back to Settings" : "Close"}
           />
-        </div>
+        )
       }
     >
-      <div className="d-flex flex-column gap-3">
-        <div className="border d-flex flex-column gap-2 p-0 ui-pill-container">
-          <InputText className="form-control ui-control-sm" placeholder={`${entityLabel.charAt(0).toUpperCase()}${entityLabel.slice(1)} name`} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
-          <InputTextarea className="ui-description-textarea form-control form-control-sm" rows={6} placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
-          <div className="d-flex gap-2">
-            <Button_Toolbar
-              icon={CheckIcon}
-              label={editingId ? "Update" : "Create"}
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-primary"
-              title={editingId ? "Update entry" : "Create entry"}
-            />
-            {editingId && (
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Cancel"
-                onClick={resetForm}
-                className="btn-outline-secondary"
-                title="Cancel edit"
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="d-flex flex-column gap-2" style={{ maxHeight: "220px", overflowY: "auto" }}>
-          {sortedItems.length === 0 && <p className="py-1 small text-center text-muted">No {entityLabel} entries yet. Add one above.</p>}
-          {sortedItems.map((item) => (
-            <div key={item.id} className="align-items-start border d-flex gap-2 justify-content-between p-0 ui-pill-container">
-              <div className="small">
-                <div className="fw-semibold">{item.name}</div>
-                {item.description && <div className="text-muted">{item.description}</div>}
+      <div className="d-flex flex-column h-100 min-h-0 p-2">
+        {error && <div className="alert alert-danger py-2 mb-2" role="alert">{error}</div>}
+        <SettingsMasterDetail
+          detailOpen={selectedId !== null}
+          onBack={closeDetail}
+          list={
+            <div className="d-flex flex-column h-100 min-h-0">
+              <div className="align-items-center d-flex justify-content-between mb-2">
+                <h5 className="mb-0 text-capitalize">{entityLabel}s</h5>
+                <Button_Toolbar icon={PlusIcon} label="Add" onClick={startNew} className="btn-primary btn-sm" title={`Add ${entityLabel}`} />
               </div>
-              <div className="d-flex gap-1">
-                <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-flex gap-2" onClick={() => handleEdit(item)}>
-                  <PencilIcon className="ui-icon-4" />
-                  <span>Edit</span>
-                </button>
-                <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleDelete(item.id)} title="Delete">
-                  <TrashIcon style={{ width: 14, height: 14 }} />
-                </button>
-              </div>
+              <SettingsMasterDetailTable
+                columns={[
+                  { label: "", style: { width: 48 } },
+                  { label: entityLabel.charAt(0).toUpperCase() + entityLabel.slice(1) },
+                  { label: "Description" },
+                ]}
+              >
+                {sortedItems.length === 0 ? (
+                  <tr><td colSpan={3} className="py-2 small text-center text-muted">No {entityLabel} entries yet.</td></tr>
+                ) : sortedItems.map((item) => (
+                  <tr key={item.id} className={String(item.id) === String(selectedId) ? "table-primary" : ""}>
+                    <td className="text-center">
+                      <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" onClick={() => handleDelete(item.id)} title={`Delete ${entityLabel}`}>
+                        <XMarkIcon style={{ width: 14, height: 14 }} />
+                      </button>
+                    </td>
+                    <td>
+                      <button type="button" className="btn btn-link fw-medium p-0 text-body text-start text-decoration-none" onClick={() => setSelectedId(item.id)}>
+                        {item.name}
+                      </button>
+                    </td>
+                    <td className="text-muted">{item.description || "—"}</td>
+                  </tr>
+                ))}
+              </SettingsMasterDetailTable>
             </div>
-          ))}
-        </div>
+          }
+          detail={
+            selectedId === NEW_ITEM_ID || selectedItem ? (
+              <form id="lookup-entry-form" onSubmit={handleSave} className="d-flex flex-column gap-3">
+                <h5 className="mb-0">{selectedId === NEW_ITEM_ID ? `New ${entityLabel}` : `Edit ${entityLabel}`}</h5>
+                <div className="form-floating">
+                  <InputText id="lookup-entry-name" className="form-control" placeholder={`${entityLabel} name`} value={form.name} onChange={(e) => setForm((previous) => ({ ...previous, name: e.target.value }))} />
+                  <label htmlFor="lookup-entry-name">{entityLabel.charAt(0).toUpperCase() + entityLabel.slice(1)} name</label>
+                </div>
+                <div className="form-floating">
+                  <InputTextarea id="lookup-entry-description" className="ui-description-textarea form-control" rows={6} placeholder="Description" value={form.description} onChange={(e) => setForm((previous) => ({ ...previous, description: e.target.value }))} />
+                  <label htmlFor="lookup-entry-description">Description</label>
+                </div>
+              </form>
+            ) : (
+              <div className="align-items-center d-flex h-100 justify-content-center text-muted">Select an entry or add a new one.</div>
+            )
+          }
+        />
       </div>
     </Modal>
   );

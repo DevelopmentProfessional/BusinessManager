@@ -13,6 +13,7 @@ export default function Modal_Clients_Settings({
   onSave,
   onOpenSubscriptions,
   onOpenStatuses,
+  subpageContent,
   pendingSettings,
   setPendingSettings,
   settingsError = "",
@@ -26,6 +27,7 @@ export default function Modal_Clients_Settings({
       title="Client Page Settings"
       onSave={onSave}
       saveDisabled={settingsLoading || !settingsLoaded}
+      subpageContent={subpageContent}
     >
       {settingsError && <div className="alert alert-danger mb-2 py-2" role="alert">{settingsError}</div>}
       <Accordion variant="settings" header="Table preferences" defaultOpen>

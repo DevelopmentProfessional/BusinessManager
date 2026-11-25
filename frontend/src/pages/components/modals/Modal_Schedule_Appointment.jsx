@@ -18,7 +18,7 @@ export default function Modal_Schedule_Appointment({
   scheduleSettings = {},
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Schedule
           appointment={appointment}

@@ -42,7 +42,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useFetchOnce from "../services/useFetchOnce";
 import { useLocation, useNavigate } from "react-router-dom";
 import usePagePermission from "../services/usePagePermission";
-import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon, DocumentTextIcon, DocumentCurrencyDollarIcon } from "../icons";
+import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon, DocumentTextIcon } from "../icons";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Gate_Permission from "./components/layout/Gate_Permission";
@@ -2126,17 +2126,6 @@ export default function Sales() {
                 </Dropup_Menu>
               </div>
 
-              {/* Deals Button */}
-              <Gate_Permission page="sales" permission="write">
-                <Button_Toolbar
-                  icon={DocumentCurrencyDollarIcon}
-                  label="Deals"
-                  title="Discount rules & deals"
-                  onClick={() => setShowDiscountRules(true)}
-                  className="btn-outline-secondary"
-                />
-              </Gate_Permission>
-
               {/* Invoice Button — generates a pre-checkout invoice/quote for the current cart */}
               {canWriteSales && cartItemCount > 0 && selectedClient && <Button_Toolbar icon={DocumentTextIcon} label="Invoice" onClick={() => { setInvoiceTemplateType("invoice"); setShowInvoiceModal(true); }} className="btn-outline-secondary" title="Generate invoice for current cart" />}
             </div>
@@ -2344,7 +2333,10 @@ export default function Sales() {
 
       <Modal_Sales_Settings
         isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
+        onClose={() => {
+          setShowPageControls(false);
+          setShowDiscountRules(false);
+        }}
         onOpen={() => {
           templatesAPI
             .getAll("receipt")
@@ -2366,14 +2358,20 @@ export default function Sales() {
         rcptTemplates={rcptTemplates}
         discountSettings={discountSettings}
         setDiscountSettings={setDiscountSettings}
-      />
-
-      <Modal_DiscountRules
-        isOpen={showDiscountRules}
-        onClose={() => {
-          setShowDiscountRules(false);
-          loadDiscountRules();
-        }}
+        canManageDeals={canWriteSales}
+        onOpenDeals={() => setShowDiscountRules(true)}
+        subpageContent={
+          showDiscountRules ? (
+            <Modal_DiscountRules
+              isOpen={showDiscountRules}
+              container="inline"
+              onClose={() => {
+                setShowDiscountRules(false);
+                loadDiscountRules();
+              }}
+            />
+          ) : null
+        }
       />
     </div>
   );

@@ -60,6 +60,7 @@ import Modal_Bulk_Import_Items from "./components/modals/Modal_ImportItems";
 import Modal_Inventory_AddItem from "./components/modals/Modal_Inventory_AddItem";
 import Modal_Inventory_Settings from "./components/modals/Modal_Inventory_Settings";
 import Modal_ManageLookup from "./components/modals/Modal_ManageLookup";
+import Modal_InventoryFeatures from "./components/modals/Modal_InventoryFeatures";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Inventory_RowDetail from "./components/tables/Inventory_RowDetail";
 import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
@@ -96,6 +97,7 @@ export default function Inventory() {
   });
   const [inventoryCategories, setInventoryCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showFeatureManager, setShowFeatureManager] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const selectionMode = selectedIds.size > 0;
   const [showMultiEdit, setShowMultiEdit] = useState(false);
@@ -795,7 +797,11 @@ export default function Inventory() {
 
       <Modal_Inventory_Settings
         isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
+        onClose={() => {
+          setShowPageControls(false);
+          setShowCategoryManager(false);
+          setShowFeatureManager(false);
+        }}
         onSave={async () => {
           try {
             await savePageSettings("inventory", pendingSettings);
@@ -805,28 +811,43 @@ export default function Inventory() {
           }
         }}
         onOpenCategories={() => setShowCategoryManager(true)}
+        onOpenFeatures={() => setShowFeatureManager(true)}
+        subpageContent={
+          showCategoryManager ? (
+            <Modal_ManageLookup
+              isOpen={showCategoryManager}
+              container="inline"
+              onClose={() => setShowCategoryManager(false)}
+              title="Manage Categories"
+              entityLabel="category"
+              items={inventoryCategories}
+              onItemsChanged={loadInventoryCategories}
+              api={{
+                list: () => inventoryCategoriesAPI.getAll(),
+                create: (data) => inventoryCategoriesAPI.create("product", data.name),
+                update: async (id, data) => api.put(`/isud/inventory_category/${id}`, { name: data.name }),
+                delete: (id) => inventoryCategoriesAPI.delete(id),
+              }}
+            />
+          ) : showFeatureManager ? (
+            <Modal_InventoryFeatures
+              isOpen={showFeatureManager}
+              container="inline"
+              onClose={() => setShowFeatureManager(false)}
+              onFeaturesChanged={async () => {
+                const response = await featuresAPI.getInventorySummary();
+                const summary = response?.data ?? response;
+                if (!summary || typeof summary !== "object") throw new Error("Inventory feature summary had an unexpected response.");
+                setFeatureSummary(summary);
+              }}
+            />
+          ) : null
+        }
         assetUnitsPerPage={assetUnitsPerPage}
         onAssetUnitsPerPageChange={handleAssetUnitsPerPageChange}
         assetUnitsPageSizeOptions={ASSET_UNITS_PAGE_SIZE_OPTIONS}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
-      />
-
-      <Modal_ManageLookup
-        isOpen={showCategoryManager}
-        onClose={() => setShowCategoryManager(false)}
-        title="Manage Categories"
-        entityLabel="category"
-        items={inventoryCategories}
-        onItemsChanged={loadInventoryCategories}
-        api={{
-          list: () => inventoryCategoriesAPI.getAll(),
-          create: (data) => inventoryCategoriesAPI.create("product", data.name),
-          update: async (id, data) => {
-            return api.put(`/isud/inventory_category/${id}`, { name: data.name });
-          },
-          delete: (id) => inventoryCategoriesAPI.delete(id),
-        }}
       />
 
       <Modal_MultiEdit

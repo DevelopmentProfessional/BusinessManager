@@ -4,6 +4,8 @@ import React from "react";
 import PageControlsModal from "./Page_ControlsModal";
 import { Accordion } from "../accordions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import { TagIcon } from "../../../icons";
 
 export default function Modal_Sales_Settings({
   isOpen,
@@ -16,6 +18,9 @@ export default function Modal_Sales_Settings({
   rcptTemplates = [],
   discountSettings,
   setDiscountSettings,
+  onOpenDeals,
+  canManageDeals = false,
+  subpageContent,
 }) {
   return (
     <PageControlsModal
@@ -23,6 +28,7 @@ export default function Modal_Sales_Settings({
       onClose={onClose}
       title="Sales Page Settings"
       onOpen={onOpen}
+      subpageContent={subpageContent}
     >
       <div className="mb-2 ui-small-muted">Use these controls to manage the sales experience on this page.</div>
 
@@ -61,6 +67,17 @@ export default function Modal_Sales_Settings({
       </Accordion>
 
       <Accordion variant="settings" header="Discounts and deals">
+      {canManageDeals && (
+        <div className="page-controls-actions-group mb-2">
+          <Button_Toolbar
+            icon={TagIcon}
+            label="Deals"
+            onClick={() => onOpenDeals?.()}
+            className="btn-primary"
+            title="Manage deals"
+          />
+        </div>
+      )}
 
       <div className="mb-2">
         <label className="d-block mb-1 small text-muted">Discount Calculation Order</label>

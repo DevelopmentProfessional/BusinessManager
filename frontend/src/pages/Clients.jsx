@@ -651,7 +651,12 @@ export default function Clients() {
 
       <Modal_Clients_Settings
         isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
+        onClose={() => {
+          setShowPageControls(false);
+          setShowMembershipManager(false);
+          setShowStatusManager(false);
+          resetMembershipForm();
+        }}
         onSave={async () => {
           if (emailPolicyLoading || !emailPolicyLoaded) return false;
           try {
@@ -668,27 +673,42 @@ export default function Clients() {
         }}
         onOpenSubscriptions={() => setShowMembershipManager(true)}
         onOpenStatuses={() => setShowStatusManager(true)}
+        subpageContent={
+          showMembershipManager ? (
+            <Modal_Client_Subscriptions
+              isOpen={showMembershipManager}
+              container="inline"
+              onClose={() => {
+                setShowMembershipManager(false);
+                resetMembershipForm();
+              }}
+              memberships={sortedMemberships}
+              membershipForm={membershipForm}
+              setMembershipForm={setMembershipForm}
+              editingMembershipId={editingMembershipId}
+              onSave={handleSaveMembership}
+              onEdit={handleEditMembership}
+              onDelete={handleDeleteMembership}
+              onReset={resetMembershipForm}
+            />
+          ) : showStatusManager ? (
+            <Modal_ManageLookup
+              isOpen={showStatusManager}
+              container="inline"
+              onClose={() => setShowStatusManager(false)}
+              title="Manage Statuses"
+              entityLabel="status"
+              items={clientStatuses}
+              onItemsChanged={loadClientStatuses}
+              api={clientStatusesAPI}
+            />
+          ) : null
+        }
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
         settingsError={emailPolicyError}
         settingsLoading={emailPolicyLoading}
         settingsLoaded={emailPolicyLoaded}
-      />
-
-      <Modal_Client_Subscriptions
-        isOpen={showMembershipManager}
-        onClose={() => {
-          setShowMembershipManager(false);
-          resetMembershipForm();
-        }}
-        memberships={sortedMemberships}
-        membershipForm={membershipForm}
-        setMembershipForm={setMembershipForm}
-        editingMembershipId={editingMembershipId}
-        onSave={handleSaveMembership}
-        onEdit={handleEditMembership}
-        onDelete={handleDeleteMembership}
-        onReset={resetMembershipForm}
       />
 
       {/* Bulk Import Sheet Modal */}
@@ -727,8 +747,6 @@ export default function Clients() {
           };
         }}
       />
-
-      <Modal_ManageLookup isOpen={showStatusManager} onClose={() => setShowStatusManager(false)} title="Manage Statuses" entityLabel="status" items={clientStatuses} onItemsChanged={loadClientStatuses} api={clientStatusesAPI} />
 
       <Modal_MultiEdit
         isOpen={showMultiEdit}

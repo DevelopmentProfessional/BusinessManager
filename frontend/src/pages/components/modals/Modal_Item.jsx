@@ -113,7 +113,7 @@ export default function Modal_Item() {
   const initialName = typeof addInventoryPrefill === "string" ? addInventoryPrefill : addInventoryPrefill?.name || "";
 
   return (
-    <Modal isOpen={isAddInventoryModalOpen} onClose={handleCancel} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isAddInventoryModalOpen} onClose={handleCancel} noPadding={true} fullScreen={true}>
       {isAddInventoryModalOpen && <Form_Item item={null} initialName={initialName} showScanner onCancel={handleCancel} onSubmit={handleSubmit} onSubmitWithExtras={handleSubmitWithExtras} error={formError} />}
     </Modal>
   );

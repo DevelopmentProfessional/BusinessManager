@@ -13,7 +13,7 @@ export default function Modal_Employee_Form({
   employees = [],
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Employee
           employee={employee}

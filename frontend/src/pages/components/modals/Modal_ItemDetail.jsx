@@ -1177,7 +1177,7 @@ export default function Modal_Detail_Item({
   if (!item) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={!isSalesMode ? "Edit Item" : undefined} showFooterClose={false} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} title={!isSalesMode ? "Edit Item" : undefined} showFooterClose={false}>
       <div className="ui-page-shell">
         {/* Sales Mode: Full-width image header */}
         {isSalesMode && (
@@ -1708,7 +1708,7 @@ export default function Modal_Detail_Item({
         </div>
       </div>
 
-      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true} contentGravity="top">
+      <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" centered={true}>
         <Scanner_Barcode onDetected={handleBarcodeDetected} onCancel={() => setIsScannerOpen(false)} />
       </Modal>
 

@@ -8,9 +8,9 @@ import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import TableSettingsControls from "../tables/TableSettingsControls";
 
-export default function Modal_Inventory_Settings({ isOpen, onClose, onSave, onOpenCategories, assetUnitsPerPage, onAssetUnitsPerPageChange, assetUnitsPageSizeOptions = [10, 25, 50, 100], pendingSettings, setPendingSettings }) {
+export default function Modal_Inventory_Settings({ isOpen, onClose, onSave, onOpenCategories, onOpenFeatures, subpageContent, assetUnitsPerPage, onAssetUnitsPerPageChange, assetUnitsPageSizeOptions = [10, 25, 50, 100], pendingSettings, setPendingSettings }) {
   return (
-    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Inventory Page Settings" onSave={onSave}>
+    <PageControlsModal isOpen={isOpen} onClose={onClose} title="Inventory Page Settings" onSave={onSave} subpageContent={subpageContent}>
       <Accordion variant="settings" header="Table preferences" defaultOpen>
         <div className="mb-2" style={{ maxWidth: "13rem" }}>
           <Dropdown_Custom
@@ -49,6 +49,19 @@ export default function Modal_Inventory_Settings({ isOpen, onClose, onSave, onOp
             }}
             className="btn-primary"
             title="Manage inventory categories"
+          />
+        </div>
+      </Accordion>
+
+      <Accordion variant="settings" header="Features">
+        <div className="ui-small-muted mb-2">Manage feature definitions and their options for inventory items.</div>
+        <div className="page-controls-actions-group">
+          <Button_Toolbar
+            icon={TagIcon}
+            label="Features"
+            onClick={() => onOpenFeatures?.()}
+            className="btn-primary"
+            title="Manage inventory features"
           />
         </div>
       </Accordion>

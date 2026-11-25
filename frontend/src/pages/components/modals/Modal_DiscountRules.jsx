@@ -1,5 +1,5 @@
 /*
- * Full-screen discount rules panel (Sales → Deals).
+ * Bottom-sheet discount rules manager (Sales → Deals).
  */
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { XMarkIcon, TagIcon, CheckIcon, TrashIcon, PlusIcon } from "../../../icons";
@@ -49,7 +49,7 @@ const chipStyle = (active) => ({
   color: active ? "#fff" : "var(--bs-body-color)",
 });
 
-export default function Modal_DiscountRules({ isOpen, onClose }) {
+export default function Modal_DiscountRules({ isOpen, onClose, container }) {
   const { hasPermission } = useStore();
   const canWriteDeals = hasPermission("sales", "write");
   const canDeleteDeals = hasPermission("sales", "delete");
@@ -305,7 +305,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
   return (
     <Modal
       isOpen={isOpen}
+      container={container}
       onClose={onClose}
+      contentGravity="bottom"
       title={
         <span className="align-items-center d-flex">
           <TagIcon className="app-icon me-1 text-primary" />
@@ -313,9 +315,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
         </span>
       }
       footer={
-        <div className="d-flex gap-2 justify-content-start align-items-center">
-          {showEditor ? (
-            <>
+        showEditor ? (
+          <div className="d-flex gap-2 justify-content-start align-items-center">
+            {canWriteDeals && (
               <Button_Toolbar
                 icon={CheckIcon}
                 label="Save"
@@ -324,39 +326,40 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 disabled={saving}
                 title={editingId ? "Save changes to deal" : "Save new deal"}
               />
+            )}
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
+              onClick={resetForm}
+              className="btn-outline-secondary"
+              disabled={saving}
+              title="Cancel editing"
+            />
+          </div>
+        ) : (
+          <div className="d-flex gap-2 justify-content-start align-items-center">
+            {canWriteDeals && (
               <Button_Toolbar
-                icon={XMarkIcon}
-                label="Cancel"
-                onClick={resetForm}
-                className="btn-outline-secondary"
-                disabled={saving}
-                title="Cancel editing"
+                icon={PlusIcon}
+                label="New"
+                onClick={startNew}
+                className="btn-primary"
+                title="New Rule"
               />
-            </>
-          ) : (
-            <>
-              {canWriteDeals && (
-                <Button_Toolbar
-                  icon={PlusIcon}
-                  label="New"
-                  onClick={startNew}
-                  className="btn-primary"
-                  title="New Rule"
-                />
-              )}
-              <Button_Toolbar
-                icon={XMarkIcon}
-                label="Close"
-                onClick={onClose}
-                className="btn-outline-secondary"
-                title="Close"
-              />
-            </>
-          )}
-        </div>
+            )}
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
+              onClick={onClose}
+              className="btn-outline-secondary"
+              title="Close"
+            />
+          </div>
+        )
       }
     >
-      <div className="p-1">
+      <div className="discount-rules-modal-content position-relative" style={{ minHeight: showEditor ? "65vh" : undefined }}>
+        <div className="p-1">
         {error && !showEditor && <div className="mb-2 small text-danger">{error}</div>}
 
         {loading ? (
@@ -418,16 +421,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
         )}
       </div>
 
-      {showEditor && (
-        <div className="bg-white border-start bottom-0 d-flex dark:bg-gray-900 end-0 flex-column position-absolute shadow-lg top-0 text-size-small" style={{ width: "min(100%, 24rem)", zIndex: 10, fontSize: "var(--app-text-size-small, 0.75rem)" }}>
-          <div className="align-items-center border-bottom d-flex flex-shrink-0 gap-2 justify-content-between p-2">
-            <span className="fw-semibold ui-text-sm">{editingId ? "Edit Deal" : "New Deal"}</span>
-            <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={resetForm} disabled={saving}>
-              Clear
-            </button>
-          </div>
-
-          <div className="flex-grow-1 min-h-0 overflow-auto p-2">
+        {showEditor && (
+          <div className="bg-white border-start d-flex dark:bg-gray-900 end-0 flex-column position-absolute shadow-lg text-size-small" style={{ width: "min(100%, 24rem)", zIndex: 10, top: 0, bottom: 0, fontSize: "var(--app-text-size-small, 0.75rem)" }}>
+            <div className="flex-grow-1 min-h-0 overflow-auto p-2">
             {error && <div className="mb-2 small text-danger">{error}</div>}
 
             <div className="form-floating ui-form-floating-mb2">
@@ -435,22 +431,20 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
               <label htmlFor="deal_name">Deal Name *</label>
             </div>
 
-            <div className="mb-2">
-              <Dropdown_Custom
-                id="deal_type"
-                floatingLabel="Deal Type / Scope *"
-                className="form-select ui-control-sm"
-                value={form.deal_type || "product"}
-                onChange={(e) => setForm((p) => ({ ...p, deal_type: e.target.value }))}
-                options={[
-                  { value: "product", label: "Product / Item Deal (auto-applied to line items)" },
-                  { value: "cart_auto", label: "Automatic Cart Promotion (applied to all carts)" },
-                  { value: "cart_selectable", label: "Selectable Cart Deal (chosen in cart)" },
-                ]}
-              />
-            </div>
+            <Dropdown_Custom
+              id="deal_type"
+              floatingLabel="Deal Type / Scope *"
+              className="form-select ui-control-sm"
+              value={form.deal_type || "product"}
+              onChange={(e) => setForm((p) => ({ ...p, deal_type: e.target.value }))}
+              options={[
+                { value: "product", label: "Product / Item Deal (auto-applied to line items)" },
+                { value: "cart_auto", label: "Automatic Cart Promotion (applied to all carts)" },
+                { value: "cart_selectable", label: "Selectable Cart Deal (chosen in cart)" },
+              ]}
+            />
 
-            <div className="g-2 mb-2 row">
+            <div className="gx-2 row ui-form-control-row">
               <div className="col-6">
                 <Dropdown_Custom
                   id="discount_type"
@@ -473,11 +467,11 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
             </div>
 
             {(!form.deal_type || form.deal_type === "product") && (
-              <div className="mb-2">
+              <div>
                 <Dropdown_Custom
                   id="applies_to"
                   floatingLabel="Applies to"
-                  className="form-select ui-control-sm mb-1"
+                  className="form-select ui-control-sm"
                   value={form.applies_to}
                   onChange={(e) => setForm((p) => ({ ...p, applies_to: e.target.value, item_ids: e.target.value === "selected" ? p.item_ids : [] }))}
                   options={[
@@ -558,14 +552,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 )}
               </div>
             )}
+            </div>
           </div>
-
-          <div className="align-items-center border-top d-flex flex-shrink-0 gap-2 p-2">
-            {canWriteDeals && <Button_Toolbar icon={CheckIcon} label="Save" onClick={handleSave} className="btn-primary" disabled={saving} title="Save deal" />}
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={resetForm} className="btn-outline-secondary" disabled={saving} title="Cancel" />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </Modal>
   );
 }

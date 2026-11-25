@@ -59,7 +59,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon, BuildingOfficeIcon } from "../icons";
+import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
@@ -980,6 +980,92 @@ export default function Employees() {
     }
   };
 
+  const closeEmployeeSettings = () => {
+    setShowPageControls(false);
+    setShowStatusManager(false);
+    setShowDepartmentManager(false);
+    setShowRequestsModal(false);
+    setShowInsuranceModal(false);
+    setShowRolesModal(false);
+  };
+
+  const employeeSettingsSubpage = showRequestsModal ? (
+    <Modal_Requests_Employee
+      isOpen={showRequestsModal}
+      container="inline"
+      onClose={() => setShowRequestsModal(false)}
+      allRequests={allRequests}
+      requestTypeFilter={requestTypeFilter}
+      setRequestTypeFilter={setRequestTypeFilter}
+      requestTimeFilter={requestTimeFilter}
+      setRequestTimeFilter={setRequestTimeFilter}
+      requestsLoading={requestsLoading}
+      employees={employees}
+      onRequestAction={handleRequestAction}
+      loadRequests={loadRequests}
+    />
+  ) : showRolesModal ? (
+    <Modal_Manage_Roles
+      isOpen={showRolesModal}
+      container="inline"
+      onClose={() => setShowRolesModal(false)}
+      availableRoles={availableRoles}
+      newRole={newRole}
+      setNewRole={setNewRole}
+      editingRole={editingRole}
+      setEditingRole={setEditingRole}
+      newRolePermission={newRolePermission}
+      setNewRolePermission={setNewRolePermission}
+      onCreateRole={handleCreateRole}
+      onDeleteRole={handleDeleteRole}
+      onAddRolePermission={handleAddRolePermission}
+      onRemoveRolePermission={handleRemoveRolePermission}
+      pages={pages}
+      permissions={permissions}
+      isDarkMode={isDarkMode}
+      error={error}
+      success={success}
+    />
+  ) : showDepartmentManager ? (
+    <Modal_ManageLookup
+      isOpen={showDepartmentManager}
+      container="inline"
+      onClose={() => setShowDepartmentManager(false)}
+      title="Manage Departments"
+      entityLabel="department"
+      items={departments}
+      onItemsChanged={loadDepartments}
+      api={departmentsAPI}
+    />
+  ) : showInsuranceModal ? (
+    <Modal_InsurancePlans
+      isOpen={showInsuranceModal}
+      container="inline"
+      onClose={() => setShowInsuranceModal(false)}
+      insurancePlans={insurancePlans}
+      editingPlan={editingPlan}
+      setEditingPlan={setEditingPlan}
+      newPlan={newPlan}
+      setNewPlan={setNewPlan}
+      insurancePlansLoading={insurancePlansLoading}
+      insuranceError={insuranceError}
+      onSave={handleInsurancePlanSave}
+      onDelete={handleInsurancePlanDelete}
+      onToggle={handleInsurancePlanToggle}
+    />
+  ) : showStatusManager ? (
+    <Modal_ManageLookup
+      isOpen={showStatusManager}
+      container="inline"
+      onClose={() => setShowStatusManager(false)}
+      title="Manage Statuses"
+      entityLabel="status"
+      items={employeeStatuses}
+      onItemsChanged={loadEmployeeStatuses}
+      api={employeeStatusesAPI}
+    />
+  ) : null;
+
   // Helper function to check if employee has been paid for current pay period
   // ─── [21] LOADING GUARD ─────────────────────────────────────────────────────
   if (loading) {
@@ -1154,24 +1240,7 @@ export default function Employees() {
           beforeSearch={
             hasPermission("employees", "admin") || hasPermission("employees", "write") ? (
               <div className="align-items-center app-footer-toolbar d-flex">
-                  <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-secondary" title="Wages & payroll" />
-                <Button_Toolbar
-                  icon={ClipboardDocumentListIcon}
-                  label="Requests"
-                  onClick={handleOpenRequests}
-                  className="btn-outline-secondary position-relative"
-                  title="Review requests"
-                  badge={
-                    allRequests.filter((r) => r.status === "pending").length > 0 ? (
-                      <span className="badge bg-danger position-absolute rounded-pill" style={{ top: -4, right: -4, fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}>
-                        {allRequests.filter((r) => r.status === "pending").length > 9 ? "9+" : allRequests.filter((r) => r.status === "pending").length}
-                      </span>
-                    ) : null
-                  }
-                />
-                <Button_Toolbar icon={UserGroupIcon} label="Roles" onClick={handleOpenRoles} className="btn-outline-secondary" title="Manage roles" />
-                <Button_Toolbar icon={BuildingOfficeIcon} label="Departments" onClick={handleOpenDepartments} className="btn-outline-secondary" title="Manage departments" />
-                <Button_Toolbar icon={ShieldCheckIcon} label="Insurance" onClick={handleOpenInsurance} className="btn-outline-secondary" title="Insurance plans" />
+                <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-secondary" title="Wages & payroll" />
               </div>
             ) : null
           }
@@ -1310,49 +1379,6 @@ export default function Employees() {
         isDarkMode={isDarkMode}
       />
 
-      {/* Employee Status Management Modal */}
-      <Modal_ManageLookup isOpen={showStatusManager} onClose={() => setShowStatusManager(false)} title="Manage Statuses" entityLabel="status" items={employeeStatuses} onItemsChanged={loadEmployeeStatuses} api={employeeStatusesAPI} />
-
-      {/* Department Management Modal */}
-      <Modal_ManageLookup isOpen={showDepartmentManager} onClose={() => setShowDepartmentManager(false)} title="Manage Departments" entityLabel="department" items={departments} onItemsChanged={loadDepartments} api={departmentsAPI} />
-
-      {/* Roles Management Modal */}
-      <Modal_Manage_Roles
-        isOpen={showRolesModal}
-        onClose={() => setShowRolesModal(false)}
-        availableRoles={availableRoles}
-        newRole={newRole}
-        setNewRole={setNewRole}
-        editingRole={editingRole}
-        setEditingRole={setEditingRole}
-        newRolePermission={newRolePermission}
-        setNewRolePermission={setNewRolePermission}
-        onCreateRole={handleCreateRole}
-        onDeleteRole={handleDeleteRole}
-        onAddRolePermission={handleAddRolePermission}
-        onRemoveRolePermission={handleRemoveRolePermission}
-        pages={pages}
-        permissions={permissions}
-        isDarkMode={isDarkMode}
-        error={error}
-        success={success}
-      />
-
-      {/* Requests Modal */}
-      <Modal_Requests_Employee
-        isOpen={showRequestsModal}
-        onClose={() => setShowRequestsModal(false)}
-        allRequests={allRequests}
-        requestTypeFilter={requestTypeFilter}
-        setRequestTypeFilter={setRequestTypeFilter}
-        requestTimeFilter={requestTimeFilter}
-        setRequestTimeFilter={setRequestTimeFilter}
-        requestsLoading={requestsLoading}
-        employees={employees}
-        onRequestAction={handleRequestAction}
-        loadRequests={loadRequests}
-      />
-
       {/* System Info Display */}
       {systemInfo && (
         <div className="bg-blue-50 border border-blue-200 mt-6 p-1 rounded-md">
@@ -1412,33 +1438,21 @@ export default function Employees() {
         />
       )}
 
-      {/* Insurance Plans Modal */}
-      <Modal_InsurancePlans
-        isOpen={showInsuranceModal}
-        onClose={() => setShowInsuranceModal(false)}
-        insurancePlans={insurancePlans}
-        editingPlan={editingPlan}
-        setEditingPlan={setEditingPlan}
-        newPlan={newPlan}
-        setNewPlan={setNewPlan}
-        insurancePlansLoading={insurancePlansLoading}
-        insuranceError={insuranceError}
-        onSave={handleInsurancePlanSave}
-        onDelete={handleInsurancePlanDelete}
-        onToggle={handleInsurancePlanToggle}
-      />
-
       {/* Wages Modal */}
       {showWagesModal && <Modal_Wages employees={employees} onClose={() => setShowWagesModal(false)} />}
 
       <Modal_Employees_Settings
         isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
+        onClose={closeEmployeeSettings}
         onSave={async () => {
           await savePageSettings("employees", pendingSettings);
         }}
         onOpenRoles={handleOpenRoles}
         onOpenStatuses={() => setShowStatusManager(true)}
+        onOpenRequests={handleOpenRequests}
+        onOpenDepartments={handleOpenDepartments}
+        onOpenInsurance={handleOpenInsurance}
+        subpageContent={employeeSettingsSubpage}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
       />

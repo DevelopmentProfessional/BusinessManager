@@ -155,6 +155,8 @@ export default function Documents() {
 
   // Categories management state
   const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   // Statuses management state
   const [docStatuses, setDocStatuses] = useState([]);
@@ -454,18 +456,26 @@ export default function Documents() {
   };
 
   const loadCategories = async (retries = 2) => {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const res = await documentCategoriesAPI.list();
-        setCategories(sortItemsAlphabetically(res.data || [], ["name"]));
-        return;
-      } catch (err) {
-        const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
-        if (isTimeout && attempt < retries) {
-          continue;
+    setCategoriesLoading(true);
+    setCategoryError("");
+    try {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const res = await documentCategoriesAPI.list();
+          const items = res?.data ?? res;
+          if (!Array.isArray(items)) throw new Error("The document categories response was not a list.");
+          setCategories(sortItemsAlphabetically(items, ["name"]));
+          return;
+        } catch (err) {
+          const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
+          if (isTimeout && attempt < retries) continue;
+          setCategoryError(err?.response?.data?.detail || err?.message || "Failed to load document categories.");
+          console.warn("Failed to load categories", err);
+          return;
         }
-        console.warn("Failed to load categories", err);
       }
+    } finally {
+      setCategoriesLoading(false);
     }
   };
 
@@ -680,16 +690,17 @@ export default function Documents() {
     e?.preventDefault?.();
     const name = newCatName.trim();
     if (!name) return;
+    setCategoryError("");
     try {
-      const res = await documentCategoriesAPI.create({
+      await documentCategoriesAPI.create({
         name,
         description: newCatDesc || null,
       });
-      setCategories((prev) => sortItemsAlphabetically([...prev, res.data], ["name"]));
+      await loadCategories();
       setNewCatName("");
       setNewCatDesc("");
     } catch (err) {
-      console.error("Failed to create category", err);
+      setCategoryError(err?.response?.data?.detail || err?.message || "Failed to create category.");
     }
   };
 
@@ -706,31 +717,28 @@ export default function Documents() {
   };
 
   const saveEditCategory = async (catId) => {
+    setCategoryError("");
     try {
       const payload = {
         name: editingCatName || undefined,
         description: editingCatDesc,
       };
-      const res = await documentCategoriesAPI.update(catId, payload);
-      setCategories((prev) =>
-        sortItemsAlphabetically(
-          prev.map((c) => (c.id === catId ? res.data : c)),
-          ["name"]
-        )
-      );
+      await documentCategoriesAPI.update(catId, payload);
+      await loadCategories();
       cancelEditCategory();
     } catch (err) {
-      console.error("Failed to update category", err);
+      setCategoryError(err?.response?.data?.detail || err?.message || "Failed to update category.");
     }
   };
 
   const handleDeleteCategory = async (catId) => {
     if (!(await showConfirm("Delete this category?"))) return;
+    setCategoryError("");
     try {
       await documentCategoriesAPI.delete(catId);
-      setCategories((prev) => prev.filter((c) => c.id !== catId));
+      await loadCategories();
     } catch (err) {
-      console.error("Failed to delete category", err);
+      setCategoryError(err?.response?.data?.detail || err?.message || "Failed to delete category.");
     }
   };
 
@@ -1234,50 +1242,65 @@ export default function Documents() {
       />
 
       {/* Categories Management Modal */}
-      <Modal_Document_Categories
-        isOpen={isCategoriesOpen}
-        onClose={() => {
-          setIsCategoriesOpen(false);
-          cancelEditCategory();
-        }}
-        categories={categories}
-        sortedCategories={sortedCategories}
-        editingCatId={editingCatId}
-        editingCatName={editingCatName}
-        setEditingCatName={setEditingCatName}
-        editingCatDesc={editingCatDesc}
-        setEditingCatDesc={setEditingCatDesc}
-        startEditCategory={startEditCategory}
-        saveEditCategory={saveEditCategory}
-        cancelEditCategory={cancelEditCategory}
-        handleDeleteCategory={handleDeleteCategory}
-        newCatName={newCatName}
-        setNewCatName={setNewCatName}
-        newCatDesc={newCatDesc}
-        setNewCatDesc={setNewCatDesc}
-        handleCreateCategory={handleCreateCategory}
-      />
-
       <Modal_Documents_Settings
         isOpen={showPageControls}
-        onClose={() => setShowPageControls(false)}
+        onClose={() => {
+          setShowPageControls(false);
+          setIsCategoriesOpen(false);
+          setShowStatusManager(false);
+          cancelEditCategory();
+        }}
         onSave={async () => {
           await savePageSettings("documents", pendingSettings);
         }}
-        onOpenCategories={() => setIsCategoriesOpen(true)}
+        onOpenCategories={() => {
+          setIsCategoriesOpen(true);
+          void loadCategories();
+        }}
         onOpenStatuses={() => setShowStatusManager(true)}
+        subpageContent={
+          isCategoriesOpen ? (
+            <Modal_Document_Categories
+              isOpen={isCategoriesOpen}
+              container="inline"
+              onClose={() => {
+                setIsCategoriesOpen(false);
+                cancelEditCategory();
+              }}
+              categories={categories}
+              sortedCategories={sortedCategories}
+              loading={categoriesLoading}
+              error={categoryError}
+              editingCatId={editingCatId}
+              editingCatName={editingCatName}
+              setEditingCatName={setEditingCatName}
+              editingCatDesc={editingCatDesc}
+              setEditingCatDesc={setEditingCatDesc}
+              startEditCategory={startEditCategory}
+              saveEditCategory={saveEditCategory}
+              cancelEditCategory={cancelEditCategory}
+              handleDeleteCategory={handleDeleteCategory}
+              newCatName={newCatName}
+              setNewCatName={setNewCatName}
+              newCatDesc={newCatDesc}
+              setNewCatDesc={setNewCatDesc}
+              handleCreateCategory={handleCreateCategory}
+            />
+          ) : showStatusManager ? (
+            <Modal_ManageLookup
+              isOpen={showStatusManager}
+              container="inline"
+              onClose={() => setShowStatusManager(false)}
+              title="Manage Statuses"
+              entityLabel="status"
+              items={docStatuses}
+              onItemsChanged={loadDocStatuses}
+              api={documentStatusesAPI}
+            />
+          ) : null
+        }
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}
-      />
-
-      <Modal_ManageLookup
-        isOpen={showStatusManager}
-        onClose={() => setShowStatusManager(false)}
-        title="Manage Statuses"
-        entityLabel="status"
-        items={docStatuses}
-        onItemsChanged={loadDocStatuses}
-        api={documentStatusesAPI}
       />
 
       <Modal_MultiEdit

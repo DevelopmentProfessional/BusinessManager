@@ -63,7 +63,7 @@ export default function Modal_Service() {
   const initialName = typeof addServicePrefill === "string" ? addServicePrefill : addServicePrefill?.name || "";
 
   return (
-    <Modal isOpen={isAddServiceModalOpen} onClose={handleCancel} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isAddServiceModalOpen} onClose={handleCancel} noPadding={true} fullScreen={true}>
       {isAddServiceModalOpen && <Form_Service service={null} initialName={initialName} onSubmit={handleSubmit} onCancel={handleCancel} error={formError} />}
     </Modal>
   );

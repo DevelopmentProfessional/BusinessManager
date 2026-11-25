@@ -12,7 +12,7 @@ export default function Modal_Inventory_AddItem({
   onCreateWithExtras,
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} fullScreen noPadding>
       {isOpen && (
         <Form_Item
           item={null}

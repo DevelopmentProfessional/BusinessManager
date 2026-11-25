@@ -67,7 +67,7 @@ export default function Modal_Client() {
   const initialName = typeof addClientPrefill === "string" ? addClientPrefill : addClientPrefill?.name || "";
 
   return (
-    <Modal isOpen={isAddClientModalOpen} onClose={handleCancel} contentGravity="top">
+    <Modal isOpen={isAddClientModalOpen} onClose={handleCancel}>
       {isAddClientModalOpen && <Form_Client client={null} initialName={initialName} onSubmit={handleSubmit} onCancel={handleCancel} error={formError} />}
     </Modal>
   );

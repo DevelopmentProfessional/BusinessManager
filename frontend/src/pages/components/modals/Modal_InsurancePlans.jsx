@@ -1,27 +1,28 @@
 /*
- * Full-screen modal for managing insurance plans and linking shared plan documents.
+ * Bottom-sheet manager for managing insurance plans and linking shared plan documents.
  *
  * CHANGE LOG
  * 2026-11-15 | GitHub Copilot | Aligned the modal footer with the shared component hierarchy.
  */
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, CheckIcon, PencilSquareIcon, LinkIcon, TrashIcon, DocumentTextIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, PlusIcon, LinkIcon, TrashIcon, DocumentTextIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { documentsAPI } from "../../../services/api";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
 import Modal_Viewer_Document from "./Modal_DocumentView";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
-import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputText, InputTextarea } from "../Inputs";
 import Field_Floating from "../fields/Field_Floating";
-import { EmptyState, LoadingSpinner } from "../feedback";
+import { LoadingSpinner } from "../feedback";
+import SettingsMasterDetail, { SettingsMasterDetailTable } from "../layout/Settings_MasterDetail";
 
 export default function Modal_InsurancePlans({
   isOpen,
   onClose,
-  insurancePlans,
+  container,
+  insurancePlans = [],
   editingPlan,
   setEditingPlan,
   newPlan,
@@ -32,10 +33,20 @@ export default function Modal_InsurancePlans({
   onDelete,
   onToggle,
 }) {
+  const [creating, setCreating] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [showDocUpload, setShowDocUpload] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerDoc, setViewerDoc] = useState(null);
+  const detailOpen = creating || Boolean(editingPlan);
+  const closeDetail = () => {
+    setCreating(false);
+    setEditingPlan(null);
+  };
+  const closeManager = () => {
+    closeDetail();
+    onClose();
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -47,6 +58,12 @@ export default function Modal_InsurancePlans({
       })
       .catch(() => setDocuments([]));
   }, [isOpen]);
+
+  useEffect(() => {
+    if (editingPlan?.id && !insurancePlans.some((plan) => String(plan.id) === String(editingPlan.id))) {
+      setEditingPlan(null);
+    }
+  }, [editingPlan?.id, insurancePlans, setEditingPlan]);
 
   const openViewer = async (documentId) => {
     if (!documentId) return;
@@ -79,151 +96,114 @@ export default function Modal_InsurancePlans({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {
-        onClose();
-        setEditingPlan(null);
-      }}
+      container={container}
+      onClose={closeManager}
       noPadding
-      fullScreen
+      contentGravity="bottom"
+      title="Insurance Plans"
+      footer={detailOpen ? (
+        <>
+          <Button_Toolbar type="submit" form="insurance-plan-form" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-primary" title={editingPlan ? "Save plan" : "Add plan"} />
+          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel edit" />
+        </>
+      ) : (
+        <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={closeManager} className="btn-outline-secondary" title="Close insurance plans" />
+      )}
     >
-      <form onSubmit={onSave} className="ui-component-shell d-flex flex-column h-100 min-h-0">
-        <div className="component-header">
-          <div className="component-header-left">Insurance Plans</div>
-          <div className="component-header-center"></div>
-          <div className="component-header-right"></div>
-        </div>
-
-        <div className="component-body">
-          <div className="component-body-inner">
-          {insuranceError && (
-            <div className="alert alert-danger alert-sm mb-2 px-1 py-0" style={{ fontSize: "0.8rem" }}>
-              {insuranceError}
-            </div>
-          )}
-          {insurancePlansLoading ? (
-            <div className="py-1 text-center">
-              <LoadingSpinner label="Loading insurance plans" size="sm" />
-            </div>
-          ) : insurancePlans.length === 0 ? (
-            <EmptyState title="No insurance plans yet" description="Add one below." className="justify-content-center" />
-          ) : (
-            <div className="d-flex flex-column gap-2 pb-0">
-              {insurancePlans.map((plan) => (
-                <div key={plan.id} className={`d-flex align-items-center gap-2 p-0 border rounded ${!plan.is_active ? "opacity-60" : ""}`}>
-                  <button type="button" className="btn btn-bulk-circle btn-outline-danger flex-shrink-0" onClick={() => onDelete(plan.id)} title="Delete plan">
-                    <TrashIcon style={{ width: 16, height: 16 }} />
-                  </button>
-                  {plan.document_id && (
-                    <Button_InsuranceDocument documentId={plan.document_id} insurancePlans={insurancePlans} title="View plan document" />
-                  )}
-                  <div className="flex-grow-1 min-w-0">
-                    <div className="align-items-center d-flex flex-wrap fw-semibold gap-2" style={{ fontSize: "0.875rem" }}>
-                      {plan.name}
-                      <span className="badge bg-secondary" style={{ fontSize: "0.65rem" }}>
-                        {plan.is_active ? "Active" : "Inactive"}
-                      </span>
+      <form id="insurance-plan-form" onSubmit={onSave} className="ui-component-shell d-flex flex-column h-100 min-h-0">
+        <div className="component-body h-100">
+          <div className="component-body-inner h-100">
+            {insuranceError && <div className="alert alert-danger alert-sm mb-2 px-1 py-0" role="alert">{insuranceError}</div>}
+            <SettingsMasterDetail
+              detailOpen={detailOpen}
+              onBack={closeDetail}
+              list={
+                <div className="d-flex flex-column h-100 min-h-0">
+                  <div className="align-items-center d-flex justify-content-between mb-2">
+                    <h5 className="mb-0">Plans</h5>
+                    <Button_Toolbar icon={PlusIcon} label="New" onClick={() => { setEditingPlan(null); setCreating(true); }} className="btn-primary btn-sm" title="Add insurance plan" />
+                  </div>
+                  <SettingsMasterDetailTable
+                    columns={[
+                      { label: "Plan" },
+                      { label: "Status" },
+                      { label: "Document" },
+                      { label: "", style: { width: 160 } },
+                    ]}
+                  >
+                    {insurancePlansLoading ? (
+                      <tr><td colSpan={4} className="text-center py-2"><LoadingSpinner label="Loading insurance plans" size="sm" /></td></tr>
+                    ) : insurancePlans.length === 0 ? (
+                      <tr><td colSpan={4} className="text-center text-muted py-2">No insurance plans yet. Add one to get started.</td></tr>
+                    ) : insurancePlans.map((plan) => (
+                      <tr key={plan.id} className={`${String(editingPlan?.id) === String(plan.id) ? "table-primary" : ""} ${!plan.is_active ? "opacity-60" : ""}`}>
+                        <td>
+                          <button type="button" className="btn btn-link fw-medium p-0 text-start text-decoration-none" onClick={() => { setCreating(false); setEditingPlan({ ...plan }); }}>
+                            {plan.name}
+                          </button>
+                        </td>
+                        <td>{plan.is_active ? "Active" : "Inactive"}</td>
+                        <td className="text-truncate" style={{ maxWidth: "10rem" }}>{plan.document_id ? linkedDocLabel(plan.document_id) : "—"}</td>
+                        <td className="text-end">
+                          <div className="align-items-center d-inline-flex gap-1">
+                            {plan.document_id && <Button_InsuranceDocument documentId={plan.document_id} insurancePlans={insurancePlans} title="View plan document" />}
+                            <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
+                              {plan.is_active ? "Deactivate" : "Activate"}
+                            </button>
+                            <button type="button" className="btn btn-bulk-circle btn-outline-danger" onClick={() => onDelete(plan.id)} title="Delete plan">
+                              <TrashIcon style={{ width: 16, height: 16 }} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </SettingsMasterDetailTable>
+                </div>
+              }
+              detail={
+                <div className="d-flex flex-column gap-2 h-100 overflow-auto">
+                  <div className="fw-semibold small text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
+                  <div className="row ui-row-g2">
+                    <div className="col-6">
+                      <Field_Floating id="ins_plan_name" label="Plan Name *">
+                        <InputText value={editingPlan ? editingPlan.name : newPlan.name} onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, name: e.target.value })) : setNewPlan((prev) => ({ ...prev, name: e.target.value })))} required />
+                      </Field_Floating>
                     </div>
-                    {plan.description && (
-                      <div className="text-muted text-truncate" style={{ fontSize: "0.78rem" }}>
-                        {plan.description}
-                      </div>
-                    )}
-                    {plan.document_id && (
-                      <div className="text-muted text-truncate" style={{ fontSize: "0.72rem" }}>
-                        Doc: {linkedDocLabel(plan.document_id)}
-                      </div>
-                    )}
+                    <div className="col-6">
+                      <Field_Floating id="ins_plan_desc" label="Description">
+                        <InputTextarea value={editingPlan ? editingPlan.description || "" : newPlan.description} onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, description: e.target.value })) : setNewPlan((prev) => ({ ...prev, description: e.target.value })))} rows={2} />
+                      </Field_Floating>
+                    </div>
                   </div>
-                  <div className="d-flex flex-shrink-0 gap-1">
-                    <button type="button" className="btn ui-btn-outline-secondary-sm" style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem" }} onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
-                      {plan.is_active ? "Deactivate" : "Activate"}
-                    </button>
-                    <button type="button" className="btn btn-bulk-circle btn-outline-secondary" onClick={() => setEditingPlan({ ...plan })} title="Edit plan">
-                      <PencilSquareIcon style={{ width: 16, height: 16 }} />
-                    </button>
+                  <div className="border p-2 rounded">
+                    <div className="fw-semibold mb-2 small text-muted">Plan document (shared by all employees on this plan)</div>
+                    {(editingPlan?.document_id || newPlan?.document_id) ? (
+                      <div className="align-items-center d-flex flex-wrap gap-2">
+                        <span className="flex-grow-1 small text-truncate">{linkedDocLabel(editingPlan?.document_id || newPlan?.document_id)}</span>
+                        <button type="button" className="btn btn-bulk-circle btn-outline-secondary" onClick={() => openViewer(editingPlan?.document_id || newPlan?.document_id)} title="View document"><DocumentTextIcon style={{ width: 16, height: 16 }} /></button>
+                        <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setPlanDocumentId(null)}>Unlink</button>
+                      </div>
+                    ) : <p className="mb-2 ui-small-muted">No document linked.</p>}
+                    <div className="align-items-center d-flex flex-wrap gap-2">
+                      <Dropdown_Custom
+                        className="form-select ui-control-sm"
+                        style={{ maxWidth: "14rem" }}
+                        value={editingPlan?.document_id || newPlan?.document_id || ""}
+                        onChange={(e) => setPlanDocumentId(e.target.value || null)}
+                        options={[{ value: "", label: "Link existing document…" }, ...documents.map((doc) => ({ value: doc.id, label: doc.original_filename || doc.filename }))]}
+                      />
+                      <button type="button" className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1" disabled={!editingPlan?.id} onClick={() => setShowDocUpload(true)} title={editingPlan?.id ? "Upload and link a new document" : "Save the plan first, then edit to upload"}>
+                        <LinkIcon style={{ width: 14, height: 14 }} />Link
+                      </button>
+                    </div>
+                    {!editingPlan?.id && <p className="mb-0 mt-1 small text-muted">Save a new plan before uploading a document.</p>}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* ─── Create / Edit Form ───────────────────────────────────────── */}
-          <div className="border-top d-flex flex-column gap-2 mt-2 pt-1">
-            <div className="fw-semibold small text-muted">{editingPlan ? "Edit Plan" : "New Plan"}</div>
-            <div className="row ui-row-g2">
-              <div className="col-6">
-                <Field_Floating id="ins_plan_name" label="Plan Name *">
-                  <InputText
-                    value={editingPlan ? editingPlan.name : newPlan.name}
-                    onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, name: e.target.value })) : setNewPlan((prev) => ({ ...prev, name: e.target.value })))}
-                    required
-                  />
-                </Field_Floating>
-              </div>
-              <div className="col-6">
-                <Field_Floating id="ins_plan_desc" label="Description">
-                  <InputTextarea
-                    value={editingPlan ? editingPlan.description || "" : newPlan.description}
-                    onChange={(e) => (editingPlan ? setEditingPlan((prev) => ({ ...prev, description: e.target.value })) : setNewPlan((prev) => ({ ...prev, description: e.target.value })))}
-                    rows={2}
-                  />
-                </Field_Floating>
-              </div>
-            </div>
-
-            <div className="border p-0 rounded">
-              <div className="fw-semibold mb-2 small text-muted">Plan document (shared by all employees on this plan)</div>
-              {(editingPlan?.document_id || newPlan?.document_id) ? (
-                <div className="align-items-center d-flex flex-wrap gap-2">
-                  <span className="flex-grow-1 small text-truncate">{linkedDocLabel(editingPlan?.document_id || newPlan?.document_id)}</span>
-                  <button type="button" className="btn btn-bulk-circle btn-outline-secondary" onClick={() => openViewer(editingPlan?.document_id || newPlan?.document_id)} title="View document">
-                    <DocumentTextIcon style={{ width: 16, height: 16 }} />
-                  </button>
-                  <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => setPlanDocumentId(null)}>
-                    Unlink
-                  </button>
-                </div>
-              ) : (
-                <p className="mb-2 ui-small-muted">No document linked.</p>
-              )}
-              <div className="align-items-center d-flex flex-wrap gap-2">
-                <Dropdown_Custom
-                  className="form-select ui-control-sm"
-                  style={{ maxWidth: "14rem" }}
-                  value={editingPlan?.document_id || newPlan?.document_id || ""}
-                  onChange={(e) => setPlanDocumentId(e.target.value || null)}
-                  options={[
-                    { value: "", label: "Link existing document…" },
-                    ...documents.map((doc) => ({ value: doc.id, label: doc.original_filename || doc.filename })),
-                  ]}
-                />
-                <button
-                  type="button"
-                  className="align-items-center btn btn-outline-primary btn-sm d-inline-flex gap-1"
-                  disabled={!editingPlan?.id}
-                  onClick={() => setShowDocUpload(true)}
-                  title={editingPlan?.id ? "Upload and link a new document" : "Save the plan first, then edit to upload"}
-                >
-                  <LinkIcon style={{ width: 14, height: 14 }} />
-                  Link
-                </button>
-              </div>
-              {!editingPlan?.id && <p className="mb-0 mt-1 small text-muted">Save a new plan before uploading a document.</p>}
-            </div>
-
-          </div>{/* /create-edit form */}
+              }
+            />
           </div>{/* /component-body-inner */}
         </div>{/* /component-body */}
 
-        <div className="component-footer">
-          <div className="component-footer-left">
-            <Footer_Actions
-              start={<Button_Toolbar type="submit" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-primary" title={editingPlan ? "Save plan" : "Add plan"} />}
-              center={<Button_Toolbar icon={XMarkIcon} label={editingPlan ? "Cancel" : "Close"} onClick={editingPlan ? () => setEditingPlan(null) : onClose} className="btn-outline-secondary" title={editingPlan ? "Cancel edit" : "Close"} />}
-            />
-          </div>
-          <div className="component-footer-right"></div>
-        </div>
       </form>
 
       <Modal_DocumentUpload

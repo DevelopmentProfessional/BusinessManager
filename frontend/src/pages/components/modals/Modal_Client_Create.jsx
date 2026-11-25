@@ -13,7 +13,7 @@ export default function Modal_Client_Create({
   memberships = [],
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true} contentGravity="top">
+    <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Client
           client={null}
