@@ -880,6 +880,7 @@ textarea {
   margin-bottom: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  height: fit-content !important;
   max-height: 90vh !important;
   max-height: min(90dvh, var(--vvp-height, 90dvh)) !important;
   overflow: hidden !important;
@@ -999,10 +1000,30 @@ textarea {
 }
 
 /* Modal bodies own the desktop scroll surface; nested shells must not trap it. */
+.app-modal-scroll-surface > .overflow-scroll-content {
+  flex: 0 0 auto !important;
+}
+
+/* Inline modal screens need a bounded height so their own body scrolls and
+   their footer stays inside the visible parent modal. */
+.app-modal-dialog:has(> .app-modal-body > .overflow-scroll-content > .app-modal-inline-container) {
+  height: min(90dvh, var(--vvp-height, 90dvh)) !important;
+}
+
+.app-modal-body > .overflow-scroll-content:has(> .app-modal-inline-container) {
+  flex: 1 1 0% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
 .app-modal-body > .ui-page-shell,
 .app-modal-content > .ui-page-shell,
 .app-modal-body > .ui-component-shell,
-.app-modal-content > .ui-component-shell {
+.app-modal-content > .ui-component-shell,
+.app-modal-body > .overflow-scroll-content > .ui-page-shell,
+.app-modal-content > .overflow-scroll-content > .ui-page-shell,
+.app-modal-body > .overflow-scroll-content > .ui-component-shell,
+.app-modal-content > .overflow-scroll-content > .ui-component-shell {
   flex: 0 0 auto !important;
   height: auto !important;
   max-height: none !important;
@@ -1016,8 +1037,18 @@ textarea {
 .app-modal-content > .ui-page-shell > form,
 .app-modal-body > .ui-page-shell > div.overflow-auto,
 .app-modal-content > .ui-page-shell > div.overflow-auto,
+.app-modal-body > .ui-page-shell > div[class*="overflow-auto"],
+.app-modal-content > .ui-page-shell > div[class*="overflow-auto"],
 .app-modal-body > .ui-component-shell > .component-body,
-.app-modal-content > .ui-component-shell > .component-body {
+.app-modal-content > .ui-component-shell > .component-body,
+.app-modal-body > .overflow-scroll-content > .ui-page-shell > form,
+.app-modal-content > .overflow-scroll-content > .ui-page-shell > form,
+.app-modal-body > .overflow-scroll-content > .ui-page-shell > div.overflow-auto,
+.app-modal-content > .overflow-scroll-content > .ui-page-shell > div.overflow-auto,
+.app-modal-body > .overflow-scroll-content > .ui-page-shell > div[class*="overflow-auto"],
+.app-modal-content > .overflow-scroll-content > .ui-page-shell > div[class*="overflow-auto"],
+.app-modal-body > .overflow-scroll-content > .ui-component-shell > .component-body,
+.app-modal-content > .overflow-scroll-content > .ui-component-shell > .component-body {
   flex: 0 0 auto !important;
   height: auto !important;
   max-height: none !important;
@@ -1027,14 +1058,18 @@ textarea {
 /* Nested modal forms render their own header inside the shared modal body.
    Keep the first floating-label row clear of that internal header. */
 .app-modal-body > .ui-page-shell > .app-modal-header + div,
-.app-modal-content > .ui-page-shell > .app-modal-header + div {
+.app-modal-content > .ui-page-shell > .app-modal-header + div,
+.app-modal-body > .overflow-scroll-content > .ui-page-shell > .app-modal-header + div,
+.app-modal-content > .overflow-scroll-content > .ui-page-shell > .app-modal-header + div {
   padding-top: 0.5rem !important;
 }
 
 /* Component-shell modals with their own footer still use the modal body as
    the single scroll owner; nested component surfaces must expand naturally. */
 .app-modal-body > .ui-component-shell:has(> .component-footer),
-.app-modal-content > .ui-component-shell:has(> .component-footer) {
+.app-modal-content > .ui-component-shell:has(> .component-footer),
+.app-modal-body > .overflow-scroll-content > .ui-component-shell:has(> .component-footer),
+.app-modal-content > .overflow-scroll-content > .ui-component-shell:has(> .component-footer) {
   flex: 0 0 auto !important;
   height: auto !important;
   max-height: none !important;
@@ -1042,14 +1077,18 @@ textarea {
 }
 
 .app-modal-body > .ui-component-shell:has(> .component-footer) > .component-body,
-.app-modal-content > .ui-component-shell:has(> .component-footer) > .component-body {
+.app-modal-content > .ui-component-shell:has(> .component-footer) > .component-body,
+.app-modal-body > .overflow-scroll-content > .ui-component-shell:has(> .component-footer) > .component-body,
+.app-modal-content > .overflow-scroll-content > .ui-component-shell:has(> .component-footer) > .component-body {
   flex: 0 0 auto !important;
   height: auto !important;
   overflow: visible !important;
 }
 
 .app-modal-body > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner,
-.app-modal-content > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner {
+.app-modal-content > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner,
+.app-modal-body > .overflow-scroll-content > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner,
+.app-modal-content > .overflow-scroll-content > .ui-component-shell:has(> .component-footer) > .component-body > .component-body-inner {
   height: auto !important;
   overflow: visible !important;
 }
@@ -1541,6 +1580,10 @@ textarea {
 
 /* Let employee permission controls anchor to the bottom of the modal scroll surface. */
 .app-modal-body > .ui-page-shell.employee-permissions-active > div.overflow-auto {
+  flex: 1 1 auto !important;
+}
+
+.app-modal-body > .overflow-scroll-content > .ui-page-shell.employee-permissions-active > div.overflow-auto {
   flex: 1 1 auto !important;
 }
 
@@ -4816,7 +4859,16 @@ select.form-select {
   margin-bottom: 0 !important;
 }
 
-:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(.profile-accordion-header):not(.app-accordion-header):not(.app-color-picker-trigger):not(:where(footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
+.app-sales-item-cart-add,
+.app-sales-item-cart-quantity {
+  box-sizing: border-box;
+  height: 1.5rem;
+  min-height: 1.5rem;
+  padding-bottom: 0 !important;
+  padding-top: 0 !important;
+}
+
+:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(.profile-accordion-header):not(.app-accordion-header):not(.app-color-picker-trigger):not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.app-sales-item-cart-button):not(:where(.app-nav-bottom-menu-panel, .app-nav-bottom-global-menu, footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
   margin-top: 1rem !important;
   margin-bottom: 0.25rem !important;
 }

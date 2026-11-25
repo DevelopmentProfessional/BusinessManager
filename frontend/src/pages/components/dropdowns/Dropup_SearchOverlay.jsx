@@ -74,14 +74,13 @@ function getPanelStyle(select) {
   const width = Math.min(Math.max(rect.width, PANEL_MIN_WIDTH), viewportWidth - PANEL_SIDE_MARGIN * 2);
   const left = Math.min(Math.max(rect.left, viewportLeft + PANEL_SIDE_MARGIN), viewportRight - width - PANEL_SIDE_MARGIN);
   const panelBottom = Math.min(rect.top - PANEL_GAP, viewportBottom - PANEL_SIDE_MARGIN);
-  const availableAbove = Math.max(96, panelBottom - viewportTop - PANEL_SIDE_MARGIN);
+  const availableAbove = Math.max(1, panelBottom - viewportTop - PANEL_SIDE_MARGIN);
   const maxHeight = Math.min(PANEL_MAX_HEIGHT, availableAbove);
-  const top = Math.max(viewportTop + PANEL_SIDE_MARGIN, panelBottom - maxHeight);
 
   return {
     left,
-    top,
-    bottom: "auto",
+    top: "auto",
+    bottom: Math.max(0, window.innerHeight - panelBottom),
     width,
     maxHeight,
   };

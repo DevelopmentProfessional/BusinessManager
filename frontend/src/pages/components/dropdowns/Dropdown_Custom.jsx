@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { PlusIcon } from "../../../icons";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
-import { getViewportClampedMenuBounds } from "./menuPosition";
+import { getViewportClampedMenuBounds, getViewportClampedMenuVerticalPosition } from "./menuPosition";
 
 function getDropdownPortalHost() {
   if (typeof document === "undefined" || !document.body) return null;
@@ -111,15 +111,17 @@ export default function Dropdown_Custom({
       const triggerRect = dropdownRef.current.getBoundingClientRect();
       const gap = 4;
       const estimatedMenuHeight = 260;
-      const shouldOpenUpward = openUpward && triggerRect.top >= estimatedMenuHeight;
       const bounds = getViewportClampedMenuBounds(triggerRect, { sideMargin: 8 });
+      const verticalPosition = getViewportClampedMenuVerticalPosition(triggerRect, {
+        gap,
+        maxHeight: estimatedMenuHeight,
+        openUpward,
+      });
       setMenuPosition({
         left: bounds.left,
-        top: shouldOpenUpward ? undefined : triggerRect.bottom + gap,
-        bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + gap : undefined,
         minWidth: bounds.width,
         maxWidth: bounds.maxWidth,
-        maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - gap : window.innerHeight - triggerRect.bottom - gap),
+        ...verticalPosition,
       });
     };
 

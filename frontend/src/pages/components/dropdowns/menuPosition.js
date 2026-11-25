@@ -15,3 +15,22 @@ export function getViewportClampedMenuBounds(
     maxWidth: availableWidth,
   };
 }
+
+export function getViewportClampedMenuVerticalPosition(
+  anchor,
+  { gap = 8, sideMargin = 8, maxHeight = 260, openUpward = true } = {}
+) {
+  const viewport = window.visualViewport;
+  const viewportTop = viewport?.offsetTop ?? 0;
+  const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+  const availableAbove = Math.max(0, anchor.top - viewportTop - gap - sideMargin);
+  const availableBelow = Math.max(0, viewportBottom - anchor.bottom - gap - sideMargin);
+  const shouldOpenUpward = openUpward && (availableAbove >= maxHeight || availableAbove >= availableBelow);
+  const availableHeight = shouldOpenUpward ? availableAbove : availableBelow;
+
+  return {
+    top: shouldOpenUpward ? undefined : anchor.bottom + gap,
+    bottom: shouldOpenUpward ? window.innerHeight - anchor.top + gap : undefined,
+    maxHeight: Math.max(1, Math.min(maxHeight, availableHeight)),
+  };
+}

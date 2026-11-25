@@ -147,19 +147,19 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
 
           {canWrite && <div>
             {inCart ? (
-              <div className="bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700">
-                <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-5 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Remove">
+              <div className="app-sales-item-cart-quantity bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700">
+                <button onClick={handleDecrement} className="app-sales-item-cart-button bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-5 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Remove">
                   <MinusIcon className="h-3 w-3" />
                 </button>
                 <span className="dark:text-white font-bold text-center text-gray-900 text-xs w-5">{cartQuantity}</span>
-                <button onClick={handleIncrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-5 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Add more">
+                <button onClick={handleIncrement} className="app-sales-item-cart-button bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-5 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-5" title="Add more">
                   <PlusIcon className="h-3 w-3" />
                 </button>
               </div>
             ) : (
               <button
                 onClick={handleAddToCart}
-                className="bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-1.5 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700 text-gray-700 text-xs transition-colors"
+                className="app-sales-item-cart-button app-sales-item-cart-add bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-1.5 py-0.5 rounded-full shadow border border-gray-200 dark:border-gray-700 text-gray-700 text-xs transition-colors"
               >
                 <ShoppingCartIcon className="h-3 w-3" />
                 Add
@@ -220,17 +220,17 @@ const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement,
           {/* Cart Controls - Bottom Right */}
           {canWrite && <div>
             {inCart ? (
-              <div className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow-lg">
-                <button onClick={handleDecrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-6 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
+              <div className="app-sales-item-cart-quantity backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 flex gap-1 items-center px-1 py-0.5 rounded-full shadow-lg">
+                <button onClick={handleDecrement} className="app-sales-item-cart-button bg-gray-100 dark:bg-gray-700 dark:hover:bg-red-900 dark:text-gray-300 flex h-6 hover:bg-red-100 hover:text-red-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
                   <MinusIcon className="h-3.5 w-3.5" />
                 </button>
                 <span className="dark:text-white font-bold text-center text-gray-900 text-sm w-6">{cartQuantity}</span>
-                <button onClick={handleIncrement} className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-6 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
+                <button onClick={handleIncrement} className="app-sales-item-cart-button bg-gray-100 dark:bg-gray-700 dark:hover:bg-secondary-900 dark:text-gray-300 flex h-6 hover:bg-secondary-100 hover:text-secondary-600 items-center justify-center rounded-full text-gray-600 transition-colors w-6">
                   <PlusIcon className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
-              <button onClick={handleAddToCart} className="backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-0 py-1 rounded-full shadow-lg text-gray-700 text-xs transition-colors">
+              <button onClick={handleAddToCart} className="app-sales-item-cart-button app-sales-item-cart-add backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 dark:text-gray-200 flex font-medium gap-1 hover:bg-secondary-500 hover:text-white items-center px-0 py-1 rounded-full shadow-lg text-gray-700 text-xs transition-colors">
                 <ShoppingCartIcon className="h-3.5 w-3.5" />
                 Add
               </button>

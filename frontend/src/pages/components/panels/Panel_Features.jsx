@@ -14,6 +14,7 @@
  *                        links Settings-managed features and notifies parent of stock/price
  *
  * CHANGE LOG:
+ *   2026-11-25 | GitHub Copilot | Imported InputTextarea for stock-adjustment reason dialog
  *   2026-11-19 | GitHub Copilot | Relocated stock change reason from inline section to a popup modal when stock changes
  *   2026-03-05 | Claude | Initial implementation
  *   2026-03-11 | Claude | Accordion headers, remove icon, borderless table,
@@ -25,7 +26,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { CheckIcon, XMarkIcon, ChevronDownIcon } from "../../../icons";
 import { featuresAPI, inventoryFeaturesAPI } from "../../../services/api";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { InputCheckbox, InputNumber, InputText } from "../Inputs";
+import { InputCheckbox, InputNumber, InputText, InputTextarea } from "../Inputs";
 import Modal from "../modals/Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";

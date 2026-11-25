@@ -7,7 +7,7 @@ import Button_Toolbar from "../buttons/Button_Toolbar";
 import compactButtonLabel from "../../../utils/compactButtonLabel";
 import { TagIcon } from "../../../icons";
 import { sortOptionsByLabel } from "../../../utils/displaySort";
-import { getViewportClampedMenuBounds } from "./menuPosition";
+import { getViewportClampedMenuBounds, getViewportClampedMenuVerticalPosition } from "./menuPosition";
 
 function getDropdownPortalHost() {
   if (typeof document === "undefined" || !document.body) return null;
@@ -72,15 +72,16 @@ export default function Filter_Menu({
     const updateMenuPosition = () => {
       const triggerRect = dropdownRef.current.getBoundingClientRect();
       const estimatedMenuHeight = 260;
-      const shouldOpenUpward = triggerRect.top >= estimatedMenuHeight;
       const bounds = getViewportClampedMenuBounds(triggerRect, { sideMargin: 8 });
+      const verticalPosition = getViewportClampedMenuVerticalPosition(triggerRect, {
+        gap: 8,
+        maxHeight: estimatedMenuHeight,
+      });
       setMenuPosition({
         left: bounds.left,
-        top: shouldOpenUpward ? undefined : triggerRect.bottom + 8,
-        bottom: shouldOpenUpward ? window.innerHeight - triggerRect.top + 8 : undefined,
         minWidth: bounds.width,
         maxWidth: bounds.maxWidth,
-        maxHeight: Math.max(120, shouldOpenUpward ? triggerRect.top - 8 : window.innerHeight - triggerRect.bottom - 8),
+        ...verticalPosition,
       });
     };
 
