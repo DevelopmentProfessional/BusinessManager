@@ -28,10 +28,7 @@ export default function Modal_Services_Settings({ isOpen, onClose, onSave, onOpe
           <Button_Toolbar
             icon={FolderOpenIcon}
             label="Categories"
-            onClick={() => {
-              onClose();
-              onOpenCategories?.();
-            }}
+            onClick={() => onOpenCategories?.()}
             className="btn-primary"
             title="Manage service categories"
           />

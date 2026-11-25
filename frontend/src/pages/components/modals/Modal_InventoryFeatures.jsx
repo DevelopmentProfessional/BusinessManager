@@ -184,10 +184,13 @@ export default function Modal_InventoryFeatures({ isOpen, onClose, container, on
         <>
           {selectedFeature && optionName.trim() && <Button_Toolbar type="submit" form="inventory-feature-option-form" icon={PlusIcon} label="Add option" disabled={saving} className="btn-outline-primary" title="Add option" />}
           <Button_Toolbar type="submit" form="inventory-feature-form" icon={CheckIcon} label={selectedId === NEW_FEATURE_ID ? "Create" : "Save"} disabled={saving} className="btn-primary" title="Save feature" />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={() => setSelectedId(null)} className="btn-outline-secondary" title="Cancel" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={() => setSelectedId(null)} className="btn-outline-secondary" title="Cancel" />
         </>
       ) : (
-        <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={onClose} className="btn-outline-secondary" title="Back to Inventory Settings" />
+        <>
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => setSelectedId(NEW_FEATURE_ID)} className="btn-primary" title="Add feature" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
+        </>
       )}
     >
       <div className="d-flex flex-column h-100 min-h-0 p-2">
@@ -197,9 +200,8 @@ export default function Modal_InventoryFeatures({ isOpen, onClose, container, on
           onBack={() => setSelectedId(null)}
           list={
             <div className="d-flex flex-column h-100 min-h-0">
-              <div className="align-items-center d-flex justify-content-between mb-2">
+              <div className="mb-2">
                 <h5 className="mb-0">Features</h5>
-                <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => setSelectedId(NEW_FEATURE_ID)} className="btn-primary btn-sm" title="Add feature" />
               </div>
               <SettingsMasterDetailTable columns={[{ label: "Feature" }, { label: "Options" }, { label: "Used by" }]}>
                 {loading ? (

@@ -2,7 +2,7 @@
  * Bottom-sheet discount rules manager (Sales → Deals).
  */
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { XMarkIcon, TagIcon, CheckIcon, TrashIcon, PlusIcon } from "../../../icons";
+import { XMarkIcon, TagIcon, CheckIcon, PlusIcon } from "../../../icons";
 import { discountRulesAPI, inventoryAPI, servicesAPI } from "../../../services/api";
 import { formatCurrency } from "../../../utils/formatters";
 import { showConfirm } from "../../../services/showConfirm";
@@ -329,11 +329,11 @@ export default function Modal_DiscountRules({ isOpen, onClose, container }) {
             )}
             <Button_Toolbar
               icon={XMarkIcon}
-              label="Cancel"
+              label=""
               onClick={resetForm}
               className="btn-outline-secondary"
               disabled={saving}
-              title="Cancel editing"
+              title="Cancel"
             />
           </div>
         ) : (
@@ -349,10 +349,10 @@ export default function Modal_DiscountRules({ isOpen, onClose, container }) {
             )}
             <Button_Toolbar
               icon={XMarkIcon}
-              label="Close"
+              label=""
               onClick={onClose}
               className="btn-outline-secondary"
-              title="Close"
+              title="Cancel"
             />
           </div>
         )
@@ -369,10 +369,10 @@ export default function Modal_DiscountRules({ isOpen, onClose, container }) {
             <table className="align-middle mb-0 table table-hover table-sm text-size-small" style={{ fontSize: "var(--app-text-size-small, 0.75rem)" }}>
               <thead className="table-light">
                 <tr>
+                  <th className="text-center" style={{ width: 48 }} />
                   <th>Name</th>
                   <th>Discount</th>
                   <th>Scope</th>
-                  <th className="text-end" style={{ width: 48 }} />
                 </tr>
               </thead>
               <tbody>
@@ -389,6 +389,13 @@ export default function Modal_DiscountRules({ isOpen, onClose, container }) {
                         key={rule.id}
                         className={editingId === rule.id ? "table-primary" : ""}
                       >
+                        <td className="text-center">
+                          {canDeleteDeals && (
+                            <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
+                              <XMarkIcon style={{ width: 14, height: 14 }} />
+                            </button>
+                          )}
+                        </td>
                         <td className="fw-medium">
                           {canWriteDeals ? (
                             <button
@@ -404,13 +411,6 @@ export default function Modal_DiscountRules({ isOpen, onClose, container }) {
                         </td>
                         <td>{rule.discount_type === "percentage" ? `${rule.discount_value}%` : formatCurrency(rule.discount_value)}</td>
                         <td>{getAppliesToLabel(rule)}</td>
-                        <td className="text-end">
-                          {canDeleteDeals && (
-                            <button type="button" className="btn btn-bulk-circle btn-outline-danger btn-sm p-0" title="Delete rule" onClick={(e) => handleDelete(rule.id, e)}>
-                              <TrashIcon style={{ width: 14, height: 14 }} />
-                            </button>
-                          )}
-                        </td>
                       </tr>
                     );
                   })

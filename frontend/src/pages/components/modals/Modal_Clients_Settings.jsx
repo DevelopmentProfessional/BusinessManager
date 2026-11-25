@@ -49,20 +49,14 @@ export default function Modal_Clients_Settings({
           <Button_Toolbar
             icon={TicketIcon}
             label="Subs"
-            onClick={() => {
-              onClose();
-              onOpenSubscriptions?.();
-            }}
+            onClick={() => onOpenSubscriptions?.()}
             className="btn-primary"
             title="Manage subscriptions"
           />
           <Button_Toolbar
             icon={CheckCircleIcon}
             label="Status"
-            onClick={() => {
-              onClose();
-              onOpenStatuses?.();
-            }}
+            onClick={() => onOpenStatuses?.()}
             className="btn-primary"
             title="Manage client statuses"
           />

@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
-import { XMarkIcon, CheckIcon, PlusIcon, LinkIcon, TrashIcon, DocumentTextIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, PlusIcon, LinkIcon, DocumentTextIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import { documentsAPI } from "../../../services/api";
 import Modal_DocumentUpload from "./Modal_DocumentUpload";
@@ -104,10 +104,13 @@ export default function Modal_InsurancePlans({
       footer={detailOpen ? (
         <>
           <Button_Toolbar type="submit" form="insurance-plan-form" icon={CheckIcon} label={editingPlan ? "Save" : "Add"} className="btn-primary" title={editingPlan ? "Save plan" : "Add plan"} />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel edit" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
         </>
       ) : (
-        <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={closeManager} className="btn-outline-secondary" title="Close insurance plans" />
+        <>
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => { setEditingPlan(null); setCreating(true); }} className="btn-primary" title="Add insurance plan" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={closeManager} className="btn-outline-secondary" title="Cancel" />
+        </>
       )}
     >
       <form id="insurance-plan-form" onSubmit={onSave} className="ui-component-shell d-flex flex-column h-100 min-h-0">
@@ -119,12 +122,12 @@ export default function Modal_InsurancePlans({
               onBack={closeDetail}
               list={
                 <div className="d-flex flex-column h-100 min-h-0">
-                  <div className="align-items-center d-flex justify-content-between mb-2">
+                  <div className="mb-2">
                     <h5 className="mb-0">Plans</h5>
-                    <Button_Toolbar icon={PlusIcon} label="New" onClick={() => { setEditingPlan(null); setCreating(true); }} className="btn-primary btn-sm" title="Add insurance plan" />
                   </div>
                   <SettingsMasterDetailTable
                     columns={[
+                      { label: "", style: { width: 48 } },
                       { label: "Plan" },
                       { label: "Status" },
                       { label: "Document" },
@@ -132,11 +135,16 @@ export default function Modal_InsurancePlans({
                     ]}
                   >
                     {insurancePlansLoading ? (
-                      <tr><td colSpan={4} className="text-center py-2"><LoadingSpinner label="Loading insurance plans" size="sm" /></td></tr>
+                      <tr><td colSpan={5} className="text-center py-2"><LoadingSpinner label="Loading insurance plans" size="sm" /></td></tr>
                     ) : insurancePlans.length === 0 ? (
-                      <tr><td colSpan={4} className="text-center text-muted py-2">No insurance plans yet. Add one to get started.</td></tr>
+                      <tr><td colSpan={5} className="text-center text-muted py-2">No insurance plans yet. Add one to get started.</td></tr>
                     ) : insurancePlans.map((plan) => (
                       <tr key={plan.id} className={`${String(editingPlan?.id) === String(plan.id) ? "table-primary" : ""} ${!plan.is_active ? "opacity-60" : ""}`}>
+                        <td className="text-center">
+                          <button type="button" className="btn btn-bulk-circle btn-outline-danger" onClick={() => onDelete(plan.id)} title="Delete plan">
+                            <XMarkIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        </td>
                         <td>
                           <button type="button" className="btn btn-link fw-medium p-0 text-start text-decoration-none" onClick={() => { setCreating(false); setEditingPlan({ ...plan }); }}>
                             {plan.name}
@@ -149,9 +157,6 @@ export default function Modal_InsurancePlans({
                             {plan.document_id && <Button_InsuranceDocument documentId={plan.document_id} insurancePlans={insurancePlans} title="View plan document" />}
                             <button type="button" className="btn ui-btn-outline-secondary-sm" onClick={() => onToggle(plan)} title={plan.is_active ? "Deactivate" : "Activate"}>
                               {plan.is_active ? "Deactivate" : "Activate"}
-                            </button>
-                            <button type="button" className="btn btn-bulk-circle btn-outline-danger" onClick={() => onDelete(plan.id)} title="Delete plan">
-                              <TrashIcon style={{ width: 16, height: 16 }} />
                             </button>
                           </div>
                         </td>

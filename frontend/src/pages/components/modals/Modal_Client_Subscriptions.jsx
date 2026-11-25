@@ -3,7 +3,7 @@ import { InputNumber, InputText, InputTextarea } from "../Inputs";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { CheckCircleIcon, TrashIcon, XMarkIcon, CheckIcon } from "../../../icons";
+import { PlusIcon, XMarkIcon, CheckIcon } from "../../../icons";
 import SettingsMasterDetail, { SettingsMasterDetailTable } from "../layout/Settings_MasterDetail";
 
 const NEW_MEMBERSHIP_ID = "new";
@@ -62,10 +62,13 @@ export default function Modal_Client_Subscriptions({
         selectedId !== null ? (
           <>
             <Button_Toolbar type="submit" form="subscription-form" icon={CheckIcon} label={editingMembershipId ? "Update" : "Create"} disabled={saving} className="btn-primary" title="Save subscription" />
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
           </>
         ) : (
-          <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={closeManager} className="btn-outline-secondary" title="Close subscription manager" />
+          <>
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => setSelectedId(NEW_MEMBERSHIP_ID)} className="btn-primary" title="Create subscription" />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={closeManager} className="btn-outline-secondary" title="Cancel" />
+          </>
         )
       }
     >
@@ -75,22 +78,26 @@ export default function Modal_Client_Subscriptions({
           onBack={closeDetail}
           list={
             <div className="d-flex flex-column h-100 min-h-0">
-              <div className="align-items-center d-flex justify-content-between mb-2">
+              <div className="mb-2">
                 <h5 className="mb-0">Subscriptions</h5>
-                <Button_Toolbar icon={CheckCircleIcon} label="New" onClick={() => setSelectedId(NEW_MEMBERSHIP_ID)} className="btn-primary btn-sm" title="Create subscription" />
               </div>
               <SettingsMasterDetailTable
                 columns={[
+                  { label: "", style: { width: 48 } },
                   { label: "Subscription" },
                   { label: "Price" },
                   { label: "Frequency" },
-                  { label: "", style: { width: 48 } },
                 ]}
               >
                 {sortedMemberships.length === 0 ? (
                   <tr><td colSpan={4} className="ui-small-muted text-center py-2">No subscriptions yet.</td></tr>
                 ) : sortedMemberships.map((membership) => (
                   <tr key={membership.id} className={String(membership.id) === String(selectedId) ? "table-primary" : ""}>
+                    <td className="text-center">
+                      <button type="button" className="btn btn-bulk-circle btn-outline-danger" onClick={() => onDelete(membership.id)} title="Delete subscription">
+                        <XMarkIcon style={{ width: 14, height: 14 }} />
+                      </button>
+                    </td>
                     <td>
                       <button type="button" className="btn btn-link fw-medium p-0 text-start text-decoration-none" onClick={() => setSelectedId(membership.id)}>
                         {membership.name}
@@ -98,11 +105,6 @@ export default function Modal_Client_Subscriptions({
                     </td>
                     <td>${Number(membership.price || 0).toFixed(2)}</td>
                     <td className="text-capitalize">{membership.billing_frequency || "monthly"}</td>
-                    <td className="text-end">
-                      <button type="button" className="btn btn-bulk-circle btn-outline-danger" onClick={() => onDelete(membership.id)} title="Delete subscription">
-                        <TrashIcon style={{ width: 14, height: 14 }} />
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </SettingsMasterDetailTable>

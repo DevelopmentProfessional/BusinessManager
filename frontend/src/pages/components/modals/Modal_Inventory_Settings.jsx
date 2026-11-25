@@ -38,24 +38,16 @@ export default function Modal_Inventory_Settings({ isOpen, onClose, onSave, onOp
         />
       </Accordion>
 
-      <Accordion variant="settings" header="Categories">
+      <Accordion variant="settings" header="Inventory actions">
+        <div className="ui-small-muted mb-2">Manage inventory categories, features, and their options.</div>
         <div className="page-controls-actions-group">
           <Button_Toolbar
             icon={TagIcon}
             label="Categories"
-            onClick={() => {
-              onClose();
-              onOpenCategories?.();
-            }}
+            onClick={() => onOpenCategories?.()}
             className="btn-primary"
             title="Manage inventory categories"
           />
-        </div>
-      </Accordion>
-
-      <Accordion variant="settings" header="Features">
-        <div className="ui-small-muted mb-2">Manage feature definitions and their options for inventory items.</div>
-        <div className="page-controls-actions-group">
           <Button_Toolbar
             icon={TagIcon}
             label="Features"

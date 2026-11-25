@@ -113,16 +113,13 @@ export default function Modal_ManageLookup({
         selectedId !== null ? (
           <div className="d-flex gap-2 justify-content-start align-items-center">
             <Button_Toolbar type="submit" form="lookup-entry-form" icon={CheckIcon} label={selectedId === NEW_ITEM_ID ? "Create" : "Save"} disabled={saving} className="btn-primary" title={`Save ${entityLabel}`} />
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
           </div>
         ) : (
-          <Button_Toolbar
-            icon={XMarkIcon}
-            label={container === "inline" ? "Back to Settings" : "Close"}
-            onClick={closeManager}
-            className="btn-outline-secondary"
-            title={container === "inline" ? "Back to Settings" : "Close"}
-          />
+          <div className="d-flex gap-2 justify-content-start align-items-center">
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={startNew} className="btn-primary" title={`Add ${entityLabel}`} />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={closeManager} className="btn-outline-secondary" title="Cancel" />
+          </div>
         )
       }
     >
@@ -133,9 +130,8 @@ export default function Modal_ManageLookup({
           onBack={closeDetail}
           list={
             <div className="d-flex flex-column h-100 min-h-0">
-              <div className="align-items-center d-flex justify-content-between mb-2">
+              <div className="mb-2">
                 <h5 className="mb-0 text-capitalize">{entityLabel}s</h5>
-                <Button_Toolbar icon={PlusIcon} label="Add" onClick={startNew} className="btn-primary btn-sm" title={`Add ${entityLabel}`} />
               </div>
               <SettingsMasterDetailTable
                 columns={[

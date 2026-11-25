@@ -2,7 +2,7 @@
 // Dedicated modal for managing document categories
 import React, { useState } from "react";
 import { InputText } from "../Inputs";
-import { CheckIcon, XMarkIcon, PencilSquareIcon } from "../../../icons";
+import { CheckIcon, PlusIcon, XMarkIcon } from "../../../icons";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import SettingsMasterDetail, { SettingsMasterDetailTable } from "../layout/Settings_MasterDetail";
@@ -52,15 +52,18 @@ export default function Modal_Document_Categories({
       footer={creating ? (
         <>
           <Button_Toolbar type="submit" form="new-document-category-form" icon={CheckIcon} label="Add" className="btn-primary" title="Add category" />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
         </>
       ) : editingCatId ? (
         <>
           <Button_Toolbar type="submit" form="edit-document-category-form" icon={CheckIcon} label="Save" className="btn-primary" title="Save category" />
-          <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
         </>
       ) : (
-        <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={closeManager} className="btn-outline-secondary" title="Close category manager" />
+        <>
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => { cancelEditCategory?.(); setCreating(true); }} className="btn-primary" title="Add category" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={closeManager} className="btn-outline-secondary" title="Cancel" />
+        </>
       )}
     >
       <div className="d-flex flex-column h-100 min-h-0 p-2">
@@ -70,18 +73,8 @@ export default function Modal_Document_Categories({
           onBack={closeDetail}
           list={
             <div className="d-flex flex-column h-100 min-h-0">
-              <div className="align-items-center d-flex justify-content-between mb-2">
+              <div className="mb-2">
                 <h5 className="mb-0">Categories</h5>
-                <Button_Toolbar
-                  icon={PencilSquareIcon}
-                  label="New"
-                  onClick={() => {
-                    cancelEditCategory?.();
-                    setCreating(true);
-                  }}
-                  className="btn-primary btn-sm"
-                  title="Create category"
-                />
               </div>
               <SettingsMasterDetailTable
                 columns={[

@@ -1371,6 +1371,7 @@ textarea {
   right: 0.35rem;
   width: 1.5rem;
   height: 1.5rem;
+  margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 50%;
@@ -4815,7 +4816,7 @@ select.form-select {
   margin-bottom: 0 !important;
 }
 
-:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(:where(footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
+:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(.profile-accordion-header):not(.app-accordion-header):not(.app-color-picker-trigger):not(:where(footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
   margin-top: 1rem !important;
   margin-bottom: 0.25rem !important;
 }

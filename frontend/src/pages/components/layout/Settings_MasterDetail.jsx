@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeftIcon } from "../../../icons";
+import { XMarkIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 
 export function SettingsMasterDetailTable({ columns, children }) {
@@ -31,7 +31,7 @@ export default function Settings_MasterDetail({ list, detail, detailOpen = false
       {detailOpen && (
         <section className="settings-master-detail-detail">
           <div className="settings-master-detail-detail-header">
-            <Button_Toolbar icon={ChevronLeftIcon} label="Back" onClick={onBack} className="btn-outline-secondary btn-sm" title="Back to list" />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={onBack} className="btn-outline-secondary btn-sm" title="Cancel" />
           </div>
           <div className="settings-master-detail-detail-content">{detail}</div>
         </section>

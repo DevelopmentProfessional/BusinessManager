@@ -52,19 +52,22 @@ export default function Modal_Manage_Roles({ isOpen, onClose, container, availab
   return (
     <Modal isOpen={isOpen} onClose={onClose} container={container} noPadding contentGravity="bottom" title="Manage Roles" footer={
       <>
+        {selectedRoleId === null && (
+          <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => setSelectedRoleId(NEW_ROLE_ID)} className="btn-primary" title="Create role" />
+        )}
         {selectedRoleId === NEW_ROLE_ID && (
           <>
             <Button_Toolbar type="submit" form="create-role-form" icon={PlusIcon} label="Create" className="btn-primary" title="Create role" />
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
           </>
         )}
         {selectedRole && (
           <>
             <Button_Toolbar icon={PlusIcon} label="Add permission" onClick={() => onAddRolePermission(selectedRole.id)} disabled={editingRole !== selectedRole.id || !newRolePermission.page || !newRolePermission.permission} className="btn-outline-primary" title="Add permission" />
-            <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={closeDetail} className="btn-outline-secondary" title="Back to roles" />
+            <Button_Toolbar icon={XMarkIcon} label="" onClick={closeDetail} className="btn-outline-secondary" title="Cancel" />
           </>
         )}
-        <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={onClose} className="btn-outline-secondary" title="Close role manager" />
+        <Button_Toolbar icon={XMarkIcon} label="" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
       </>
     }>
       <div className="ui-component-shell">
@@ -77,9 +80,8 @@ export default function Modal_Manage_Roles({ isOpen, onClose, container, availab
               onBack={closeDetail}
               list={
                 <div className="d-flex flex-column h-100 min-h-0">
-                  <div className="align-items-center d-flex justify-content-between mb-2">
+                  <div className="mb-2">
                     <h5 className="mb-0">Roles</h5>
-                    <Button_Toolbar icon={PlusIcon} label="New" onClick={() => setSelectedRoleId(NEW_ROLE_ID)} className="btn-primary btn-sm" title="Create role" />
                   </div>
                   <SettingsMasterDetailTable columns={[{ label: "Role" }, { label: "Permissions" }]}>
                     {availableRoles.length === 0 ? (

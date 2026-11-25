@@ -73,7 +73,7 @@ export default function Modal_Requests_Employee({ isOpen, onClose, container, al
               <Button_Toolbar icon={XMarkIcon} label="Deny" onClick={() => onRequestAction(selectedRequest, "denied")} className="btn-outline-danger" title="Deny request" />
             </>
           )}
-          <Button_Toolbar icon={XMarkIcon} label={container === "inline" ? "Back to Settings" : "Close"} onClick={onClose} className="btn-outline-secondary" title="Close requests" />
+          <Button_Toolbar icon={XMarkIcon} label="" onClick={onClose} className="btn-outline-secondary" title="Cancel" />
         </>
       }
     >
