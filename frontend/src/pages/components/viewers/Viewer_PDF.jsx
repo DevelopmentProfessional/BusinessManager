@@ -12,14 +12,15 @@
  *   [2] Viewer_PDF Component       — state management for page, zoom, and error; resize observer
  *                                   for responsive page width
  *   [3] Navigation & Zoom Helpers — goToPrev, goToNext, zoomIn, zoomOut, fitWidth, handlePageInput
- *   [4] Iframe Fallback Render    — renders a minimal toolbar + native iframe when react-pdf errors
- *   [5] Primary Render            — full toolbar (pagination + zoom controls + Edit Metadata button)
+ *   [4] Iframe Fallback Render    — renders a native iframe when react-pdf errors
+ *   [5] Primary Render            — full toolbar with pagination and zoom controls
  *                                   and react-pdf Document/Page content area
  *
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-11-25 | GitHub Copilot | Simplified PDF fallback and moved metadata actions to the shared footer
  * ============================================================
  */
 
@@ -27,7 +28,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { PencilIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassPlusIcon, MagnifyingGlassMinusIcon, ArrowsPointingOutIcon } from "../../../icons";
+import { ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassPlusIcon, MagnifyingGlassMinusIcon, ArrowsPointingOutIcon } from "../../../icons";
 import { documentsAPI } from "../../../services/api";
 
 // ─── 1 WORKER CONFIGURATION ────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.m
 
 // ─── 2 PDFVIEWER COMPONENT ─────────────────────────────────────────────────────
 
-export default function Viewer_PDF({ document, onEdit }) {
+export default function Viewer_PDF({ document }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -136,28 +137,9 @@ export default function Viewer_PDF({ document, onEdit }) {
       <div className="flex flex-col h-full">
         <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
           <span className="dark:text-gray-300 text-gray-600 text-sm">PDF Document</span>
-          <div className="ui-flex-items-gap-2">
-            {onEdit && (
-              <button onClick={onEdit} className="bg-primary-600 flex gap-1 hover:bg-primary-700 items-center px-1 py-1 rounded text-sm text-white">
-                <PencilIcon className="ui-icon-4" />
-                Edit Metadata
-              </button>
-            )}
-          </div>
         </div>
         <div className="flex-1">
           <div className="flex flex-col h-full">
-            <p className="dark:text-gray-300 p-3 text-gray-600 text-sm">
-              This PDF could not be rendered in the preview. Open or download the original file to view it.
-            </p>
-            <div className="ui-flex-items-gap-2 px-3">
-              <a className="btn btn-primary" href={fileUrl} rel="noreferrer" target="_blank">
-                Open in new tab
-              </a>
-              <a className="btn btn-outline-secondary" href={documentsAPI.fileUrl(document.id, { download: true })}>
-                Download PDF
-              </a>
-            </div>
             <iframe title="PDF Preview" src={fileUrl} className="border-0 flex-1 min-h-0 w-full" />
           </div>
         </div>
@@ -216,14 +198,6 @@ export default function Viewer_PDF({ document, onEdit }) {
           </button>
         </div>
 
-        <div className="ui-flex-items-gap-2">
-          {onEdit && (
-            <button onClick={onEdit} className="bg-primary-600 flex gap-1 hover:bg-primary-700 items-center px-1 py-1 rounded text-sm text-white">
-              <PencilIcon className="ui-icon-4" />
-              Edit Metadata
-            </button>
-          )}
-        </div>
       </div>
 
       {/* PDF Content */}

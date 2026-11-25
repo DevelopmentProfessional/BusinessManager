@@ -41,6 +41,7 @@ export default function ThemedDatePicker({ mode, ...props }) {
     minDate,
     maxDate,
     type,
+    floatingLabelInput = false,
     placeholder,
     className = "",
     ...pickerProps
@@ -79,7 +80,7 @@ export default function ThemedDatePicker({ mode, ...props }) {
         timeIntervals={15}
         timeFormat="h:mm aa"
         dateFormat={dateFormat}
-        placeholderText={mode === "date" ? "MM/DD/YYYY" : dateFormat.toUpperCase()}
+        placeholderText={floatingLabelInput ? " " : mode === "date" ? "MM/DD/YYYY" : dateFormat.toUpperCase()}
         className={`form-control ui-control-sm ${className}`.trim()}
         wrapperClassName="app-date-picker-wrapper"
         calendarClassName="app-themed-datepicker"

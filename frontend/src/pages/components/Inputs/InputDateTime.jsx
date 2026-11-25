@@ -15,6 +15,7 @@ export default function InputDateTime(props) {
     timeClassName = "",
     dateLabel = "Date",
     timeLabel = "Time",
+    floatingLabels = false,
     id,
     name,
     type = "datetime-local",
@@ -61,15 +62,18 @@ export default function InputDateTime(props) {
 
   const dateMin = typeof min === "string" ? min.slice(0, 10) : undefined;
   const dateMax = typeof max === "string" ? max.slice(0, 10) : undefined;
+  const dateFieldClassName = `app-date-time-input__field${floatingLabels ? ` form-floating${parts.date ? " has-value" : ""}` : ""}`;
+  const timeFieldClassName = `app-date-time-input__field${floatingLabels ? ` form-floating${parts.time ? " has-value" : ""}` : ""}`;
 
   return (
     <div className="app-date-time-input" role="group" aria-label="Date and time">
       {name && <input type="hidden" name={name} value={combinedValue} disabled={disabled} />}
-      <div className="app-date-time-input__field">
-        <label className="app-date-time-input__label" htmlFor={dateId}>{dateLabel}</label>
+      <div className={dateFieldClassName}>
+        {!floatingLabels && <label className="app-date-time-input__label" htmlFor={dateId}>{dateLabel}</label>}
         <InputDate
           {...pickerProps}
           id={dateId}
+          floatingLabelInput={floatingLabels}
           value={parts.date}
           min={dateMin}
           max={dateMax}
@@ -80,18 +84,21 @@ export default function InputDateTime(props) {
           className={`${className} ${dateClassName}`.trim()}
           onChange={(event) => handlePartChange("date", event.target.value)}
         />
+        {floatingLabels && <label className="app-floating-label" htmlFor={dateId}>{dateLabel}</label>}
       </div>
-      <div className="app-date-time-input__field">
-        <label className="app-date-time-input__label" htmlFor={timeId}>{timeLabel}</label>
+      <div className={timeFieldClassName}>
+        {!floatingLabels && <label className="app-date-time-input__label" htmlFor={timeId}>{timeLabel}</label>}
         <InputTime
           {...pickerProps}
           id={timeId}
+          floatingLabelInput={floatingLabels}
           value={parts.time}
           required={required}
           disabled={disabled}
           className={`${className} ${timeClassName}`.trim()}
           onChange={(event) => handlePartChange("time", event.target.value)}
         />
+        {floatingLabels && <label className="app-floating-label" htmlFor={timeId}>{timeLabel}</label>}
       </div>
     </div>
   );

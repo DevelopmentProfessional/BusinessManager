@@ -430,14 +430,15 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
           <div className="flex-grow-1 min-h-0 overflow-auto p-2">
             {error && <div className="mb-2 small text-danger">{error}</div>}
 
-            <div className="mb-2">
-              <label className="form-label mb-0 small">Deal Name *</label>
-              <input className="form-control ui-control-sm" placeholder="e.g. Summer Promo, Senior Discount" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+            <div className="form-floating ui-form-floating-mb2">
+              <InputText id="deal_name" className="form-control ui-control-sm" placeholder="e.g. Summer Promo, Senior Discount" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+              <label htmlFor="deal_name">Deal Name *</label>
             </div>
 
             <div className="mb-2">
-              <label className="form-label mb-0 small">Deal Type / Scope *</label>
               <Dropdown_Custom
+                id="deal_type"
+                floatingLabel="Deal Type / Scope *"
                 className="form-select ui-control-sm"
                 value={form.deal_type || "product"}
                 onChange={(e) => setForm((p) => ({ ...p, deal_type: e.target.value }))}
@@ -451,8 +452,9 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
             <div className="g-2 mb-2 row">
               <div className="col-6">
-                <label className="form-label mb-0 small">Discount Type</label>
                 <Dropdown_Custom
+                  id="discount_type"
+                  floatingLabel="Discount Type"
                   className="form-select ui-control-sm"
                   value={form.discount_type}
                   onChange={(e) => setForm((p) => ({ ...p, discount_type: e.target.value }))}
@@ -463,15 +465,18 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
                 />
               </div>
               <div className="col-6">
-                <label className="form-label mb-0 small">Value *</label>
-                <InputNumber min="0" step="0.01" className="form-control ui-control-sm" value={form.discount_value} onChange={(e) => setForm((p) => ({ ...p, discount_value: e.target.value }))} placeholder="0.00" />
+                <div className="form-floating ui-form-floating-mb2">
+                  <InputNumber id="discount_value" min="0" step="0.01" className="form-control ui-control-sm" value={form.discount_value} onChange={(e) => setForm((p) => ({ ...p, discount_value: e.target.value }))} placeholder="0.00" />
+                  <label htmlFor="discount_value">Value *</label>
+                </div>
               </div>
             </div>
 
             {(!form.deal_type || form.deal_type === "product") && (
               <div className="mb-2">
-                <label className="form-label mb-0 small">Applies to</label>
                 <Dropdown_Custom
+                  id="applies_to"
+                  floatingLabel="Applies to"
                   className="form-select ui-control-sm mb-1"
                   value={form.applies_to}
                   onChange={(e) => setForm((p) => ({ ...p, applies_to: e.target.value, item_ids: e.target.value === "selected" ? p.item_ids : [] }))}
@@ -486,7 +491,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
                 {form.applies_to === "selected" && (
                   <div className="mt-1">
-                    <InputText className="form-control form-control-sm mb-1" placeholder="Search products or services…" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                    <div className="form-floating ui-form-floating-mb2">
+                      <InputText id="deal_item_search" className="form-control form-control-sm" placeholder=" " value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+                      <label htmlFor="deal_item_search">Search products or services</label>
+                    </div>
                     <div className="border rounded p-1" style={{ maxHeight: "10rem", overflowY: "auto" }}>
                       {selectableCatalog.map((item) => (
                         <label key={item.id} className="align-items-center border-bottom d-flex gap-2 mb-0 px-1 py-1 small cursor-pointer">
@@ -505,12 +513,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
             <div className="g-2 mb-2 row">
               <div className="col-12">
-                <div className="form-label mb-0 small">Start Date &amp; Time * (Required)</div>
-                <InputDateTime dateLabel="Start date" timeLabel="Start time" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
+                <InputDateTime id="deal_start" floatingLabels dateLabel="Start date *" timeLabel="Start time *" value={form.start_date} onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))} />
               </div>
               <div className="col-12">
-                <div className="form-label mb-0 small">End Date &amp; Time (Optional)</div>
-                <InputDateTime dateLabel="End date" timeLabel="End time" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
+                <InputDateTime id="deal_end" floatingLabels dateLabel="End date (Optional)" timeLabel="End time (Optional)" value={form.end_date} onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))} />
               </div>
             </div>
 
@@ -528,9 +534,10 @@ export default function Modal_DiscountRules({ isOpen, onClose }) {
 
             {form.is_recurring && (
               <div className="border mb-2 p-2 rounded small">
-                <label className="form-label mb-0 small text-muted">Frequency</label>
                 <Dropdown_Custom
-                  className="form-select form-select-sm mb-2"
+                  id="deal_frequency"
+                  floatingLabel="Frequency"
+                  className="form-select form-select-sm"
                   value={form.recur_frequency}
                   onChange={(e) => setForm((p) => ({ ...p, recur_frequency: e.target.value }))}
                   options={[

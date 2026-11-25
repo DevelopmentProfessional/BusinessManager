@@ -42,13 +42,13 @@
  *   2026-11-16 | GitHub Copilot | Added Suppliers to employee permission options
  *   2026-11-16 | GitHub Copilot | Anchored employee permission controls at the bottom of the tab
  *   2026-11-24 | GitHub Copilot | Load performance counts from schedule and attendance APIs
+ *   2026-11-25 | GitHub Copilot | Moved department creation to the employee page manager
  * ============================================================
  */
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon, PlusIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, PrinterIcon, CheckCircleIcon, TrashIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import Button_Icon from "../buttons/Button_Icon";
 import Footer_Actions from "../footers/Footer_Actions";
 import { rolesAPI, isudAPI, employeesAPI, employeeStatusesAPI, insurancePlansAPI, payrollAPI, departmentsAPI, paymentAccountsAPI, scheduleAPI, attendanceAPI } from "../../../services/api";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
@@ -238,10 +238,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
   // Department state
   const [departments, setDepartments] = useState([]);
-  const [showNewDept, setShowNewDept] = useState(false);
-  const [newDeptName, setNewDeptName] = useState("");
-  const [newDeptDesc, setNewDeptDesc] = useState("");
-  const [deptCreating, setDeptCreating] = useState(false);
 
   // Payments state
   const [paySlips, setPaySlips] = useState([]);
@@ -712,25 +708,6 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
     }
   };
 
-  const handleCreateDepartment = async () => {
-    const name = newDeptName.trim();
-    if (!name || deptCreating) return;
-    setDeptCreating(true);
-    try {
-      const res = await departmentsAPI.create({ name, description: newDeptDesc.trim() || undefined });
-      const created = res?.data ?? res;
-      setDepartments((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
-      setFormData((prev) => ({ ...prev, department_id: created.id }));
-      setNewDeptName("");
-      setNewDeptDesc("");
-      setShowNewDept(false);
-    } catch (err) {
-      console.error("Failed to create department", err);
-    } finally {
-      setDeptCreating(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1002,58 +979,16 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
                     {/* Department */}
                     <div className="col-12">
-                      <div className="ui-flex-center-gap-2">
-                        <div className="flex-grow-1"> 
-                          <Dropdown_Custom
-                            id="department_id"
-                            name="department_id"
-                            className="ui-control-sm"
-                            value={formData.department_id}
-                            onChange={handleInputChange}
-                            options={[{ value: "", label: "— None —" }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
-                            placeholder="Select department"
-                            closeOnSelect
-                          />
-                        </div>
-                        <Button_Icon
-                          icon={showNewDept ? XMarkIcon : PlusIcon}
-                          label={showNewDept ? "Close department form" : "Create a new department"}
-                          title={showNewDept ? "Close" : "Create a new department"}
-                          onClick={() => {
-                            setShowNewDept((v) => !v);
-                            setNewDeptName("");
-                            setNewDeptDesc("");
-                          }}
-                          variant="secondary"
-                          className="flex-shrink-0"
-                        />
-                      </div>
-
-                      {showNewDept && (
-                        <div className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 mt-2 p-0 rounded">
-                          <p className="mb-2 ui-small-muted">Create a new department</p>
-                          <div className="d-flex flex-column gap-1">
-                            <InputText
-                              value={newDeptName}
-                              onChange={(e) => setNewDeptName(e.target.value)}
-                              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
-                              placeholder="Department name (required)"
-                              style={{ fontSize: "0.82rem" }}
-                              autoFocus
-                            />
-                            <InputText
-                              value={newDeptDesc}
-                              onChange={(e) => setNewDeptDesc(e.target.value)}
-                              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateDepartment())}
-                              placeholder="Description (optional)"
-                              style={{ fontSize: "0.82rem" }}
-                            />
-                            <button type="button" onClick={handleCreateDepartment} disabled={!newDeptName.trim() || deptCreating} className="align-self-start btn btn-outline-primary btn-sm px-1 ui-btn-compact-icon">
-                              {deptCreating ? "…" : "Add"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      <Dropdown_Custom
+                        id="department_id"
+                        name="department_id"
+                        className="ui-control-sm"
+                        value={formData.department_id}
+                        onChange={handleInputChange}
+                        options={[{ value: "", label: "— None —" }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+                        placeholder="Select department"
+                        closeOnSelect
+                      />
                     </div>
 
                     {/* Direct Reports (read-only) */}

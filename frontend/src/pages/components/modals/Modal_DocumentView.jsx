@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
-import { XMarkIcon, ArrowDownTrayIcon, PencilIcon, DocumentIcon, TrashIcon } from "../../../icons";
+import { XMarkIcon, ArrowDownTrayIcon, ArrowTopRightOnSquareIcon, ClipboardDocumentCheckIcon, PencilIcon, DocumentIcon, TrashIcon } from "../../../icons";
 import { documentsAPI } from "../../../services/api";
 import { renderAsync } from "docx-preview";
 import { isEditableType, getEditorConfig, extractHtmlFromMhtml } from "../editors/documentEditorUtils";
@@ -57,7 +57,7 @@ function getDocumentType(doc) {
 }
 
 // Image Viewer Component
-function ImageViewer({ document, onEdit }) {
+function ImageViewer({ document }) {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -107,12 +107,6 @@ function ImageViewer({ document, onEdit }) {
             Reset
           </button>
         </div>
-        {onEdit && (
-          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
-            <PencilIcon className="ui-icon-4" />
-            Edit Metadata
-          </button>
-        )}
       </div>
       <div ref={containerRef} className="bg-white cursor-move dark:bg-gray-900 flex flex-1 items-center justify-center min-h-0 overflow-hidden w-full" onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
         <img
@@ -131,7 +125,7 @@ function ImageViewer({ document, onEdit }) {
 }
 
 // PDF Viewer — delegates to lazy-loaded react-pdf based viewer
-function Viewer_PDF({ document, onEdit }) {
+function Viewer_PDF({ document }) {
   return (
     <Suspense
       fallback={
@@ -140,13 +134,13 @@ function Viewer_PDF({ document, onEdit }) {
         </div>
       }
     >
-      <PDFViewerLazy document={document} onEdit={onEdit} />
+      <PDFViewerLazy document={document} />
     </Suspense>
   );
 }
 
 // DOCX Viewer Component (using docx-preview library)
-function DocxViewer({ document, onEdit }) {
+function DocxViewer({ document }) {
   const containerRef = useRef(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -223,14 +217,6 @@ function DocxViewer({ document, onEdit }) {
     <div className="flex flex-col h-full">
       <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
         <span className="dark:text-gray-300 text-gray-600 text-sm">Word Document</span>
-        <div className="ui-flex-items-gap-2">
-          {onEdit && (
-            <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
-              <PencilIcon className="ui-icon-4" />
-              Edit Metadata
-            </button>
-          )}
-        </div>
       </div>
       <div className="bg-white dark:bg-gray-900 flex-1 min-h-0 overflow-auto w-full">
         {loading && (
@@ -253,7 +239,7 @@ function DocxViewer({ document, onEdit }) {
 }
 
 // Office Document Viewer (for pptx, doc - shows download option)
-function OfficeViewer({ document, documentType, onEdit }) {
+function OfficeViewer({ document, documentType }) {
   const typeLabels = {
     pptx: "PowerPoint Presentation",
     doc: "Word Document (Legacy)",
@@ -263,12 +249,6 @@ function OfficeViewer({ document, documentType, onEdit }) {
     <div className="flex flex-col h-full">
       <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
         <span className="dark:text-gray-300 text-gray-600 text-sm">{typeLabels[documentType] || "Office Document"}</span>
-        {onEdit && (
-          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
-            <PencilIcon className="ui-icon-4" />
-            Edit Metadata
-          </button>
-        )}
       </div>
       <div className="bg-white dark:bg-gray-900 flex flex-1 items-center justify-center">
         <div className="p-1 text-center">
@@ -284,7 +264,7 @@ function OfficeViewer({ document, documentType, onEdit }) {
 }
 
 // Text File Viewer
-function TextViewer({ document, onEdit }) {
+function TextViewer({ document }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -320,12 +300,6 @@ function TextViewer({ document, onEdit }) {
     <div className="flex flex-col h-full">
       <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
         <span className="dark:text-gray-300 text-gray-600 text-sm">Text File</span>
-        {onEdit && (
-          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
-            <PencilIcon className="ui-icon-4" />
-            Edit Metadata
-          </button>
-        )}
       </div>
       <div className="bg-white dark:bg-gray-900 flex-1 min-h-0 overflow-auto w-full">
         {loading && (
@@ -345,17 +319,11 @@ function TextViewer({ document, onEdit }) {
 }
 
 // Unknown File Type Viewer
-function UnknownViewer({ document, onEdit }) {
+function UnknownViewer({ document }) {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 flex items-center justify-between p-0">
         <span className="dark:text-gray-300 text-gray-600 text-sm">File</span>
-        {onEdit && (
-          <button type="button" onClick={onEdit} className="align-items-center btn btn-primary d-flex gap-1">
-            <PencilIcon className="ui-icon-4" />
-            Edit Metadata
-          </button>
-        )}
       </div>
       <div className="bg-white dark:bg-gray-900 flex flex-1 items-center justify-center">
         <div className="p-1 text-center">
@@ -482,11 +450,11 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
   const renderViewer = () => {
     switch (documentType) {
       case "image":
-        return <ImageViewer document={document} onEdit={onEdit} />;
+        return <ImageViewer document={document} />;
       case "pdf":
-        return <Viewer_PDF document={document} onEdit={onEdit} />;
+        return <Viewer_PDF document={document} />;
       case "docx":
-        return <DocxViewer document={document} onEdit={onEdit} />;
+        return <DocxViewer document={document} />;
       case "xlsx":
       case "xls":
         return (
@@ -497,16 +465,16 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
               </div>
             }
           >
-            <XlsxViewerLazy document={document} onEdit={onEdit} />
+            <XlsxViewerLazy document={document} />
           </Suspense>
         );
       case "pptx":
       case "doc":
-        return <OfficeViewer document={document} documentType={documentType} onEdit={onEdit} />;
+        return <OfficeViewer document={document} documentType={documentType} />;
       case "text":
-        return <TextViewer document={document} onEdit={onEdit} />;
+        return <TextViewer document={document} />;
       default:
-        return <UnknownViewer document={document} onEdit={onEdit} />;
+        return <UnknownViewer document={document} />;
     }
   };
 
@@ -526,52 +494,79 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
 
         {/* Footer with document info */}
         <div className="app-modal-footer app-standard-footer bg-gray-50 border-gray-200 border-t dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 flex-shrink-0 px-1 py-0 text-gray-600 text-sm">
-          <div className="flex flex-wrap gap-4">
-            <span>Type: {document.content_type || "Unknown"}</span>
-            <span>Size: {document.file_size ? formatFileSize(document.file_size) : "Unknown"}</span>
-            <span>Uploaded: {document.created_at ? new Date(document.created_at).toLocaleDateString() : "Unknown"}</span>
-            {document.description && <span>Description: {document.description}</span>}
-            {document.is_signed && (
-              <span className="flex gap-2 items-center ml-auto">
-                <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-0 py-0.5 rounded text-green-700 text-xs">Signed by {document.signed_by || "Unknown"}</span>
-                {document.signature_image && <img src={document.signature_image} alt="Signature" className="border h-5 rounded" style={{ maxWidth: "80px" }} />}
-              </span>
-            )}
-          </div>
+          <div className="d-flex flex-column gap-2 w-100">
+            <div className="flex flex-wrap gap-4">
+              <span>Type: {document.content_type || "Unknown"}</span>
+              <span>Size: {document.file_size ? formatFileSize(document.file_size) : "Unknown"}</span>
+              <span>Uploaded: {document.created_at ? new Date(document.created_at).toLocaleDateString() : "Unknown"}</span>
+              {document.description && <span>Description: {document.description}</span>}
+              {document.is_signed && (
+                <span className="flex gap-2 items-center">
+                  <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-0 py-0.5 rounded text-green-700 text-xs">Signed by {document.signed_by || "Unknown"}</span>
+                  {document.signature_image && <img src={document.signature_image} alt="Signature" className="border h-5 rounded" style={{ maxWidth: "80px" }} />}
+                </span>
+              )}
+            </div>
 
-          <div className="border-gray-200 border-t dark:border-gray-700 flex flex-wrap gap-2 items-center mt-2 pt-0">
-            {/* View/Edit toggle — only for editable types */}
-            {editable && (
-              <button
-                onClick={handleToggleEdit}
-                className={`flex items-center gap-1 px-1 py-1.5 text-sm rounded transition-colors ${mode === "edit" ? "bg-primary-600 text-white hover:bg-primary-700" : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
-              >
-                <PencilIcon className="ui-icon-4" />
-                {mode === "edit" ? "Editing" : "Edit"}
-              </button>
-            )}
+            <div className="d-flex flex-wrap align-items-center justify-content-between w-100">
+              {onEdit && (
+                <Button_Toolbar icon={PencilIcon} label="Edit Metadata" onClick={() => onEdit(document)} compact className="btn-outline-secondary" title="Edit document metadata" />
+              )}
 
-            {document.is_signed ? (
-              <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-2 py-1 rounded text-green-700 text-sm">Signed</span>
-            ) : (
-              onSign && (
-                <Button_Toolbar icon={PencilIcon} label="Sign" onClick={() => onSign(document)} className="btn-outline-secondary" title="Sign document" />
-              )
-            )}
+              <div className="d-flex flex-wrap align-items-center gap-2">
+                {/* View/Edit toggle — only for editable types */}
+                {editable && (
+                  <button
+                    onClick={handleToggleEdit}
+                    className={`flex items-center gap-1 px-1 py-1.5 text-sm rounded transition-colors ${mode === "edit" ? "bg-primary-600 text-white hover:bg-primary-700" : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                  >
+                    <PencilIcon className="ui-icon-4" />
+                    {mode === "edit" ? "Editing" : "Edit"}
+                  </button>
+                )}
 
-            {onDelete && (
-              <Button_Toolbar icon={TrashIcon} label="Delete" variant="danger" onClick={() => onDelete(document)} title="Delete document" />
-            )}
+                {document.is_signed ? (
+                  <span className="bg-green-100 dark:bg-green-900/30 dark:text-green-400 font-medium gap-1 inline-flex items-center px-2 py-1 rounded text-green-700 text-sm">Signed</span>
+                ) : (
+                  onSign && (
+                    <Button_Toolbar icon={PencilIcon} label="Sign" onClick={() => onSign(document)} compact className="btn-outline-secondary" title="Sign document" />
+                  )
+                )}
 
-            {onWorkflow && (
-              <Button_Toolbar label="Workflow" onClick={() => onWorkflow(document)} className="btn-outline-primary" title="View workflow" />
-            )}
+                {onDelete && (
+                  <Button_Toolbar icon={TrashIcon} label="Delete" variant="danger" onClick={() => onDelete(document)} title="Delete document" />
+                )}
 
-            <a href={documentsAPI.fileUrl(document.id, { download: true })} download className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center p-1" title="Download" aria-label="Download">
-              <ArrowDownTrayIcon className="ui-icon-4" />
-            </a>
+                {onWorkflow && (
+                  <Button_Toolbar icon={ClipboardDocumentCheckIcon} label="Workflow" onClick={() => onWorkflow(document)} compact className="btn-outline-secondary" title="View workflow" />
+                )}
 
-            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} className="btn-outline-secondary" title="Close" />
+                {documentType === "pdf" && (
+                  <a
+                    href={documentsAPI.fileUrl(document.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-outline-secondary flex-shrink-0 d-flex align-items-center app-btn app-action-btn btn-circle app-action-btn--icon-only rounded-circle p-0 justify-content-center"
+                    title="Open in new tab"
+                    aria-label="Open in new tab"
+                  >
+                    <ArrowTopRightOnSquareIcon className="ui-icon-4" />
+                  </a>
+                )}
+
+                <a
+                  href={documentsAPI.fileUrl(document.id, { download: true })}
+                  download
+                  className="btn btn-outline-secondary flex-shrink-0 d-flex align-items-center app-btn app-action-btn btn-circle app-action-btn--icon-only rounded-circle p-0 justify-content-center"
+                  title="Download"
+                  aria-label="Download"
+                >
+                  <ArrowDownTrayIcon className="ui-icon-4" />
+                </a>
+
+                <Button_Toolbar icon={XMarkIcon} label="Close" onClick={handleClose} className="btn-outline-secondary" title="Close" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

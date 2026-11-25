@@ -49,6 +49,7 @@
  *   2026-09-11 | GitHub Copilot | Added backend-supported delete permission to role and user assignment options
  *   2026-09-11 | GitHub Copilot | Removed unused imports/handlers and dead payroll helper vars to reduce ESLint warnings
  *   2026-11-15 | GitHub Copilot | Routed employee chat actions through the shared circular icon button
+ *   2026-11-25 | GitHub Copilot | Added footer access to role and department managers
  * ============================================================
  */
 
@@ -58,7 +59,7 @@ import { formatDateTime } from "../utils/dateFormatters";
 import { S } from "../utils/strings";
 import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
-import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
+import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, ClipboardDocumentListIcon, ShieldCheckIcon, CurrencyDollarIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon, BuildingOfficeIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
@@ -114,6 +115,7 @@ export default function Employees() {
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [employeeStatuses, setEmployeeStatuses] = useState([]);
   const [showStatusManager, setShowStatusManager] = useState(false);
+  const [showDepartmentManager, setShowDepartmentManager] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [allRequests, setAllRequests] = useState([]);
   const [showInsuranceModal, setShowInsuranceModal] = useState(false);
@@ -174,6 +176,16 @@ export default function Employees() {
   // Wages modal
   const [showWagesModal, setShowWagesModal] = useState(false);
 
+  const loadDepartments = async () => {
+    try {
+      const res = await departmentsAPI.getAll();
+      const list = res?.data ?? res ?? [];
+      setDepartments(sortItemsAlphabetically(Array.isArray(list) ? list : [], ["name"]));
+    } catch (err) {
+      console.warn("Failed to load departments:", err);
+    }
+  };
+
   // ─── [6] INITIALIZATION EFFECTS ─────────────────────────────────────────────
   // On mount: trigger employee load and fetch app settings once.
   useFetchOnce(() => {
@@ -184,13 +196,7 @@ export default function Employees() {
       .getSettings()
       .then((res) => setAppSettings(res.data))
       .catch(() => {});
-    departmentsAPI
-      .getAll()
-      .then((res) => {
-        const list = res?.data ?? res ?? [];
-        setDepartments(sortItemsAlphabetically(Array.isArray(list) ? list : [], ["name"]));
-      })
-      .catch(() => {});
+    loadDepartments();
   });
 
   // Whenever the employees list changes, re-evaluate each employee's paid
@@ -259,6 +265,16 @@ export default function Employees() {
     } catch (err) {
       console.warn("Failed to load employee statuses", err);
     }
+  };
+
+  const handleOpenRoles = () => {
+    loadRoles();
+    setShowRolesModal(true);
+  };
+
+  const handleOpenDepartments = () => {
+    setShowDepartmentManager(true);
+    loadDepartments();
   };
 
   // ─── [10] PAYROLL HANDLERS ──────────────────────────────────────────────────
@@ -505,14 +521,6 @@ export default function Employees() {
       }
       closeModal();
       clearError();
-      // Refresh departments in case a new one was created inline
-      departmentsAPI
-        .getAll()
-        .then((res) => {
-          const list = res?.data ?? res ?? [];
-          setDepartments(sortItemsAlphabetically(Array.isArray(list) ? list : [], ["name"]));
-        })
-        .catch(() => {});
     } catch (err) {
       setError(editingEmployee ? "Failed to update employee" : "Failed to create employee");
     }
@@ -1146,6 +1154,7 @@ export default function Employees() {
           beforeSearch={
             hasPermission("employees", "admin") || hasPermission("employees", "write") ? (
               <div className="align-items-center app-footer-toolbar d-flex">
+                  <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-secondary" title="Wages & payroll" />
                 <Button_Toolbar
                   icon={ClipboardDocumentListIcon}
                   label="Requests"
@@ -1160,8 +1169,9 @@ export default function Employees() {
                     ) : null
                   }
                 />
+                <Button_Toolbar icon={UserGroupIcon} label="Roles" onClick={handleOpenRoles} className="btn-outline-secondary" title="Manage roles" />
+                <Button_Toolbar icon={BuildingOfficeIcon} label="Departments" onClick={handleOpenDepartments} className="btn-outline-secondary" title="Manage departments" />
                 <Button_Toolbar icon={ShieldCheckIcon} label="Insurance" onClick={handleOpenInsurance} className="btn-outline-secondary" title="Insurance plans" />
-                <Button_Toolbar icon={CurrencyDollarIcon} label="Wages" onClick={() => setShowWagesModal(true)} className="btn-outline-secondary" title="Wages & payroll" />
               </div>
             ) : null
           }
@@ -1303,6 +1313,9 @@ export default function Employees() {
       {/* Employee Status Management Modal */}
       <Modal_ManageLookup isOpen={showStatusManager} onClose={() => setShowStatusManager(false)} title="Manage Statuses" entityLabel="status" items={employeeStatuses} onItemsChanged={loadEmployeeStatuses} api={employeeStatusesAPI} />
 
+      {/* Department Management Modal */}
+      <Modal_ManageLookup isOpen={showDepartmentManager} onClose={() => setShowDepartmentManager(false)} title="Manage Departments" entityLabel="department" items={departments} onItemsChanged={loadDepartments} api={departmentsAPI} />
+
       {/* Roles Management Modal */}
       <Modal_Manage_Roles
         isOpen={showRolesModal}
@@ -1424,10 +1437,7 @@ export default function Employees() {
         onSave={async () => {
           await savePageSettings("employees", pendingSettings);
         }}
-        onOpenRoles={() => {
-          loadRoles();
-          setShowRolesModal(true);
-        }}
+        onOpenRoles={handleOpenRoles}
         onOpenStatuses={() => setShowStatusManager(true)}
         pendingSettings={pendingSettings}
         setPendingSettings={setPendingSettings}

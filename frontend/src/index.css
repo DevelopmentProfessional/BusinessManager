@@ -1766,54 +1766,17 @@ textarea.form-control.ui-control-sm {
   border-color: var(--bs-secondary);
 }
 
-/* Keep floating labels clear of the field above, even in margin-reset stacks. */
-.form-floating:not(.mb-0),
-.ui-form-floating-mb2:not(.mb-0) {
-  margin-bottom: 0.75rem !important;
-}
-
-.form-control:not(textarea),
-textarea.form-control,
-.form-select,
-.app-dropdown-root,
-.app-textarea-wrapper {
-  margin-bottom: 0.75rem;
-}
-
-.app-menu-panel.sales-filter-dropdown .form-control,
-.app-menu-panel.sales-filter-dropdown .app-dropdown-root {
-  margin-bottom: 0 !important;
-}
-
-/* Main page footer search inputs are aligned within the compact footer row. */
-.app-footer-search .app-search-input.form-control {
-  margin-bottom: 0 !important;
-}
-
-/* Color pickers are an exception to the default bottom margin */
+/* Keep footer search and color picker controls compact. */
+.app-footer-search .app-search-input.form-control,
 .app-color-picker-field,
 .app-color-picker-field > .form-control,
 .app-input-color {
-  margin-bottom: 0 !important;
-}
-
-.form-floating > .form-control,
-.form-floating > .form-select,
-.form-floating > .app-textarea-wrapper {
-  margin-bottom: 0;
+  margin-top: 0 !important;
 }
 
 [class*="space-y-"]:has(> .form-floating:not(.mb-0)) {
   display: flex;
   flex-direction: column;
-}
-
-.d-flex.gap-2:has(.form-floating) {
-  margin-bottom: 0.75rem !important;
-}
-
-.d-flex.gap-2:has(.form-floating) .form-floating {
-  margin-bottom: 0 !important;
 }
 
 .form-control:focus:not(.is-invalid):not(:invalid),
@@ -3189,6 +3152,7 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
 
 .sales-history-filter-grid .sales-history-price-range .form-control {
   min-width: 0;
+  margin-top: 0;
   margin-bottom: 0;
 }
 
@@ -3275,7 +3239,6 @@ input[type="number"],
 .app-date-picker-wrapper {
   display: block;
   width: 100%;
-  margin-bottom: 0 !important;
 }
 
 .app-date-time-input {
@@ -3304,6 +3267,7 @@ input[type="number"],
 }
 
 .app-date-picker-wrapper .react-datepicker__input-container input.form-control {
+  margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
 
@@ -3474,6 +3438,8 @@ input[type="number"],
 .form-floating > .form-control:not(:placeholder-shown) ~ label,
 .form-floating:has(.app-textarea-wrapper > .form-control:focus) > label,
 .form-floating:has(.app-textarea-wrapper > .form-control:not(:placeholder-shown)) > label,
+.form-floating:has(.app-date-picker-wrapper input.form-control:focus) > .app-floating-label,
+.form-floating:has(.app-date-picker-wrapper input.form-control:not(:placeholder-shown)) > .app-floating-label,
 .form-floating > .form-select ~ label,
 .form-floating.has-value > label,
 .form-floating.is-open > label,
@@ -4812,3 +4778,32 @@ select.form-select {
   flex-shrink: 0;
   width: auto !important;
 }
+
+/* Body controls share mt-2 / mb-1 spacing; controls in footers are exempt. */
+:is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="color"]),
+  textarea,
+  select,
+  [role="combobox"],
+  .form-select,
+  .app-dropdown-root,
+  .app-textarea-wrapper,
+  .app-date-picker-wrapper,
+  .app-date-time-input,
+  .form-floating,
+  .ui-form-floating-mb2
+):not(:where(footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *):not(:where(.form-floating, .ui-form-floating-mb2, .app-textarea-wrapper, .app-date-picker-wrapper, .app-date-time-input) *):not(:where(.form-floating:has(> input:is([type="text"], [type="email"], [type="tel"], [type="url"], [type="password"], [type="number"])), .ui-form-floating-mb2:has(> input:is([type="text"], [type="email"], [type="tel"], [type="url"], [type="password"], [type="number"])))) {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+:is(.form-floating, .ui-form-floating-mb2):has(> input:is([type="text"], [type="email"], [type="tel"], [type="url"], [type="password"], [type="number"])):not(:where(footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(:where(footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+}
+

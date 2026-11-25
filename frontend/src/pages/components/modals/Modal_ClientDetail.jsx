@@ -787,7 +787,7 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <button
               type="button"
               onClick={() => setShowServiceHistory(true)}
-              className="bg-blue-100 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-white flex flex-shrink-0 h-12 hover:bg-blue-200 items-center justify-center relative rounded-full shadow-lg text-blue-800 transition-all w-12"
+              className="bg-blue-100 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-white flex flex-shrink-0 h-12 hover:bg-blue-200 items-center justify-center relative rounded-full text-blue-800 transition-all w-12"
               title="Service History"
             >
               <ClockIcon style={{ width: 24, height: 24 }} />
@@ -795,13 +795,13 @@ export default function Modal_Detail_Client({ isOpen, onClose, client, onUpdate,
             <button
               type="button"
               onClick={() => setShowPurchaseHistory(true)}
-              className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white flex flex-shrink-0 h-12 hover:bg-gray-200 items-center justify-center relative rounded-full shadow-lg text-gray-800 transition-all w-12"
+              className="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white flex flex-shrink-0 h-12 hover:bg-gray-200 items-center justify-center relative rounded-full text-gray-800 transition-all w-12"
               title="Purchase History"
             >
               <ArrowTrendingUpIcon style={{ width: 24, height: 24 }} />
               {purchaseHistoryCount > 0 && <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{purchaseHistoryCount}</span>}
             </button>
-            <button type="button" onClick={() => setShowCart(true)} className="bg-secondary-600 flex flex-shrink-0 h-12 hover:bg-secondary-700 hover:shadow-xl items-center justify-center relative rounded-full shadow-lg text-white transition-all w-12" title="View Cart">
+            <button type="button" onClick={() => setShowCart(true)} className="bg-secondary-600 flex flex-shrink-0 h-12 hover:bg-secondary-700 items-center justify-center relative rounded-full text-white transition-all w-12" title="View Cart">
               <ShoppingCartIcon style={{ width: 24, height: 24 }} />
               {cartCount > 0 && <span className="-right-1 -top-1 absolute bg-red-500 flex font-bold h-5 items-center justify-center min-w-[20px] px-1 rounded-full text-white text-xs">{cartCount}</span>}
             </button>

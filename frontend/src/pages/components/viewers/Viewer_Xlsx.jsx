@@ -19,7 +19,7 @@
  *   [5] Row & Column Mutations   — handleAddRow, handleDeleteRow, handleAddColumn
  *   [6] Save Logic               — saveWorkbook (POST binary to API), Ctrl+S listener,
  *                                  cleanup timer on unmount
- *   [7] Toolbar Render           — edit-mode toggle, save button, add row/col, metadata button
+ *   [7] Toolbar Render           — edit-mode toggle, save button, add row/column controls
  *   [8] Sheet Tabs Render        — tab strip shown when workbook has more than one sheet
  *   [9] Spreadsheet Table Render — sticky header with column letters, row numbers,
  *                                  editable cells, delete row controls
@@ -30,6 +30,7 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-09-11 | GitHub Copilot | Replaced unpatched SheetJS dependency with ExcelJS workbook handling
+ *   2026-11-25 | GitHub Copilot | Moved metadata editing to the shared document footer
  * ============================================================
  */
 
@@ -66,7 +67,7 @@ function replaceWorksheetRows(worksheet, rows) {
 
 // ─── 1 COMPONENT STATE & REFS ──────────────────────────────────────────────────
 
-export default function Viewer_Xlsx({ document, onEdit }) {
+export default function Viewer_Xlsx({ document }) {
   const [workbook, setWorkbook] = useState(null);
   const [activeSheet, setActiveSheet] = useState("");
   const [sheetData, setSheetData] = useState([]);
@@ -373,12 +374,6 @@ export default function Viewer_Xlsx({ document, onEdit }) {
           {/* Save status indicator */}
           {saveStatus === "saved" && <span className="dark:text-green-400 text-green-600 text-xs">Saved</span>}
           {saveStatus === "error" && <span className="dark:text-red-400 text-red-600 text-xs">Save failed</span>}
-          {onEdit && (
-            <button onClick={onEdit} className="bg-primary-600 flex gap-1 hover:bg-primary-700 items-center px-1 py-1 rounded text-sm text-white">
-              <PencilIcon className="ui-icon-4" />
-              Metadata
-            </button>
-          )}
         </div>
       </div>
 
