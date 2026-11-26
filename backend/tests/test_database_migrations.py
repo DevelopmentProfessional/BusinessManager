@@ -404,3 +404,37 @@ def test_discount_rule_deal_type_migration_adds_column(monkeypatch):
     assert any("ALTER TABLE discount_rule ADD COLUMN deal_type VARCHAR NOT NULL DEFAULT 'product'" in statement for statement in statements)
 
 
+def test_03200_appointment_backfill_skips_when_marker_exists():
+    from backend.migrations.backfill_03200_appointments import run_migration
+
+    statements = []
+
+    class Result:
+        def scalar(self):
+            return 1
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            statements.append(sql)
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    result = run_migration(Engine())
+
+    assert result == {"status": "already_applied"}
+    assert any("pg_advisory_xact_lock" in statement for statement in statements)
+    assert not any("UPDATE service" in statement for statement in statements)
+    assert not any("INSERT INTO sale_transaction (" in statement for statement in statements)
+
+
