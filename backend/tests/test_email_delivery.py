@@ -63,6 +63,41 @@ def test_send_email_uses_configured_smtp_sender_and_reply_to(monkeypatch):
     assert sent_messages[0]["Reply-To"] == "company@example.com"
 
 
+def test_send_email_supports_multiple_to_and_cc_recipients(monkeypatch):
+    sent_messages = []
+
+    class FakeSMTP:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def starttls(self, context):
+            assert context is not None
+
+        def send_message(self, message):
+            sent_messages.append(message)
+
+    for key in ("AWS_SES_FROM_EMAIL", "AWS_SES_REGION", "AWS_REGION"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "provider@example.com")
+    monkeypatch.setattr(email_delivery, "boto3", None)
+    monkeypatch.setattr(email_delivery.smtplib, "SMTP", lambda *_args, **_kwargs: FakeSMTP())
+
+    email_delivery.send_email(
+        recipient=["first@example.com", "second@example.com"],
+        cc_recipients=["manager@example.com"],
+        subject="Test",
+        text_body="Test message",
+    )
+
+    assert len(sent_messages) == 1
+    assert sent_messages[0]["To"] == "first@example.com, second@example.com"
+    assert sent_messages[0]["Cc"] == "manager@example.com"
+
+
 @pytest.mark.parametrize(
     ("page", "recipient_type", "policy_field"),
     [

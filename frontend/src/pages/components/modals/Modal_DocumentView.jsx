@@ -537,8 +537,9 @@ export default function Modal_Viewer_Document({ isOpen, onClose, document, onEdi
                   <Button_Toolbar icon={TrashIcon} label="Delete" variant="danger" onClick={() => onDelete(document)} title="Delete document" />
                 )}
 
+                {/* Workflow access will be included in the next phase of the project. */}
                 {onWorkflow && (
-                  <Button_Toolbar icon={ClipboardDocumentCheckIcon} label="Workflow" onClick={() => onWorkflow(document)} compact className="btn-outline-secondary" title="View workflow" />
+                  <Button_Toolbar icon={ClipboardDocumentCheckIcon} label="Workflow" onClick={() => onWorkflow(document)} compact className="btn-outline-secondary d-none" title="View workflow" />
                 )}
 
                 {documentType === "pdf" && (

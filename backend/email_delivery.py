@@ -23,13 +23,17 @@ class EmailDeliveryError(RuntimeError):
 
 def send_email(
     *,
-    recipient: str,
+    recipient: str | Sequence[str],
     subject: str,
     text_body: str,
     html_body: Optional[str] = None,
     reply_to: Optional[str] = None,
+    cc_recipients: Sequence[str] = (),
     attachments: Sequence[tuple[str, bytes, str]] = (),
 ) -> None:
+    recipients = [recipient] if isinstance(recipient, str) else list(recipient)
+    if not recipients:
+        raise ValueError("At least one email recipient is required.")
     sender = (
         (os.getenv("AWS_SES_FROM_EMAIL") or "").strip()
         or (os.getenv("SMTP_FROM_EMAIL") or "").strip()
@@ -45,7 +49,9 @@ def send_email(
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = sender
-    message["To"] = recipient
+    message["To"] = ", ".join(recipients)
+    if cc_recipients:
+        message["Cc"] = ", ".join(cc_recipients)
     if reply_to:
         message["Reply-To"] = reply_to
     message.set_content(text_body)
@@ -62,9 +68,11 @@ def send_email(
             ses_client = boto3.client("sesv2", region_name=ses_region)
             request = {
                 "FromEmailAddress": sender,
-                "Destination": {"ToAddresses": [recipient]},
+                "Destination": {"ToAddresses": recipients},
                 "Content": {"Raw": {"Data": message.as_bytes()}},
             }
+            if cc_recipients:
+                request["Destination"]["CcAddresses"] = list(cc_recipients)
             if reply_to:
                 request["ReplyToAddresses"] = [reply_to]
             ses_client.send_email(**request)

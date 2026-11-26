@@ -8,21 +8,22 @@ from datetime import datetime, timedelta
 from typing import Literal, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
 try:
     from backend.database import get_session
     from backend.email_delivery import EmailDeliveryError, send_email
     from backend.models import AppSettings, Client, Supplier, User
-    from backend.routers.auth import get_current_user, require_page_permission
+    from backend.routers.auth import get_current_user, has_page_permission, require_page_permission
     from backend.routers.settings import get_or_create_settings, resolve_company_id
 except ModuleNotFoundError:
     from database import get_session
     from email_delivery import EmailDeliveryError, send_email
     from models import AppSettings, Client, Supplier, User
-    from routers.auth import get_current_user, require_page_permission
+    from routers.auth import get_current_user, has_page_permission, require_page_permission
     from routers.settings import get_or_create_settings, resolve_company_id
 
 router = APIRouter()
@@ -53,11 +54,19 @@ class ContactVerificationConfirmRequest(ContactVerificationRequest):
     code: str = Field(min_length=8, max_length=8)
 
 
-class EmailSendRequest(BaseModel):
-    page: str
+class EmailSendRecipient(BaseModel):
     recipient_type: Literal["client", "supplier", "employee", "external"]
     recipient_id: Optional[UUID] = None
-    recipient_email: str = Field(min_length=3, max_length=254)
+    email: str = Field(min_length=3, max_length=254)
+
+
+class EmailSendRequest(BaseModel):
+    page: str
+    recipients: list[EmailSendRecipient] = Field(default_factory=list, max_length=100)
+    cc_recipients: list[EmailSendRecipient] = Field(default_factory=list, max_length=100)
+    recipient_type: Optional[Literal["client", "supplier", "employee", "external"]] = None
+    recipient_id: Optional[UUID] = None
+    recipient_email: Optional[str] = Field(default=None, min_length=3, max_length=254)
     subject: str = Field(min_length=1, max_length=200)
     text_body: str = Field(min_length=1, max_length=100_000)
     attachment_name: Optional[str] = Field(default=None, max_length=150)
@@ -109,11 +118,100 @@ def _send_verification_code(recipient: str, code: str, subject: str, company_nam
 def _get_contact(session: Session, current_user: User, entity_type: str, entity_id: UUID):
     model = Client if entity_type == "client" else Supplier
     record = session.exec(
-        select(model).where(model.id == entity_id, model.company_id == (current_user.company_id or ""))
+        select(model).where(model.id == entity_id, model.company_id == resolve_company_id(session, current_user))
     ).first()
     if not record:
         raise HTTPException(status_code=404, detail=f"{entity_type.title()} not found.")
     return record
+
+
+@router.get("/contacts")
+def search_email_contacts(
+    page: str,
+    q: Optional[str] = Query(default=None, max_length=100),
+    contact_type: Optional[Literal["client", "supplier", "employee"]] = Query(default=None, alias="type"),
+    ids: Optional[str] = Query(default=None, max_length=4000),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if page not in SEND_PAGES:
+        raise HTTPException(status_code=400, detail="Email contacts are not available from this page.")
+    require_page_permission(current_user, session, page, "read")
+
+    record_ids = None
+    if ids:
+        try:
+            record_ids = [UUID(value.strip()) for value in ids.split(",") if value.strip()]
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="One or more contact IDs are invalid.") from exc
+        if not record_ids or len(record_ids) > 100:
+            raise HTTPException(status_code=400, detail="Provide between 1 and 100 contact IDs.")
+        if not contact_type:
+            raise HTTPException(status_code=400, detail="A contact type is required when looking up contact IDs.")
+    elif not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Enter at least two characters to search contacts.")
+
+    contact_types = [contact_type] if contact_type else ["client", "supplier", "employee"]
+    company_id = resolve_company_id(session, current_user)
+    pattern = None
+    if q:
+        escaped_query = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped_query}%"
+
+    contacts = []
+    model_by_type = {"client": Client, "supplier": Supplier, "employee": User}
+    for kind in contact_types:
+        page_for_type = f"{kind}s"
+        if not has_page_permission(current_user, session, page_for_type, "read"):
+            if record_ids:
+                raise HTTPException(status_code=403, detail=f"Missing permission: {page_for_type}:read")
+            continue
+
+        model = model_by_type[kind]
+        statement = select(model).where(model.company_id == company_id)
+        if record_ids:
+            statement = statement.where(model.id.in_(record_ids))
+        else:
+            statement = statement.where(model.email.is_not(None), model.email != "")
+            if kind == "client":
+                statement = statement.where(
+                    or_(
+                        Client.name.ilike(pattern, escape="\\"),
+                        Client.email.ilike(pattern, escape="\\"),
+                    )
+                )
+            elif kind == "supplier":
+                statement = statement.where(
+                    or_(
+                        Supplier.name.ilike(pattern, escape="\\"),
+                        Supplier.contact_person.ilike(pattern, escape="\\"),
+                        Supplier.email.ilike(pattern, escape="\\"),
+                    )
+                )
+            else:
+                statement = statement.where(
+                    User.is_active.is_(True),
+                    or_(
+                        User.first_name.ilike(pattern, escape="\\"),
+                        User.last_name.ilike(pattern, escape="\\"),
+                        User.username.ilike(pattern, escape="\\"),
+                        User.email.ilike(pattern, escape="\\"),
+                    ),
+                )
+        statement = statement.order_by(model.name if kind != "employee" else User.first_name).limit(30)
+        for record in session.exec(statement).all():
+            name = record.name if kind != "employee" else f"{record.first_name} {record.last_name}".strip()
+            contacts.append(
+                {
+                    "id": str(record.id),
+                    "type": kind,
+                    "name": name or record.username,
+                    "email": record.email,
+                    "email_verified": bool(getattr(record, "email_verified", False)),
+                }
+            )
+
+    return {"contacts": contacts}
 
 
 def _start_contact_verification(record, settings: AppSettings, session: Session) -> dict:
@@ -245,26 +343,19 @@ def confirm_contact_email_verification(
     return _confirm_challenge(record, payload.code, session, record.email_verified)
 
 
-def _resolve_recipient(payload: EmailSendRequest, current_user: User, session: Session, settings: AppSettings) -> str:
-    email = _normalize_email(payload.recipient_email)
-    if payload.page not in SEND_PAGES:
-        raise HTTPException(status_code=400, detail="Email sending is not available from this page.")
-    require_page_permission(current_user, session, payload.page, "read")
-
-    required_type = {"clients": "client", "suppliers": "supplier", "employees": "employee"}.get(payload.page)
-    if required_type and payload.recipient_type != required_type:
-        raise HTTPException(status_code=400, detail="Choose a recipient from this page before sending email.")
-
+def _resolve_email_recipient(recipient: EmailSendRecipient, current_user: User, session: Session, settings: AppSettings) -> str:
+    email = _normalize_email(recipient.email)
     contact = None
-    if payload.recipient_type in {"client", "supplier"}:
-        if not payload.recipient_id:
+    if recipient.recipient_type in {"client", "supplier"}:
+        if not recipient.recipient_id:
             raise HTTPException(status_code=400, detail="The recipient record is missing.")
-        contact = _get_contact(session, current_user, payload.recipient_type, payload.recipient_id)
+        require_page_permission(current_user, session, f"{recipient.recipient_type}s", "read")
+        contact = _get_contact(session, current_user, recipient.recipient_type, recipient.recipient_id)
         if _normalize_email(contact.email or "") != email:
             raise HTTPException(status_code=400, detail="The recipient email changed. Refresh the record and try again.")
         required = (
             settings.require_client_email_verification_before_send
-            if payload.recipient_type == "client"
+            if recipient.recipient_type == "client"
             else settings.require_supplier_email_verification_before_send
         )
         if required and not contact.email_verified:
@@ -273,25 +364,43 @@ def _resolve_recipient(payload: EmailSendRequest, current_user: User, session: S
                 detail={
                     "code": "recipient_email_unverified",
                     "message": "This contact email must be verified before sending. Send a verification code and confirm it first.",
+                    "recipient": {
+                        "type": recipient.recipient_type,
+                        "id": str(recipient.recipient_id),
+                    },
                 },
             )
-    elif payload.recipient_type == "employee":
-        if not payload.recipient_id:
+    elif recipient.recipient_type == "employee":
+        if not recipient.recipient_id:
             raise HTTPException(status_code=400, detail="The employee recipient record is missing.")
+        require_page_permission(current_user, session, "employees", "read")
         employee = session.exec(
-            select(User).where(User.id == payload.recipient_id, User.company_id == (current_user.company_id or ""))
+            select(User).where(
+                User.id == recipient.recipient_id,
+                User.company_id == resolve_company_id(session, current_user),
+            )
         ).first()
         if not employee or _normalize_email(employee.email or "") != email:
             raise HTTPException(status_code=400, detail="The employee email changed. Refresh the record and try again.")
-    elif payload.page in {"sales", "schedule"} and settings.require_client_email_verification_before_send:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "recipient_email_unverified",
-                "message": "Select the client record and verify its email before sending.",
-            },
-        )
     return email
+
+
+def _resolve_recipient(payload: EmailSendRequest, current_user: User, session: Session, settings: AppSettings) -> str:
+    if payload.page not in SEND_PAGES:
+        raise HTTPException(status_code=400, detail="Email sending is not available from this page.")
+    require_page_permission(current_user, session, payload.page, "read")
+    if not payload.recipient_email or not payload.recipient_type:
+        raise HTTPException(status_code=400, detail="Choose at least one recipient before sending.")
+    return _resolve_email_recipient(
+        EmailSendRecipient(
+            recipient_type=payload.recipient_type,
+            recipient_id=payload.recipient_id,
+            email=payload.recipient_email,
+        ),
+        current_user,
+        session,
+        settings,
+    )
 
 
 @router.post("/send")
@@ -309,7 +418,35 @@ def send_application_email(
                 "message": "Add and verify the company's Sending Email in Profile > General Settings before sending.",
             },
         )
-    recipient = _resolve_recipient(payload, current_user, session, settings)
+    if payload.page not in SEND_PAGES:
+        raise HTTPException(status_code=400, detail="Email sending is not available from this page.")
+    require_page_permission(current_user, session, payload.page, "read")
+    recipient_entries = payload.recipients
+    if not recipient_entries and payload.recipient_email and payload.recipient_type:
+        recipient_entries = [
+            EmailSendRecipient(
+                recipient_type=payload.recipient_type,
+                recipient_id=payload.recipient_id,
+                email=payload.recipient_email,
+            )
+        ]
+    if not recipient_entries:
+        raise HTTPException(status_code=400, detail="Choose at least one recipient before sending.")
+
+    recipient_emails = list(
+        dict.fromkeys(
+            _resolve_email_recipient(entry, current_user, session, settings)
+            for entry in recipient_entries
+        )
+    )
+    cc_emails = list(
+        dict.fromkeys(
+            _resolve_email_recipient(entry, current_user, session, settings)
+            for entry in payload.cc_recipients
+        )
+    )
+    cc_emails = [email for email in cc_emails if email not in recipient_emails]
+
     attachments = []
     if payload.attachment_base64:
         try:
@@ -325,7 +462,8 @@ def send_application_email(
 
     try:
         send_email(
-            recipient=recipient,
+            recipient=recipient_emails,
+            cc_recipients=cc_emails,
             subject=payload.subject.strip(),
             text_body=payload.text_body,
             reply_to=settings.sending_email,

@@ -12,7 +12,7 @@ const DEFAULT_OPTIONS = [
  */
 export default function Filter_SourceToggle({ value, onChange, options = DEFAULT_OPTIONS, size = "sm", className="" }) {
   return (
-    <div className={`btn-group btn-group-${size} flex-shrink-0 ${className}`.trim()} role="group" aria-label="Sale source">
+    <div className={`btn-group-${size} d-flex flex-shrink-0 gap-2 ${className}`.trim()} role="group" aria-label="Sale source">
       {options.map(([optionValue, label]) => (
         <Button_App
           key={optionValue}

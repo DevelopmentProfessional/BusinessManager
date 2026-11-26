@@ -578,8 +578,8 @@ export const tasksAPI = {
 
 export const attendanceAPI = {
   ...createISUDApi("attendance"),
-  getByUser: (userId) => api.get(`/isud/attendance?employee_id=${userId}`),
-  getByUserAndDate: (userId, date) => api.get(`/isud/attendance?employee_id=${userId}&date=${date}`),
+  getByUser: (userId) => api.get(`/isud/attendance?user_id=${userId}`),
+  getByUserAndDate: (userId, date) => api.get(`/isud/attendance?user_id=${userId}&date=${date}`),
   me: () => api.get("/auth/attendance/me"),
   checkUser: () => api.get("/auth/attendance/check-user"),
   clockIn: () => api.post("/auth/attendance/clock-in", {}),
@@ -889,6 +889,9 @@ export const settingsAPI = {
 };
 
 export const emailAPI = {
+  searchContacts: (query, page) => api.get("/email/contacts", { params: { q: query, page } }),
+  getContactsByIds: (type, ids, page) =>
+    api.get("/email/contacts", { params: { type, ids: ids.join(","), page } }),
   requestSendingEmailVerification: (email) => api.post("/email/sending-email/verification", { email }),
   confirmSendingEmailVerification: (code) => api.post("/email/sending-email/verification/confirm", { code }),
   requestContactEmailVerification: (entityType, entityId) =>

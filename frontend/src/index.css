@@ -259,6 +259,16 @@ textarea {
   overscroll-behavior: auto !important;
 }
 
+/* Tables must chain vertical scrolling to their parent surface (modal body or
+   page scroll surface): the inner table scrolls first, then the ancestor
+   continues scrolling once the table reaches its boundary. Horizontal
+   overscroll stays contained so edge swipes don't trigger browser nav. */
+table,
+.table-responsive {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto !important;
+}
+
 /* ==========================================================================
    PREDEFINED COMPONENT STYLES
    Foundational styles derived from runtime tokens for standard UI elements.
@@ -3193,6 +3203,11 @@ body.training-mode .profile-footer-nav .btn.profile-footer-general-btn.rounded-p
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
   gap: 0.35rem;
+}
+
+.sales-history-filter-grid > * {
+  margin-top: 1rem !important;
+  margin-bottom: 0.25rem !important;
 }
 
 .sales-history-price-range {

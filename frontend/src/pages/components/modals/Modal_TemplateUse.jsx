@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, CheckIcon, DocumentTextIcon } from "../../../icons";
+import { XMarkIcon, PrinterIcon, PencilSquareIcon, ArrowDownTrayIcon, EnvelopeIcon, DocumentTextIcon } from "../../../icons";
 import { templatesAPI, clientsAPI, clientCartAPI, inventoryAPI, purchaseOrdersAPI, emailAPI, settingsAPI } from "../../../services/api";
 import Modal from "./Modal";
 import Modal_Template_Editor from "./Modal_TemplateEdit";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import useStore from "../../../services/useStore";
+import Accordion from "../accordions/Accordion";
+import EmailComposer from "./EmailComposer";
 import {
   renderTemplate,
   buildClientVariables,
@@ -38,6 +40,37 @@ const usesCatalogueVariables = (template) => (
   || template?.content?.includes("{{catalogue_item.")
 );
 
+const createPrintableDocument = (html, title) => `<!DOCTYPE html><html><head>
+  <meta charset="utf-8"/>
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           font-size: 13px; line-height: 1.6; padding: 32px; margin: 0;
+           color: #111; background: #fff; }
+    img { max-width: 100%; height: auto; display: block; }
+    table { border-collapse: collapse; }
+    td, th { vertical-align: top; word-break: break-word; }
+    @page { margin: 20mm; }
+    @media print {
+      body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head><body>${html}</body></html>`;
+
+const createContactEntry = (type, record) => {
+  const name = record?.name
+    || (type === "employee" ? `${record?.first_name || ""} ${record?.last_name || ""}`.trim() : "");
+  if (!record?.id || !record?.email || !name) return null;
+  return {
+    type,
+    id: String(record.id),
+    name,
+    email: record.email,
+    email_verified: Boolean(record.email_verified),
+  };
+};
+
 /**
  * Props:
  *  page          – 'clients' | 'employees' | 'sales' | 'schedule' | 'suppliers'
@@ -63,15 +96,14 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const [renderedHtml, setRenderedHtml] = useState("");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorTemplate, setEditorTemplate] = useState(null);
-  const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
+  const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = useState(false);
+  const [isEmailComposerOpen, setIsEmailComposerOpen] = useState(false);
+  const [emailDrafts, setEmailDrafts] = useState([]);
+  const [emailDraftsLoading, setEmailDraftsLoading] = useState(false);
+  const [emailDraftLoadError, setEmailDraftLoadError] = useState("");
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [emailSendError, setEmailSendError] = useState("");
-  const [recipientVerificationRequired, setRecipientVerificationRequired] = useState(false);
-  const [recipientVerificationCode, setRecipientVerificationCode] = useState("");
-  const [recipientVerificationStatus, setRecipientVerificationStatus] = useState("");
-  const [recipientVerificationLoading, setRecipientVerificationLoading] = useState(false);
-  const [recipientEmailVerified, setRecipientEmailVerified] = useState(Boolean(entity?.email_verified || client?.email_verified));
+  const [sendingDraftId, setSendingDraftId] = useState("");
+  const [verificationLoadingDraftId, setVerificationLoadingDraftId] = useState("");
   const [emailSettings, setEmailSettings] = useState(settings || {});
   const [emailSettingsLoading, setEmailSettingsLoading] = useState(true);
   const [clientInvoiceTx, setClientInvoiceTx] = useState(null);
@@ -91,26 +123,8 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
   const companyName = emailSettings?.company_name?.trim() || emailSettings?.business_name?.trim() || "Invoice";
   const isMultiEntitySelection = selectedEntities.length > 1;
   const recipientEmail = (client?.email || entity?.email || employee?.email || "").trim();
-  const recipientType = page === "clients" ? "client"
-    : page === "suppliers" ? "supplier"
-      : page === "employees" ? "employee"
-        : client?.id ? "client"
-          : employee?.id ? "employee"
-            : "external";
-  const recipientId = page === "clients" || page === "suppliers" || page === "employees"
-    ? entity?.id
-    : client?.id || employee?.id;
-  const canVerifyRecipient = ["client", "supplier"].includes(recipientType) && Boolean(recipientId);
   const isPayslip = filterType === "payslip";
   const isPurchaseOrderTemplate = page === "suppliers" && selected?.template_type === "purchase_order";
-
-  useEffect(() => {
-    setRecipientEmailVerified(Boolean(entity?.email_verified || client?.email_verified));
-    setRecipientVerificationRequired(false);
-    setRecipientVerificationCode("");
-    setRecipientVerificationStatus("");
-    setEmailSendError("");
-  }, [recipientId, recipientEmail, entity?.email_verified, client?.email_verified]);
 
   useEffect(() => {
     let active = true;
@@ -493,49 +507,10 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     return `${safeName || "invoice"}${purchaseOrderSuffix}${selectionSuffix}.pdf`;
   }, [selected?.name, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number, isMultiEntitySelection, selectedEntities.length]);
 
-  const emailSubject = useMemo(
-    () => isPurchaseOrderTemplate && purchaseOrder?.po_number
-      ? `Purchase Order ${purchaseOrder.po_number} from ${companyName}`
-      : `${selected?.name || "Document"} from ${companyName}`,
-    [selected?.name, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number]
-  );
-
-  const emailBody = useMemo(() => {
-    if (isPurchaseOrderTemplate) {
-      return [
-        `Hello ${entity?.contact_person || entity?.name || "there"},`,
-        "",
-        `Please review the attached purchase order${purchaseOrder?.po_number ? ` ${purchaseOrder.po_number}` : ""}.`,
-        "Please confirm receipt and let us know if any changes are needed.",
-        "",
-        `Thanks,`,
-        companyName,
-      ].join("\n");
-    }
-    const customerName = client?.name || entity?.name || "there";
-    return [`Hello ${customerName},`, "", `Please find your document from ${companyName} attached.`, "If you have any questions, reply to this email and we will help right away.", "", `Thanks,`, companyName].join("\n");
-  }, [client?.name, entity?.name, entity?.contact_person, companyName, isPurchaseOrderTemplate, purchaseOrder?.po_number]);
-
   // Build the full HTML document for print / preview iframe
   const iframeContent = useMemo(() => {
     if (!renderedHtml) return "";
-    return `<!DOCTYPE html><html><head>
-      <meta charset="utf-8"/>
-      <title>${companyName}</title>
-      <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-               font-size: 13px; line-height: 1.6; padding: 32px; margin: 0;
-               color: #111; background: #fff; }
-        img { max-width: 100%; height: auto; display: block; }
-        table { border-collapse: collapse; }
-        td, th { vertical-align: top; word-break: break-word; }
-        @page { margin: 20mm; }
-        @media print {
-          body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-      </style>
-    </head><body>${renderedHtml}</body></html>`;
+    return createPrintableDocument(renderedHtml, companyName);
   }, [renderedHtml, companyName]);
 
   const createPdfBlob = useCallback(async (fullHtml) => {
@@ -643,102 +618,308 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
     }
   };
 
-  const handleSendEmail = async () => {
+  const createEmailDocumentHtml = useCallback((records, itemsForCatalogue = []) => {
+    let html;
+    if (usesCatalogueVariables(selected) && itemsForCatalogue.length > 0) {
+      const templateSettings = { ...emailSettings, ...(settings || {}) };
+      html = renderTemplate(
+        selected.content,
+        buildCatalogueVariables(itemsForCatalogue, page, currentUser, templateSettings)
+      );
+    } else {
+      html = records.map((record, index) => {
+        const pageBreak = index === 0 ? "" : ' style="break-before:page;page-break-before:always;"';
+        return `<div${pageBreak}>${renderTemplate(selected.content, buildVars(record))}</div>`;
+      }).join("");
+    }
+    return createPrintableDocument(normalizeImageAlignment(html), companyName);
+  }, [selected, emailSettings, settings, page, currentUser, buildVars, normalizeImageAlignment, companyName]);
+
+  const openEmailComposer = async () => {
     if (!selected) return;
-    setEmailSendError("");
-    if (isMultiEntitySelection) {
-      setEmailSendError("Email is unavailable for a combined document with multiple selected records.");
-      return;
-    }
-    if (emailSettingsLoading) {
-      setEmailSendError("Company email settings are still loading. Please try again.");
-      return;
-    }
-    if (!emailSettings?.sending_email || !emailSettings?.sending_email_verified) {
-      setEmailSendError("Add and verify the company's Sending Email in Profile > General Settings before sending.");
-      return;
-    }
-    if (!recipientEmail) {
-      setEmailSendError("Add an email address to this recipient before sending.");
-      return;
-    }
+    setIsEmailComposerOpen(true);
+    setEmailDrafts([]);
+    setEmailDraftsLoading(true);
+    setEmailDraftLoadError("");
+
     try {
-      if (isPurchaseOrderTemplate && (!purchaseOrder || purchaseOrderLoading || purchaseOrderError)) return;
-      setIsSendingEmail(true);
-      let blob = pdfCacheRef.current.get(pdfCacheKey);
-      if (!blob && iframeContent) {
-        blob = await createPdfBlob(iframeContent);
-        pdfCacheRef.current.set(pdfCacheKey, blob);
-      }
-
-      let attachmentBase64;
-      if (blob) {
-        attachmentBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-          reader.onerror = () => reject(reader.error || new Error("Unable to read the generated PDF attachment."));
-          reader.readAsDataURL(blob);
+      const records = selectedEntities.length > 0 ? selectedEntities : entity ? [entity] : [];
+      let groups = [];
+      if (page === "inventory") {
+        const itemsForSelection = catalogueItems.length > 0 ? catalogueItems : records;
+        const grouped = new Map();
+        itemsForSelection.forEach((item) => {
+          const supplierId = item?.supplier_id ? String(item.supplier_id) : "unassigned";
+          if (!grouped.has(supplierId)) {
+            grouped.set(supplierId, {
+              id: `inventory:${supplierId}`,
+              label: item?.supplier_name || "Items without a supplier",
+              records: [],
+              catalogueItems: [],
+              supplierId: supplierId === "unassigned" ? "" : supplierId,
+            });
+          }
+          const group = grouped.get(supplierId);
+          group.records.push(item);
+          group.catalogueItems.push(item);
         });
+        groups = [...grouped.values()];
+      } else if (records.length > 1 && ["clients", "employees", "suppliers"].includes(page)) {
+        groups = records.map((record) => ({
+          id: `${page}:${record.id}`,
+          label: record.name || `${record.first_name || ""} ${record.last_name || ""}`.trim() || "Selected record",
+          records: [record],
+          catalogueItems: [],
+        }));
+      } else {
+        groups = [{
+          id: `${page}:document`,
+          label: selected.name || "Document",
+          records: records.length > 0 ? records : [entity].filter(Boolean),
+          catalogueItems,
+        }];
       }
 
+      const supplierIds = page === "inventory"
+        ? groups.map((group) => group.supplierId).filter(Boolean)
+        : [];
+      const managerIds = page === "employees"
+        ? groups.map((group) => group.records[0]?.reports_to).filter(Boolean).map(String)
+        : [];
+      const lookupResults = await Promise.all([
+        supplierIds.length > 0
+          ? emailAPI.getContactsByIds("supplier", [...new Set(supplierIds)], page)
+          : Promise.resolve({ data: { contacts: [] } }),
+        managerIds.length > 0
+          ? emailAPI.getContactsByIds("employee", [...new Set(managerIds)], page)
+          : Promise.resolve({ data: { contacts: [] } }),
+      ].map((request) => request.then(
+        (response) => ({ response }),
+        (error) => ({ error })
+      )));
+      const lookupContacts = lookupResults.map((result) => result.response?.data?.contacts || []);
+      const lookupError = lookupResults.find((result) => result.error)?.error;
+      if (lookupError) {
+        setEmailDraftLoadError(
+          lookupError?.response?.data?.detail || lookupError?.message || "Some automatic recipient details could not be loaded."
+        );
+      }
+      const suppliersById = new Map(lookupContacts[0].map((contact) => [String(contact.id), contact]));
+      const employeesById = new Map(lookupContacts[1].map((contact) => [String(contact.id), contact]));
+
+      const drafts = groups.map((group) => {
+        const record = group.records[0] || entity || {};
+        const supplierContact = group.supplierId ? suppliersById.get(group.supplierId) : null;
+        if (supplierContact?.name) group.label = supplierContact.name;
+        const recipientType = page === "inventory" || page === "suppliers"
+          ? "supplier"
+          : page === "employees"
+            ? "employee"
+            : page === "clients"
+              ? "client"
+              : client?.id
+                ? "client"
+                : employee?.id
+                  ? "employee"
+                  : "";
+        const primaryRecipient = page === "inventory"
+          ? supplierContact
+          : page === "clients" || page === "employees" || page === "suppliers"
+            ? record
+            : client || employee || entity;
+        const to = recipientType && primaryRecipient
+          ? [createContactEntry(recipientType, primaryRecipient)].filter(Boolean)
+          : recipientEmail && recipientType
+            ? [{ type: recipientType, id: record.id ? String(record.id) : undefined, name: record.name || "", email: recipientEmail }]
+            : [];
+        const manager = page === "employees" && record.reports_to
+          ? employeesById.get(String(record.reports_to))
+          : null;
+        const cc = manager ? [createContactEntry("employee", manager)].filter(Boolean) : [];
+        const greetingName = page === "inventory"
+          ? supplierContact?.name || group.label
+          : page === "employees"
+            ? `${record.first_name || ""} ${record.last_name || ""}`.trim()
+            : record.contact_person || record.name || client?.name || "there";
+        const body = isPurchaseOrderTemplate
+          ? [
+              `Hello ${greetingName || "there"},`,
+              "",
+              `Please review the attached purchase order${purchaseOrder?.po_number ? ` ${purchaseOrder.po_number}` : ""}.`,
+              "Please confirm receipt and let us know if any changes are needed.",
+              "",
+              "Thanks,",
+              companyName,
+            ].join("\n")
+          : [
+              `Hello ${greetingName || "there"},`,
+              "",
+              `Please find the attached ${selected.name || "document"} from ${companyName}.`,
+              "If you have any questions, reply to this email and we will help right away.",
+              "",
+              "Thanks,",
+              companyName,
+            ].join("\n");
+        const safeRecipient = String(group.label || "document")
+          .replace(/[^a-z0-9_\s-]/gi, "")
+          .trim()
+          .replace(/\s+/g, "_")
+          .toLowerCase();
+        const baseName = pdfFileName.replace(/\.pdf$/i, "");
+        const documentHtml = createEmailDocumentHtml(group.records, group.catalogueItems);
+        const verification = null;
+        return {
+          id: group.id,
+          label: group.label,
+          documentHtml,
+          attachmentName: `${baseName}_${safeRecipient || "document"}.pdf`,
+          value: {
+            to,
+            cc,
+            subject: isPurchaseOrderTemplate && purchaseOrder?.po_number
+              ? `Purchase Order ${purchaseOrder.po_number} from ${companyName}`
+              : `${selected.name || "Document"} from ${companyName}`,
+            body,
+          },
+          error: "",
+          success: "",
+          verification,
+          verificationCode: "",
+          verificationStatus: "",
+        };
+      });
+      setEmailDrafts(drafts);
+    } catch (error) {
+      setEmailDraftLoadError(error?.response?.data?.detail || error?.message || "Unable to prepare the email drafts.");
+    } finally {
+      setEmailDraftsLoading(false);
+    }
+  };
+
+  const updateEmailDraft = (draftId, patch) => {
+    setEmailDrafts((previous) => previous.map((draft) => (
+      draft.id === draftId ? { ...draft, ...patch } : draft
+    )));
+  };
+
+  const handleSendEmail = async (draft) => {
+    if (!selected || !draft) return;
+    if (emailSettingsLoading || !emailSettings?.sending_email || !emailSettings?.sending_email_verified) {
+      updateEmailDraft(draft.id, {
+        error: "Verify the company's Sending Email in Profile > General Settings before sending.",
+        success: "",
+      });
+      return;
+    }
+    if (isPurchaseOrderTemplate && (!purchaseOrder || purchaseOrderLoading || purchaseOrderError)) return;
+
+    setSendingDraftId(draft.id);
+    updateEmailDraft(draft.id, { error: "", success: "", verification: null });
+    try {
+      const cacheKey = `${pdfCacheKey}:${draft.id}`;
+      let blob = pdfCacheRef.current.get(cacheKey);
+      if (!blob) {
+        blob = await createPdfBlob(draft.documentHtml);
+        pdfCacheRef.current.set(cacheKey, blob);
+      }
+      const attachmentBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = () => reject(reader.error || new Error("Unable to read the generated PDF attachment."));
+        reader.readAsDataURL(blob);
+      });
+      const toApiRecipient = ({ type, id, email }) => ({
+        recipient_type: type,
+        ...(id ? { recipient_id: id } : {}),
+        email,
+      });
       await emailAPI.send({
         page,
-        recipient_type: recipientType,
-        ...(recipientId ? { recipient_id: recipientId } : {}),
-        recipient_email: recipientEmail,
-        subject: emailSubject,
-        text_body: emailBody,
-        ...(attachmentBase64 ? { attachment_name: pdfFileName, attachment_base64: attachmentBase64 } : {}),
+        recipients: draft.value.to.map(toApiRecipient),
+        cc_recipients: draft.value.cc.map(toApiRecipient),
+        subject: draft.value.subject,
+        text_body: draft.value.body,
+        attachment_name: draft.attachmentName,
+        attachment_base64: attachmentBase64,
       });
-      setIsEmailPreviewOpen(false);
-      onClose?.();
+      updateEmailDraft(draft.id, { success: "Email sent successfully.", error: "" });
     } catch (error) {
       const detail = error?.response?.data?.detail;
-      if (detail?.code === "recipient_email_unverified") {
-        setRecipientVerificationRequired(true);
-        setEmailSendError(detail.message || "Verify this recipient's email before sending.");
-      } else if (detail?.code === "sender_email_unverified") {
-        setEmailSendError(detail.message || "Add and verify the company's Sending Email in Profile > General Settings before sending.");
-      } else {
-        setEmailSendError(typeof detail === "string" ? detail : error?.message || "Unable to send email.");
-      }
+      const allRecipients = [...draft.value.to, ...draft.value.cc];
+      const verifyTarget = detail?.recipient || (
+        detail?.code === "recipient_email_unverified"
+          ? allRecipients.find((recipient) =>
+              ["client", "supplier"].includes(recipient.type)
+              && recipient.id
+              && !recipient.email_verified
+            )
+          : null
+      );
+      updateEmailDraft(draft.id, {
+        error: detail?.message || (typeof detail === "string" ? detail : error?.message || "Unable to send email."),
+        success: "",
+        verification: detail?.code === "recipient_email_unverified" && verifyTarget
+          ? { type: verifyTarget.type || verifyTarget.recipient_type, id: verifyTarget.id || verifyTarget.recipient_id }
+          : null,
+        verificationCode: "",
+        verificationStatus: "",
+      });
     } finally {
-      setIsSendingEmail(false);
+      setSendingDraftId("");
     }
   };
 
-  const handleRequestRecipientVerification = async () => {
-    if (!canVerifyRecipient) return;
-    setRecipientVerificationLoading(true);
-    setRecipientVerificationStatus("");
+  const handleRequestRecipientVerification = async (draft) => {
+    if (!draft?.verification) return;
+    setVerificationLoadingDraftId(draft.id);
+    updateEmailDraft(draft.id, { verificationStatus: "" });
     try {
-      await emailAPI.requestContactEmailVerification(recipientType, recipientId);
-      setRecipientVerificationStatus("Verification code sent to the recipient.");
-      setRecipientVerificationCode("");
+      await emailAPI.requestContactEmailVerification(draft.verification.type, draft.verification.id);
+      updateEmailDraft(draft.id, { verificationStatus: "Verification code sent to the recipient." });
     } catch (error) {
       const detail = error?.response?.data?.detail;
-      setRecipientVerificationStatus(typeof detail === "string" ? detail : error?.message || "Unable to send a verification code.");
+      updateEmailDraft(draft.id, {
+        verificationStatus: typeof detail === "string" ? detail : error?.message || "Unable to send a verification code.",
+      });
     } finally {
-      setRecipientVerificationLoading(false);
+      setVerificationLoadingDraftId("");
     }
   };
 
-  const handleConfirmRecipientVerification = async () => {
-    if (!canVerifyRecipient || recipientVerificationCode.length !== 8) return;
-    setRecipientVerificationLoading(true);
-    setRecipientVerificationStatus("");
+  const handleConfirmRecipientVerification = async (draft) => {
+    if (!draft?.verification || draft.verificationCode.length !== 8) return;
+    setVerificationLoadingDraftId(draft.id);
+    updateEmailDraft(draft.id, { verificationStatus: "" });
     try {
-      await emailAPI.confirmContactEmailVerification(recipientType, recipientId, recipientVerificationCode);
-      setRecipientEmailVerified(true);
-      setRecipientVerificationRequired(false);
-      setRecipientVerificationCode("");
-      setRecipientVerificationStatus("Recipient email verified. Send the email again to continue.");
-      setEmailSendError("");
+      await emailAPI.confirmContactEmailVerification(
+        draft.verification.type,
+        draft.verification.id,
+        draft.verificationCode
+      );
+      const markVerified = (recipients) => recipients.map((recipient) => (
+        recipient.type === draft.verification.type
+        && recipient.id === draft.verification.id
+          ? { ...recipient, email_verified: true }
+          : recipient
+      ));
+      updateEmailDraft(draft.id, {
+        value: {
+          ...draft.value,
+          to: markVerified(draft.value.to),
+          cc: markVerified(draft.value.cc),
+        },
+        verification: null,
+        verificationCode: "",
+        verificationStatus: "Recipient email verified. Send the email again to continue.",
+        error: "",
+      });
     } catch (error) {
       const detail = error?.response?.data?.detail;
-      setRecipientVerificationStatus(typeof detail === "string" ? detail : error?.message || "Unable to verify the recipient email.");
+      updateEmailDraft(draft.id, {
+        verificationStatus: typeof detail === "string" ? detail : error?.message || "Unable to verify the recipient email.",
+      });
     } finally {
-      setRecipientVerificationLoading(false);
+      setVerificationLoadingDraftId("");
     }
   };
 
@@ -886,6 +1067,14 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
                   </div>
                 )}
                 <Button_Toolbar
+                  icon={DocumentTextIcon}
+                  label="Preview"
+                  onClick={() => setIsDocumentPreviewOpen(true)}
+                  disabled={!selected || !iframeContent || purchaseOrderActionDisabled}
+                  className="btn-outline-secondary"
+                  title="Preview the selected records as a document"
+                />
+                <Button_Toolbar
                   icon={PrinterIcon}
                   label=""
                   compact
@@ -903,15 +1092,15 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
                   className="btn-outline-secondary"
                   title={isDownloadingPdf ? "Downloading PDF" : "Download PDF"}
                 />
-                {!isPayslip && !isMultiEntitySelection && (isPurchaseOrderTemplate || selected?.template_type === "email" || recipientEmail) && (
+                {!isPayslip && (
                   <Button_Toolbar
                     icon={EnvelopeIcon}
                     label=""
                     compact
-                    onClick={() => setIsEmailPreviewOpen(true)}
+                    onClick={openEmailComposer}
                     disabled={!selected || purchaseOrderActionDisabled}
                     className="btn-outline-secondary"
-                    title="Review and send email"
+                    title="Compose an email with the generated PDF"
                   />
                 )}
                 {!isPayslip && canEditTemplates && (
@@ -951,7 +1140,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
         {isMultiEntitySelection && (
           <div className="alert alert-info py-1 small" role="status">
-            This document combines {selectedEntities.length} selected records. Email is available only for one selected record.
+            This document combines {selectedEntities.length} selected records. Email drafts are separated by supplier, employee, or client when applicable.
           </div>
         )}
 
@@ -1013,90 +1202,99 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
 
       {isEditorOpen && editorTemplate && <Modal_Template_Editor template={editorTemplate} onSave={handleSaveTemplate} onClose={() => { setIsEditorOpen(false); setEditorTemplate(null); }} />}
 
-      {isEmailPreviewOpen && selected && !isMultiEntitySelection && (
+      {isDocumentPreviewOpen && selected && (
         <Modal
-          isOpen={isEmailPreviewOpen}
-          onClose={() => setIsEmailPreviewOpen(false)}
-          title="Email Preview"
-          footer={
-            <div className="align-items-center d-flex gap-2 justify-content-start">
+          isOpen={isDocumentPreviewOpen}
+          onClose={() => setIsDocumentPreviewOpen(false)}
+          title="Document Preview"
+          headerActions={
+            <div className="align-items-center d-flex gap-2">
               <Button_Toolbar
-                icon={EnvelopeIcon}
-                label={emailSettingsLoading ? "Loading settings..." : isSendingEmail ? "Sending..." : "Send email"}
-                onClick={handleSendEmail}
-                disabled={!selected || isSendingEmail || emailSettingsLoading}
-                className="btn-primary"
-                title="Send this email with the generated PDF attachment"
+                icon={PrinterIcon}
+                label="Print"
+                onClick={handlePrint}
+                disabled={!iframeContent || purchaseOrderActionDisabled}
+                className="btn-outline-secondary"
+                title="Print the selected records"
               />
-              <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setIsEmailPreviewOpen(false)} className="btn-outline-secondary" title="Close" />
+              <Button_Toolbar
+                icon={ArrowDownTrayIcon}
+                label="Download PDF"
+                onClick={handleDownloadPdf}
+                disabled={!iframeContent || isDownloadingPdf || purchaseOrderActionDisabled}
+                className="btn-outline-secondary"
+                title="Download the selected records as a PDF"
+              />
             </div>
           }
+          footer={
+            <Button_Toolbar icon={XMarkIcon} label="Close" onClick={() => setIsDocumentPreviewOpen(false)} className="btn-outline-secondary" title="Close preview" />
+          }
         >
-          <div className="d-flex flex-column flex-grow-1 min-h-0 text-gray-900 dark:text-gray-100">
-            <div className="bg-gray-50 border-bottom border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-1 py-1">
-              <div className="mb-1 small text-gray-500">To</div>
-              <div className="dark:text-white text-gray-900 text-sm">{recipientEmail || "No recipient email available"}</div>
-              {emailSendError && <div className="alert alert-danger mt-2 py-2 small" role="alert">{emailSendError}</div>}
-              {recipientVerificationRequired && canVerifyRecipient && (
-                <div className="border rounded mt-2 p-2">
-                  <div className="align-items-center d-flex flex-wrap gap-2 mb-2">
-                    <span className={`badge ${recipientEmailVerified ? "bg-success" : "bg-secondary"}`}>
-                      {recipientEmailVerified ? "Recipient email verified" : "Recipient email not verified"}
-                    </span>
-                    <Button_Toolbar
-                      icon={EnvelopeIcon}
-                      label={recipientVerificationLoading ? "Sending..." : "Send verification code"}
-                      onClick={handleRequestRecipientVerification}
-                      disabled={recipientVerificationLoading || recipientEmailVerified}
-                      className="btn-outline-primary"
-                      title="Send an email verification code to this contact"
-                    />
-                  </div>
-                  {!recipientEmailVerified && (
-                    <div className="align-items-center d-flex flex-wrap gap-2">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={8}
-                        value={recipientVerificationCode}
-                        onChange={(event) => setRecipientVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
-                        className="form-control form-control-sm"
-                        placeholder="8-digit code"
-                        aria-label="Recipient email verification code"
-                      />
-                      <Button_Toolbar
-                        icon={CheckIcon}
-                        label="Verify"
-                        onClick={handleConfirmRecipientVerification}
-                        disabled={recipientVerificationLoading || recipientVerificationCode.length !== 8}
-                        className="btn-outline-success"
-                        title="Verify the recipient email address"
-                      />
-                    </div>
-                  )}
-                  {recipientVerificationStatus && (
-                    <div className={`small mt-2 ${/sent|verified/i.test(recipientVerificationStatus) ? "text-success" : "text-danger"}`} role="status">
-                      {recipientVerificationStatus}
-                    </div>
-                  )}
-                </div>
-              )}
+          <iframe
+            srcDoc={iframeContent}
+            title="Preview of the selected template output"
+            className="border-0 w-100"
+            style={{ minHeight: "70vh", background: "#fff" }}
+          />
+        </Modal>
+      )}
 
-              <div className="mb-1 mt-3 small text-gray-500">Subject</div>
-              <div className="dark:text-white text-gray-900 text-sm">{emailSubject}</div>
-
-              <div className="mb-1 mt-3 small text-gray-500">Attachment</div>
-              <div className="dark:text-white text-gray-900 text-sm">
-                {isPurchaseOrderTemplate ? `${pdfFileName} (share with attachment or download to attach manually)` : `${pdfFileName} (generated on send)`}
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-900 px-1 py-1">
-              <div className="mb-2 small text-gray-500">Body</div>
-              <pre className="dark:text-gray-200 m-0 text-gray-800 text-sm" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
-                {emailBody}
-              </pre>
-            </div>
+      {isEmailComposerOpen && selected && (
+        <Modal
+          isOpen={isEmailComposerOpen}
+          onClose={() => setIsEmailComposerOpen(false)}
+          title="Compose Email"
+          footer={
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Close"
+              onClick={() => setIsEmailComposerOpen(false)}
+              className="btn-outline-secondary"
+              title="Close email composer"
+            />
+          }
+        >
+          <div className="d-flex flex-column gap-2">
+            {emailDraftsLoading && <div className="small text-muted">Preparing recipient drafts…</div>}
+            {emailDraftLoadError && <div className="alert alert-warning py-2 small" role="status">{emailDraftLoadError}</div>}
+            {!emailDraftsLoading && emailDrafts.length === 0 && !emailDraftLoadError && (
+              <div className="alert alert-info py-2 small">There are no selected records to prepare an email for.</div>
+            )}
+            {emailDrafts.map((draft, index) => (
+              <Accordion
+                key={draft.id}
+                variant="settings"
+                header={
+                  <span className="align-items-center d-flex gap-2">
+                    <span>{draft.label}</span>
+                    {draft.success && <span className="badge bg-success">Sent</span>}
+                    {!draft.value.to.length && <span className="badge bg-warning text-dark">Add recipient</span>}
+                  </span>
+                }
+                defaultOpen={index === 0}
+              >
+                <EmailComposer
+                  page={page}
+                  value={draft.value}
+                  onChange={(value) => updateEmailDraft(draft.id, { value, error: "", success: "" })}
+                  fromEmail={emailSettings?.sending_email}
+                  senderVerified={Boolean(emailSettings?.sending_email && emailSettings?.sending_email_verified)}
+                  attachmentName={draft.attachmentName}
+                  sending={sendingDraftId === draft.id}
+                  error={draft.error}
+                  success={draft.success}
+                  verification={draft.verification}
+                  verificationCode={draft.verificationCode}
+                  verificationStatus={draft.verificationStatus}
+                  verificationLoading={verificationLoadingDraftId === draft.id}
+                  onVerificationCodeChange={(verificationCode) => updateEmailDraft(draft.id, { verificationCode })}
+                  onRequestVerification={() => handleRequestRecipientVerification(draft)}
+                  onConfirmVerification={() => handleConfirmRecipientVerification(draft)}
+                  onSend={() => handleSendEmail(draft)}
+                />
+              </Accordion>
+            ))}
           </div>
         </Modal>
       )}
