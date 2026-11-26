@@ -50,11 +50,11 @@ from starlette.responses import Response
 import uvicorn
 
 try:
-    from backend.routers import auth, isud, settings, email, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules
+    from backend.routers import auth, isud, settings, email, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, employee_sales_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules
 except ModuleNotFoundError as e:
     # Fallback if executed with CWD=backend and package not resolved.
-    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.email", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin", "backend.routers.company_registration", "backend.routers.discount_rules"}:
-        from routers import auth, isud, settings, email, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules  # type: ignore
+    if getattr(e, "name", None) in {"backend.routers", "backend.routers.auth", "backend.routers.isud", "backend.routers.settings", "backend.routers.email", "backend.routers.database_connections", "backend.routers.tasks", "backend.routers.reports", "backend.routers.leave_requests", "backend.routers.payroll", "backend.routers.chat", "backend.routers.templates", "backend.routers.features", "backend.routers.client_cart", "backend.routers.employee_sales_cart", "backend.routers.portal_orders", "backend.routers.production", "backend.routers.assets", "backend.routers.products", "backend.routers.inventory_categories", "backend.routers.document_tags", "backend.routers.workflows", "backend.routers.audit", "backend.routers.financial", "backend.routers.admin", "backend.routers.company_registration", "backend.routers.discount_rules"}:
+        from routers import auth, isud, settings, email, database_connections, tasks, reports, leave_requests, payroll, payment_accounts, chat, templates, features, client_cart, employee_sales_cart, portal_orders, production, assets, products, inventory_categories, document_tags, workflows, audit, financial, admin, company_registration, discount_rules  # type: ignore
     else:
         raise
 
@@ -265,6 +265,7 @@ app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(templates.router, prefix="/api/v1", tags=["templates"])
 app.include_router(features.router, prefix="/api/v1", tags=["features"])
 app.include_router(client_cart.router, prefix="/api/v1", tags=["client-cart"])
+app.include_router(employee_sales_cart.router, prefix="/api/v1", tags=["employee-sales-cart"])
 app.include_router(portal_orders.router, prefix="/api/v1", tags=["portal-orders"])
 app.include_router(production.router, prefix="/api/v1", tags=["production"])
 app.include_router(assets.router, prefix="/api/v1", tags=["assets"])

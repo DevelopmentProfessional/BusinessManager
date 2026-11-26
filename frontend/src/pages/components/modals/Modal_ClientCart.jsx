@@ -214,6 +214,7 @@ export default function Modal_ClientCart({ isOpen, onClose, client }) {
       state: {
         preSelectedClient: client,
         preloadCart: cartItems,
+        preloadCartSource: "client",
         checkoutReturnTo: {
           pathname: location.pathname,
           search: location.search,

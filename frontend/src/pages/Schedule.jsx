@@ -55,6 +55,8 @@
  *   2026-09-11 | GitHub Copilot | Applied completed checkout state immediately and rendered paid controls as solid white circles
  *   2026-09-11 | GitHub Copilot | Removed unused dark-mode toggle binding and aligned query-open effect dependencies
  *   2026-09-11 | GitHub Copilot | Made paid circles non-interactive and hid checkout after full payment
+ *   2026-11-26 | GitHub Copilot | Moved appointment checkout action from calendar cards into the edit form
+ *   2026-11-26 | GitHub Copilot | Show a paid checkmark on calendar appointments
  * ============================================================
  */
 
@@ -67,7 +69,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, clientCartAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
-import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, BellIcon, CurrencyDollarIcon } from "../icons";
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, CheckIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Modal_Schedule_Appointment from "./components/modals/Modal_Schedule_Appointment";
 import Modal_Schedule_Settings from "./components/modals/Modal_Schedule_Settings";
@@ -114,6 +116,12 @@ const STATUS_DOT_COLOR = {
   completed: "#22c55e", // green
   cancelled: "#ef4444", // red
 };
+
+const PaidCheckmark = () => (
+  <span className="schedule-paid-check" role="img" aria-label="Paid">
+    <CheckIcon aria-hidden="true" />
+  </span>
+);
 
 const parseScheduleServiceAddons = (rawValue) => {
   if (!rawValue) return [];
@@ -755,6 +763,14 @@ export default function Schedule() {
       setIsModalOpen(false);
       setEditingAppointment(null);
       setSelectedAttendees([]);
+      return {
+        ...(editingAppointment || {}),
+        ...(savedRecord && typeof savedRecord === "object" ? savedRecord : {}),
+        ...schedulePayload,
+        id: savedRecord?.id || scheduleId,
+        client_id: primaryClientId,
+        service_id: primaryServiceId,
+      };
     },
     [editingAppointment, normalizeIds, refreshSchedules, scheduleSettings.reminder_send_notification, services, syncScheduleAttendees]
   );
@@ -784,6 +800,7 @@ export default function Schedule() {
       navigate("/sales", {
         state: {
           preSelectedClient,
+          preloadCartSource: "schedule",
           scheduleId: appointment.id,
           preloadServiceId: appointment.service_id,
           preloadCart: [
@@ -817,26 +834,6 @@ export default function Schedule() {
       });
     },
     [clients, employees, location.hash, location.pathname, location.search, navigate, services]
-  );
-
-  const canShowPaymentAction = useCallback(
-    (appointment) => {
-      if (!canTogglePaidForAppointment(appointment)) return false;
-      return !appointment?.is_paid && canApprovePayments();
-    },
-    [canApprovePayments, canTogglePaidForAppointment]
-  );
-
-  const handleToggleAppointmentPaid = useCallback(
-    (e, appointment) => {
-      e.stopPropagation();
-      if (!appointment?.id) return;
-      if (!canEditAppointment(appointment)) return;
-      if (!canTogglePaidForAppointment(appointment)) return;
-      if (appointment.is_paid || !canApprovePayments()) return;
-      launchScheduleCheckout(appointment);
-    },
-    [canApprovePayments, canEditAppointment, canTogglePaidForAppointment, launchScheduleCheckout]
   );
 
   // ─── 14 DRAG & DROP HANDLERS ─────────────────────────────────────────────────
@@ -1046,23 +1043,6 @@ export default function Schedule() {
                 </div>
               ) : null;
             })()}
-            {/* Upcoming appointments indicator */}
-            {(() => {
-              const now = new Date();
-              const soon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-              const count = appointments.filter((a) => {
-                const d = new Date(a.appointment_date);
-                return d >= now && d <= soon && a.status !== "cancelled";
-              }).length;
-              return count > 0 ? (
-                <div className="align-items-center d-inline-flex justify-content-center position-relative" title={`${count} upcoming appointment${count > 1 ? "s" : ""} in the next 24h`} style={{ cursor: "default" }}>
-                  <BellIcon style={{ width: 20, height: 20, color: "#6b7280" }} />
-                  <span className="position-absolute" style={{ top: -4, right: -6, background: "#6b7280", color: "#fff", fontSize: "0.6rem", borderRadius: "9999px", padding: "0 4px", minWidth: 14, textAlign: "center", lineHeight: "14px" }}>
-                    {count}
-                  </span>
-                </div>
-              ) : null;
-            })()}
             <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
           </div>
         </div>
@@ -1233,23 +1213,13 @@ export default function Schedule() {
                                         onDragEnd={handleDragEnd}
                                         onClick={(e) => handleAppointmentClick(e, appointment)}
                                       >
+                                        {appointment.is_paid && <PaidCheckmark />}
                                         <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                           {primaryLabel}
                                         </div>
                                         {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                         {appointment.status && appointment.status !== "scheduled" && <span style={{ position: "absolute", bottom: 2, right: 3, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                       </div>
-                                      {canShowPaymentAction(appointment) && (
-                                        <button
-                                          type="button"
-                                          className={`schedule-paid-toggle schedule-paid-toggle--floating ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
-                                          title={appointment.is_paid ? "Initiate refund (manager approval required)" : "Open checkout to mark paid"}
-                                          aria-label={appointment.is_paid ? "Initiate refund for appointment" : "Open checkout for appointment payment"}
-                                          onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
-                                        >
-                                          <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
-                                        </button>
-                                      )}
                                     </div>
                                   );
                                 })}
@@ -1406,6 +1376,7 @@ export default function Schedule() {
                                       onDragEnd={handleDragEnd}
                                       onClick={(e) => handleAppointmentClick(e, appointment)}
                                     >
+                                      {appointment.is_paid && <PaidCheckmark />}
                                       <div className="appointment-time">{timeString}</div>
                                       <div className="appointment-service" style={isCancelled ? { textDecoration: "line-through" } : undefined}>
                                         {primaryLabel}
@@ -1413,17 +1384,6 @@ export default function Schedule() {
                                       {secondaryLabel && <div className="appointment-client">{secondaryLabel}</div>}
                                       {appointment.status && appointment.status !== "scheduled" && <span style={{ position: "absolute", bottom: 2, right: 3, display: "block", width: 5, height: 5, borderRadius: "50%", backgroundColor: STATUS_DOT_COLOR[appointment.status] || "#9ca3af" }} />}
                                     </div>
-                                    {canShowPaymentAction(appointment) && (
-                                      <button
-                                        type="button"
-                                        className={`schedule-paid-toggle schedule-paid-toggle--floating ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
-                                        title={appointment.is_paid ? "Initiate refund (manager approval required)" : "Open checkout to mark paid"}
-                                        aria-label={appointment.is_paid ? "Initiate refund for appointment" : "Open checkout for appointment payment"}
-                                        onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
-                                      >
-                                        <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
-                                      </button>
-                                    )}
                                   </div>
                                 );
                               })}
@@ -1527,6 +1487,7 @@ export default function Schedule() {
                                           onDragEnd={handleDragEnd}
                                           onClick={(e) => handleAppointmentClick(e, appointment)}
                                         >
+                                          {appointment.is_paid && <PaidCheckmark />}
                                           <div style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden" }}>
                                             <span className="appointment-service" style={{ ...(isCancelled ? { textDecoration: "line-through" } : {}), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                                               {primaryLabel}
@@ -1538,17 +1499,6 @@ export default function Schedule() {
                                             </div>
                                           )}
                                         </div>
-                                        {canShowPaymentAction(appointment) && (
-                                          <button
-                                            type="button"
-                                            className={`schedule-paid-toggle schedule-paid-toggle--month ${appointment.is_paid ? "is-paid" : "is-unpaid"}`}
-                                            title={appointment.is_paid ? "Initiate refund (manager approval required)" : "Open checkout to mark paid"}
-                                            aria-label={appointment.is_paid ? "Initiate refund for appointment" : "Open checkout for appointment payment"}
-                                            onClick={(e) => handleToggleAppointmentPaid(e, appointment)}
-                                          >
-                                            <CurrencyDollarIcon style={{ width: 9, height: 9 }} />
-                                          </button>
-                                        )}
                                       </div>
                                     );
                                   })
@@ -1622,6 +1572,7 @@ export default function Schedule() {
           appointment={editingAppointment}
           onSubmit={handleSubmitAppointment}
           onDelete={handleDeleteAppointment}
+          onPayAppointment={canApprovePayments() ? launchScheduleCheckout : undefined}
           onSendReminder={() => {
             setReminderAppointment(editingAppointment);
             setShowReminderModal(true);
@@ -2126,6 +2077,28 @@ export default function Schedule() {
           text-align: left;
           position: relative;
         }
+
+        .schedule-paid-check {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          z-index: 2;
+          display: inline-flex;
+          width: 16px;
+          height: 16px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.3);
+          color: #fff;
+          pointer-events: none;
+        }
+
+        .schedule-paid-check svg {
+          width: 11px;
+          height: 11px;
+          stroke-width: 3;
+        }
         
         .appointment-dot:hover {
           background: #0056b3;
@@ -2179,54 +2152,6 @@ export default function Schedule() {
 
         .appointment-event:hover {
           opacity: 0.85;
-        }
-
-        .schedule-paid-toggle {
-          width: 16px;
-          height: 16px;
-          border-radius: 9999px;
-          border: 1px solid rgba(255, 255, 255, 0.65);
-          background: rgba(255, 255, 255, 0.18);
-          color: rgba(255, 255, 255, 0.95);
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
-          cursor: pointer;
-          transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
-          flex-shrink: 0;
-        }
-
-        .schedule-paid-toggle:hover {
-          transform: scale(1.06);
-          background: rgba(255, 255, 255, 0.28);
-        }
-
-        .schedule-paid-toggle.is-paid {
-          background: #ffffff;
-          border-color: #ffffff;
-          color: #ffffff;
-        }
-
-        .schedule-paid-toggle.is-unpaid {
-          background: rgba(255, 255, 255, 0.16);
-          border-color: rgba(255, 255, 255, 0.7);
-          color: rgba(255, 255, 255, 0.95);
-        }
-
-        .schedule-paid-toggle--month {
-          position: absolute;
-          right: 4px;
-          bottom: 4px;
-          z-index: 11560;
-        }
-
-        .schedule-paid-toggle--floating {
-          position: absolute;
-          right: 4px;
-          bottom: 4px;
-          z-index: 11560;
-          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.25);
         }
 
         .overlap-grey-bar {

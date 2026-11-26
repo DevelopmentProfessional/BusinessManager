@@ -387,10 +387,6 @@ table,
   transform: rotate(90deg);
 }
 
-.app-accordion-body {
-  padding: 0 0.5rem 0.5rem;
-}
-
 .app-dropdown-portal-menu {
   z-index: var(--app-inner-dropdown-z-index, 1300) !important;
 }
@@ -1311,7 +1307,8 @@ table,
   background-image: linear-gradient(rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08), rgba(var(--app-active-color-rgb, 59, 130, 246), 0.08)) !important;
 }
 
-.app-accordion-body {
+.app-accordion-body,
+.profile-accordion-body {
   border: 0.0625rem solid var(--bs-border-color) !important;
   border-top: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) 0 0 !important;
@@ -2740,32 +2737,22 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
   font-size: inherit;
 }
 
-/* Profile page accordion body — bordered container extending down to middle of pill header */
-.profile-accordion-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 100%;
-  border: 0.0625rem solid var(--bs-border-color) !important;
-  border-top: 0.0625rem solid var(--bs-border-color) !important;
-  border-radius: 1rem 1rem 0 0 !important;
-  margin-bottom: calc(var(--app-btn-height) * -0.5) !important;
-  padding-top: 0.75rem !important;
-  padding-left: 0.75rem !important;
-  padding-right: 0.75rem !important;
-  padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.5rem) !important;
-  position: relative !important;
-  z-index: 1 !important;
-  background-color: var(--bs-body-bg) !important;
-  box-sizing: border-box !important;
-}
-
 .profile-wage-history.profile-accordion-body {
   padding-bottom: 0 !important;
 }
 
 .profile-wage-history.profile-accordion-body .profile-wage-history__filters {
   padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.25rem) !important;
+}
+
+.profile-accordion > .profile-accordion-body {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.profile-accordion > .profile-wage-history.profile-accordion-body {
+  padding-bottom: 0 !important;
 }
 
 body.training-mode .btn.rounded-pill svg + span,
@@ -3339,16 +3326,16 @@ input[type="number"],
 }
 
 .app-date-picker-wrapper .react-datepicker__input-container.react-datepicker__view-calendar-icon input.form-control {
-  padding-left: 1.25rem !important;
-  padding-right: 2.5rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 1.8rem !important;
 }
 
 .app-date-picker-wrapper .react-datepicker__input-container .app-date-picker-icon {
   top: 50%;
-  right: 0.75rem;
+  right: 0.45rem;
   left: auto;
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
   padding: 0;
   color: var(--bs-secondary-color);
   transform: translateY(-50%);

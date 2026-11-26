@@ -1,10 +1,9 @@
 """
 Client Cart Router
 ==================
-Provides a persistent, database-backed shopping cart for each client.
-Multiple employees can add/modify items for the same client across sessions
-and devices. The cart is separate from completed SaleTransactions; it is
-cleared when a transaction is processed at checkout.
+Provides a persistent, database-backed shopping cart for each client, scoped
+to the user's company. Multiple employees can manage the same client's cart.
+Sales POS draft carts are separate and employee-owned.
 
 Endpoints
 ---------

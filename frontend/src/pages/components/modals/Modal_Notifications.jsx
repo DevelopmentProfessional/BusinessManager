@@ -7,7 +7,7 @@
  *   low-stock inventory, updated HR request statuses, and unread chats.
  * ============================================================
  */
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArchiveBoxIcon, ArrowTopRightOnSquareIcon, BellIcon, CalendarDaysIcon, ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, DocumentPlusIcon, ShoppingCartIcon } from "../../../icons";
 import useStore from "../../../services/useStore";
@@ -60,7 +60,7 @@ function ActionLink({ to, onClick, children }) {
   );
 }
 
-export default function Modal_Notifications({ isOpen, onClose }) {
+export default function Modal_Notifications({ isOpen, onClose, onCountChange }) {
   const navigate = useNavigate();
   const user = useStore((state) => state.user);
   const employees = useStore((state) => state.employees);
@@ -73,9 +73,10 @@ export default function Modal_Notifications({ isOpen, onClose }) {
   const [errors, setErrors] = useState([]);
   const [updatingTaskIds, setUpdatingTaskIds] = useState(() => new Set());
   const [taskActionErrors, setTaskActionErrors] = useState({});
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen && hasLoadedRef.current) return undefined;
 
     if (!user?.id) {
       setErrors(["Your account information is not available."]);
@@ -138,6 +139,7 @@ export default function Modal_Notifications({ isOpen, onClose }) {
       setData(nextData);
       setErrors(nextErrors);
       setLoading(false);
+      hasLoadedRef.current = true;
     });
 
     return () => {
@@ -321,6 +323,10 @@ export default function Modal_Notifications({ isOpen, onClose }) {
   }, [data.orders]);
 
   const totalItems = data.tasks.length + upcomingAppointments.length + lowStockBySupplier.totalCount + data.purchaseOrders.length + changedRequests.length + chatThreads.length + pendingOrders.length;
+
+  useEffect(() => {
+    onCountChange?.(totalItems);
+  }, [totalItems, onCountChange]);
 
   return (
     <Modal

@@ -25,7 +25,7 @@
  *   [6] Render: Form Body  — event type selector, conditional client/service/
  *                            employee dropdowns, recurrence options, duration,
  *                            date+time pickers, attendee status panel, notes
- *   [7] Render: Footer     — Cancel and Book/Save buttons
+ *   [7] Render: Footer     — Save/Book, Email, Delete, Cancel actions
  *
  * CHANGE LOG — all modifications to this file must be recorded here:
  *   Format : YYYY-MM-DD | Author | Description
@@ -43,17 +43,19 @@
  *   2026-07-26 | GitHub Copilot | Added write-only fallback to current user identity when employee list is not readable
  *   2026-07-31 | GitHub Copilot | Added appointment-level service add-on quantity controls and persistence
  *   2026-09-11 | GitHub Copilot | Removed unused schedule form helpers/imports and fixed exhaustive-deps warnings
+ *   2026-11-26 | GitHub Copilot | Arrange duration/date/time evenly and order edit-event footer actions
+ *   2026-11-26 | GitHub Copilot | Add appointment payment action above notes with paid status
  * ============================================================
  */
 
 import React, { useCallback, useState, useEffect } from "react";
 import useStore from "../../../services/useStore";
 import { isudAPI, serviceRelationsAPI, inventoryAPI, scheduleAPI, getDetailedApiErrorMessage } from "../../../services/api";
-import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon } from "../../../icons";
+import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CurrencyDollarIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
-import { InputText, InputNumber, InputDate, InputDateTime, InputTextarea } from "../Inputs";
+import { InputText, InputNumber, InputDate, InputTime, InputTextarea } from "../Inputs";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
 const APPOINTMENT_TYPES = [
@@ -197,7 +199,7 @@ const parseSelectedServiceAddons = (rawValue) => {
 };
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
+export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelete, onSendReminder, onPayAppointment, clients: clientsProp, services: servicesProp, employees: employeesProp, attendees = [], scheduleSettings = null }) {
   const { hasPermission, user } = useStore();
   const [clients, setClients] = useState(clientsProp || []);
   const [services, setServices] = useState(servicesProp || []);
@@ -493,6 +495,16 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     }
   };
 
+  const handleAppointmentDateTimePartChange = (part, value) => {
+    setFormData((prev) => {
+      const [date = "", time = ""] = String(prev.appointment_datetime || "").split("T");
+      const nextDate = part === "date" ? value : date;
+      const nextTime = part === "time" ? value : time;
+      return { ...prev, appointment_datetime: `${nextDate}T${nextTime}` };
+    });
+    setTimeError("");
+  };
+
   const handleServiceChange = (e) => {
     const { value } = e.target;
     const selectedService = services.find((s) => s.id === value);
@@ -563,8 +575,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submitForm = async ({ checkoutAfterSave = false } = {}) => {
     if (isSubmitting) return;
 
     setSubmitError("");
@@ -644,19 +655,79 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
 
     try {
       setIsSubmitting(true);
-      await Promise.resolve(onSubmit(submitData));
+      const savedAppointment = await Promise.resolve(onSubmit(submitData));
+      if (checkoutAfterSave && onPayAppointment) {
+        onPayAppointment(savedAppointment);
+      }
     } catch (error) {
-      setSubmitError(getDetailedApiErrorMessage(error, "Failed to save appointment"));
+      setSubmitError(getDetailedApiErrorMessage(error, checkoutAfterSave ? "Failed to open payment checkout" : "Failed to save appointment"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    return submitForm();
+  };
+
   // ─── 5 RENDER ─────────────────────────────────────────────────────────────────
   // Get config for current appointment type
   const appointmentDateOnly = formData.appointment_datetime ? formData.appointment_datetime.split("T")[0] : "";
+  const [appointmentDateValue = "", appointmentTimeValue = ""] = String(formData.appointment_datetime || "").split("T");
+  const canPayCurrentAppointment = Boolean(
+    appointment?.id &&
+      ["one_time", "series"].includes(formData.appointment_type) &&
+      formData.service_id &&
+      Array.isArray(formData.client_ids) &&
+      formData.client_ids.some(Boolean)
+  );
 
   const formTitle = appointment ? (formData.appointment_type === "meeting" ? "Edit Meeting" : formData.appointment_type === "task" ? "Edit Task" : "Edit Appointment") : formData.appointment_type === "meeting" ? "New Meeting" : formData.appointment_type === "task" ? "New Task" : "New Appointment";
+
+  const renderDurationDateTimeFields = () => (
+    <div className="row ui-row-g2">
+      <div className="col-4 min-w-0">
+        <Dropdown_Custom
+          name="duration_minutes"
+          value={formData.duration_minutes}
+          onChange={handleChange}
+          options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({ value: mins.toString(), label: `${mins} min` }))}
+          placeholder="Select duration"
+          required
+          label="Duration"
+          openUpward
+          closeOnSelect
+        />
+        {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
+      </div>
+      <div className="col-4 min-w-0">
+        <div className={`app-date-time-input__field form-floating${appointmentDateValue ? " has-value" : ""}`}>
+          <InputDate
+            id="appointment-date"
+            value={appointmentDateValue}
+            onChange={(event) => handleAppointmentDateTimePartChange("date", event.target.value)}
+            required
+            floatingLabelInput
+          />
+          <label className="app-floating-label" htmlFor="appointment-date">Date</label>
+        </div>
+      </div>
+      <div className="col-4 min-w-0">
+        <div className={`app-date-time-input__field form-floating${appointmentTimeValue ? " has-value" : ""}`}>
+          <InputTime
+            id="appointment-time"
+            value={appointmentTimeValue}
+            onChange={(event) => handleAppointmentDateTimePartChange("time", event.target.value)}
+            required
+            floatingLabelInput
+          />
+          <label className="app-floating-label" htmlFor="appointment-time">Time</label>
+        </div>
+        {timeError && <p className="mt-1 text-red-500 text-xs">{timeError}</p>}
+      </div>
+    </div>
+  );
 
   return (
     <div className="ui-page-shell">
@@ -759,9 +830,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
               </div>
 
-              {/* [Select Service][Date/time] */}
+              {/* [Select Service] */}
               <div className="row ui-row-g2">
-                <div className="col-6">
+                <div className="col-12">
                   {typeConfig.needsService && (
                     <Dropdown_Custom
                       name="service_id"
@@ -772,6 +843,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         label: `${service.name} - $${service.price}`,
                       }))}
                       placeholder="Select a service"
+                      label="Service"
                       required
                       searchable={true}
                       openUpward
@@ -779,11 +851,20 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                     />
                   )}
                 </div>
-                <div className="col-6">
-                  <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
-                  {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
-                </div>
               </div>
+              {renderDurationDateTimeFields()}
+              {canPayCurrentAppointment && (onPayAppointment || formData.is_paid) && (
+                <Button_Toolbar
+                  icon={formData.is_paid ? CheckIcon : CurrencyDollarIcon}
+                  label={isSubmitting ? "Saving..." : formData.is_paid ? "Paid" : "Pay"}
+                  onClick={() => submitForm({ checkoutAfterSave: true })}
+                  disabled={isSubmitting || formData.is_paid || !onPayAppointment}
+                  variant={formData.is_paid ? "secondary" : "primary"}
+                  showLabel
+                  className="w-100 justify-content-center"
+                  title={formData.is_paid ? "This appointment is paid" : "Open checkout to record this appointment in Sales History"}
+                />
+              )}
             </>
           )}
 
@@ -840,27 +921,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
               </div>
 
-              {/* [Duration][Date/Time] */}
-              <div className="row ui-row-g2">
-                <div className="col-6">
-                  <Dropdown_Custom
-                    name="duration_minutes"
-                    value={formData.duration_minutes}
-                    onChange={handleChange}
-                    options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({ value: mins.toString(), label: `${mins} min` }))}
-                    placeholder="Select duration"
-                    required
-                    label="Duration"
-                    openUpward
-                    closeOnSelect
-                  />
-                  {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
-                </div>
-                <div className="col-6">
-                  <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
-                  {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
-                </div>
-              </div>
+              {renderDurationDateTimeFields()}
             </>
           )}
 
@@ -931,27 +992,7 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                 </div>
               </div>
 
-              {/* [Duration][Date & Time] */}
-              <div className="row ui-row-g2">
-                <div className="col-6">
-                  <Dropdown_Custom
-                    name="duration_minutes"
-                    value={formData.duration_minutes}
-                    onChange={handleChange}
-                    options={[15, 30, 45, 60, 90, 120, 180, 240].map((mins) => ({ value: mins.toString(), label: `${mins} min` }))}
-                    placeholder="Select duration"
-                    required
-                    label="Duration"
-                    openUpward
-                    closeOnSelect
-                  />
-                  {durationError && <p className="mt-1 text-red-500 text-xs">{durationError}</p>}
-                </div>
-                <div className="col-6">
-                  <InputDateTime id="appointment_datetime" name="appointment_datetime" required value={formData.appointment_datetime} onChange={handleChange} />
-                  {timeError && <p className="text-red-500 text-xs">{timeError}</p>}
-                </div>
-              </div>
+              {renderDurationDateTimeFields()}
 
               {/* [Task Description — full width textarea] */}
               <div className="form-floating">
@@ -1094,10 +1135,9 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       {/* Footer */}
       <div className="app-footer-padding app-form-footer app-standard-footer ui-form-footer-shell">
         <Footer_Actions
-          start={<Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />}
-          center={
-            <div className="d-flex align-items-center gap-1">
-              <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />
+          start={
+            <>
+              <Button_Toolbar icon={CheckIcon} label={isSubmitting ? "Saving..." : appointment ? "Save" : "Book"} type="submit" form="schedule-form" className="btn-outline-secondary" title={appointment ? "Save changes" : "Book appointment"} disabled={isSubmitting} />
               {appointment?.id && onSendReminder && (
                 <Button_Toolbar
                   icon={EnvelopeIcon}
@@ -1107,9 +1147,10 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                   title="Send reminder or notification email to attendees"
                 />
               )}
-            </div>
+              {appointment?.id && onDelete && <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" />}
+              <Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />
+            </>
           }
-          end={appointment?.id && onDelete ? <Button_Toolbar icon={TrashIcon} label="Delete" onClick={onDelete} className="btn-outline-danger" title="Delete appointment" /> : null}
         />
       </div>
     </div>

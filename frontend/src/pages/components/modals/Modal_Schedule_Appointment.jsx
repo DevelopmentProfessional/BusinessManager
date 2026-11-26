@@ -11,6 +11,7 @@ export default function Modal_Schedule_Appointment({
   onSubmit,
   onDelete,
   onSendReminder,
+  onPayAppointment,
   clients = [],
   services = [],
   employees = [],
@@ -26,6 +27,7 @@ export default function Modal_Schedule_Appointment({
           onCancel={onClose}
           onDelete={onDelete}
           onSendReminder={onSendReminder}
+          onPayAppointment={onPayAppointment}
           clients={clients}
           services={services}
           employees={employees}

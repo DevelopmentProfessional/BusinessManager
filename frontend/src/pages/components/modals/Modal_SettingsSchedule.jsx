@@ -160,138 +160,145 @@ const Modal_SettingsSchedule = forwardRef(function Modal_SettingsSchedule({ user
         </div>
       )}
 
-      {/* Business Hours */}
-      <Accordion variant="settings" header="Business hours" defaultOpen>
-        {HelpIcon && <div className="mb-2"><HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" /></div>}
-        <div className="row g-2">
-          <div className="col-6">
-            <div className="form-floating">
-              <InputTime id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className="form-control form-control-sm" placeholder="Start of Day" />
-              <label htmlFor="start_of_day">
-                Start of Day
-              </label>
+      <Accordion variant="settings" header="Schedule settings" defaultOpen bodyPlacement="above">
+        <div className="d-flex flex-column gap-3">
+          <div className="border-bottom pb-3">
+            <div className="align-items-center d-flex gap-2 mb-2">
+              <span className="small fw-semibold text-muted">Business hours</span>
+              {HelpIcon && <HelpIcon id="business-hours" text="Set the visible time range for your schedule calendar" />}
             </div>
-          </div>
-          <div className="col-6">
-            <div className="form-floating">
-              <InputTime id="end_of_day" value={formData.end_of_day} onChange={(e) => handleInputChange("end_of_day", e.target.value)} className="form-control form-control-sm" placeholder="End of Day" />
-              <label htmlFor="end_of_day">
-                End of Day
-              </label>
-            </div>
-          </div>
-        </div>
-      </Accordion>
-
-      {/* Days of Operation */}
-      <Accordion variant="settings" header="Days of operation">
-        {HelpIcon && <div className="mb-2"><HelpIcon id="days-of-operation" text="Select which days your business operates" /></div>}
-        <Dropdown_Custom
-          className="ui-control-sm"
-          options={[
-            { value: "monday_enabled", label: "Monday" },
-            { value: "tuesday_enabled", label: "Tuesday" },
-            { value: "wednesday_enabled", label: "Wednesday" },
-            { value: "thursday_enabled", label: "Thursday" },
-            { value: "friday_enabled", label: "Friday" },
-            { value: "saturday_enabled", label: "Saturday" },
-            { value: "sunday_enabled", label: "Sunday" },
-          ]}
-          value={[
-            "monday_enabled", "tuesday_enabled", "wednesday_enabled",
-            "thursday_enabled", "friday_enabled", "saturday_enabled", "sunday_enabled"
-          ].filter((k) => formData[k])}
-          onChange={(e) => {
-            const nextVals = Array.isArray(e.target.value) ? e.target.value : [];
-            const updated = {};
-            [
-              "monday_enabled", "tuesday_enabled", "wednesday_enabled",
-              "thursday_enabled", "friday_enabled", "saturday_enabled", "sunday_enabled"
-            ].forEach((k) => {
-              updated[k] = nextVals.includes(k);
-            });
-            setFormData((p) => ({ ...p, ...updated }));
-          }}
-          placeholder="Select operating days"
-          floatingLabel="Operating Days"
-          multiSelect={true}
-          searchable={true}
-          closeOnSelect={false}
-        />
-      </Accordion>
-
-      {/* Attendance Check-in */}
-      <Accordion variant="settings" header="Attendance">
-        {HelpIcon && <div className="mb-2"><HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" /></div>}
-        <div className="form-check form-switch mb-0">
-          <InputCheckbox id="attendance_check_in_required" checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="form-check-input" />
-          <label className="form-check-label" htmlFor="attendance_check_in_required">Attendance Check-in</label>
-          {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
-        </div>
-      </Accordion>
-
-      {/* Appointment Reminder Settings */}
-      <Accordion variant="settings" header="Appointment reminder">
-        {HelpIcon && <div className="mb-2"><HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" /></div>}
-        <div className="row g-2">
-          <div className="col-12 col-sm-6">
-            <div className="form-floating">
-              <InputNumber
-                id="reminder_time_minutes"
-                min="0"
-                max="10080"
-                step="5"
-                value={formData.reminder_time_minutes ?? 30}
-                onChange={(e) => handleInputChange("reminder_time_minutes", Number(e.target.value || 0))}
-                className="form-control form-control-sm"
-                placeholder="Reminder minutes"
-              />
-              <label htmlFor="reminder_time_minutes">
-                Reminder Time (minutes before)
-              </label>
+            <div className="row g-2">
+              <div className="col-6">
+                <div className="form-floating">
+                  <InputTime id="start_of_day" value={formData.start_of_day} onChange={(e) => handleInputChange("start_of_day", e.target.value)} className="form-control form-control-sm" placeholder="Start of Day" />
+                  <label htmlFor="start_of_day">Start of Day</label>
+                </div>
+              </div>
+              <div className="col-6">
+                <div className="form-floating">
+                  <InputTime id="end_of_day" value={formData.end_of_day} onChange={(e) => handleInputChange("end_of_day", e.target.value)} className="form-control form-control-sm" placeholder="End of Day" />
+                  <label htmlFor="end_of_day">End of Day</label>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="col-12 col-sm-6 align-self-center">
+          <div className="border-bottom pb-3">
+            <div className="align-items-center d-flex gap-2 mb-2">
+              <span className="small fw-semibold text-muted">Days of operation</span>
+              {HelpIcon && <HelpIcon id="days-of-operation" text="Select which days your business operates" />}
+            </div>
+            <Dropdown_Custom
+              className="ui-control-sm"
+              options={[
+                { value: "monday_enabled", label: "Monday" },
+                { value: "tuesday_enabled", label: "Tuesday" },
+                { value: "wednesday_enabled", label: "Wednesday" },
+                { value: "thursday_enabled", label: "Thursday" },
+                { value: "friday_enabled", label: "Friday" },
+                { value: "saturday_enabled", label: "Saturday" },
+                { value: "sunday_enabled", label: "Sunday" },
+              ]}
+              value={[
+                "monday_enabled", "tuesday_enabled", "wednesday_enabled",
+                "thursday_enabled", "friday_enabled", "saturday_enabled", "sunday_enabled"
+              ].filter((k) => formData[k])}
+              onChange={(e) => {
+                const nextVals = Array.isArray(e.target.value) ? e.target.value : [];
+                const updated = {};
+                [
+                  "monday_enabled", "tuesday_enabled", "wednesday_enabled",
+                  "thursday_enabled", "friday_enabled", "saturday_enabled", "sunday_enabled"
+                ].forEach((k) => {
+                  updated[k] = nextVals.includes(k);
+                });
+                setFormData((p) => ({ ...p, ...updated }));
+              }}
+              placeholder="Select operating days"
+              floatingLabel="Operating Days"
+              multiSelect={true}
+              searchable={true}
+              closeOnSelect={false}
+            />
+          </div>
+
+          <div className="border-bottom pb-3">
+            <div className="align-items-center d-flex gap-2 mb-2">
+              <span className="small fw-semibold text-muted">Attendance</span>
+              {HelpIcon && <HelpIcon id="attendance-section" text="Configure employee clock in/out tracking" />}
+            </div>
             <div className="form-check form-switch mb-0">
-              <InputCheckbox id="reminder_send_notification" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="form-check-input" />
-              <label className="form-check-label" htmlFor="reminder_send_notification">Send Reminder Notification</label>
+              <InputCheckbox id="attendance_check_in_required" checked={formData.attendance_check_in_required} onChange={(e) => handleInputChange("attendance_check_in_required", e.target.checked)} className="form-check-input" />
+              <label className="form-check-label" htmlFor="attendance_check_in_required">Attendance Check-in</label>
+              {HelpIcon && <HelpIcon id="attendance" text="Show clock in/out widget on Schedule page" />}
             </div>
           </div>
-        </div>
-      </Accordion>
 
-      {/* Auto-Accept Toggle */}
-      <Accordion variant="settings" header="Auto-accept client bookings">
-        <div className="align-items-center d-flex justify-content-between gap-2">
-          <div className="form-check form-switch mb-0">
-            <InputCheckbox id="auto_accept_client_bookings" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="form-check-input" />
-            <label className="form-check-label" htmlFor="auto_accept_client_bookings">{formData.auto_accept_client_bookings ? "Enabled" : "Disabled"}</label>
-          </div>
-        </div>
-
-        {/* Grace Period - only show when auto-accept is enabled */}
-        {formData.auto_accept_client_bookings && (
-          <div className="border-top mt-3 pt-3">
-            <label className="form-label fw-medium mb-1">Grace Period for Pending Requests</label>
-            <p className="small text-muted mb-2">Bookings pending longer than this period will NOT be auto-accepted, requiring manual review. Leave blank for no limit.</p>
-            <div className="d-flex align-items-center gap-2">
-              <InputNumber
-                min="0"
-                max="168"
-                step="1"
-                value={formData.auto_accept_pending_hours || ""}
-                onChange={(e) => handleGraceHoursChange(e.target.value)}
-                placeholder="e.g., 24"
-                className="form-control form-control-sm text-center"
-                style={{ maxWidth: "6rem" }}
-              />
-              <span className="small text-muted">hours</span>
-              {formData.auto_accept_pending_hours && <span className="badge text-bg-primary">Max {formData.auto_accept_pending_hours} hours old</span>}
+          <div className="border-bottom pb-3">
+            <div className="align-items-center d-flex gap-2 mb-2">
+              <span className="small fw-semibold text-muted">Appointment reminder</span>
+              {HelpIcon && <HelpIcon id="appointment-reminders" text="Configure default reminder timing and whether reminder notifications are sent" />}
             </div>
-            <p className="small text-muted mt-2 mb-0">Example: Set to 24 to auto-accept only fresh bookings (less than 24 hours old)</p>
+            <div className="row g-2">
+              <div className="col-12 col-sm-6">
+                <div className="form-floating">
+                  <InputNumber
+                    id="reminder_time_minutes"
+                    min="0"
+                    max="10080"
+                    step="5"
+                    value={formData.reminder_time_minutes ?? 30}
+                    onChange={(e) => handleInputChange("reminder_time_minutes", Number(e.target.value || 0))}
+                    className="form-control form-control-sm"
+                    placeholder="Reminder minutes"
+                  />
+                  <label htmlFor="reminder_time_minutes">Reminder Time (minutes before)</label>
+                </div>
+              </div>
+
+              <div className="col-12 col-sm-6 align-self-center">
+                <div className="form-check form-switch mb-0">
+                  <InputCheckbox id="reminder_send_notification" checked={!!formData.reminder_send_notification} onChange={(e) => handleInputChange("reminder_send_notification", e.target.checked)} className="form-check-input" />
+                  <label className="form-check-label" htmlFor="reminder_send_notification">Send Reminder Notification</label>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          <div>
+            <div className="align-items-center d-flex gap-2 mb-2">
+              <span className="small fw-semibold text-muted">Auto-accept client bookings</span>
+            </div>
+            <div className="align-items-center d-flex justify-content-between gap-2">
+              <div className="form-check form-switch mb-0">
+                <InputCheckbox id="auto_accept_client_bookings" checked={formData.auto_accept_client_bookings} onChange={handleToggleAutoAccept} className="form-check-input" />
+                <label className="form-check-label" htmlFor="auto_accept_client_bookings">{formData.auto_accept_client_bookings ? "Enabled" : "Disabled"}</label>
+              </div>
+            </div>
+
+            {formData.auto_accept_client_bookings && (
+              <div className="border-top mt-3 pt-3">
+                <label className="form-label fw-medium mb-1">Grace Period for Pending Requests</label>
+                <p className="small text-muted mb-2">Bookings pending longer than this period will NOT be auto-accepted, requiring manual review. Leave blank for no limit.</p>
+                <div className="d-flex align-items-center gap-2">
+                  <InputNumber
+                    min="0"
+                    max="168"
+                    step="1"
+                    value={formData.auto_accept_pending_hours || ""}
+                    onChange={(e) => handleGraceHoursChange(e.target.value)}
+                    placeholder="e.g., 24"
+                    className="form-control form-control-sm text-center"
+                    style={{ maxWidth: "6rem" }}
+                  />
+                  <span className="small text-muted">hours</span>
+                  {formData.auto_accept_pending_hours && <span className="badge text-bg-primary">Max {formData.auto_accept_pending_hours} hours old</span>}
+                </div>
+                <p className="small text-muted mt-2 mb-0">Example: Set to 24 to auto-accept only fresh bookings (less than 24 hours old)</p>
+              </div>
+            )}
+          </div>
+        </div>
       </Accordion>
 
       {/* Current Status */}

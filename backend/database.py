@@ -50,6 +50,7 @@
 #   2026-11-16 | GitHub Copilot | Added audited stock movement and FIFO consumption schema
 #   2026-11-22 | GitHub Copilot | Repair core app_settings columns before schema-version fast path
 #   2026-11-26 | GitHub Copilot | Added service-task automation schema migration
+#   2026-11-26 | GitHub Copilot | Added employee-scoped Sales POS cart table
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -80,7 +81,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.26.1"
+CURRENT_SCHEMA_VERSION = "2026.11.26.2"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -575,7 +576,7 @@ def _ensure_company_multitenancy_if_needed():
         "task", "task_link", "leave_request", "onboarding_request", "offboarding_request",
         "insurance_plan", "pay_slip", "sale_transaction", "sale_transaction_item",
         "chat_message", "document_template",
-        "product_resource", "product_asset", "product_location", "client_cart_item",
+        "product_resource", "product_asset", "product_location", "client_cart_item", "employee_sales_cart_item",
     ]
 
     DEFAULT_COMPANY_ID = "DEFAULT"

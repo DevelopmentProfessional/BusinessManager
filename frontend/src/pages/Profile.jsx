@@ -1444,8 +1444,7 @@ const Profile = () => {
                   }}
                 />
 
-                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
-                  {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
+                <div className="profile-accordion rounded" style={{ background: "var(--bs-body-bg)" }}>
                   <div
                     ref={(el) => {
                       meSectionHeaderRefs.current.wage = el;
@@ -1468,6 +1467,7 @@ const Profile = () => {
                     </div>
                     <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "wage" ? "rotate(180deg)" : "none" }} />
                   </div>
+                  {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
                 </div>
 
                 <Panel_Profile_TimeOff
@@ -1491,7 +1491,29 @@ const Profile = () => {
                   }}
                 />
 
-                <div className="rounded" style={{ background: "var(--bs-body-bg)" }}>
+                <div className="profile-accordion rounded" style={{ background: "var(--bs-body-bg)" }}>
+                  <div
+                    ref={(el) => {
+                      meSectionHeaderRefs.current.settings = el;
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="profile-accordion-header"
+                    data-active={meSectionOpen === "settings"}
+                    onClick={() => toggleMeSection("settings")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMeSection("settings");
+                      }
+                    }}
+                  >
+                    <div className="ui-flex-center-gap-1">
+                      <CogIcon className="ui-icon-4" />
+                      <span className="fw-semibold">Settings</span>
+                    </div>
+                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
+                  </div>
                   {meSectionOpen === "settings" && (
                     <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
                       <Modal_Settings
@@ -1532,28 +1554,6 @@ const Profile = () => {
                       />
                     </div>
                   )}
-                  <div
-                    ref={(el) => {
-                      meSectionHeaderRefs.current.settings = el;
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className="profile-accordion-header"
-                    data-active={meSectionOpen === "settings"}
-                    onClick={() => toggleMeSection("settings")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleMeSection("settings");
-                      }
-                    }}
-                  >
-                    <div className="ui-flex-center-gap-1">
-                      <CogIcon className="ui-icon-4" />
-                      <span className="fw-semibold">Settings</span>
-                    </div>
-                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
-                  </div>
                 </div>
               </div>
             </div>

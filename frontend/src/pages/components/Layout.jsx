@@ -37,6 +37,7 @@ export default function Layout({ children }) {
   const [undoLoading, setUndoLoading] = useState(false);
   const [undoResult, setUndoResult] = useState(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
@@ -264,10 +265,19 @@ export default function Layout({ children }) {
                 borderColor: "var(--bs-border-color)",
               }}
               title="Notifications"
-              aria-label="Notifications"
+              aria-label={notificationCount > 0 ? `Notifications, ${notificationCount} items` : "Notifications"}
             >
               <BellIcon className="app-icon flex-shrink-0" />
               {isTrainingMode && <span>Notifications</span>}
+              {notificationCount > 0 && (
+                <span
+                  className="badge position-absolute rounded-pill"
+                  style={{ top: -4, right: -4, backgroundColor: "var(--bs-primary)", color: "var(--bs-white)", fontSize: "0.6rem", minWidth: 16, padding: "2px 4px" }}
+                  aria-hidden="true"
+                >
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -324,7 +334,7 @@ export default function Layout({ children }) {
       </button>
 
       {/* Notifications modal */}
-      <Modal_Notifications isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <Modal_Notifications isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} onCountChange={setNotificationCount} />
 
       {/* Undo Result Modal Popup */}
       {undoResult && (

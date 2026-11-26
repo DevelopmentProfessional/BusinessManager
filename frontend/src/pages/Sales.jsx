@@ -34,6 +34,7 @@
  *   2026-09-11 | GitHub Copilot | Reused schedule purchase transactions and skipped duplicate checkout side effects
  *   2026-11-24 | GitHub Copilot | Include linked service items in direct sales
  *   2026-11-24 | GitHub Copilot | Scope card-view preference to each company
+ *   2026-11-26 | GitHub Copilot | Scope persistent POS draft carts to each company and employee
  * ============================================================
  */
 
@@ -47,7 +48,7 @@ import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
-import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, scheduleAPI, clientCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
+import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, scheduleAPI, clientCartAPI, employeeSalesCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
 import Modal_Sales_Settings from "./components/modals/Modal_Sales_Settings";
 import Modal_DiscountRules from "./components/modals/Modal_DiscountRules";
 import { templatesAPI } from "../services/api";
@@ -404,9 +405,15 @@ export default function Sales() {
   const canWriteSales = hasPermission("sales", "write");
   const canWriteClients = hasPermission("clients", "write");
   const ensureSalesWrite = (action = "change the sales cart") => {
-    if (canWriteSales) return true;
-    setError(`You do not have permission to ${action}`);
-    return false;
+    if (!canWriteSales) {
+      setError(`You do not have permission to ${action}`);
+      return false;
+    }
+    if (cartSourceRef.current === "employee" && !employeeCartLoaded) {
+      setError("Your saved sales cart is still loading. Please try again in a moment.");
+      return false;
+    }
+    return true;
   };
   const { footerAlign } = useViewMode();
   const footerJustify = footerAlign === "center" ? "justify-content-center" : footerAlign === "right" ? "justify-content-end" : "justify-content-start";
@@ -420,6 +427,13 @@ export default function Sales() {
   const [showSubscriptions, setShowSubscriptions] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState([]);
+  const [cartSource, setCartSource] = useState("employee");
+  const cartSourceRef = useRef("employee");
+  const [employeeCartLoaded, setEmployeeCartLoaded] = useState(false);
+  const activateCartSource = useCallback((source) => {
+    cartSourceRef.current = source;
+    setCartSource(source);
+  }, []);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clients, setClientsLocal] = useState([]);
   const [clientsLoaded, setClientsLoaded] = useState(false);
@@ -643,19 +657,6 @@ export default function Sales() {
   const [linkedScheduleServiceId, setLinkedScheduleServiceId] = useState(null);
   const [autoOpenCheckoutRequested, setAutoOpenCheckoutRequested] = useState(false);
 
-  // On mount: restore walk-in cart from localStorage (only when not navigating with a pre-selected client)
-  useEffect(() => {
-    if (!canWriteSales) return;
-    if (location.state?.preSelectedClient) return;
-    try {
-      const saved = localStorage.getItem("walk_in_cart");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) setCart(parsed);
-      }
-    } catch {}
-  }, [canWriteSales, location.state?.preSelectedClient]); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     if (!canWriteSales) {
       setAutoOpenCheckoutRequested(false);
@@ -667,16 +668,6 @@ export default function Sales() {
     setAutoOpenCheckoutRequested(false);
   }, [autoOpenCheckoutRequested, canWriteSales, cart.length]);
 
-  // Walk-in cart persisted to localStorage (no client selected)
-  useEffect(() => {
-    if (!canWriteSales) return;
-    if (!selectedClient?.id) {
-      try {
-        localStorage.setItem("walk_in_cart", JSON.stringify(cart));
-      } catch {}
-    }
-  }, [canWriteSales, cart, selectedClient?.id]);
-
   useEffect(() => {
     if (stripeReturnHandledRef.current) return;
 
@@ -684,6 +675,7 @@ export default function Sales() {
     const paymentState = String(params.get("payment") || "").toLowerCase();
     const saleId = params.get("sale_id");
     if (!paymentState || !saleId) return;
+    if (cartSourceRef.current === "employee" && !employeeCartLoaded) return;
 
     stripeReturnHandledRef.current = true;
 
@@ -723,20 +715,26 @@ export default function Sales() {
       const saleIdMatches = pending && String(pending.saleId || "") === String(saleId);
       const checkoutItemCartKeys = Array.isArray(pending?.checkoutItemCartKeys) ? pending.checkoutItemCartKeys.filter(Boolean) : [];
       const checkoutHadRemainingItems = Boolean(pending?.checkoutHadRemainingItems);
+      const source = pending?.cartSource || "employee";
+      let cartCleanupFailed = false;
 
       try {
         if (saleIdMatches && pending?.selectedClientId && Array.isArray(pending.soldSubscriptions) && pending.soldSubscriptions.length > 0) {
           await applySubscriptionsForSale(pending.selectedClientId, pending.soldSubscriptions);
         }
 
-        if (saleIdMatches && pending?.selectedClientId) {
-          if (checkoutItemCartKeys.length > 0) {
-            await Promise.all(checkoutItemCartKeys.map((cartKey) => clientCartAPI.removeItem(pending.selectedClientId, cartKey).catch(() => {})));
-            if (!checkoutHadRemainingItems) {
-              await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
-            }
-          } else {
-            await clientCartAPI.clearCart(pending.selectedClientId).catch(() => {});
+        if (saleIdMatches && checkoutItemCartKeys.length > 0) {
+          const cleanupRequests = checkoutItemCartKeys.map((cartKey) => {
+            if (source === "employee") return employeeSalesCartAPI.removeItem(cartKey);
+            if (source === "client" && pending?.selectedClientId) return clientCartAPI.removeItem(pending.selectedClientId, cartKey);
+            return Promise.resolve();
+          });
+          try {
+            await Promise.all(cleanupRequests);
+          } catch (cleanupError) {
+            cartCleanupFailed = true;
+            console.error("Could not remove checked-out items from the saved cart:", cleanupError);
+            setError(getDetailedApiErrorMessage(cleanupError, "Payment succeeded, but checked-out items could not be removed from the saved cart"));
           }
         }
 
@@ -754,10 +752,8 @@ export default function Sales() {
         }
 
         await loadTransactionHistory();
-        if (saleIdMatches && checkoutItemCartKeys.length > 0) {
+        if (saleIdMatches && checkoutItemCartKeys.length > 0 && cartSourceRef.current === source) {
           setCart((prev) => prev.filter((item) => !checkoutItemCartKeys.includes(item.cartKey)));
-        } else {
-          setCart([]);
         }
 
         if (saleIdMatches && checkoutHadRemainingItems && pending?.selectedClientId) {
@@ -800,16 +796,23 @@ export default function Sales() {
         }
         setLinkedScheduleId(null);
         setLinkedScheduleServiceId(null);
-        clearError();
-        setSuccessNotice("Payment confirmed. Receipt email was sent to the client when an email address is on file.");
+        if (!cartCleanupFailed) clearError();
+        setSuccessNotice(
+          cartCleanupFailed
+            ? "Payment confirmed, but checked-out items could not be removed from the saved cart."
+            : "Payment confirmed. Receipt email was sent to the client when an email address is on file."
+        );
       } finally {
         localStorage.removeItem("pending_stripe_sale");
         clearStripeQueryParams();
       }
     };
 
-    finalizeStripeSaleReturn();
-  }, [clearError, clients, closeCheckoutModal, loadTransactionHistory, location.search, navigate, setError]);
+    finalizeStripeSaleReturn().catch((finalizeError) => {
+      console.error("Failed to finalize Stripe sale return:", finalizeError);
+      setError(getDetailedApiErrorMessage(finalizeError, "Payment was confirmed, but the sale could not be fully finalized"));
+    });
+  }, [activateCartSource, clearError, clients, closeCheckoutModal, employeeCartLoaded, loadTransactionHistory, location.search, navigate, setError]);
 
   // ── DB cart helpers (fire-and-forget) ────────────────────────────────────
   const mapCartItemToDb = useCallback(
@@ -852,15 +855,68 @@ export default function Sales() {
     };
   }, []);
 
-  const syncItemToDb = useCallback((item, clientId) => {
-    if (!canWriteSales || !clientId) return;
-    clientCartAPI.upsertItem(clientId, mapCartItemToDb(item)).catch(() => {});
-  }, [canWriteSales, mapCartItemToDb]);
+  useEffect(() => {
+    if (!canWriteSales || !user?.id || !user?.company_id) {
+      cartSourceRef.current = "employee";
+      setCartSource("employee");
+      setCart([]);
+      setEmployeeCartLoaded(true);
+      return;
+    }
 
-  const removeItemFromDb = useCallback((cartKey, clientId) => {
-    if (!canWriteSales || !clientId) return;
-    clientCartAPI.removeItem(clientId, cartKey).catch(() => {});
-  }, [canWriteSales]);
+    let active = true;
+    cartSourceRef.current = "employee";
+    setCartSource("employee");
+    setCart([]);
+    setEmployeeCartLoaded(false);
+
+    employeeSalesCartAPI.getItems()
+      .then((response) => {
+        if (!active || cartSourceRef.current !== "employee") return;
+        const items = Array.isArray(response?.data) ? response.data : [];
+        setCart(items.map(mapDbItemToCart));
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("Failed to load employee sales cart:", err);
+        setError(getDetailedApiErrorMessage(err, "Failed to load your saved sales cart"));
+      })
+      .finally(() => {
+        if (active) setEmployeeCartLoaded(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [canWriteSales, mapDbItemToCart, setError, user?.company_id, user?.id]);
+
+  const syncItemToDb = useCallback((item, clientId = selectedClient?.id, source = cartSourceRef.current) => {
+    if (!canWriteSales) return;
+    const request = source === "employee"
+      ? employeeSalesCartAPI.upsertItem(mapCartItemToDb(item))
+      : source === "client" && clientId
+        ? clientCartAPI.upsertItem(clientId, mapCartItemToDb(item))
+        : null;
+    if (!request) return;
+    request.catch((err) => {
+      console.error("Failed to save sales cart item:", err);
+      setError(getDetailedApiErrorMessage(err, "Failed to save the sales cart item"));
+    });
+  }, [canWriteSales, mapCartItemToDb, selectedClient?.id, setError]);
+
+  const removeItemFromDb = useCallback((cartKey, clientId = selectedClient?.id, source = cartSourceRef.current) => {
+    if (!canWriteSales) return;
+    const request = source === "employee"
+      ? employeeSalesCartAPI.removeItem(cartKey)
+      : source === "client" && clientId
+        ? clientCartAPI.removeItem(clientId, cartKey)
+        : null;
+    if (!request) return;
+    request.catch((err) => {
+      console.error("Failed to remove sales cart item:", err);
+      setError(getDetailedApiErrorMessage(err, "Failed to remove the sales cart item"));
+    });
+  }, [canWriteSales, selectedClient?.id, setError]);
 
   const loadClients = useCallback(async () => {
     if (clientsLoaded) return; // Already loaded, skip
@@ -902,95 +958,31 @@ export default function Sales() {
     [services]
   );
 
-  // Select a client, load their saved cart, merge any walk-in items, and include their next scheduled service
-  const handleSelectClient = useCallback(
-    async (client, options = {}) => {
-      if (!canWriteSales) {
-        setSelectedClient(client);
-        return;
+  const handleSelectClient = useCallback(async (client, options = {}) => {
+    setSelectedClient(client);
+    if (options.preloadCartSource) activateCartSource(options.preloadCartSource);
+    if (Array.isArray(options.preloadCart)) setCart(options.preloadCart);
+    if (options.preloadCartSource === "schedule") return;
+
+    const scheduledService = await getNextScheduledService(client.id);
+    if (!scheduledService) return;
+
+    const scheduledCartKey = `service-${scheduledService.id}`;
+    setCart((currentCart) => {
+      if (currentCart.some((item) => item.cartKey === scheduledCartKey || (item.itemType === "service" && String(item.id) === String(scheduledService.id)))) {
+        return currentCart;
       }
-
-      // Capture walk-in items before switching — from in-memory state (if no client was selected)
-      // or from localStorage (when navigating to this page fresh with a pre-selected client)
-      let walkInItems = selectedClient == null ? [...cart] : [];
-      if (walkInItems.length === 0) {
-        try {
-          const walkInSaved = localStorage.getItem("walk_in_cart");
-          if (walkInSaved) {
-            const parsed = JSON.parse(walkInSaved);
-            if (Array.isArray(parsed)) walkInItems = parsed;
-          }
-        } catch {}
-      }
-
-      setSelectedClient(client);
-
-      let nextCart = [];
-
-      if (Array.isArray(options.preloadCart) && options.preloadCart.length > 0) {
-        nextCart = options.preloadCart;
-      }
-
-      try {
-        if (nextCart.length === 0) {
-          // Load persistent cart from DB (source of truth)
-          const res = await clientCartAPI.getItems(client.id);
-          const dbItems = Array.isArray(res?.data) ? res.data : [];
-          if (dbItems.length > 0) {
-            nextCart = dbItems.map(mapDbItemToCart);
-          } else {
-            // Fallback: migrate from localStorage once if DB is empty
-            const saved = localStorage.getItem(`client_cart_${client.id}`);
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                nextCart = parsed;
-                // Migrate to DB
-                parsed.forEach((item) => syncItemToDb(item, client.id));
-                localStorage.removeItem(`client_cart_${client.id}`);
-              }
-            }
-          }
-        }
-      } catch {}
-
-      // Merge walk-in items into client cart — add any not already present
-      walkInItems.forEach((item) => {
-        if (!nextCart.some((ci) => ci.cartKey === item.cartKey)) {
-          nextCart = [...nextCart, item];
-        }
-      });
-
-      // Clear walk-in cart now that items have been transferred
-      if (walkInItems.length > 0) {
-        try {
-          localStorage.removeItem("walk_in_cart");
-        } catch {}
-      }
-
-      const scheduledService = await getNextScheduledService(client.id);
-      if (scheduledService) {
-        const scheduledCartKey = `service-${scheduledService.id}`;
-        const alreadyInCart = nextCart.some((item) => item.cartKey === scheduledCartKey || (item.itemType === "service" && String(item.id) === String(scheduledService.id)));
-        if (!alreadyInCart) {
-          nextCart = [
-            ...nextCart,
-            {
-              ...scheduledService,
-              cartKey: scheduledCartKey,
-              itemType: "service",
-              quantity: 1,
-              price: scheduledService.price,
-              selectedOptions: [],
-            },
-          ];
-        }
-      }
-
-      setCart(nextCart);
-    },
-    [canWriteSales, cart, getNextScheduledService, mapDbItemToCart, selectedClient, syncItemToDb]
-  );
+      const item = {
+        ...scheduledService,
+        cartKey: scheduledCartKey,
+        itemType: "service",
+        quantity: 1,
+        price: scheduledService.price,
+        selectedOptions: [],
+      };
+      return [...currentCart, item];
+    });
+  }, [activateCartSource, getNextScheduledService]);
 
   useEffect(() => {
     if (showCartModal) loadClients();
@@ -1003,13 +995,16 @@ export default function Sales() {
     routeHandoffProcessedRef.current = location.state || null;
     routeHandoffPermissionProcessedRef.current = canWriteSales;
 
-    const { preSelectedClient, preloadCart, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
+    const { preSelectedClient, preloadCart, preloadCartSource, scheduleId, preloadServiceId, openCheckout, checkoutContext: stateCheckoutContext, checkoutReturnTo } = location.state || {};
+    if (preloadCartSource) activateCartSource(preloadCartSource);
+    else if (scheduleId || preloadServiceId) activateCartSource("schedule");
+    else if (Array.isArray(preloadCart)) activateCartSource("client");
     if (scheduleId) setLinkedScheduleId(scheduleId);
     if (preloadServiceId) setLinkedScheduleServiceId(preloadServiceId);
     if (checkoutReturnTo?.pathname) setCheckoutReturnTarget(checkoutReturnTo);
     setCheckoutContext(stateCheckoutContext || null);
     if (openCheckout && canWriteSales) setAutoOpenCheckoutRequested(true);
-    if (preSelectedClient) handleSelectClient(preSelectedClient, { preloadCart });
+    if (preSelectedClient) handleSelectClient(preSelectedClient, { preloadCart, preloadCartSource });
 
     if (preloadServiceId && canWriteSales) {
       const addServiceWhenReady = () => {
@@ -1034,7 +1029,7 @@ export default function Sales() {
         return () => clearInterval(interval);
       }
     }
-  }, [canWriteSales, handleSelectClient, location.state, services]);
+  }, [activateCartSource, canWriteSales, handleSelectClient, location.state, services]);
 
   const loadProducts = async () => {
     try {
@@ -1138,21 +1133,16 @@ export default function Sales() {
 
   const clearCart = async () => {
     if (!ensureSalesWrite()) return;
-    if (selectedClient?.id) {
-      try {
+    try {
+      if (cartSourceRef.current === "employee") {
+        await employeeSalesCartAPI.clearCart();
+      } else if (cartSourceRef.current === "client" && selectedClient?.id) {
         await clientCartAPI.clearCart(selectedClient.id);
-      } catch (err) {
-        setError(getDetailedApiErrorMessage(err, "Failed to clear the saved cart"));
-        console.error("Failed to clear saved client cart:", err);
-        return;
       }
-      try {
-        localStorage.removeItem(`client_cart_${selectedClient.id}`);
-      } catch {}
-    } else {
-      try {
-        localStorage.removeItem("walk_in_cart");
-      } catch {}
+    } catch (err) {
+      setError(getDetailedApiErrorMessage(err, "Failed to clear the saved cart"));
+      console.error("Failed to clear saved sales cart:", err);
+      return;
     }
     setCart([]);
     setSelectedCartDealIds([]);
@@ -1559,6 +1549,7 @@ export default function Sales() {
             const checkoutHadRemainingItems = cart.some((item) => !checkoutItemCartKeys.includes(item.cartKey));
             const pendingSaleContext = {
               saleId: txId,
+              cartSource,
               selectedClientId: selectedClient?.id || null,
               selectedClientName: selectedClient?.name || "",
               selectedClientEmail: selectedClient?.email || "",
@@ -1638,13 +1629,18 @@ export default function Sales() {
       return !checkoutKeys.has(key);
     });
 
-    if (selectedClient?.id) {
-      checkoutItems.forEach((item) => {
-        if (item.cartKey) removeItemFromDb(item.cartKey, selectedClient.id);
-      });
-      if (remainingCart.length === 0) {
-        clientCartAPI.clearCart(selectedClient.id).catch(() => {});
-      }
+    if (cartSource === "employee") {
+      await Promise.all(checkoutItems.filter((item) => item.cartKey).map((item) => employeeSalesCartAPI.removeItem(item.cartKey)))
+        .catch((cleanupError) => {
+          console.error("Could not remove checked-out items from the employee sales cart:", cleanupError);
+          setError(getDetailedApiErrorMessage(cleanupError, "Sale completed, but checked-out items could not be removed from your saved sales cart"));
+        });
+    } else if (cartSource === "client" && selectedClient?.id) {
+      await Promise.all(checkoutItems.filter((item) => item.cartKey).map((item) => clientCartAPI.removeItem(selectedClient.id, item.cartKey)))
+        .catch((cleanupError) => {
+          console.error("Could not remove checked-out items from the client cart:", cleanupError);
+          setError(getDetailedApiErrorMessage(cleanupError, "Sale completed, but checked-out items could not be removed from the client cart"));
+        });
     }
 
     setCart(remainingCart);

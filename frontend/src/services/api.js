@@ -730,12 +730,20 @@ export const saleTransactionsAPI = {
   consumeInventory: (transactionId) => api.post(`/isud/sale_transaction/${transactionId}/consume-inventory`),
 };
 
-/** Persistent client cart — database-backed, shared across employees/sessions */
+/** Persistent client-owned cart — scoped by company and client for portal workflows. */
 export const clientCartAPI = {
   getItems: (clientId) => api.get(`/client-cart/${clientId}`),
   upsertItem: (clientId, itemData) => api.put(`/client-cart/${clientId}/item`, itemData),
   removeItem: (clientId, cartKey) => api.delete(`/client-cart/${clientId}/item/${encodeURIComponent(cartKey)}`),
   clearCart: (clientId) => api.delete(`/client-cart/${clientId}`),
+};
+
+/** Persistent draft cart owned by the authenticated employee within their company. */
+export const employeeSalesCartAPI = {
+  getItems: () => api.get("/employee-sales-cart"),
+  upsertItem: (itemData) => api.put("/employee-sales-cart/item", itemData),
+  removeItem: (cartKey) => api.delete(`/employee-sales-cart/item/${encodeURIComponent(cartKey)}`),
+  clearCart: () => api.delete("/employee-sales-cart"),
 };
 
 export const clientOrdersAPI = {
