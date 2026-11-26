@@ -5,12 +5,12 @@
  * PURPOSE:
  *   Multi-tab create/edit form for a service record. The Details tab
  *   captures core fields (name, category, price, duration, image).
- *   When editing, additional tabs allow managing the service's linked
- *   resources, assets, employees, and locations via live API calls.
+ *   When editing, additional tabs allow managing linked resources, assets,
+ *   employees, locations, and appointment-triggered task automation.
  *
  * FUNCTIONAL PARTS:
  *   [1] Constants          — TABS array
- *   [2] State              — form fields; lookup data (inventory, employees);
+ *   [2] State              — form fields; task rules; lookup data (inventory, employees);
  *                            relationship lists (resources, assets, employees,
  *                            locations); linked included items; image state
  *   [3] Effects            — populate form on edit; load inventory and employee
@@ -34,6 +34,7 @@
  *   2026-07-31 | GitHub Copilot | Added editable service add-ons (name, price delta, default quantity)
  *   2026-09-11 | GitHub Copilot | Removed unused lookup/context state tied to lint cleanup
  *   2026-11-24 | GitHub Copilot | Replaced add-on details with linked included items
+ *   2026-11-26 | GitHub Copilot | Added appointment task automation rules
  * ============================================================
  */
 
@@ -41,7 +42,7 @@ import React, { useState, useEffect } from "react";
 import { XMarkIcon, CheckIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "../../../icons";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
-import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serviceCategoriesAPI } from "../../../services/api";
+import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serviceCategoriesAPI, servicesAPI } from "../../../services/api";
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
@@ -50,7 +51,25 @@ import Table from "../tables/Table";
 import useStore from "../../../services/useStore";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
-const TABS = ["details", "resources", "assets", "employees", "locations"];
+const TABS = ["details", "resources", "assets", "employees", "locations", "tasks"];
+
+const createTaskRuleId = () => globalThis.crypto?.randomUUID?.() || `task-rule-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const parseTaskAutomationRules = (value) => {
+  if (!value) return [];
+  const parsed = typeof value === "string" ? JSON.parse(value) : value;
+  if (!Array.isArray(parsed)) throw new Error("Task automation data must be a list.");
+  return parsed.map((rule, index) => ({
+    id: String(rule?.id || `task-rule-${index + 1}`),
+    title: String(rule?.title || ""),
+    description: String(rule?.description || ""),
+    priority: ["low", "medium", "high"].includes(rule?.priority) ? rule.priority : "medium",
+    timing: ["before", "during", "after"].includes(rule?.timing) ? rule.timing : "during",
+    offset_minutes: Math.max(0, Number.parseInt(rule?.offset_minutes ?? 0, 10) || 0),
+    assignment_policy: rule?.assignment_policy === "specific_employee" ? "specific_employee" : "appointment_employee",
+    assigned_to_id: rule?.assigned_to_id || "",
+  }));
+};
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Service({ service, initialName = "", onSubmit, onCancel, onBulkImport = null }) {
@@ -68,6 +87,8 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
     image_url: "",
   });
   const [serviceAddons, setServiceAddons] = useState([]);
+  const [taskAutomationRules, setTaskAutomationRules] = useState([]);
+  const [taskAutomationSaving, setTaskAutomationSaving] = useState(false);
 
   // ── Lookup data ──────────────────────────────────────────────────
   const [inventory, setInventory] = useState([]);
@@ -131,8 +152,16 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         image_url: service.image_url || "",
       });
       setServiceAddons(parsedAddons);
+      try {
+        setTaskAutomationRules(parseTaskAutomationRules(service.task_automation_json));
+        setTabError("");
+      } catch (error) {
+        setTaskAutomationRules([]);
+        setTabError(error.message || "Unable to load service task automation.");
+      }
     } else {
       setServiceAddons([]);
+      setTaskAutomationRules([]);
     }
   }, [service]);
 
@@ -266,11 +295,20 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
       })
       .filter((addon) => addon.name.length > 0);
 
+    const cleanedTaskRules = taskAutomationRules.map((rule) => ({
+      ...rule,
+      title: String(rule.title || "").trim(),
+      description: String(rule.description || "").trim(),
+      offset_minutes: Math.max(0, Number.parseInt(rule.offset_minutes ?? 0, 10) || 0),
+      assigned_to_id: rule.assignment_policy === "specific_employee" ? rule.assigned_to_id || null : null,
+    }));
+
     const submitData = {
       ...formData,
       price: parseFloat(formData.price),
       duration_minutes: parseInt(formData.duration_minutes),
       addons_json: cleanedAddons.length > 0 ? JSON.stringify(cleanedAddons) : null,
+      task_automation_json: JSON.stringify(cleanedTaskRules),
     };
     if (!submitData.image_url) delete submitData.image_url;
     if (!submitData.category) delete submitData.category;
@@ -328,6 +366,73 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
 
   const removeServiceAddonRow = (index) => {
     setServiceAddons((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
+  };
+
+  const addTaskAutomationRule = () => {
+    setTaskAutomationRules((prev) => [
+      ...prev,
+      {
+        id: createTaskRuleId(),
+        title: "",
+        description: "",
+        priority: "medium",
+        timing: "before",
+        offset_minutes: 0,
+        assignment_policy: "appointment_employee",
+        assigned_to_id: "",
+      },
+    ]);
+  };
+
+  const updateTaskAutomationRule = (index, field, value) => {
+    setTaskAutomationRules((prev) => prev.map((rule, rowIndex) => {
+      if (rowIndex !== index) return rule;
+      const updated = { ...rule, [field]: value };
+      if (field === "assignment_policy" && value === "appointment_employee") {
+        updated.assigned_to_id = "";
+      }
+      return updated;
+    }));
+  };
+
+  const removeTaskAutomationRule = (index) => {
+    setTaskAutomationRules((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
+  };
+
+  const handleSaveTaskAutomation = async () => {
+    const invalidRuleIndex = taskAutomationRules.findIndex(
+      (rule) => !String(rule.title || "").trim()
+        || (rule.assignment_policy === "specific_employee" && !rule.assigned_to_id)
+    );
+    if (invalidRuleIndex >= 0) {
+      setTabError(
+        taskAutomationRules[invalidRuleIndex].assignment_policy === "specific_employee"
+          && !taskAutomationRules[invalidRuleIndex].assigned_to_id
+          ? `Select an employee for task rule ${invalidRuleIndex + 1}.`
+          : `Enter a title for task rule ${invalidRuleIndex + 1}.`
+      );
+      return;
+    }
+
+    setTaskAutomationSaving(true);
+    setTabError("");
+    try {
+      const cleanedRules = taskAutomationRules.map((rule) => ({
+        ...rule,
+        title: String(rule.title).trim(),
+        description: String(rule.description || "").trim(),
+        offset_minutes: Math.max(0, Number.parseInt(rule.offset_minutes ?? 0, 10) || 0),
+        assigned_to_id: rule.assignment_policy === "specific_employee" ? rule.assigned_to_id : null,
+      }));
+      await servicesAPI.update(service.id, {
+        task_automation_json: JSON.stringify(cleanedRules),
+      });
+      setTaskAutomationRules(cleanedRules);
+    } catch (error) {
+      setTabError(error?.response?.data?.detail || error?.message || "Unable to save task automation.");
+    } finally {
+      setTaskAutomationSaving(false);
+    }
   };
 
   // ── Create-from-search handlers ──────────────────────────────────
@@ -1009,6 +1114,139 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
             </div>
           </div>
         )}
+
+        {activeTab === "tasks" && service && (
+          <div className="d-flex flex-column gap-2">
+            <div className="align-items-center d-flex justify-content-between">
+              <div>
+                <h6 className="mb-1">Appointment task automation</h6>
+                <p className="mb-0 small text-muted">
+                  Rules create tasks when an appointment is booked. Pending tasks follow reschedules and are cancelled with the appointment.
+                </p>
+              </div>
+              <button type="button" className="btn btn-primary btn-sm flex-shrink-0 ms-2" onClick={addTaskAutomationRule}>
+                <PlusIcon style={{ width: 16, height: 16 }} /> Add rule
+              </button>
+            </div>
+
+            {taskAutomationRules.length === 0 ? (
+              <div className="border rounded p-3 small text-muted">
+                No automatic tasks configured. Add a rule for preparation, appointment work, or follow-up.
+              </div>
+            ) : taskAutomationRules.map((rule, index) => {
+              const rulePrefix = `service-task-rule-${rule.id}`;
+              return (
+                <div key={rule.id} className="border rounded p-2">
+                  <div className="align-items-center d-flex justify-content-between mb-2">
+                    <strong className="small">Task rule {index + 1}</strong>
+                    <button
+                      type="button"
+                      className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center"
+                      aria-label={`Remove task rule ${index + 1}`}
+                      onClick={() => removeTaskAutomationRule(index)}
+                    >
+                      <XMarkIcon style={{ width: 16, height: 16 }} />
+                    </button>
+                  </div>
+                  <div className="row g-2">
+                    <div className="col-12 form-floating">
+                      <InputText
+                        id={`${rulePrefix}-title`}
+                        value={rule.title}
+                        onChange={(event) => updateTaskAutomationRule(index, "title", event.target.value)}
+                        placeholder="Task title"
+                        maxLength={200}
+                      />
+                      <label htmlFor={`${rulePrefix}-title`}>Task title *</label>
+                    </div>
+                    <div className="col-12 form-floating">
+                      <InputTextarea
+                        id={`${rulePrefix}-description`}
+                        rows={2}
+                        value={rule.description}
+                        onChange={(event) => updateTaskAutomationRule(index, "description", event.target.value)}
+                        placeholder="Task instructions"
+                        maxLength={4000}
+                      />
+                      <label htmlFor={`${rulePrefix}-description`}>Task instructions</label>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-timing`}>When</label>
+                      <select
+                        id={`${rulePrefix}-timing`}
+                        className="form-select ui-control-sm"
+                        value={rule.timing}
+                        onChange={(event) => updateTaskAutomationRule(index, "timing", event.target.value)}
+                      >
+                        <option value="before">Before appointment</option>
+                        <option value="during">At appointment time</option>
+                        <option value="after">After appointment</option>
+                      </select>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-offset`}>Offset (minutes)</label>
+                      <InputNumber
+                        id={`${rulePrefix}-offset`}
+                        min="0"
+                        max="525600"
+                        step="1"
+                        className="form-control ui-control-sm"
+                        value={rule.offset_minutes}
+                        disabled={rule.timing === "during"}
+                        onChange={(event) => updateTaskAutomationRule(index, "offset_minutes", event.target.value)}
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-priority`}>Priority</label>
+                      <select
+                        id={`${rulePrefix}-priority`}
+                        className="form-select ui-control-sm"
+                        value={rule.priority}
+                        onChange={(event) => updateTaskAutomationRule(index, "priority", event.target.value)}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-assignment`}>Assign task to</label>
+                      <select
+                        id={`${rulePrefix}-assignment`}
+                        className="form-select ui-control-sm"
+                        value={rule.assignment_policy}
+                        onChange={(event) => updateTaskAutomationRule(index, "assignment_policy", event.target.value)}
+                      >
+                        <option value="appointment_employee">Appointment employee</option>
+                        <option value="specific_employee">Specific employee</option>
+                      </select>
+                    </div>
+                    {rule.assignment_policy === "specific_employee" && (
+                      <div className="col-12">
+                        <Dropdown_Custom
+                          className="ui-control-sm"
+                          value={rule.assigned_to_id}
+                          onChange={(event) => updateTaskAutomationRule(index, "assigned_to_id", event.target.value)}
+                          options={[
+                            { value: "", label: "— Select employee —" },
+                            ...employees
+                              .filter((employee) => employee.is_active)
+                              .map((employee) => ({
+                                value: employee.id,
+                                label: `${employee.first_name} ${employee.last_name}`,
+                              })),
+                          ]}
+                          placeholder="Select employee"
+                          closeOnSelect
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Footer (sticky, always visible) ──────────────────────── */}
@@ -1018,6 +1256,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
           <div className="d-flex flex-nowrap gap-1 overflow-auto pb-1 pt-0 px-0">
             {TABS.map((tab) => {
               const count = tab === "resources" ? resources.length : tab === "assets" ? assets.length : tab === "employees" ? svcEmployees.length : tab === "locations" ? locations.length : 0;
+              const label = tab === "tasks" ? "Task automation" : tab.charAt(0).toUpperCase() + tab.slice(1);
               return (
                 <button
                   key={tab}
@@ -1029,7 +1268,7 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                     setTabError("");
                   }}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {label}
                   {count > 0 && (
                     <span className={`badge ms-1 ${activeTab === tab ? "bg-white text-primary" : "bg-secondary"}`} style={{ fontSize: "0.6rem" }}>
                       {count}
@@ -1044,7 +1283,14 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
         {/* Row 2: Actions */}
         <div className="app-footer-padding app-standard-footer">
           <Footer_Actions
-            start={activeTab === "details" ? <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn-outline-secondary" title={service ? "Save service" : "Create service"} /> : null}
+            start={activeTab === "details"
+              ? <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn-outline-secondary" title={service ? "Save service" : "Create service"} />
+              : activeTab === "tasks"
+                ? <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" disabled={taskAutomationSaving} onClick={handleSaveTaskAutomation}>
+                    <CheckIcon style={{ width: 16, height: 16 }} />
+                    {taskAutomationSaving ? "Saving..." : "Save task rules"}
+                  </button>
+                : null}
             center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
           />
         </div>

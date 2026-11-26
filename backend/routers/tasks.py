@@ -2,27 +2,30 @@
 # FILE: tasks.py
 #
 # PURPOSE:
-#   Provides full CRUD management for tasks and their inter-task relationships.
+#   Provides full CRUD management for tasks, task status actions, and
+#   their inter-task relationships.
 #   Tasks can be linked to other tasks by title, forming a "related" graph that
 #   is resolved and returned as human-readable titles in every response.
 #
 # FUNCTIONAL PARTS:
 #   [1] Request Models — Pydantic model for task link requests
 #   [2] Task Read Routes — list all tasks, get by ID, get by title
-#   [3] Task Write Routes — create and update tasks with optional linked-task title resolution
-#   [4] Task Delete Route — delete a task and remove all associated TaskLink records
-#   [5] Task Link Management — add a link by title and remove a link by target task ID
+#   [3] Assignee Actions — start or complete an assigned open task
+#   [4] Task Write Routes — create and update tasks with optional linked-task title resolution
+#   [5] Task Delete Route — delete a task and remove all associated TaskLink records
+#   [6] Task Link Management — add a link by title and remove a link by target task ID
 #
 # CHANGE LOG — all modifications to this file must be recorded here:
 #   Format : YYYY-MM-DD | Author | Description
 #   ─────────────────────────────────────────────────────────────
 #   2026-03-01 | Claude  | Added section comments and top-level documentation
 #   2026-11-16 | Copilot | Added authenticated user's open-task route
+#   2026-11-26 | Copilot | Added assignment-scoped task start and completion actions
 # ============================================================
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
 from pydantic import BaseModel
 from backend.database import get_session
@@ -33,6 +36,11 @@ from backend.routers.auth import get_current_user
 
 class TaskLinkRequest(BaseModel):
     target_task_title: str
+
+
+class TaskStatusUpdate(BaseModel):
+    status: Literal["in_progress", "completed"]
+
 
 router = APIRouter()
 
@@ -70,6 +78,39 @@ async def get_my_open_tasks(
         Task.status.in_(["pending", "in_progress"]),
     ).order_by(Task.due_date)
     return [_build_task_read(task, session) for task in session.exec(stmt).all()]
+
+
+@router.put("/tasks/{task_id}/status", response_model=TaskRead)
+async def update_my_task_status(
+    task_id: UUID,
+    status_update: TaskStatusUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Allow an assignee to start or complete only their own open task."""
+    task = session.exec(
+        select(Task).where(
+            Task.id == task_id,
+            Task.company_id == (current_user.company_id or ""),
+            Task.assigned_to_id == current_user.id,
+        )
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    allowed_transitions = {
+        "pending": {"in_progress", "completed"},
+        "in_progress": {"completed"},
+    }
+    if status_update.status not in allowed_transitions.get(task.status, set()):
+        raise HTTPException(status_code=409, detail="This task can no longer be updated.")
+
+    task.status = status_update.status
+    session.add(task)
+    session.commit()
+    session.refresh(task)
+    return _build_task_read(task, session)
+
 
 @router.get("/tasks/{task_id}", response_model=TaskRead)
 async def get_task(task_id: UUID, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):

@@ -560,6 +560,10 @@ export const tasksAPI = {
     clearCache("tasks");
     return api.put(`/tasks/${id}`, data);
   },
+  updateStatus: (id, status) => {
+    clearCache("tasks");
+    return api.put(`/tasks/${id}/status`, { status });
+  },
   delete: (id) => {
     clearCache("tasks");
     return api.delete(`/tasks/${id}`);

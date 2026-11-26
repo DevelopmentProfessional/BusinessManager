@@ -41,6 +41,7 @@
 #   2026-09-11 | GitHub Copilot | Made schedule-linked sales idempotent and rejected duplicate payment rows/items
 #   2026-11-20 | GitHub Copilot | Protected verified contact email state from generic CRUD updates
 #   2026-11-24 | GitHub Copilot | Deduct linked products as well as resources for service sales
+#   2026-11-26 | GitHub Copilot | Generate and reconcile appointment tasks from service rules
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
@@ -73,6 +74,10 @@ from ..inventory_costing import (
     consume_inventory_fifo,
     create_opening_stock_layer,
     fallback_unit_cost,
+)
+from ..service_task_automation import (
+    normalize_service_task_automation,
+    sync_service_automation_tasks,
 )
 
 # ─── [2] CONSTANTS ─────────────────────────────────────────────────────────────
@@ -1505,6 +1510,13 @@ async def insert_with_file(
             raise HTTPException(status_code=400, detail="Cannot create tenant-scoped record without an assigned company.")
         record_data['company_id'] = current_user.company_id
 
+    if model_class is Service and "task_automation_json" in record_data:
+        record_data["task_automation_json"] = normalize_service_task_automation(
+            record_data["task_automation_json"],
+            session,
+            current_user.company_id or "",
+        )
+
     try:
         record = model_class(**record_data)
     except Exception as e:
@@ -1518,6 +1530,12 @@ async def insert_with_file(
     session.add(record)
     try:
         session.flush()
+        if isinstance(record, Schedule):
+            sync_service_automation_tasks(
+                session,
+                record,
+                current_user.company_id or "",
+            )
         if isinstance(record, Inventory):
             create_opening_stock_layer(session, record)
         if is_inventory_table and str(getattr(record, 'type', '') or '').upper() == 'ASSET':
@@ -1780,6 +1798,13 @@ async def insert(
             raise HTTPException(status_code=400, detail="Cannot create tenant-scoped record without an assigned company.")
         record_data['company_id'] = current_user.company_id
 
+    if model_class is Service and "task_automation_json" in record_data:
+        record_data["task_automation_json"] = normalize_service_task_automation(
+            record_data["task_automation_json"],
+            session,
+            current_user.company_id or "",
+        )
+
     normalized_table = table_name.lower()
     if normalized_table in ("sale_transaction", "sale_transactions") and record_data.get("schedule_id"):
         try:
@@ -1860,6 +1885,12 @@ async def insert(
     session.add(record)
     try:
         session.flush()
+        if isinstance(record, Schedule):
+            sync_service_automation_tasks(
+                session,
+                record,
+                current_user.company_id or "",
+            )
         if isinstance(record, Inventory):
             create_opening_stock_layer(session, record)
         if is_inventory_table and str(getattr(record, 'type', '') or '').upper() == 'ASSET':
@@ -1946,6 +1977,13 @@ async def update_by_id(
     # Prevent changing company_id
     record_data.pop('company_id', None)
 
+    if model_class is Service and "task_automation_json" in record_data:
+        record_data["task_automation_json"] = normalize_service_task_automation(
+            record_data["task_automation_json"],
+            session,
+            current_user.company_id or "",
+        )
+
     stmt = sql_select(model_class).where(getattr(model_class, "id") == record_id)
     if table_name.lower() not in SYSTEM_TABLES and hasattr(model_class, 'company_id'):
         if not current_user.company_id:
@@ -2010,6 +2048,7 @@ async def update_by_id(
         if plain_password:
             record_data['password_hash'] = User.hash_password(plain_password)
 
+    was_cancelled = isinstance(record, Schedule) and str(record.status or "").lower() == "cancelled"
     for key, value in record_data.items():
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
             setattr(record, key, value)
@@ -2027,6 +2066,14 @@ async def update_by_id(
     if hasattr(record, "updated_at"):
         from datetime import datetime
         record.updated_at = datetime.utcnow()
+
+    if isinstance(record, Schedule):
+        sync_service_automation_tasks(
+            session,
+            record,
+            current_user.company_id or "",
+            was_cancelled=was_cancelled,
+        )
 
     session.add(record)
     try:
@@ -2355,6 +2402,13 @@ async def update(
     # Prevent changing company_id
     record_data.pop('company_id', None)
 
+    if model_class is Service and "task_automation_json" in record_data:
+        record_data["task_automation_json"] = normalize_service_task_automation(
+            record_data["task_automation_json"],
+            session,
+            current_user.company_id or "",
+        )
+
     raw_filters = [(k, v) for k, v in request.query_params.multi_items()]
     if not raw_filters:
         raise HTTPException(status_code=400, detail="Update requires at least one filter (e.g., id=...)")
@@ -2402,10 +2456,18 @@ async def update(
 
         for record in records:
             _reset_contact_verification_if_email_changed(record, record_data)
+            was_cancelled = isinstance(record, Schedule) and str(record.status or "").lower() == "cancelled"
             for key, value in record_data.items():
                 if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
                     setattr(record, key, value)
             session.add(record)
+            if isinstance(record, Schedule):
+                sync_service_automation_tasks(
+                    session,
+                    record,
+                    current_user.company_id or "",
+                    was_cancelled=was_cancelled,
+                )
 
         session.commit()
         return {"count": len(records)}
@@ -2415,9 +2477,18 @@ async def update(
         raise HTTPException(status_code=404, detail=f"Record not found in {table_name}")
 
     _reset_contact_verification_if_email_changed(record, record_data)
+    was_cancelled = isinstance(record, Schedule) and str(record.status or "").lower() == "cancelled"
     for key, value in record_data.items():
         if hasattr(record, key) and key not in ["id", "created_at", "updated_at", "company_id"]:
             setattr(record, key, value)
+
+    if isinstance(record, Schedule):
+        sync_service_automation_tasks(
+            session,
+            record,
+            current_user.company_id or "",
+            was_cancelled=was_cancelled,
+        )
 
     session.add(record)
     session.commit()
@@ -2603,6 +2674,12 @@ async def delete_by_id(
 
     before_json = _serialize_row_to_json(record)
     entity_title = _extract_entity_title(record, table_name)
+
+    if isinstance(record, Schedule):
+        original_status = record.status
+        record.status = "cancelled"
+        sync_service_automation_tasks(session, record, current_user.company_id or "")
+        record.status = original_status
 
     # Remove file from disk before the DB transaction for document deletes
     if table_name.lower() in ("document", "documents"):

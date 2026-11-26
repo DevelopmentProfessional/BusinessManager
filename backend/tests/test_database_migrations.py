@@ -100,6 +100,39 @@ def test_task_action_path_migration_adds_column(monkeypatch):
     assert any("ALTER TABLE task ADD COLUMN action_path VARCHAR" in statement for statement in statements)
 
 
+def test_service_task_automation_migration_adds_columns_and_unique_index(monkeypatch):
+    statements = []
+
+    class Result:
+        def fetchone(self):
+            return None
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            statements.append(str(statement))
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    monkeypatch.setattr(database, "engine", Engine())
+
+    database._ensure_service_task_automation_schema_if_needed()
+
+    assert any("ALTER TABLE service ADD COLUMN task_automation_json TEXT" in statement for statement in statements)
+    assert any("ALTER TABLE task ADD COLUMN source_schedule_id UUID" in statement for statement in statements)
+    assert any("ALTER TABLE task ADD COLUMN automation_rule_id VARCHAR" in statement for statement in statements)
+    assert any("CREATE UNIQUE INDEX IF NOT EXISTS uq_task_schedule_automation_rule" in statement for statement in statements)
+
+
 def test_procurement_catalog_migration_adds_line_snapshots(monkeypatch):
     statements = []
 

@@ -71,6 +71,8 @@ export default function Modal_Notifications({ isOpen, onClose }) {
   const [data, setData] = useState(EMPTY_DATA);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [updatingTaskIds, setUpdatingTaskIds] = useState(() => new Set());
+  const [taskActionErrors, setTaskActionErrors] = useState({});
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -142,6 +144,32 @@ export default function Modal_Notifications({ isOpen, onClose }) {
       cancelled = true;
     };
   }, [isOpen, user?.id, canViewLowStock, canViewOrders]);
+
+  const updateTaskStatus = async (task, status) => {
+    setUpdatingTaskIds((current) => new Set(current).add(task.id));
+    setTaskActionErrors((current) => ({ ...current, [task.id]: "" }));
+    try {
+      const response = await tasksAPI.updateStatus(task.id, status);
+      const updatedTask = getResponseData(response);
+      setData((current) => ({
+        ...current,
+        tasks: status === "completed"
+          ? current.tasks.filter((item) => item.id !== task.id)
+          : current.tasks.map((item) => item.id === task.id ? { ...item, ...updatedTask } : item),
+      }));
+    } catch (error) {
+      setTaskActionErrors((current) => ({
+        ...current,
+        [task.id]: error?.response?.data?.detail || error?.message || "Could not update this task.",
+      }));
+    } finally {
+      setUpdatingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(task.id);
+        return next;
+      });
+    }
+  };
 
   const upcomingAppointments = useMemo(() => {
     const now = Date.now();
@@ -336,6 +364,27 @@ export default function Modal_Notifications({ isOpen, onClose }) {
                       <div>Priority: <span className="text-capitalize">{task.priority || "normal"}</span></div>
                       {formatDate(task.due_date) && <div>Due: {formatDate(task.due_date)}</div>}
                       {actionPath && <ActionLink to={actionPath} onClick={onClose}>Open task</ActionLink>}
+                      {taskActionErrors[task.id] && <div className="alert alert-danger mt-2 py-1" role="alert">{taskActionErrors[task.id]}</div>}
+                      <div className="d-flex gap-2 mt-2">
+                        {task.status === "pending" && (
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm"
+                            disabled={updatingTaskIds.has(task.id)}
+                            onClick={() => updateTaskStatus(task, "in_progress")}
+                          >
+                            Start
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          disabled={updatingTaskIds.has(task.id)}
+                          onClick={() => updateTaskStatus(task, "completed")}
+                        >
+                          {updatingTaskIds.has(task.id) ? "Saving..." : "Mark complete"}
+                        </button>
+                      </div>
                     </div>
                   </Accordion>
                 );

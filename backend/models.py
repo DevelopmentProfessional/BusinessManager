@@ -43,6 +43,7 @@
 #   2026-09-11 | GitHub Copilot | Added employee compensation settings and pay-slip calculation snapshots
 #   2026-11-16 | GitHub Copilot | Added supplier catalog and FIFO receipt cost-layer models
 #   2026-11-20 | GitHub Copilot | Added company sender and contact email verification settings
+#   2026-11-26 | GitHub Copilot | Added service task automation rules and generated-task source keys
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -604,6 +605,7 @@ class Service(BaseModel, table=True):
     duration_minutes: int = Field(ge=0, default=60)
     image_url: Optional[str] = Field(default=None)  # URL or path to service image
     addons_json: Optional[str] = Field(default=None)  # JSON: service add-on definitions
+    task_automation_json: Optional[str] = Field(default=None)  # JSON: tasks generated for scheduled services
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -1178,6 +1180,7 @@ class ServiceRead(SQLModel):
     duration_minutes: int
     image_url: Optional[str] = None
     addons_json: Optional[str] = None
+    task_automation_json: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -2091,6 +2094,14 @@ class TaskLink(BaseModel, table=True):
 
 # Task model
 class Task(BaseModel, table=True):
+    __table_args__ = (
+        UniqueConstraint(
+            "source_schedule_id",
+            "automation_rule_id",
+            name="uq_task_schedule_automation_rule",
+        ),
+    )
+
     title: str = Field(index=True)  # Task title (not unique, allowing multiple tasks with same title)
     description: Optional[str] = Field(default=None)
     status: str = Field(default="pending")  # pending, in_progress, completed, cancelled
@@ -2098,6 +2109,8 @@ class Task(BaseModel, table=True):
     due_date: Optional[datetime] = Field(default=None)
     assigned_to_id: Optional[UUID] = Field(foreign_key="user.id", default=None)
     action_path: Optional[str] = Field(default=None)
+    source_schedule_id: Optional[UUID] = Field(default=None)
+    automation_rule_id: Optional[str] = Field(default=None)
     company_id: Optional[str] = Field(default=None, index=True)
 
     # Relationships
@@ -2122,6 +2135,8 @@ class TaskRead(SQLModel):
     due_date: Optional[datetime] = None
     assigned_to_id: Optional[UUID] = None
     action_path: Optional[str] = None
+    source_schedule_id: Optional[UUID] = None
+    automation_rule_id: Optional[str] = None
     linked_task_titles: Optional[List[str]] = None  # Titles of linked tasks
 
 class TaskCreate(SQLModel):

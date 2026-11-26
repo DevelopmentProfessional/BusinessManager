@@ -49,6 +49,7 @@
 #   2026-11-16 | GitHub Copilot | Added supplier catalog and purchase-order line snapshot migrations
 #   2026-11-16 | GitHub Copilot | Added audited stock movement and FIFO consumption schema
 #   2026-11-22 | GitHub Copilot | Repair core app_settings columns before schema-version fast path
+#   2026-11-26 | GitHub Copilot | Added service-task automation schema migration
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.18.1"
+CURRENT_SCHEMA_VERSION = "2026.11.26.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -134,6 +135,18 @@ def _required_schema_artifacts_present() -> bool:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='task' AND column_name='action_path'"
             )).fetchone()
+            task_source_schedule_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='task' AND column_name='source_schedule_id'"
+            )).fetchone()
+            task_automation_rule_id_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='task' AND column_name='automation_rule_id'"
+            )).fetchone()
+            task_automation_unique_index = conn.execute(text(
+                "SELECT 1 FROM pg_indexes "
+                "WHERE schemaname='public' AND indexname='uq_task_schedule_automation_rule'"
+            )).fetchone()
             descriptive_feature_description_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='descriptive_feature' AND column_name='description'"
@@ -161,6 +174,10 @@ def _required_schema_artifacts_present() -> bool:
             service_addons_json_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='service' AND column_name='addons_json'"
+            )).fetchone()
+            service_task_automation_json_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='service' AND column_name='task_automation_json'"
             )).fetchone()
             schedule_service_addons_json_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
@@ -291,6 +308,9 @@ def _required_schema_artifacts_present() -> bool:
                 and asset_unit_employee_column is not None
                 and asset_unit_location_column is not None
                 and task_action_path_column is not None
+                and task_source_schedule_id_column is not None
+                and task_automation_rule_id_column is not None
+                and task_automation_unique_index is not None
                 and descriptive_feature_description_column is not None
                 and schedule_appointment_type_column is not None
                 and schedule_duration_minutes_column is not None
@@ -298,6 +318,7 @@ def _required_schema_artifacts_present() -> bool:
                 and schedule_parent_schedule_id_column is not None
                 and schedule_send_reminder_column is not None
                 and service_addons_json_column is not None
+                and service_task_automation_json_column is not None
                 and schedule_service_addons_json_column is not None
                 and sale_transaction_discount_amount_column is not None
                 and sale_transaction_inventory_consumed_column is not None
@@ -361,6 +382,34 @@ def _ensure_task_action_path_column_if_needed():
                 print("  + Added task.action_path")
     except Exception as e:
         print(f"  Warning: Could not ensure task.action_path column: {e}")
+
+
+def _ensure_service_task_automation_schema_if_needed():
+    """Add service automation configuration and generated-task source keys."""
+    try:
+        with engine.begin() as conn:
+            columns = (
+                ("service", "task_automation_json", "TEXT"),
+                ("task", "source_schedule_id", "UUID"),
+                ("task", "automation_rule_id", "VARCHAR"),
+            )
+            for table_name, column_name, column_type in columns:
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_schema='public' AND table_name=:table_name AND column_name=:column_name"
+                ), {"table_name": table_name, "column_name": column_name}).fetchone()
+                if not exists:
+                    conn.execute(text(
+                        f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
+                    ))
+                    print(f"  + Added {table_name}.{column_name}")
+
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_task_schedule_automation_rule "
+                "ON task (source_schedule_id, automation_rule_id)"
+            ))
+    except Exception as e:
+        print(f"  Warning: Could not ensure service task automation schema: {e}")
 
 
 def _ensure_asset_unit_location_column_if_needed():
@@ -1988,6 +2037,7 @@ def create_db_and_tables():
     # version fast path or unrelated migration can prevent the API from starting.
     _ensure_user_undo_action_table_if_needed()
     _ensure_service_and_schedule_addons_if_needed()
+    _ensure_service_task_automation_schema_if_needed()
     _ensure_permissiontype_enum_values_if_needed()
     _ensure_payroll_compensation_columns_if_needed()
     _seed_document_templates_for_existing_companies_if_needed()
