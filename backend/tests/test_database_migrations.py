@@ -438,3 +438,55 @@ def test_03200_appointment_backfill_skips_when_marker_exists():
     assert not any("INSERT INTO sale_transaction (" in statement for statement in statements)
 
 
+def test_03200_appointment_backfill_does_not_change_service_prices():
+    from backend.migrations.backfill_03200_appointments import run_migration
+
+    statements = []
+
+    class Result:
+        def __init__(self, value=None):
+            self.value = value
+
+        def scalar(self):
+            return self.value
+
+        def scalar_one(self):
+            return self.value
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            statements.append(sql)
+            if "WHERE migration_key = :migration_key" in sql:
+                return Result(None)
+            if "FROM appointment_backfill" in sql:
+                return Result(4 if "existing_sale_id IS NOT NULL" not in sql else 1)
+            if "SELECT COUNT(*) FROM created_schedule_sales" in sql:
+                return Result(3)
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    result = run_migration(Engine())
+
+    assert result == {
+        "status": "applied",
+        "past_appointments": 4,
+        "new_sales_created": 3,
+        "existing_sales_reused": 1,
+    }
+    assert any("UPDATE schedule s" in statement for statement in statements)
+    assert any("INSERT INTO sale_transaction (" in statement for statement in statements)
+    assert not any("service_price_map" in statement for statement in statements)
+    assert not any("UPDATE service" in statement for statement in statements)
+
+

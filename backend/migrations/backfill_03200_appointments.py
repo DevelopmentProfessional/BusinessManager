@@ -1,4 +1,4 @@
-"""One-time deployment backfill for company 03200's historical appointments."""
+"""One-time deployment backfill for company 03200's historical appointment sales."""
 
 from __future__ import annotations
 
@@ -12,32 +12,6 @@ from sqlalchemy import Engine, text
 
 MIGRATION_KEY = "2026-11-26_03200_past_appointments_paid"
 ADVISORY_LOCK_IDS = (3200, 20261126)
-
-SERVICE_PRICE_MAP_SQL = """
-CREATE TEMP TABLE service_price_map ON COMMIT DROP AS
-SELECT *
-FROM (VALUES
-    ('African', 85.00::numeric),
-    ('Braids', 85.00::numeric),
-    ('Braids - Box (Short)', 140.00::numeric),
-    ('Braids - Cornrow (Long)', 100.00::numeric),
-    ('Braids - Cornrow (Medium)', 85.00::numeric),
-    ('Braids - Ropetwist (Long)', 200.00::numeric),
-    ('Braids - Ropetwist (Medium)', 150.00::numeric),
-    ('Closure', 150.00::numeric),
-    ('Closure - Regular', 150.00::numeric),
-    ('Comb twist', 60.00::numeric),
-    ('Dreads', 100.00::numeric),
-    ('Dreads - Interlock (Long)', 150.00::numeric),
-    ('Dreads - Interlock (Medium)', 125.00::numeric),
-    ('Dreads - Palmroll (Long)', 125.00::numeric),
-    ('Dreads - Palmroll (Medium)', 100.00::numeric),
-    ('Gel pedicure', 85.00::numeric),
-    ('T braids', 85.00::numeric),
-    ('Toe fix', 25.00::numeric),
-    ('Weave', 200.00::numeric)
-) AS prices(service_name, proposed_price)
-"""
 
 APPOINTMENT_BACKFILL_SQL = """
 CREATE TEMP TABLE appointment_backfill ON COMMIT DROP AS
@@ -156,38 +130,6 @@ def run_migration(database_engine: Engine) -> dict[str, Any]:
         if already_applied:
             return {"status": "already_applied"}
 
-        conn.execute(text(SERVICE_PRICE_MAP_SQL))
-
-        unsafe_services = conn.execute(text("""
-            SELECT m.service_name
-            FROM service_price_map m
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM service s
-                WHERE s.company_id = '03200'
-                  AND s.name = m.service_name
-                  AND (
-                      s.price = 0
-                      OR ROUND(s.price::numeric, 2) = m.proposed_price
-                  )
-            )
-            ORDER BY m.service_name
-        """)).scalars().all()
-        if unsafe_services:
-            raise RuntimeError(
-                "Company 03200 price backfill stopped; missing services or "
-                "unexpected existing prices: " + ", ".join(unsafe_services)
-            )
-
-        updated_services = conn.execute(text("""
-            UPDATE service s
-            SET price = m.proposed_price
-            FROM service_price_map m
-            WHERE s.company_id = '03200'
-              AND s.name = m.service_name
-              AND s.price = 0
-        """)).rowcount
-
         conn.execute(text(APPOINTMENT_BACKFILL_SQL))
         appointment_count = conn.execute(
             text("SELECT COUNT(*) FROM appointment_backfill")
@@ -283,7 +225,6 @@ def run_migration(database_engine: Engine) -> dict[str, Any]:
             text("SELECT COUNT(*) FROM created_schedule_sales")
         ).scalar_one()
         summary = {
-            "services_repriced": max(updated_services or 0, 0),
             "past_appointments": appointment_count,
             "new_sales_created": new_sale_count,
             "existing_sales_reused": reused_sale_count,
