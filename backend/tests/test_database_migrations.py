@@ -404,89 +404,63 @@ def test_discount_rule_deal_type_migration_adds_column(monkeypatch):
     assert any("ALTER TABLE discount_rule ADD COLUMN deal_type VARCHAR NOT NULL DEFAULT 'product'" in statement for statement in statements)
 
 
-def test_03200_appointment_backfill_skips_when_marker_exists():
-    from backend.migrations.backfill_03200_appointments import run_migration
+def test_03200_appointment_backfill_executes_packaged_sql_and_reads_marker():
+    from backend.migrations import backfill_03200_appointments as migration
 
     statements = []
-
-    class Result:
-        def scalar(self):
-            return 1
-
-    class Connection:
-        def execute(self, statement, _parameters=None):
-            sql = str(statement)
-            statements.append(sql)
-            return Result()
-
-    class Transaction:
-        def __enter__(self):
-            return Connection()
-
-        def __exit__(self, *_args):
-            return False
-
-    class Engine:
-        def begin(self):
-            return Transaction()
-
-    result = run_migration(Engine())
-
-    assert result == {"status": "already_applied"}
-    assert any("pg_advisory_xact_lock" in statement for statement in statements)
-    assert not any("UPDATE service" in statement for statement in statements)
-    assert not any("INSERT INTO sale_transaction (" in statement for statement in statements)
-
-
-def test_03200_appointment_backfill_does_not_change_service_prices():
-    from backend.migrations.backfill_03200_appointments import run_migration
-
-    statements = []
-
-    class Result:
-        def __init__(self, value=None):
-            self.value = value
-
-        def scalar(self):
-            return self.value
-
-        def scalar_one(self):
-            return self.value
-
-    class Connection:
-        def execute(self, statement, _parameters=None):
-            sql = str(statement)
-            statements.append(sql)
-            if "WHERE migration_key = :migration_key" in sql:
-                return Result(None)
-            if "FROM appointment_backfill" in sql:
-                return Result(4 if "existing_sale_id IS NOT NULL" not in sql else 1)
-            if "SELECT COUNT(*) FROM created_schedule_sales" in sql:
-                return Result(3)
-            return Result()
-
-    class Transaction:
-        def __enter__(self):
-            return Connection()
-
-        def __exit__(self, *_args):
-            return False
-
-    class Engine:
-        def begin(self):
-            return Transaction()
-
-    result = run_migration(Engine())
-
-    assert result == {
-        "status": "applied",
+    details = {
         "past_appointments": 4,
         "new_sales_created": 3,
         "existing_sales_reused": 1,
     }
-    assert any("UPDATE schedule s" in statement for statement in statements)
-    assert any("INSERT INTO sale_transaction (" in statement for statement in statements)
-    assert not any("service_price_map" in statement for statement in statements)
-    assert not any("UPDATE service" in statement for statement in statements)
+
+    class Result:
+        def scalar_one(self):
+            return details
+
+    class Connection:
+        def exec_driver_sql(self, statement):
+            statements.append(statement)
+
+        def execute(self, statement, _parameters=None):
+            statements.append(str(statement))
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    result = migration.run_migration(Engine())
+
+    assert result == {"status": "completed", "details": details}
+    assert len(statements) == 2
+    assert "DO $$" in statements[0]
+    assert "WHERE migration_key = :migration_key" in statements[1]
+
+
+def test_03200_appointment_backfill_sql_is_scoped_and_price_independent():
+    from pathlib import Path
+
+    from backend.migrations import backfill_03200_appointments as migration
+
+    sql_path = Path(migration.__file__).with_name("backfill_03200_appointment_sales.sql")
+    sql = sql_path.read_text(encoding="utf-8")
+
+    assert "pg_advisory_xact_lock(3200, 20261126)" in sql
+    assert "s.company_id = '03200'" in sql
+    assert "s.appointment_date::date" in sql
+    assert "s.is_recurring_master IS NOT TRUE" in sql
+    assert "NOT IN ('cancelled', 'canceled')" in sql
+    assert "UPDATE schedule s" in sql
+    assert "INSERT INTO sale_transaction (" in sql
+    assert "payment_method = 'cash'" in sql
+    assert "UPDATE service" not in sql
 
 
