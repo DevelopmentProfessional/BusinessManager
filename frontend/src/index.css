@@ -92,7 +92,7 @@
 
   /* Search Boxes */
   --app-input-height: 2rem;
-  --app-input-font-size: 1rem;
+  --app-input-font-size: 1.25rem;
   --app-search-input-padding-x: 0.75rem;
 
   /* Floating Labels */
@@ -100,7 +100,7 @@
   --app-floating-label-background: var(--bs-body-bg);
 
   /* Dropups & Dropdowns */
-  --app-dropdown-font-size: 1rem;
+  --app-dropdown-font-size: 1.25rem;
   --app-dropdown-min-width: 11rem;
   --app-dropdown-border-radius: 0.75rem;
   --app-dropdown-item-height: 2rem;
@@ -1746,7 +1746,7 @@ textarea.form-control.ui-control-sm {
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   padding: 0.2rem 0.5rem !important;
-  font-size: var(--app-dropdown-font-size, var(--app-input-font-size, 0.875rem)) !important;
+  font-size: var(--app-dropdown-font-size, var(--app-input-font-size, 1.25rem)) !important;
   line-height: 1.25;
 }
 
@@ -3350,10 +3350,12 @@ input[type="number"],
 }
 
 .form-floating > .app-date-picker-wrapper input.form-control {
-  padding: 0.85rem 1.25rem 0.15rem !important;
+  padding: 0.15rem 2rem 0.15rem 1.25rem !important;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   border-radius: 9999px !important;
+  font-size: var(--app-input-font-size, 1.25rem) !important;
+  line-height: normal !important;
 }
 
 .app-themed-datepicker-popper {
@@ -3445,13 +3447,13 @@ input[type="number"],
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   border-radius: 9999px !important;
-  font-size: var(--app-input-font-size, 1rem) !important;
+  font-size: var(--app-input-font-size, 1.25rem) !important;
   line-height: normal !important;
 }
 
 .form-floating > .app-dropdown-floating-trigger,
 .app-dropdown-root.form-floating > .ui-dropdown-trigger {
-  font-size: var(--app-dropdown-font-size, var(--app-input-font-size, 1rem)) !important;
+  font-size: var(--app-dropdown-font-size, var(--app-input-font-size, 1.25rem)) !important;
   text-align: left !important;
 }
 
@@ -4272,7 +4274,7 @@ textarea.form-control {
 .app-dropdown-root button,
 .form-floating > .app-dropdown-floating-trigger,
 .form-floating > .app-dropdown-floating-trigger * {
-  font-size: var(--app-dropdown-font-size, 1rem) !important;
+  font-size: var(--app-dropdown-font-size, 1.25rem) !important;
   text-align: left !important;
 }
 
