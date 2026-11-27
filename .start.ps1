@@ -14,14 +14,19 @@ function Import-EnvFile {
     }
 }
 
-. (Join-Path $root "scripts\ensure-db-tunnel.ps1")
+$tunnelScript = Join-Path $root "scripts\ensure-db-tunnel.ps1"
+if (Test-Path $tunnelScript) {
+    . $tunnelScript
+}
 
 # Prefer the repo-level AWS URL, then allow local/backend overrides to replace it.
 Import-EnvFile (Join-Path $root ".env")
 Import-EnvFile (Join-Path $root "backend\.env")
 Import-EnvFile (Join-Path $root "backend\.env.local")
 
-$null = Ensure-AwsDbTunnel -RootPath $root -RoleName "Internal backend" -RequireReady
+if (Get-Command Ensure-AwsDbTunnel -ErrorAction SilentlyContinue) {
+    $null = Ensure-AwsDbTunnel -RootPath $root -RoleName "Internal backend" -RequireReady
+}
 
 # Start backend in a new window
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\backend'; $env:DATABASE_URL='$env:DATABASE_URL'; ..\.venv\Scripts\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000" -WindowStyle Normal

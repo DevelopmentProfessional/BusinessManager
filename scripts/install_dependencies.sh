@@ -38,33 +38,4 @@ echo "Installing backend dependencies..."
 echo "Installing client-api dependencies..."
 /usr/bin/python3.11 -m pip install -r client-api/requirements.txt
 
-if [ -f /opt/businessmanager/scripts/ensure_local_postgres.sh ]; then
-	chmod +x /opt/businessmanager/scripts/ensure_local_postgres.sh
-fi
-
-RUN_COMPANY_03200_MIGRATION="false"
-if [ -f "$BACKEND_ENV_FILE" ]; then
-	RUN_COMPANY_03200_MIGRATION=$(grep -E '^RUN_COMPANY_03200_MIGRATION=' "$BACKEND_ENV_FILE" | head -n 1 | cut -d '=' -f2-)
-	RUN_COMPANY_03200_MIGRATION=${RUN_COMPANY_03200_MIGRATION:-false}
-fi
-
-case "$RUN_COMPANY_03200_MIGRATION" in
-	true|TRUE|1|yes|YES)
-		if [ ! -f "$BACKEND_ENV_FILE" ]; then
-			echo "ERROR: $BACKEND_ENV_FILE not found"
-			exit 1
-		fi
-
-		set -a
-		. "$BACKEND_ENV_FILE"
-		set +a
-
-		echo "Running company 03200 migration against AWS DATABASE_URL..."
-		/usr/bin/python3.11 scripts/migrate_lavish.py
-		;;
-	*)
-		echo "Skipping company 03200 migration. Set RUN_COMPANY_03200_MIGRATION=true in backend/.env to enable it."
-		;;
-esac
-
 echo "Dependencies installed."
