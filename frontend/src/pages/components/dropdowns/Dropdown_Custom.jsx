@@ -238,7 +238,7 @@ export default function Dropdown_Custom({
           ${disabled ? "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed" : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"}
           ${required && (multiSelect ? normalizedValue.length === 0 : !value) ? "border-red-300 dark:border-red-600 focus:ring-red-500" : ""}
         `}
-        style={{ fontSize: "var(--app-input-font-size, 0.875rem)", textAlign: "left" }}
+        style={{ fontSize: "var(--app-dropdown-font-size, var(--app-input-font-size, 1rem))", textAlign: "left" }}
         disabled={disabled}
         placeholder={isFloating ? "" : placeholder}
         aria-label={effectiveFloatingLabel || placeholder || undefined}
