@@ -1720,7 +1720,7 @@ table,
 .ui-control-sm {
   box-sizing: border-box;
   min-height: var(--app-input-height);
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   font-size: var(--app-input-font-size) !important;
   line-height: 1.25;
   border-radius: var(--bs-border-radius-sm);
@@ -1730,7 +1730,7 @@ table,
 .form-select.ui-control-sm {
   height: var(--app-input-height);
   min-height: var(--app-input-height);
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   font-size: var(--app-input-font-size) !important;
   line-height: 1.25;
 }
@@ -1745,7 +1745,7 @@ textarea.form-control.ui-control-sm {
   box-sizing: border-box;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
-  padding: 0.2rem 0.5rem !important;
+  padding: 0.25rem 0.5rem !important;
   font-size: var(--app-dropdown-font-size, var(--app-input-font-size, 1.25rem)) !important;
   line-height: 1.25;
 }
@@ -3350,7 +3350,7 @@ input[type="number"],
 }
 
 .form-floating > .app-date-picker-wrapper input.form-control {
-  padding: 0.15rem 2rem 0.15rem 1.25rem !important;
+  padding: 0.25rem 2rem 0.25rem 1.25rem !important;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   border-radius: 9999px !important;
@@ -3442,8 +3442,8 @@ input[type="number"],
 .form-floating > .app-dropdown-floating-trigger {
   padding-left: 1.25rem !important;
   padding-right: 1.25rem;
-  padding-top: 0.15rem !important;
-  padding-bottom: 0.15rem !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
   border-radius: 9999px !important;
