@@ -41,9 +41,10 @@ logging.getLogger("sqlalchemy").setLevel(logging.CRITICAL)
 logging.getLogger("sqlalchemy").propagate = False
 
 from datetime import datetime
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
+from sqlalchemy import text
 from sqlmodel import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -170,10 +171,7 @@ def ensure_database_ready() -> None:
     global _inventory_scheduler
     if os.getenv("SKIP_STARTUP_DB_BOOTSTRAP", "").strip().lower() in {"1", "true", "yes", "on"}:
         return
-    try:
-        create_db_and_tables()
-    except Exception as exc:
-        logging.getLogger(__name__).exception("Startup database migration encountered an error: %s", exc)
+    create_db_and_tables()
     if _inventory_scheduler is None:
         _inventory_scheduler = BackgroundScheduler(timezone="UTC")
         _inventory_scheduler.add_job(
@@ -196,6 +194,17 @@ def stop_background_jobs() -> None:
     _inventory_scheduler = None
 
 # Configure CORS with explicit production domains
+@app.get("/health", include_in_schema=False)
+def health():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception as exc:
+        logging.getLogger(__name__).exception("Staff API health check failed.")
+        raise HTTPException(status_code=503, detail="Staff API database is unavailable.") from exc
+    return {"status": "ok", "service": "staff-api"}
+
+
 allowed_origins = [
     # Production domains
     "https://vadpivi.com",
