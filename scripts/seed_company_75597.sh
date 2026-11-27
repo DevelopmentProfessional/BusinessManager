@@ -13,6 +13,6 @@ set -a
 . "$BACKEND_ENV_FILE"
 set +a
 
-echo "Initializing database schema and running startup migrations..."
-/usr/bin/python3.11 /opt/businessmanager/backend/init_database.py
-echo "Database schema initialization completed."
+echo "Initializing database schema and running additive seed for company 75597..."
+SEED_COMPANY_ID="75597" /usr/bin/python3.11 /opt/businessmanager/backend/init_database.py
+echo "Company 75597 seed completed."

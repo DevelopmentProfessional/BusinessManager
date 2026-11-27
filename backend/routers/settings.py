@@ -32,14 +32,20 @@ try:
         AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, Company, UserRole
     )
     from backend.routers.auth import get_current_user, require_page_permission
+    from backend.seed_data import seed_demo_data
 except ModuleNotFoundError:
     from database import get_session
     from models import (
         AppSettings, AppSettingsCreate, AppSettingsUpdate, AppSettingsRead, Company, UserRole
     )
     from routers.auth import get_current_user, require_page_permission
+    from seed_data import seed_demo_data
 
 router = APIRouter()
+
+
+class SeedRequest(BaseModel):
+    force: bool = True
 
 
 # TEMPORARY: isolated Stripe test checkout payload/response models.
@@ -544,6 +550,35 @@ def upload_company_logo(
         raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
 
     return _to_settings_response(settings, company)
+
+
+# ─── 3 ADMIN SEED ENDPOINT ─────────────────────────────────────────────────────
+
+@router.post("/admin/seed")
+def trigger_seed_data(
+    payload: SeedRequest,
+    x_seed_key: str | None = Header(default=None, alias="X-Seed-Key"),
+    session: Session = Depends(get_session),
+    current_user=Depends(get_current_user),
+):
+    """Admin-only endpoint to trigger demo data seeding without shell access."""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    required_key = os.getenv("SEED_ADMIN_KEY", "ONE_TIME_SEED").strip()
+    if required_key and x_seed_key != required_key:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid seed key")
+
+    try:
+        seed_demo_data(session, force=payload.force)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Seeding failed: {exc}")
+
+    return {
+        "status": "ok",
+        "message": "Seed completed successfully",
+        "force": payload.force,
+    }
 
 
 # ─── 4 USER SCHEDULE SETTINGS ──────────────────────────────────────────────────
