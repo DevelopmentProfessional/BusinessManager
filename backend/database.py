@@ -51,6 +51,7 @@
 #   2026-11-22 | GitHub Copilot | Repair core app_settings columns before schema-version fast path
 #   2026-11-26 | GitHub Copilot | Added service-task automation schema migration
 #   2026-11-26 | GitHub Copilot | Added employee-scoped Sales POS cart table
+#   2026-11-27 | GitHub Copilot | Added company 03200 historical appointment payment backfill
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -81,7 +82,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.26.2"
+CURRENT_SCHEMA_VERSION = "2026.11.27.1"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -2024,6 +2025,20 @@ def _ensure_app_settings_stripe_columns_if_needed() -> None:
         ))
 
 
+def _backfill_03200_past_appointments_if_needed():
+    """Ensure company 03200's historical unpaid appointments are marked as paid with sale transactions."""
+    try:
+        from backend.migrations.backfill_03200_appointments import run_migration
+    except ModuleNotFoundError:
+        from migrations.backfill_03200_appointments import run_migration  # type: ignore
+
+    try:
+        result = run_migration(engine)
+        print(f"  + Company 03200 appointment backfill: {result}")
+    except Exception as e:
+        print(f"  Warning: Company 03200 appointment backfill could not run: {e}")
+
+
 # ─── 16 CREATE DB AND TABLES (ORCHESTRATOR) ────────────────────────────────────
 def create_db_and_tables():
     """Run safe migrations to bring schema to current version."""
@@ -2121,6 +2136,7 @@ def create_db_and_tables():
     _ensure_user_db_environment_if_needed()
     _ensure_status_lookup_columns_if_needed()
     _ensure_user_startup_page_if_needed()
+    _backfill_03200_past_appointments_if_needed()
     _mark_schema_current()
     print("Migrations complete.")
 

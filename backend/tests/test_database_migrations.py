@@ -464,3 +464,16 @@ def test_03200_appointment_backfill_sql_is_scoped_and_price_independent():
     assert "UPDATE service" not in sql
 
 
+def test_database_calls_03200_appointment_backfill(monkeypatch):
+    called = []
+
+    from backend.migrations import backfill_03200_appointments as migration
+
+    monkeypatch.setattr(migration, "run_migration", lambda _engine: called.append("backfill") or {"status": "completed"})
+
+    database._backfill_03200_past_appointments_if_needed()
+
+    assert called == ["backfill"]
+
+
+

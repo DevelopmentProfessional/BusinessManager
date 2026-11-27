@@ -1,9 +1,9 @@
 DO $$
 DECLARE
     v_migration_key CONSTANT TEXT := '2026-11-26_03200_past_appointments_paid';
-    appointment_count BIGINT;
-    reused_sale_count BIGINT;
-    new_sale_count BIGINT;
+    appointment_count BIGINT := 0;
+    reused_sale_count BIGINT := 0;
+    new_sale_count BIGINT := 0;
 BEGIN
     CREATE TABLE IF NOT EXISTS public.businessmanager_data_migration (
         migration_key TEXT PRIMARY KEY,
@@ -13,12 +13,46 @@ BEGIN
 
     PERFORM pg_advisory_xact_lock(3200, 20261126);
 
-    IF EXISTS (
+    IF NOT EXISTS (
         SELECT 1
-        FROM public.businessmanager_data_migration
-        WHERE businessmanager_data_migration.migration_key = v_migration_key
+        FROM schedule s
+        LEFT JOIN company c ON c.company_id = s.company_id
+        WHERE s.company_id = '03200'
+          AND COALESCE(s.is_paid, FALSE) = FALSE
+          AND s.appointment_date::date
+              < (
+                  CURRENT_TIMESTAMP
+                  AT TIME ZONE COALESCE(NULLIF(c.timezone, ''), 'Atlantic/Bermuda')
+              )::date
+          AND s.is_recurring_master IS NOT TRUE
+          AND LOWER(COALESCE(s.status, '')) NOT IN ('cancelled', 'canceled')
     ) THEN
-        RAISE NOTICE 'Company 03200 appointment sales backfill already applied; no changes made.';
+        IF EXISTS (
+            SELECT 1
+            FROM public.businessmanager_data_migration
+            WHERE businessmanager_data_migration.migration_key = v_migration_key
+        ) THEN
+            RAISE NOTICE 'Company 03200 appointment sales backfill already applied; no changes made.';
+            RETURN;
+        END IF;
+
+        INSERT INTO public.businessmanager_data_migration (
+            migration_key, applied_at, details
+        )
+        VALUES (
+            v_migration_key,
+            NOW(),
+            jsonb_build_object(
+                'past_appointments', 0,
+                'new_sales_created', 0,
+                'existing_sales_reused', 0
+            )
+        )
+        ON CONFLICT (migration_key) DO UPDATE
+        SET applied_at = NOW(),
+            details = EXCLUDED.details;
+
+        RAISE NOTICE 'No unpaid past appointments found for company 03200.';
         RETURN;
     END IF;
 
@@ -27,24 +61,27 @@ BEGIN
         SELECT
             s.id AS schedule_id,
             s.service_id,
-            s.client_id,
-            s.employee_id,
+            valid_client.id AS client_id,
+            valid_employee.id AS employee_id,
             s.company_id,
             s.appointment_date
                 + make_interval(mins => COALESCE(s.duration_minutes, 60)) AS sale_at,
-            sv.name AS service_name,
-            ROUND(sv.price::numeric, 2) AS service_price,
+            COALESCE(sv.name, 'Service') AS service_name,
+            ROUND(COALESCE(sv.price, 0)::numeric, 2) AS service_price,
             COALESCE(addons.addon_total, 0)::numeric AS addon_total,
             GREATEST(COALESCE(s.discount, 0)::numeric, 0) AS schedule_discount,
             COALESCE(c.tax_rate, 0)::numeric AS tax_rate,
             s.service_addons_json,
             existing_sale.id AS existing_sale_id
         FROM schedule s
-        JOIN service sv
+        LEFT JOIN service sv
           ON sv.id = s.service_id
-         AND sv.company_id = s.company_id
-        JOIN company c
+        LEFT JOIN company c
           ON c.company_id = s.company_id
+        LEFT JOIN client valid_client
+          ON valid_client.id = s.client_id
+        LEFT JOIN "user" valid_employee
+          ON valid_employee.id = s.employee_id
         LEFT JOIN LATERAL (
             SELECT st.id
             FROM sale_transaction st
@@ -67,19 +104,18 @@ BEGIN
                     ELSE 0
                 END
             ), 0) AS addon_total
-            FROM jsonb_array_elements(
-                CASE
-                    WHEN NULLIF(BTRIM(s.service_addons_json), '') IS NULL
-                        THEN '[]'::jsonb
-                    WHEN jsonb_typeof(s.service_addons_json::jsonb) = 'array'
-                        THEN s.service_addons_json::jsonb
-                    ELSE '[]'::jsonb
-                END
-            ) AS addon(value)
+            FROM (
+                SELECT CASE
+                    WHEN NULLIF(BTRIM(s.service_addons_json), '') IS NULL THEN '[]'::jsonb
+                    WHEN BTRIM(s.service_addons_json) NOT LIKE '[%' THEN '[]'::jsonb
+                    ELSE s.service_addons_json::jsonb
+                END AS arr
+            ) raw_arr,
+            jsonb_array_elements(raw_arr.arr) AS addon(value)
             WHERE NULLIF(BTRIM(addon.value->>'name'), '') IS NOT NULL
         ) addons ON TRUE
         WHERE s.company_id = '03200'
-          AND s.service_id IS NOT NULL
+          AND COALESCE(s.is_paid, FALSE) = FALSE
           AND COALESCE(s.task_type, 'service') = 'service'
           AND s.appointment_date::date
               < (
@@ -207,7 +243,10 @@ BEGIN
             'new_sales_created', new_sale_count,
             'existing_sales_reused', reused_sale_count
         )
-    );
+    )
+    ON CONFLICT (migration_key) DO UPDATE
+    SET applied_at = NOW(),
+        details = EXCLUDED.details;
 
     RAISE NOTICE
         'Company 03200 appointment sales backfill applied: % past appointments, % new sales, % existing sales reused.',

@@ -1677,6 +1677,27 @@ def finalize_sale_inventory(
     }
 
 
+@router.post("/schedules/backfill-03200-paid")
+async def backfill_03200_paid_appointments(
+    current_user: User = Depends(get_current_user),
+):
+    """Backfill unpaid historical appointments before today for company 03200 as paid."""
+    user_company = getattr(current_user, "company_id", None)
+    if user_company != "03200" and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Unauthorized for company 03200 backfill")
+
+    try:
+        from backend.migrations.backfill_03200_appointments import run_migration
+    except ModuleNotFoundError:
+        from migrations.backfill_03200_appointments import run_migration  # type: ignore
+
+    from backend.database import engine
+    try:
+        return run_migration(engine)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Backfill execution failed: {exc}")
+
+
 @router.post("/schedules/{schedule_id}/initiate-refund")
 async def initiate_schedule_refund(
     schedule_id: UUID,
