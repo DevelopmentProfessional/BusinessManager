@@ -30,7 +30,14 @@ export function getViewportClampedMenuVerticalPosition(
 
   return {
     top: shouldOpenUpward ? undefined : anchor.bottom + gap,
-    bottom: shouldOpenUpward ? window.innerHeight - anchor.top + gap : undefined,
+    bottom: shouldOpenUpward ? viewportBottom - anchor.top + gap : undefined,
     maxHeight: Math.max(1, Math.min(maxHeight, availableHeight)),
   };
+}
+
+export function getViewportClampedMenuBottom(anchorTop, gap = 8) {
+  const viewport = window.visualViewport;
+  const viewportTop = viewport?.offsetTop ?? 0;
+  const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+  return viewportBottom - anchorTop + gap;
 }

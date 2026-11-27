@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { getViewportClampedMenuBounds } from "./menuPosition";
+import { getViewportClampedMenuBounds, getViewportClampedMenuBottom } from "./menuPosition";
 
 const SIDE_MARGIN = 12;
 const MENU_GAP = 8;
@@ -14,7 +14,7 @@ function getMenuPosition(anchor, minWidth, maxWidth, maxHeight) {
   return {
     position: "fixed",
     left: bounds.left,
-    bottom: window.innerHeight - anchor.top + MENU_GAP,
+    bottom: getViewportClampedMenuBottom(anchor.top, MENU_GAP),
     width: bounds.width,
     minWidth: bounds.width,
     maxWidth: bounds.maxWidth,

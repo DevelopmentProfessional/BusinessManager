@@ -28,6 +28,7 @@ import Modal from "./Modal";
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Gate_Permission from "../layout/Gate_Permission";
 import Footer_Actions from "../footers/Footer_Actions";
+import { getViewportClampedMenuBottom } from "../dropdowns/menuPosition";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, CreditCardIcon, PlusIcon, MinusIcon, DocumentTextIcon, TrashIcon } from "../../../icons";
 
 const CLIENT_DROPUP_Z_INDEX = 1200;
@@ -37,7 +38,7 @@ function getClientDropupStyle(anchorEl) {
   const rect = anchorEl.getBoundingClientRect();
   const width = Math.min(Math.max(rect.width, 260), window.innerWidth - 24);
   const left = Math.min(Math.max(rect.left, 12), window.innerWidth - width - 12);
-  const bottom = Math.max(12, window.innerHeight - rect.top + 8);
+  const bottom = Math.max(12, getViewportClampedMenuBottom(rect.top, 8));
   const maxHeight = Math.min(280, rect.top - 16);
   return { position: "fixed", left, bottom, width, maxHeight, zIndex: CLIENT_DROPUP_Z_INDEX };
 }

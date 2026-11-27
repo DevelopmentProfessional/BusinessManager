@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import { matchesWildcardText } from "../../../utils/searchableSelect";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
+import { getViewportClampedMenuBottom } from "./menuPosition";
 
 const PANEL_SIDE_MARGIN = 12;
 const PANEL_GAP = 8;
@@ -80,7 +81,7 @@ function getPanelStyle(select) {
   return {
     left,
     top: "auto",
-    bottom: Math.max(0, window.innerHeight - panelBottom),
+    bottom: Math.max(0, getViewportClampedMenuBottom(panelBottom, 0)),
     width,
     maxHeight,
   };
