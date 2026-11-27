@@ -890,13 +890,6 @@ export const settingsAPI = {
     });
   },
   getCompanyLogo: () => api.get("/settings/logo", { responseType: "blob" }),
-  seedDemoData: (force = true, seedKey = "") => {
-    const headers = {};
-    if (seedKey) {
-      headers["X-Seed-Key"] = seedKey;
-    }
-    return api.post("/settings/admin/seed", { force }, { headers });
-  },
   createStripeTestCheckout: (amount = 0.5) => api.post("/settings/stripe/test-checkout", { amount }),
 };
 

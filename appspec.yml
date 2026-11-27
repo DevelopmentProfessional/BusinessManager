@@ -14,7 +14,7 @@ hooks:
     - location: scripts/install_dependencies.sh
       timeout: 300
       runas: root
-    - location: scripts/seed_company_75597.sh
+    - location: scripts/init_database.sh
       timeout: 300
       runas: root
   ApplicationStart:
