@@ -165,9 +165,14 @@ def _ensure_bootstrap_tables():
             updated_at TIMESTAMP,
             company_id VARCHAR UNIQUE NOT NULL,
             name VARCHAR NOT NULL,
+            business_category VARCHAR DEFAULT NULL,
             is_active BOOLEAN NOT NULL DEFAULT TRUE
           )
         """))
+        try:
+          conn.execute(text("ALTER TABLE company ADD COLUMN IF NOT EXISTS business_category VARCHAR DEFAULT NULL"))
+        except Exception:
+          pass
         # Ensure expected userrole enum values exist
         for val in ("admin", "manager", "employee", "viewer", "ADMIN", "MANAGER", "EMPLOYEE", "VIEWER"):
           try:
@@ -214,6 +219,7 @@ app = FastAPI(title="CompanyCreation", docs_url=None, redoc_url=None)
 class CreateRequest(BaseModel):
     company_id: str
     company_name: str
+    business_category: Optional[str] = "salon_spa"
     admin_username: str
     admin_password: str
     admin_first_name: str = "Admin"
@@ -298,9 +304,10 @@ def create_company(req: CreateRequest):
 
             now = datetime.utcnow()
             company_uuid = str(uuid.uuid4())
+            category = (req.business_category or "salon_spa").strip()
             _exec(conn,
-                "INSERT INTO company (id, created_at, company_id, name, is_active) VALUES (:id, :ca, :cid, :name, :active)",
-              {"id": company_uuid, "ca": now, "cid": cid, "name": req.company_name.strip(), "active": True}
+                "INSERT INTO company (id, created_at, company_id, name, business_category, is_active) VALUES (:id, :ca, :cid, :name, :cat, :active)",
+              {"id": company_uuid, "ca": now, "cid": cid, "name": req.company_name.strip(), "cat": category, "active": True}
             )
 
             user_uuid = str(uuid.uuid4())
@@ -346,9 +353,15 @@ def create_company(req: CreateRequest):
                  "cname": req.company_name.strip(), "cid": cid}
             )
 
-            seed_company_scaffold(conn, cid, user_uuid)
+            seed_company_scaffold(conn, cid, user_uuid, category)
 
-        return {"ok": True, "company_id": cid, "company_name": req.company_name.strip(), "admin_username": req.admin_username.strip()}
+        return {
+            "ok": True,
+            "company_id": cid,
+            "company_name": req.company_name.strip(),
+            "business_category": category,
+            "admin_username": req.admin_username.strip(),
+        }
 
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, 500)
@@ -812,6 +825,18 @@ HTML_PAGE = """<!DOCTYPE html>
           <input id="company_name" type="text" placeholder="e.g. Acme Corporation">
         </div>
 
+        <div class="field">
+          <label for="business_category">Business Category <span style="color:#ef4444">*</span></label>
+          <select id="business_category" style="width:100%;padding:0.65rem 0.8rem;background:#1e293b;border:1px solid #334155;border-radius:0.375rem;color:#f8fafc;font-size:0.9rem;">
+            <option value="salon_spa">✂️ Salon / Beauty / Spa</option>
+            <option value="consulting">💼 Consulting / Professional Services</option>
+            <option value="retail">🛍️ Retail / Store / Inventory</option>
+            <option value="healthcare">🩺 Healthcare / Wellness</option>
+            <option value="general">🏢 General / Other</option>
+          </select>
+          <div class="hint">Tailors default item categories, services, client/task statuses, and templates.</div>
+        </div>
+
         <div class="divider"></div>
         <div class="section-title">Admin User</div>
 
@@ -1055,6 +1080,7 @@ async function submitForm() {
   clearError();
   const company_id   = document.getElementById('company_id').value.trim().toUpperCase();
   const company_name = document.getElementById('company_name').value.trim();
+  const business_category = document.getElementById('business_category').value;
   const username     = document.getElementById('username').value.trim();
   const password     = document.getElementById('password').value;
   const confirm      = document.getElementById('confirm').value;
@@ -1077,9 +1103,10 @@ async function submitForm() {
     const r = await fetch('/create', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({company_id, company_name, admin_username: username,
-                            admin_password: password, admin_first_name: first_name,
-                            admin_last_name: last_name, admin_email: email})
+      body: JSON.stringify({company_id, company_name, business_category,
+                            admin_username: username, admin_password: password,
+                            admin_first_name: first_name, admin_last_name: last_name,
+                            admin_email: email})
     });
     const d = await r.json();
     if (d.ok) {
@@ -1105,6 +1132,8 @@ async function submitForm() {
 function resetForm() {
   ['company_id','company_name','username','email','password','confirm','first_name','last_name']
     .forEach(id => document.getElementById(id).value = '');
+  const catEl = document.getElementById('business_category');
+  if (catEl) catEl.value = 'salon_spa';
   clearError();
   document.getElementById('formSection').style.display = '';
   document.getElementById('successSection').classList.remove('show');

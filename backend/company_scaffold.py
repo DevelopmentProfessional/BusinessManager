@@ -12,6 +12,31 @@ from uuid import uuid4
 from sqlalchemy import text
 
 
+BUSINESS_CATEGORIES = {
+    "salon_spa": "Salon / Beauty / Spa",
+    "consulting": "Consulting / Professional Services",
+    "retail": "Retail / Store / Inventory",
+    "healthcare": "Healthcare / Wellness",
+    "general": "General / Other",
+}
+
+
+def normalize_business_category(category: str | None) -> str:
+    """Normalize user-entered or stored business category into a standard key."""
+    if not category:
+        return "general"
+    norm = category.strip().lower().replace("-", "_").replace(" ", "_")
+    if any(k in norm for k in ("salon", "beauty", "spa", "hair", "nail", "esthetic")):
+        return "salon_spa"
+    if any(k in norm for k in ("consult", "professional", "advisory", "legal", "agency")):
+        return "consulting"
+    if any(k in norm for k in ("retail", "store", "shop", "merchandise", "apparel", "inventory")):
+        return "retail"
+    if any(k in norm for k in ("health", "wellness", "clinic", "medical", "care", "therapy")):
+        return "healthcare"
+    return "general"
+
+
 def _table_exists(conn, table_name: str) -> bool:
     row = conn.execute(
         text(
@@ -23,8 +48,8 @@ def _table_exists(conn, table_name: str) -> bool:
     return bool(row)
 
 
-def _load_template_seed_rows() -> list[dict]:
-    """Load built-in templates from templates router and append scaffold extras."""
+def _load_template_seed_rows(category_key: str = "general") -> list[dict]:
+    """Load built-in templates from templates router and append scaffold and category extras."""
     standard_templates = []
     try:
         from backend.routers.templates import _STANDARD_TEMPLATES  # type: ignore
@@ -346,18 +371,232 @@ def _load_template_seed_rows() -> list[dict]:
         },
     ]
 
+    category_templates = {
+        "consulting": [
+            {
+                "name": "Project Proposal & Scope of Work",
+                "template_type": "memo",
+                "accessible_pages": '["documents","clients"]',
+                "description": "Project proposal and engagement scope for advisory clients.",
+                "content": (
+                    "<h2>Project Proposal & Scope of Work</h2>"
+                    "<p><strong>Client:</strong> {{client.name}}</p>"
+                    "<p><strong>Project:</strong> [Project Title]</p>"
+                    "<p><strong>Executive Summary:</strong></p>"
+                    "<p>[Overview of strategic engagement objectives and expected deliverables.]</p>"
+                    "<h3>Scope & Milestones:</h3>"
+                    "<ul>"
+                    "<li>Initial Discovery & Operational Diagnostic</li>"
+                    "<li>Strategy Formulation & Advisory Roadmaps</li>"
+                    "<li>Final Deliverable Presentation & Sign-off</li>"
+                    "</ul>"
+                    "<p><strong>Estimated Fee:</strong> [Engagement Fee]</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Deliverable Sign-Off",
+                "template_type": "memo",
+                "accessible_pages": '["documents","clients"]',
+                "description": "Client acceptance and sign-off document for completed deliverables.",
+                "content": (
+                    "<h2>Deliverable Sign-Off</h2>"
+                    "<p><strong>Client:</strong> {{client.name}}</p>"
+                    "<p><strong>Deliverable Title:</strong> [Deliverable Title]</p>"
+                    "<p><strong>Completion Date:</strong> {{date}}</p>"
+                    "<p>Client acknowledges formal receipt and approval of the engagement deliverable.</p>"
+                    "<p><strong>Client Signature:</strong> ____________________ Date: ________</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Client Retainer Agreement",
+                "template_type": "memo",
+                "accessible_pages": '["documents","clients","sales"]',
+                "description": "Monthly recurring advisory retainer agreement.",
+                "content": (
+                    "<h2>Advisory Retainer Agreement</h2>"
+                    "<p><strong>Client:</strong> {{client.name}}</p>"
+                    "<p><strong>Retainer Term:</strong> Monthly Recurring</p>"
+                    "<p><strong>Advisory Hours:</strong> [e.g. 20 hours/month]</p>"
+                    "<p><strong>Monthly Rate:</strong> [Rate]</p>"
+                    "<p>Scope includes priority strategic advisory, bi-weekly reviews, and on-call consulting.</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Mutual Non-Disclosure Agreement (NDA)",
+                "template_type": "memo",
+                "accessible_pages": '["documents","clients"]',
+                "description": "Confidentiality and proprietary information protection agreement.",
+                "content": (
+                    "<h2>Mutual Non-Disclosure Agreement</h2>"
+                    "<p>This Non-Disclosure Agreement is entered into by {{company.name}} and <strong>{{client.name}}</strong>.</p>"
+                    "<p>Both parties agree that all trade secrets, client data, and proprietary methods shall remain strictly confidential.</p>"
+                    "<p><strong>Signature:</strong> ____________________ Date: ________</p>"
+                ),
+            },
+        ],
+        "salon_spa": [
+            {
+                "name": "Client Service Waiver & Consent",
+                "template_type": "memo",
+                "accessible_pages": '["clients","documents","schedule"]',
+                "description": "Consent and allergy disclosure waiver for salon and spa treatments.",
+                "content": (
+                    "<h2>Client Service Waiver & Consent</h2>"
+                    "<p><strong>Client:</strong> {{client.name}}</p>"
+                    "<p><strong>Service:</strong> {{service.name}}</p>"
+                    "<p><strong>Date:</strong> {{date}}</p>"
+                    "<p>I confirm that I have disclosed any allergies, sensitivities, or medical conditions and consent to treatment by licensed professionals.</p>"
+                    "<p><strong>Client Signature:</strong> ____________________ Date: ________</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Hair Care Aftercare Guide",
+                "template_type": "email",
+                "accessible_pages": '["clients","schedule"]',
+                "description": "Post-treatment aftercare recommendations for salon clients.",
+                "content": (
+                    "<p>Dear {{client.name}},</p>"
+                    "<p>Thank you for visiting {{company.name}} today for your {{service.name}}.</p>"
+                    "<p>Tips to maintain your look:</p>"
+                    "<ul>"
+                    "<li>Wait 48 hours before shampooing freshly colored hair.</li>"
+                    "<li>Use sulfate-free color-safe cleansing products.</li>"
+                    "<li>Apply heat protectant prior to blow-drying or heat styling.</li>"
+                    "</ul>"
+                    "<p>Book your next touch-up at {{company.phone}}.</p>"
+                    "<p>Warmly,<br>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Skin Treatment Post-Care Instructions",
+                "template_type": "email",
+                "accessible_pages": '["clients","schedule"]',
+                "description": "Skincare recovery and sun protection guide following facial treatments.",
+                "content": (
+                    "<p>Dear {{client.name}},</p>"
+                    "<p>Thank you for your skincare appointment at {{company.name}}.</p>"
+                    "<p>Post-care tips for glowing, healthy skin:</p>"
+                    "<ul>"
+                    "<li>Apply broad-spectrum SPF 30+ daily and avoid direct sun.</li>"
+                    "<li>Refrain from heavy makeup and intense workouts for 24 hours.</li>"
+                    "<li>Stay hydrated and use a gentle moisturizer.</li>"
+                    "</ul>"
+                    "<p>Best regards,<br>{{company.name}}</p>"
+                ),
+            },
+        ],
+        "retail": [
+            {
+                "name": "Store Return & Exchange Policy",
+                "template_type": "memo",
+                "accessible_pages": '["inventory","sales","documents"]',
+                "description": "Standard return, exchange, and store credit policy.",
+                "content": (
+                    "<h2>Store Return & Exchange Policy</h2>"
+                    "<p><strong>{{company.name}}</strong></p>"
+                    "<p>Unworn merchandise with original tags attached may be returned or exchanged within 30 days of purchase with a valid receipt.</p>"
+                    "<p>Sale items and clearance goods are final sale. Store credit is issued for gift returns.</p>"
+                    "<p>Thank you for shopping with us!</p>"
+                ),
+            },
+            {
+                "name": "Daily Inventory Count Sheet",
+                "template_type": "memo",
+                "accessible_pages": '["inventory","documents"]',
+                "description": "Auditing and cycle count worksheet for retail stockrooms.",
+                "content": (
+                    "<h2>Daily Inventory Count Sheet</h2>"
+                    "<p><strong>Location:</strong> [Floor / Stockroom]</p>"
+                    "<p><strong>Date:</strong> {{date}}</p>"
+                    "<p><strong>Audited By:</strong> {{sender.first_name}} {{sender.last_name}}</p>"
+                    "<p>[Verify system stock against actual physical count and record variances.]</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Wholesale Purchase Agreement",
+                "template_type": "memo",
+                "accessible_pages": '["sales","clients","documents"]',
+                "description": "Wholesale and volume buyer terms agreement.",
+                "content": (
+                    "<h2>Wholesale Purchase Agreement</h2>"
+                    "<p><strong>Buyer:</strong> {{client.name}}</p>"
+                    "<p><strong>Seller:</strong> {{company.name}}</p>"
+                    "<p>Governs wholesale terms, minimum order quantities (MOQ), tiered pricing, and shipping logistics.</p>"
+                    "<p>Authorized Signature: ____________________ Date: ________</p>"
+                ),
+            },
+        ],
+        "healthcare": [
+            {
+                "name": "Patient Medical Intake & Consent",
+                "template_type": "memo",
+                "accessible_pages": '["clients","documents","schedule"]',
+                "description": "Patient intake registration and clinical consent form.",
+                "content": (
+                    "<h2>Patient Medical Intake & Consent</h2>"
+                    "<p><strong>Patient Name:</strong> {{client.name}}</p>"
+                    "<p><strong>Date:</strong> {{date}}</p>"
+                    "<p>Patient acknowledges receipt of clinical policies, HIPAA privacy statements, and consents to diagnostic and preventative care by licensed practitioners.</p>"
+                    "<p>Signature: ____________________ Date: ________</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Treatment Plan Summary",
+                "template_type": "memo",
+                "accessible_pages": '["clients","documents","schedule"]',
+                "description": "Clinical care plan summary with recommended schedule and goals.",
+                "content": (
+                    "<h2>Treatment Plan Summary</h2>"
+                    "<p><strong>Patient:</strong> {{client.name}}</p>"
+                    "<p><strong>Provider:</strong> {{employee.name}}</p>"
+                    "<p><strong>Care Goals & Recommendations:</strong></p>"
+                    "<p>[Clinical plan, follow-up cadence, and therapeutic milestones.]</p>"
+                    "<p>{{company.name}}</p>"
+                ),
+            },
+            {
+                "name": "Health & Wellness Follow-up",
+                "template_type": "email",
+                "accessible_pages": '["clients","schedule"]',
+                "description": "Follow-up email for patient recovery, checkups, and wellness.",
+                "content": (
+                    "<p>Dear {{client.name}},</p>"
+                    "<p>Thank you for visiting {{company.name}} for your appointment on {{appointment.date}}.</p>"
+                    "<p>Please continue your prescribed care plan and home wellness regimen. Contact our care team at {{company.phone}} if you have questions.</p>"
+                    "<p>In good health,<br>{{company.name}}</p>"
+                ),
+            },
+        ],
+    }
+
+    tailored_templates = category_templates.get(category_key, [])
+
     by_name: dict[str, dict] = {}
-    for tpl in standard_templates + extra_templates:
+    for tpl in standard_templates + extra_templates + tailored_templates:
         by_name[str(tpl.get("name", ""))] = tpl
     return list(by_name.values())
 
 
-def _seed_document_templates(conn, company_id: str) -> int:
+def _seed_document_templates(conn, company_id: str, category_key: str = "general") -> int:
     if not _table_exists(conn, "document_template"):
         return 0
 
+    if category_key == "general" and _table_exists(conn, "company"):
+        c_row = conn.execute(
+            text("SELECT business_category FROM company WHERE company_id=:cid"),
+            {"cid": company_id},
+        ).fetchone()
+        if c_row and c_row[0]:
+            category_key = normalize_business_category(c_row[0])
+
     seeded = 0
-    for tpl in _load_template_seed_rows():
+    for tpl in _load_template_seed_rows(category_key):
         existing = conn.execute(
             text(
                 "SELECT id, content, template_type, accessible_pages, description "
@@ -578,19 +817,59 @@ def _seed_roles_and_permissions(conn, company_id: str) -> tuple[int, int, str | 
     return (roles_created, perms_created, viewer_role_id)
 
 
-def _seed_inventory_categories(conn, company_id: str) -> int:
+def _seed_inventory_categories(conn, company_id: str, category_key: str = "general") -> int:
     if not _table_exists(conn, "inventory_category"):
         return 0
 
-    categories = {
-        "product": ["Core Products", "Seasonal", "Clearance", "Accessories", "Samples"],
-        "resource": ["Raw Materials", "Packaging", "Consumables", "Office Supplies"],
-        "asset": ["Equipment", "Tools", "Devices", "Furniture"],
-        "location": ["Front", "Back Room", "Warehouse", "Office"],
-        "item": ["General", "Promo", "Display", "Miscellaneous"],
-        "bundle": ["Starter Pack", "Bundle", "Gift Set"],
-        "mix": ["Custom Mix", "Preset Mix"],
+    categories_by_category = {
+        "salon_spa": {
+            "product": ["Hair Care", "Skin Care", "Nail Care", "Styling Tools", "Retail Products", "Gift Sets"],
+            "resource": ["Shampoos & Conditioners", "Hair Color & Dyes", "Developer", "Foils & Wraps", "Spa Oils & Lotions", "Sanitizers & Disinfectants"],
+            "asset": ["Styling Chairs", "Washing Stations", "Hair Dryers & Steamers", "Esthetician Beds", "Manicure Tables", "Pedicure Basins"],
+            "location": ["Reception / Retail", "Salon Floor", "Spa Treatment Room", "Shampoo Station", "Back Bar / Supply Room"],
+            "item": ["General", "Promotional", "Display", "Samples"],
+            "bundle": ["Spa Day Package", "Hair & Treatment Bundle", "Bridal Package"],
+            "mix": ["Custom Color Formula", "Custom Treatment Mix"],
+        },
+        "consulting": {
+            "product": ["Client Resources", "Assessment Toolkits", "Strategy Workbooks", "Playbooks", "Training Modules"],
+            "resource": ["Workshop Supplies", "Presentation Materials", "Client Binders", "Office Supplies"],
+            "asset": ["Facilitation Laptops", "Presentation Displays", "Video Conference Kits", "Projectors"],
+            "location": ["Headquarters", "Meeting Room A", "Conference Suite", "Client Site Locker", "Remote / Virtual"],
+            "item": ["Reports", "Guides", "Deliverables", "Templates"],
+            "bundle": ["Advisory Package", "Leadership Offsite Bundle", "Executive Training Set"],
+            "mix": ["Custom Assessment Mix", "Workshop Format Mix"],
+        },
+        "retail": {
+            "product": ["Apparel", "Footwear", "Accessories", "Merchandise", "Seasonal Collection", "New Arrivals", "Clearance"],
+            "resource": ["Packaging & Bags", "Price Tags & Labels", "Hangars", "Receipt Paper", "Shipping Boxes"],
+            "asset": ["POS Terminals", "Barcode Scanners", "Cash Drawers", "Security Sensors", "Display Racks", "Shelving Units"],
+            "location": ["Sales Floor", "Display Window", "Stockroom", "Warehouse Shelf", "Cash Register / Counter"],
+            "item": ["General Merchandise", "Promo Goods", "Floor Display", "Overstock"],
+            "bundle": ["Value Pack", "Gift Bundle", "Seasonal Outfit Set"],
+            "mix": ["Assorted Color Pack", "Multi-Size Pack"],
+        },
+        "healthcare": {
+            "product": ["Wellness Supplements", "Orthopedic Aids", "Skincare & Topicals", "Patient Care Kits"],
+            "resource": ["PPE & Gloves", "Exam Table Paper", "Bandages & Gauze", "Antiseptics & Cleansers", "Syringes & Needles", "Specimen Containers"],
+            "asset": ["Examination Tables", "Diagnostic Monitors", "Autoclaves", "Ultrasound Equipment", "Wheelchairs", "Vital Signs Monitors"],
+            "location": ["Waiting Area", "Exam Room 1", "Exam Room 2", "Treatment Room", "Lab / Triage", "Supply Storage"],
+            "item": ["General Supplies", "Patient Education", "Display", "Samples"],
+            "bundle": ["Wellness Checkup Package", "New Patient Care Kit", "Therapy Bundle"],
+            "mix": ["Custom Prescription Pack", "Therapy Regimen Mix"],
+        },
+        "general": {
+            "product": ["Core Products", "Seasonal", "Clearance", "Accessories", "Samples"],
+            "resource": ["Raw Materials", "Packaging", "Consumables", "Office Supplies"],
+            "asset": ["Equipment", "Tools", "Devices", "Furniture"],
+            "location": ["Front", "Back Room", "Warehouse", "Office"],
+            "item": ["General", "Promo", "Display", "Miscellaneous"],
+            "bundle": ["Starter Pack", "Bundle", "Gift Set"],
+            "mix": ["Custom Mix", "Preset Mix"],
+        },
     }
+
+    categories = categories_by_category.get(category_key, categories_by_category["general"])
 
     inserted = 0
     for item_type, names in categories.items():
@@ -621,6 +900,617 @@ def _seed_inventory_categories(conn, company_id: str) -> int:
             inserted += 1
 
     return inserted
+
+
+def _seed_service_categories(conn, company_id: str, category_key: str = "general") -> int:
+    if not _table_exists(conn, "service_category"):
+        return 0
+
+    specs_by_category = {
+        "salon_spa": [
+            ("Hair Services", "Haircuts, styling, coloring, and treatments"),
+            ("Skin Care & Facials", "Deep cleansing, rejuvenation, and facial treatments"),
+            ("Nail Care", "Manicures, pedicures, and nail art"),
+            ("Massage & Body", "Therapeutic massages and body treatments"),
+            ("Waxing & Hair Removal", "Face and body hair removal services"),
+            ("Special Packages", "Bridal, event, and complete day packages"),
+        ],
+        "consulting": [
+            ("Strategy & Advisory", "Executive strategy, board advisory, and roadmap planning"),
+            ("Operations & Process", "Operational efficiency, operating model review, and audits"),
+            ("Change Management", "Organizational transformation, stakeholder alignment, and training"),
+            ("Analysis & Research", "Market research, financial modeling, and performance analytics"),
+            ("Workshops & Facilitation", "Interactive team workshops, offsites, and training sessions"),
+            ("Retainer Services", "Ongoing monthly advisory and on-call consulting"),
+        ],
+        "retail": [
+            ("Customer Services", "Personal shopping, styling consultation, and gift services"),
+            ("Alterations & Tailoring", "Garment fitting, hemming, and custom alterations"),
+            ("Repairs & Maintenance", "Product cleaning, leather conditioning, and hardware repairs"),
+            ("Delivery & Assembly", "Curbside pickup, local delivery, and in-home setup"),
+        ],
+        "healthcare": [
+            ("Consultations & Exams", "Primary consultations, comprehensive wellness exams, and follow-ups"),
+            ("Diagnostic Services", "Laboratory screening, vital assessments, and diagnostic testing"),
+            ("Therapy & Rehabilitation", "Physical therapy, rehabilitation, and clinical counseling"),
+            ("Wellness & Prevention", "Nutritional coaching, preventative health, and lifestyle programs"),
+            ("Specialized Procedures", "Targeted outpatient procedures and specialized care"),
+        ],
+        "general": [
+            ("Standard Services", "General client services and core offerings"),
+            ("Consultation", "Initial discovery and evaluation sessions"),
+            ("Support & Maintenance", "Ongoing support, check-ins, and maintenance"),
+        ],
+    }
+
+    specs = specs_by_category.get(category_key, specs_by_category["general"])
+    inserted = 0
+    for name, desc in specs:
+        exists = conn.execute(
+            text("SELECT 1 FROM service_category WHERE company_id=:cid AND name=:name"),
+            {"cid": company_id, "name": name},
+        ).fetchone()
+        if exists:
+            continue
+        conn.execute(
+            text(
+                "INSERT INTO service_category (id, created_at, updated_at, name, description, company_id) "
+                "VALUES (:id, :created_at, :updated_at, :name, :description, :company_id)"
+            ),
+            {
+                "id": str(uuid4()),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "name": name,
+                "description": desc,
+                "company_id": company_id,
+            },
+        )
+        inserted += 1
+    return inserted
+
+
+def _seed_services(conn, company_id: str, category_key: str = "general") -> int:
+    if not _table_exists(conn, "service"):
+        return 0
+
+    services_by_category = {
+        "salon_spa": [
+            ("Classic Haircut & Style", "Professional consultation, wash, precision haircut, and blowout.", "Hair Services", 65.0, 45),
+            ("Signature Facial", "Deep pore cleansing, exfoliation, hydration, and relaxing facial massage.", "Skin Care & Facials", 95.0, 60),
+            ("Deluxe Manicure", "Nail shaping, cuticle grooming, hand massage, and polish.", "Nail Care", 45.0, 30),
+            ("Spa Pedicure", "Foot soak, exfoliation, nail care, massage, and polish.", "Nail Care", 55.0, 45),
+            ("Deep Tissue Massage", "Targeted muscle tension relief and relaxation therapy.", "Massage & Body", 110.0, 60),
+        ],
+        "consulting": [
+            ("Executive Strategy Advisory", "High-level board and executive strategy advisory session.", "Strategy & Advisory", 250.0, 60),
+            ("Operational Process Audit", "Comprehensive operational workflow and process efficiency review.", "Operations & Process", 350.0, 90),
+            ("Comprehensive Market Analysis", "Data-driven competitive landscape and market research review.", "Analysis & Research", 400.0, 120),
+            ("Team Alignment Workshop", "Facilitated leadership workshop with actionable strategic takeaways.", "Workshops & Facilitation", 1200.0, 240),
+            ("Monthly Advisory Check-in", "Scheduled monthly retainer advisory and milestone review.", "Retainer Services", 200.0, 45),
+        ],
+        "retail": [
+            ("Personal Styling Session", "One-on-one wardrobe consultation and personalized outfit selection.", "Customer Services", 50.0, 60),
+            ("Custom Garment Alteration", "Precision garment fitting, hemming, and tailoring adjustment.", "Alterations & Tailoring", 35.0, 30),
+            ("Premium Gift Wrapping", "Custom artisan gift packaging with ribbon and presentation card.", "Customer Services", 15.0, 15),
+            ("White-Glove In-Home Delivery", "Scheduled home delivery with unpacking and placement.", "Delivery & Assembly", 75.0, 45),
+        ],
+        "healthcare": [
+            ("Comprehensive Wellness Exam", "Complete physical health review, vital assessment, and care planning.", "Consultations & Exams", 150.0, 45),
+            ("Diagnostic Health Screening", "Targeted clinical diagnostic tests and laboratory panel review.", "Diagnostic Services", 120.0, 30),
+            ("Physical Therapy Session", "Custom rehabilitation exercises and therapeutic mobility treatment.", "Therapy & Rehabilitation", 90.0, 45),
+            ("Nutrition & Lifestyle Consultation", "Personalized dietary guidance and preventative wellness planning.", "Wellness & Prevention", 80.0, 45),
+        ],
+        "general": [
+            ("Initial Consultation", "Introductory client consultation and needs assessment.", "Consultation", 75.0, 30),
+            ("Standard Service Delivery", "Standard professional service fulfillment.", "Standard Services", 120.0, 60),
+            ("Premium Support Session", "Dedicated one-on-one technical or advisory support.", "Support & Maintenance", 150.0, 60),
+        ],
+    }
+
+    specs = services_by_category.get(category_key, services_by_category["general"])
+    inserted = 0
+    for name, desc, cat, price, duration in specs:
+        exists = conn.execute(
+            text("SELECT 1 FROM service WHERE company_id=:cid AND name=:name"),
+            {"cid": company_id, "name": name},
+        ).fetchone()
+        if exists:
+            continue
+        conn.execute(
+            text(
+                "INSERT INTO service (id, created_at, updated_at, name, description, category, price, duration_minutes, company_id) "
+                "VALUES (:id, :created_at, :updated_at, :name, :description, :category, :price, :duration_minutes, :company_id)"
+            ),
+            {
+                "id": str(uuid4()),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "name": name,
+                "description": desc,
+                "category": cat,
+                "price": price,
+                "duration_minutes": duration,
+                "company_id": company_id,
+            },
+        )
+        inserted += 1
+    return inserted
+
+
+def _seed_client_statuses(conn, company_id: str, category_key: str = "general") -> int:
+    if not _table_exists(conn, "client_status"):
+        return 0
+
+    statuses_by_category = {
+        "salon_spa": [
+            ("New", "First-time salon or spa client"),
+            ("Active", "Regular returning client with recent bookings"),
+            ("VIP", "Frequent client enrolled in loyalty / VIP tier"),
+            ("Inactive", "No appointment bookings in over 6 months"),
+        ],
+        "consulting": [
+            ("Lead", "Prospective client in discovery or proposal stage"),
+            ("Active", "Client with an ongoing consulting engagement"),
+            ("Retainer", "Client with active recurring advisory agreement"),
+            ("Past Client", "Prior engagement successfully completed"),
+            ("On Hold", "Engagement paused or awaiting budget approval"),
+        ],
+        "retail": [
+            ("Shopper", "Registered walk-in or retail store customer"),
+            ("Loyalty Member", "Customer enrolled in rewards points program"),
+            ("VIP Customer", "High-value shopper with premier status"),
+            ("Wholesale Account", "B2B commercial purchaser with bulk pricing"),
+            ("Inactive", "No purchases recorded in over 6 months"),
+        ],
+        "healthcare": [
+            ("New Intake", "Newly registered patient awaiting initial assessment"),
+            ("Active Patient", "Regular patient with ongoing care"),
+            ("Under Treatment", "Patient actively undergoing specialized treatment plan"),
+            ("Discharged", "Patient who successfully concluded treatment plan"),
+            ("Inactive", "No visits or checkups in over 12 months"),
+        ],
+        "general": [
+            ("Lead", "Prospective client or customer"),
+            ("Active", "Active client in good standing"),
+            ("Inactive", "Dormant or past client"),
+        ],
+    }
+
+    specs = statuses_by_category.get(category_key, statuses_by_category["general"])
+    inserted = 0
+    for name, desc in specs:
+        exists = conn.execute(
+            text("SELECT 1 FROM client_status WHERE company_id=:cid AND name=:name"),
+            {"cid": company_id, "name": name},
+        ).fetchone()
+        if exists:
+            continue
+        conn.execute(
+            text(
+                "INSERT INTO client_status (id, created_at, updated_at, name, description, company_id) "
+                "VALUES (:id, :created_at, :updated_at, :name, :description, :company_id)"
+            ),
+            {
+                "id": str(uuid4()),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "name": name,
+                "description": desc,
+                "company_id": company_id,
+            },
+        )
+        inserted += 1
+    return inserted
+
+
+def _seed_employee_statuses(conn, company_id: str, _category_key: str = "general") -> int:
+    if not _table_exists(conn, "employee_status"):
+        return 0
+
+    specs = [
+        ("Full-Time", "Full-time regular employee"),
+        ("Part-Time", "Part-time regular employee"),
+        ("Contractor", "Independent contractor or specialist"),
+        ("On Leave", "Temporarily on leave of absence"),
+        ("Probationary", "New employee during initial review period"),
+    ]
+    inserted = 0
+    for name, desc in specs:
+        exists = conn.execute(
+            text("SELECT 1 FROM employee_status WHERE company_id=:cid AND name=:name"),
+            {"cid": company_id, "name": name},
+        ).fetchone()
+        if exists:
+            continue
+        conn.execute(
+            text(
+                "INSERT INTO employee_status (id, created_at, updated_at, name, description, company_id) "
+                "VALUES (:id, :created_at, :updated_at, :name, :description, :company_id)"
+            ),
+            {
+                "id": str(uuid4()),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "name": name,
+                "description": desc,
+                "company_id": company_id,
+            },
+        )
+        inserted += 1
+    return inserted
+
+
+def _seed_document_categories_and_statuses(conn, company_id: str, category_key: str = "general") -> tuple[int, int]:
+    cat_inserted = 0
+    status_inserted = 0
+
+    if _table_exists(conn, "document_category"):
+        cats_by_category = {
+            "salon_spa": [
+                ("Client Intakes", "Intake forms, health histories, and client cards"),
+                ("Service Waivers", "Chemical and service consent waivers"),
+                ("Staff Certifications", "Cosmetology and esthetician licenses"),
+                ("Invoices & Receipts", "Billing and payment documentation"),
+            ],
+            "consulting": [
+                ("Proposals & SOWs", "Client project proposals and statements of work"),
+                ("Deliverables & Reports", "Formal client deliverables, audits, and research reports"),
+                ("Client Contracts", "Master service agreements and engagement contracts"),
+                ("NDAs", "Mutual non-disclosure and confidentiality agreements"),
+                ("Strategy Briefs", "Internal and client-facing executive briefs"),
+            ],
+            "retail": [
+                ("Purchase Orders", "Supplier procurement orders and PO receipts"),
+                ("Supplier Invoices", "Inbound vendor bills and shipping manifests"),
+                ("Inventory Audits", "Stock count records and shrinkage reports"),
+                ("Store Policies", "Operating guidelines, return policies, and procedures"),
+            ],
+            "healthcare": [
+                ("Medical Records", "Clinical notes, health histories, and diagnostic reports"),
+                ("Consent Forms", "Informed consent and procedural release forms"),
+                ("HIPAA Disclosures", "Privacy disclosures and data release authorizations"),
+                ("Treatment Plans", "Clinical care plans and physician orders"),
+            ],
+            "general": [
+                ("Contracts", "Agreements, vendor contracts, and leases"),
+                ("Invoices", "Invoices, billing, and receipts"),
+                ("Policies", "Standard operating procedures and internal policies"),
+                ("Reports", "Financial and operational reports"),
+            ],
+        }
+        specs = cats_by_category.get(category_key, cats_by_category["general"])
+        for name, desc in specs:
+            exists = conn.execute(
+                text("SELECT 1 FROM document_category WHERE company_id=:cid AND name=:name"),
+                {"cid": company_id, "name": name},
+            ).fetchone()
+            if exists:
+                continue
+            conn.execute(
+                text(
+                    "INSERT INTO document_category (id, created_at, updated_at, name, description, company_id) "
+                    "VALUES (:id, :created_at, :updated_at, :name, :description, :company_id)"
+                ),
+                {
+                    "id": str(uuid4()),
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow(),
+                    "name": name,
+                    "description": desc,
+                    "company_id": company_id,
+                },
+            )
+            cat_inserted += 1
+
+    if _table_exists(conn, "document_status"):
+        statuses = [
+            ("Draft", "Initial draft under preparation"),
+            ("Under Review", "Pending internal or legal review"),
+            ("Pending Signature", "Awaiting client or executive signature"),
+            ("Approved", "Fully reviewed and signed off"),
+            ("Archived", "Historical record archived for compliance"),
+        ]
+        for name, desc in statuses:
+            exists = conn.execute(
+                text("SELECT 1 FROM document_status WHERE company_id=:cid AND name=:name"),
+                {"cid": company_id, "name": name},
+            ).fetchone()
+            if exists:
+                continue
+            conn.execute(
+                text(
+                    "INSERT INTO document_status (id, created_at, updated_at, name, description, company_id) "
+                    "VALUES (:id, :created_at, :updated_at, :name, :description, :company_id)"
+                ),
+                {
+                    "id": str(uuid4()),
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow(),
+                    "name": name,
+                    "description": desc,
+                    "company_id": company_id,
+                },
+            )
+            status_inserted += 1
+
+    return cat_inserted, status_inserted
+
+
+def _seed_departments(conn, company_id: str, category_key: str = "general") -> int:
+    if not _table_exists(conn, "department"):
+        return 0
+
+    depts_by_category = {
+        "salon_spa": [
+            ("Stylists", "Hair stylists, colorists, and barbers"),
+            ("Estheticians & Skincare", "Facial, skincare, and waxing specialists"),
+            ("Nail Technicians", "Manicurists and nail artists"),
+            ("Front Desk & Guest Services", "Reception, scheduling, and client concierge"),
+            ("Management", "Salon ownership and operational management"),
+        ],
+        "consulting": [
+            ("Advisory", "Management consultants and strategic advisors"),
+            ("Analytics & Research", "Data analysts, researchers, and financial modelers"),
+            ("Operations", "Engagement delivery and operational management"),
+            ("Client Success", "Account managers and client relationship leads"),
+            ("Leadership", "Managing partners and practice leads"),
+        ],
+        "retail": [
+            ("Sales Floor", "Retail sales associates and cashiers"),
+            ("Inventory & Stock", "Receiving, stockroom, and warehouse staff"),
+            ("Merchandising", "Visual display, styling, and product staging"),
+            ("Customer Service", "Returns, client inquiries, and support"),
+            ("Store Management", "Store managers and shift supervisors"),
+        ],
+        "healthcare": [
+            ("Clinical Staff", "Physicians, specialists, and licensed clinicians"),
+            ("Nursing & Triage", "Registered nurses, medical assistants, and phlebotomists"),
+            ("Therapy & Rehab", "Physical therapists and clinical counselors"),
+            ("Patient Services", "Patient intake, scheduling, and billing"),
+            ("Administration", "Practice administration and compliance"),
+        ],
+        "general": [
+            ("Operations", "Day-to-day business operations"),
+            ("Sales & Marketing", "Revenue generation and client acquisition"),
+            ("Customer Service", "Client care and account support"),
+            ("Administration", "Executive management and finance"),
+        ],
+    }
+
+    specs = depts_by_category.get(category_key, depts_by_category["general"])
+    inserted = 0
+    for name, desc in specs:
+        exists = conn.execute(
+            text("SELECT 1 FROM department WHERE company_id=:cid AND name=:name"),
+            {"cid": company_id, "name": name},
+        ).fetchone()
+        if exists:
+            continue
+        conn.execute(
+            text(
+                "INSERT INTO department (id, created_at, updated_at, name, description, company_id) "
+                "VALUES (:id, :created_at, :updated_at, :name, :description, :company_id)"
+            ),
+            {
+                "id": str(uuid4()),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "name": name,
+                "description": desc,
+                "company_id": company_id,
+            },
+        )
+        inserted += 1
+    return inserted
+
+
+def _seed_inventory_items(conn, company_id: str, category_key: str = "general") -> int:
+    if not _table_exists(conn, "inventory"):
+        return 0
+
+    items_by_category = {
+        "retail": [
+            {"name": "Classic Crewneck Tee", "sku": "RTL-APP-001", "price": 28.0, "cost": 12.0, "qty": 45.0, "min_stock": 15.0, "type": "product", "cat": "Apparel"},
+            {"name": "Straight Fit Denim", "sku": "RTL-APP-002", "price": 78.0, "cost": 34.0, "qty": 25.0, "min_stock": 10.0, "type": "product", "cat": "Apparel"},
+            {"name": "Leather Crossbody Bag", "sku": "RTL-ACC-003", "price": 120.0, "cost": 48.0, "qty": 12.0, "min_stock": 4.0, "type": "product", "cat": "Accessories"},
+            {"name": "Canvas Low-Top Sneakers", "sku": "RTL-FTW-004", "price": 65.0, "cost": 28.0, "qty": 18.0, "min_stock": 6.0, "type": "product", "cat": "Footwear"},
+            {"name": "Retail Branded Shopping Bags (Pack 100)", "sku": "RTL-RES-005", "price": 0.0, "cost": 25.0, "qty": 10.0, "min_stock": 3.0, "type": "resource", "cat": "Packaging & Bags"},
+        ],
+        "salon_spa": [
+            {"name": "Botanical Moisturizing Shampoo", "sku": "SAL-PRD-001", "price": 24.0, "cost": 9.0, "qty": 20.0, "min_stock": 6.0, "type": "product", "cat": "Hair Care"},
+            {"name": "Deep Nourishing Hair Mask", "sku": "SAL-PRD-002", "price": 32.0, "cost": 12.0, "qty": 15.0, "min_stock": 5.0, "type": "product", "cat": "Hair Care"},
+            {"name": "Hydrating Rose Facial Mist", "sku": "SAL-PRD-003", "price": 28.0, "cost": 10.0, "qty": 18.0, "min_stock": 5.0, "type": "product", "cat": "Skin Care"},
+            {"name": "Professional Backbar Shampoo (1 Gallon)", "sku": "SAL-RES-004", "price": 0.0, "cost": 22.0, "qty": 8.0, "min_stock": 3.0, "type": "resource", "cat": "Shampoos & Conditioners"},
+            {"name": "Single-Use Client Capes (Pack 50)", "sku": "SAL-RES-005", "price": 0.0, "cost": 15.0, "qty": 10.0, "min_stock": 4.0, "type": "resource", "cat": "Sanitizers & Disinfectants"},
+        ],
+        "consulting": [
+            {"name": "Strategic Growth Playbook", "sku": "CNS-PRD-001", "price": 129.0, "cost": 35.0, "qty": 30.0, "min_stock": 10.0, "type": "product", "cat": "Playbooks"},
+            {"name": "Executive Assessment Toolkit", "sku": "CNS-PRD-002", "price": 149.0, "cost": 45.0, "qty": 20.0, "min_stock": 5.0, "type": "product", "cat": "Assessment Toolkits"},
+            {"name": "Workshop Facilitation Binder Kit", "sku": "CNS-RES-003", "price": 0.0, "cost": 18.0, "qty": 40.0, "min_stock": 12.0, "type": "resource", "cat": "Workshop Supplies"},
+        ],
+        "healthcare": [
+            {"name": "Daily Wellness Multivitamin (60ct)", "sku": "HLT-PRD-001", "price": 34.0, "cost": 12.0, "qty": 30.0, "min_stock": 10.0, "type": "product", "cat": "Wellness Supplements"},
+            {"name": "Ergonomic Lumbar Support Cushion", "sku": "HLT-PRD-002", "price": 45.0, "cost": 18.0, "qty": 15.0, "min_stock": 5.0, "type": "product", "cat": "Orthopedic Aids"},
+            {"name": "Disposable Exam Gloves (Box 100)", "sku": "HLT-RES-003", "price": 0.0, "cost": 8.5, "qty": 25.0, "min_stock": 8.0, "type": "resource", "cat": "PPE & Gloves"},
+            {"name": "Clinical Sanitizing Surface Wipes", "sku": "HLT-RES-004", "price": 0.0, "cost": 6.0, "qty": 30.0, "min_stock": 10.0, "type": "resource", "cat": "Antiseptics & Cleansers"},
+        ],
+        "general": [
+            {"name": "Core Product A", "sku": "GEN-PRD-001", "price": 49.0, "cost": 20.0, "qty": 25.0, "min_stock": 10.0, "type": "product", "cat": "Core Products"},
+            {"name": "Office Supply Starter Kit", "sku": "GEN-RES-002", "price": 0.0, "cost": 15.0, "qty": 20.0, "min_stock": 5.0, "type": "resource", "cat": "Office Supplies"},
+        ],
+    }
+
+    specs = items_by_category.get(category_key, items_by_category["general"])
+    inserted = 0
+    has_cost = _table_exists(conn, "inventory_cost")
+
+    for item in specs:
+        exists = conn.execute(
+            text("SELECT id FROM inventory WHERE company_id=:cid AND name=:name"),
+            {"cid": company_id, "name": item["name"]},
+        ).fetchone()
+        if exists:
+            continue
+
+        item_id = str(uuid4())
+        now = datetime.utcnow()
+        conn.execute(
+            text(
+                "INSERT INTO inventory "
+                "(id, created_at, updated_at, name, sku, price, cost, quantity, min_stock_level, type, category, company_id) "
+                "VALUES (:id, :created_at, :updated_at, :name, :sku, :price, :cost, :quantity, :min_stock_level, :type, :category, :company_id)"
+            ),
+            {
+                "id": item_id,
+                "created_at": now,
+                "updated_at": now,
+                "name": item["name"],
+                "sku": item["sku"],
+                "price": item["price"],
+                "cost": item["cost"],
+                "quantity": item["qty"],
+                "min_stock_level": item["min_stock"],
+                "type": item["type"],
+                "category": item["cat"],
+                "company_id": company_id,
+            },
+        )
+        inserted += 1
+
+        if has_cost:
+            cost_exists = conn.execute(
+                text("SELECT 1 FROM inventory_cost WHERE inventory_id = :iid"),
+                {"iid": item_id},
+            ).fetchone()
+            if not cost_exists:
+                conn.execute(
+                    text(
+                        "INSERT INTO inventory_cost "
+                        "(id, created_at, updated_at, inventory_id, standard_cost, actual_cost, acquisition_cost, "
+                        "reorder_quantity, reorder_point, lead_time_days, company_id) "
+                        "VALUES (:id, :created_at, :updated_at, :iid, :cost, :cost, :cost, :rq, :rp, 7, :cid)"
+                    ),
+                    {
+                        "id": str(uuid4()),
+                        "created_at": now,
+                        "updated_at": now,
+                        "iid": item_id,
+                        "cost": item["cost"],
+                        "rq": max(int(item["min_stock"] * 2), 5),
+                        "rp": int(item["min_stock"]),
+                        "cid": company_id,
+                    },
+                )
+
+    return inserted
+
+
+def _seed_app_settings(conn, company_id: str, category_key: str = "general") -> int:
+    if not _table_exists(conn, "app_settings"):
+        return 0
+
+    presets_by_category = {
+        "salon_spa": {
+            "start": "08:00",
+            "end": "19:00",
+            "title": "Beauty, Wellness & Style",
+            "subtitle": "Book appointments with our professional stylists and specialists.",
+            "tagline": "Your premier destination for salon and spa care.",
+        },
+        "consulting": {
+            "start": "08:30",
+            "end": "17:30",
+            "title": "Strategic Advisory Services",
+            "subtitle": "Partner with experienced consultants to accelerate your business growth.",
+            "tagline": "Clarity. Strategy. Execution.",
+        },
+        "retail": {
+            "start": "09:00",
+            "end": "21:00",
+            "title": "Curated Retail & Apparel",
+            "subtitle": "Explore our latest collections, seasonal arrivals, and member exclusives.",
+            "tagline": "Quality goods crafted for every style.",
+        },
+        "healthcare": {
+            "start": "08:00",
+            "end": "17:00",
+            "title": "Comprehensive Health & Wellness",
+            "subtitle": "Schedule consultations and manage your health journey with our care team.",
+            "tagline": "Dedicated to compassionate, preventative patient care.",
+        },
+        "general": {
+            "start": "08:00",
+            "end": "18:00",
+            "title": "Client Services Portal",
+            "subtitle": "Book appointments, explore services, and manage your account.",
+            "tagline": "Professional solutions tailored for your needs.",
+        },
+    }
+
+    preset = presets_by_category.get(category_key, presets_by_category["general"])
+
+    company_name = company_id
+    if _table_exists(conn, "company"):
+        c_row = conn.execute(
+            text("SELECT name FROM company WHERE company_id = :cid"),
+            {"cid": company_id},
+        ).fetchone()
+        if c_row and c_row[0]:
+            company_name = str(c_row[0])
+
+    existing = conn.execute(
+        text("SELECT id, portal_hero_title FROM app_settings WHERE company_id = :cid"),
+        {"cid": company_id},
+    ).fetchone()
+
+    if existing:
+        settings_id, current_title = existing
+        if not current_title:
+            conn.execute(
+                text(
+                    "UPDATE app_settings SET "
+                    "portal_hero_title = COALESCE(portal_hero_title, :title), "
+                    "portal_hero_subtitle = COALESCE(portal_hero_subtitle, :subtitle), "
+                    "portal_hero_tagline = COALESCE(portal_hero_tagline, :tagline), "
+                    "updated_at = :updated_at "
+                    "WHERE id = :id"
+                ),
+                {
+                    "id": str(settings_id),
+                    "title": preset["title"],
+                    "subtitle": preset["subtitle"],
+                    "tagline": preset["tagline"],
+                    "updated_at": datetime.utcnow(),
+                },
+            )
+            return 1
+        return 0
+
+    now = datetime.utcnow()
+    conn.execute(
+        text(
+            "INSERT INTO app_settings "
+            "(id, created_at, updated_at, start_of_day, end_of_day, attendance_check_in_required, "
+            "monday_enabled, tuesday_enabled, wednesday_enabled, thursday_enabled, friday_enabled, "
+            "saturday_enabled, sunday_enabled, company_name, company_id, "
+            "portal_hero_title, portal_hero_subtitle, portal_hero_tagline, portal_show_hero) "
+            "VALUES (:id, :ca, :ca, :start, :end, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, "
+            ":cname, :cid, :title, :subtitle, :tagline, TRUE)"
+        ),
+        {
+            "id": str(uuid4()),
+            "ca": now,
+            "start": preset["start"],
+            "end": preset["end"],
+            "cname": company_name,
+            "cid": company_id,
+            "title": preset["title"],
+            "subtitle": preset["subtitle"],
+            "tagline": preset["tagline"],
+        },
+    )
+    return 1
 
 
 def _seed_discount_rules(conn, company_id: str) -> int:
@@ -801,29 +1691,66 @@ def _apply_pto_defaults(conn, company_id: str) -> int:
     return int(result.rowcount or 0)
 
 
-def seed_company_scaffold(conn, company_id: str, admin_user_id: str | None = None) -> dict:
+def seed_company_scaffold(
+    conn,
+    company_id: str,
+    admin_user_id: str | None = None,
+    business_category: str | None = None,
+) -> dict:
     """Seed baseline records for a newly created company.
 
     Notes:
     - Idempotent by design.
     - Does not seed suppliers (left intentionally empty).
+    - Tailors item categories, service categories, services, client statuses,
+      employee statuses, document categories/statuses, departments, templates,
+      sample inventory items with thresholds, and app settings presets based
+      on the company's business_category.
     """
     cid = (company_id or "").strip().upper()
     if not cid:
         raise ValueError("company_id is required for scaffold seeding")
 
-    templates_seeded = _seed_document_templates(conn, cid)
+    if business_category is None and _table_exists(conn, "company"):
+        row = conn.execute(
+            text("SELECT business_category FROM company WHERE company_id=:cid"),
+            {"cid": cid},
+        ).fetchone()
+        if row and row[0]:
+            business_category = str(row[0])
+
+    category_key = normalize_business_category(business_category)
+
+    templates_seeded = _seed_document_templates(conn, cid, category_key)
     roles_created, perms_created, _viewer_role_id = _seed_roles_and_permissions(conn, cid)
-    categories_seeded = _seed_inventory_categories(conn, cid)
+    categories_seeded = _seed_inventory_categories(conn, cid, category_key)
+    service_categories_seeded = _seed_service_categories(conn, cid, category_key)
+    services_seeded = _seed_services(conn, cid, category_key)
+    client_statuses_seeded = _seed_client_statuses(conn, cid, category_key)
+    employee_statuses_seeded = _seed_employee_statuses(conn, cid, category_key)
+    doc_categories_seeded, doc_statuses_seeded = _seed_document_categories_and_statuses(conn, cid, category_key)
+    departments_seeded = _seed_departments(conn, cid, category_key)
+    inventory_items_seeded = _seed_inventory_items(conn, cid, category_key)
+    app_settings_seeded = _seed_app_settings(conn, cid, category_key)
     discount_rules_seeded = _seed_discount_rules(conn, cid)
     report_filters_seeded = _seed_saved_report_filters(conn, cid, admin_user_id)
     users_pto_defaulted = _apply_pto_defaults(conn, cid)
 
     return {
+        "business_category": category_key,
         "templates_seeded": templates_seeded,
         "roles_created": roles_created,
         "role_permissions_created": perms_created,
         "inventory_categories_seeded": categories_seeded,
+        "service_categories_seeded": service_categories_seeded,
+        "services_seeded": services_seeded,
+        "client_statuses_seeded": client_statuses_seeded,
+        "employee_statuses_seeded": employee_statuses_seeded,
+        "document_categories_seeded": doc_categories_seeded,
+        "document_statuses_seeded": doc_statuses_seeded,
+        "departments_seeded": departments_seeded,
+        "inventory_items_seeded": inventory_items_seeded,
+        "app_settings_seeded": app_settings_seeded,
         "discount_rules_seeded": discount_rules_seeded,
         "report_filters_seeded": report_filters_seeded,
         "users_pto_defaulted": users_pto_defaulted,

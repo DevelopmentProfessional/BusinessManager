@@ -52,6 +52,7 @@
 #   2026-11-26 | GitHub Copilot | Added service-task automation schema migration
 #   2026-11-26 | GitHub Copilot | Added employee-scoped Sales POS cart table
 #   2026-11-27 | GitHub Copilot | Added company 03200 historical appointment payment backfill
+#   2026-11-27 | GitHub Copilot | Added company business_category column for tailored defaults
 # ============================================================
 
 # ─── 1 IMPORTS ─────────────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycl
 
 # ─── 3 SCHEMA VERSION TRACKING ─────────────────────────────────────────────────
 # Bump this string whenever you add a new migration function or required artifact
-CURRENT_SCHEMA_VERSION = "2026.11.27.1"
+CURRENT_SCHEMA_VERSION = "2026.11.27.2"
 
 
 def _required_schema_artifacts_present() -> bool:
@@ -104,6 +105,10 @@ def _required_schema_artifacts_present() -> bool:
             registration_notes_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_schema='public' AND table_name='company' AND column_name='registration_notes'"
+            )).fetchone()
+            business_category_column = conn.execute(text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='company' AND column_name='business_category'"
             )).fetchone()
             cost_type_column = conn.execute(text(
                 "SELECT 1 FROM information_schema.columns "
@@ -302,6 +307,7 @@ def _required_schema_artifacts_present() -> bool:
                 and company_email_column is not None
                 and registration_status_column is not None
                 and registration_notes_column is not None
+                and business_category_column is not None
                 and cost_type_column is not None
                 and inventory_purchase_unit_column is not None
                 and inventory_units_per_purchase_unit_column is not None
@@ -1758,6 +1764,13 @@ def _ensure_company_registration_columns_if_needed():
                 "ADD COLUMN registration_notes TEXT DEFAULT NULL"
             ))
             print("  + Added column company.registration_notes")
+
+        if "business_category" not in existing:
+            conn.execute(text(
+                "ALTER TABLE company "
+                "ADD COLUMN business_category VARCHAR DEFAULT NULL"
+            ))
+            print("  + Added column company.business_category")
 
 
 def _ensure_client_auth_columns_if_needed():

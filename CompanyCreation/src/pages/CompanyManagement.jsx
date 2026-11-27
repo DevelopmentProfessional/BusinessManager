@@ -17,6 +17,24 @@ const STATUS_COLORS = {
   denied: { bg: "#fee2e2", color: "#991b1b", border: "#fca5a5", label: "Denied" },
 };
 
+const BUSINESS_CATEGORIES = [
+  { value: "salon_spa", label: "Salon / Beauty / Spa", icon: "✂️" },
+  { value: "consulting", label: "Consulting / Professional Services", icon: "💼" },
+  { value: "retail", label: "Retail / Store / Inventory", icon: "🛍️" },
+  { value: "healthcare", label: "Healthcare / Wellness", icon: "🩺" },
+  { value: "general", label: "General / Other", icon: "🏢" },
+];
+
+const getCategoryMeta = (val) => {
+  return (
+    BUSINESS_CATEGORIES.find((b) => b.value === val) || {
+      value: val || "general",
+      label: val ? val.charAt(0).toUpperCase() + val.slice(1).replace(/_/g, " ") : "General / Other",
+      icon: "🏢",
+    }
+  );
+};
+
 function authHeaders() {
   const token = localStorage.getItem("cc_token");
   return token ? { Authorization: token } : {};
@@ -33,6 +51,7 @@ export default function CompanyManagement() {
     company_email: "",
     company_phone: "",
     company_address: "",
+    business_category: "salon_spa",
     admin_first_name: "Admin",
     admin_last_name: "User",
     admin_username: "",
@@ -40,6 +59,7 @@ export default function CompanyManagement() {
     admin_password: "",
     admin_password_confirm: "",
   });
+  const [modalCategory, setModalCategory] = useState("salon_spa");
   const [creatingCompany, setCreatingCompany] = useState(false);
   const [createError, setCreateError] = useState("");
   const [selected, setSelected] = useState(null);
@@ -73,6 +93,7 @@ export default function CompanyManagement() {
       company_email: "",
       company_phone: "",
       company_address: "",
+      business_category: "salon_spa",
       admin_first_name: "Admin",
       admin_last_name: "User",
       admin_username: "",
@@ -100,6 +121,7 @@ export default function CompanyManagement() {
       company_email: createForm.company_email.trim() || null,
       company_phone: createForm.company_phone.trim() || null,
       company_address: createForm.company_address.trim() || null,
+      business_category: createForm.business_category || "salon_spa",
       admin_first_name: createForm.admin_first_name.trim() || "Admin",
       admin_last_name: createForm.admin_last_name.trim() || "User",
       admin_username: createForm.admin_username.trim(),
@@ -203,6 +225,7 @@ export default function CompanyManagement() {
   const openReview = async (company) => {
     setSelected(company);
     setNotes(company.registration_notes || "");
+    setModalCategory(company.business_category || "salon_spa");
     setEditingUser(null);
     setCredentialForm({ username: "", password: "", force_password_reset: false });
     await loadCompanyUsers(company.company_id);
@@ -211,6 +234,7 @@ export default function CompanyManagement() {
   const closeReview = () => {
     setSelected(null);
     setNotes("");
+    setModalCategory("salon_spa");
     setCompanyUsers([]);
     setEditingUser(null);
     setCredentialForm({ username: "", password: "", force_password_reset: false });
@@ -286,7 +310,7 @@ export default function CompanyManagement() {
       const res = await fetch(`${API}/companies/${selected.company_id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ status, notes }),
+        body: JSON.stringify({ status, notes, business_category: modalCategory }),
       });
       if (res.status === 401) {
         logout();
@@ -339,6 +363,23 @@ export default function CompanyManagement() {
         </div>
         {createError && <div style={s.errorBox}>{createError}</div>}
         <div style={s.createGrid}>
+          <div style={{ ...s.createFieldWrapper, gridColumn: "1 / -1" }}>
+            <label style={s.fieldLabel}>Business Category</label>
+            <select
+              style={s.createSelect}
+              value={createForm.business_category}
+              onChange={(e) => setCreateField("business_category", e.target.value)}
+            >
+              {BUSINESS_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.icon} {cat.label}
+                </option>
+              ))}
+            </select>
+            <span style={s.fieldHint}>
+              Tailors default item categories, services, client/task statuses, and templates for this company.
+            </span>
+          </div>
           <input style={s.createInput} placeholder="Company ID" value={createForm.company_id} onChange={(e) => setCreateField("company_id", e.target.value)} />
           <input style={s.createInput} placeholder="Company Name" value={createForm.company_name} onChange={(e) => setCreateField("company_name", e.target.value)} />
           <input style={s.createInput} placeholder="Business Email" value={createForm.company_email} onChange={(e) => setCreateField("company_email", e.target.value)} />
@@ -411,6 +452,7 @@ export default function CompanyManagement() {
           {filtered.map((c) => {
             const st = c.registration_status || "approved";
             const sc = STATUS_COLORS[st] || STATUS_COLORS.approved;
+            const cat = getCategoryMeta(c.business_category);
             return (
               <div key={c.company_id} style={s.card}>
                 <div style={s.cardTop}>
@@ -419,6 +461,11 @@ export default function CompanyManagement() {
                     <code style={s.cardId}>{c.company_id}</code>
                   </div>
                   <span style={{ ...s.badge, background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{sc.label}</span>
+                </div>
+
+                <div style={s.cardCategory}>
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
                 </div>
 
                 <div style={s.cardMeta}>
@@ -475,6 +522,12 @@ export default function CompanyManagement() {
                       {selected.company_address}
                     </div>
                   )}
+                  <div style={s.modalRow}>
+                    <span style={s.modalLabel}>Category</span>
+                    <span style={{ fontWeight: 600, color: "#4f46e5" }}>
+                      {getCategoryMeta(selected.business_category).icon} {getCategoryMeta(selected.business_category).label}
+                    </span>
+                  </div>
                   <div style={s.modalRow}>
                     <span style={s.modalLabel}>Users</span>
                     {selected.employee_count ?? 0}
@@ -539,6 +592,25 @@ export default function CompanyManagement() {
                 </div>
 
                 <div style={{ marginBottom: "1.25rem" }}>
+                  <label style={s.notesLabel}>Business Category</label>
+                  <select
+                    style={s.createSelect}
+                    value={modalCategory}
+                    onChange={(e) => setModalCategory(e.target.value)}
+                    disabled={saving}
+                  >
+                    {BUSINESS_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.icon} {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={s.fieldHint}>
+                    Approving will seed tailored presets for this business category.
+                  </span>
+                </div>
+
+                <div style={{ marginBottom: "1.25rem" }}>
                   <label style={s.notesLabel}>Internal Notes (optional)</label>
                   <textarea style={s.notesInput} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add a note about this decision..." disabled={saving} />
                 </div>
@@ -574,6 +646,10 @@ const s = {
   createSubtitle: { color: "#64748b", fontSize: "0.85rem", margin: 0 },
   seedTemplatesBtn: { padding: "0.6rem 0.9rem", borderRadius: "0.375rem", border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: 700, cursor: "pointer" },
   createGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.65rem" },
+  createFieldWrapper: { display: "flex", flexDirection: "column", gap: "0.25rem" },
+  fieldLabel: { fontSize: "0.8rem", fontWeight: 600, color: "#475569" },
+  fieldHint: { fontSize: "0.75rem", color: "#64748b", fontStyle: "italic", marginTop: "0.15rem" },
+  createSelect: { padding: "0.7rem 0.8rem", border: "1px solid #cbd5e1", borderRadius: "0.375rem", fontSize: "0.9rem", outline: "none", background: "#fff", cursor: "pointer", width: "100%", boxSizing: "border-box" },
   createInput: { padding: "0.7rem 0.8rem", border: "1px solid #cbd5e1", borderRadius: "0.375rem", fontSize: "0.9rem", outline: "none" },
   createActions: { display: "flex", gap: "0.75rem", marginTop: "0.9rem", flexWrap: "wrap" },
   createBtn: { padding: "0.7rem 1rem", background: "#4f46e5", color: "#fff", border: "none", borderRadius: "0.375rem", fontWeight: 700, cursor: "pointer" },
@@ -630,6 +706,7 @@ const s = {
     gap: "0",
   },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" },
+  cardCategory: { display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.8rem", color: "#4f46e5", fontWeight: 600, background: "#eef2ff", padding: "0.2rem 0.6rem", borderRadius: "0.25rem", marginBottom: "0.6rem", width: "fit-content" },
   cardName: { fontWeight: 700, color: "#0f172a", fontSize: "1rem" },
   cardId: { fontSize: "0.8rem", color: "#94a3b8", marginTop: "0.15rem", display: "block" },
   cardMeta: { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.8rem", color: "#64748b", marginBottom: "0.75rem" },

@@ -59,6 +59,7 @@ class CompanyRegistrationRequest(BaseModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    business_category: Optional[str] = None
     admin_username: str
     admin_password: str
     admin_first_name: str = "Admin"
@@ -71,6 +72,7 @@ class CompanyRegistrationResponse(BaseModel):
     company_id: str
     company_name: str
     admin_username: str
+    business_category: Optional[str] = None
     message: Optional[str] = None
 
 
@@ -86,6 +88,7 @@ class CompanyInfo(BaseModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    business_category: Optional[str] = None
     is_active: bool
     registration_status: Optional[str] = "approved"
     registration_notes: Optional[str] = None
@@ -93,8 +96,9 @@ class CompanyInfo(BaseModel):
 
 
 class CompanyStatusUpdate(BaseModel):
-    status: str           # "approved" | "denied"
+    status: Optional[str] = None           # "approved" | "denied"
     notes: Optional[str] = None
+    business_category: Optional[str] = None
 
 
 class CompanyUserInfo(BaseModel):
@@ -282,12 +286,14 @@ def register_company(
             raise HTTPException(status_code=409, detail=f"Company '{cid}' already exists")
 
         # Create company — inactive and pending review
+        category = req.business_category.strip() if req.business_category else None
         company = Company(
             company_id=cid,
             name=req.company_name.strip(),
             company_email=req.company_email.strip() if req.company_email else None,
             company_phone=req.company_phone.strip() if req.company_phone else None,
             company_address=req.company_address.strip() if req.company_address else None,
+            business_category=category,
             is_active=False,
             registration_status="pending",
         )
@@ -306,7 +312,7 @@ def register_company(
         )
         session.add(admin_user)
         session.flush()
-        seed_company_scaffold(session.connection(), cid, str(admin_user.id))
+        seed_company_scaffold(session.connection(), cid, str(admin_user.id), category)
         session.commit()
 
         recipients = []
@@ -326,6 +332,7 @@ def register_company(
             company_id=cid,
             company_name=req.company_name.strip(),
             admin_username=req.admin_username.strip(),
+            business_category=company.business_category,
             message=(
                 "Registration submitted. Your company is pending review. A confirmation email has been sent."
                 if email_sent
@@ -369,6 +376,7 @@ def list_companies(
                 company_email=company.company_email,
                 company_phone=company.company_phone,
                 company_address=company.company_address,
+                business_category=getattr(company, "business_category", None),
                 is_active=company.is_active,
                 registration_status=getattr(company, "registration_status", "approved"),
                 registration_notes=getattr(company, "registration_notes", None),
@@ -390,7 +398,7 @@ def update_company_status(
     Approve or deny a pending company registration.
     Approving sets is_active=True so the admin can log in.
     """
-    if body.status not in ("approved", "denied"):
+    if body.status is not None and body.status not in ("approved", "denied"):
         raise HTTPException(status_code=400, detail="status must be 'approved' or 'denied'")
 
     company = session.exec(
@@ -400,30 +408,41 @@ def update_company_status(
     if not company:
         raise HTTPException(status_code=404, detail=f"Company '{company_id}' not found")
 
-    company.registration_status = body.status
-    company.is_active = body.status == "approved"
+    if body.business_category is not None:
+        company.business_category = body.business_category.strip() or None
+
+    if body.status is not None:
+        company.registration_status = body.status
+        company.is_active = body.status == "approved"
     if body.notes is not None:
         company.registration_notes = body.notes
 
-    if body.status == "approved":
+    if body.status == "approved" or (body.business_category is not None and company.is_active):
         admin_user = session.exec(
             select(User)
             .where(User.company_id == company.company_id)
             .where(User.role == UserRole.ADMIN)
             .order_by(User.created_at)
         ).first()
-        seed_company_scaffold(session.connection(), company.company_id, str(admin_user.id) if admin_user else None)
+        seed_company_scaffold(
+            session.connection(),
+            company.company_id,
+            str(admin_user.id) if admin_user else None,
+            company.business_category,
+        )
 
     session.add(company)
     session.commit()
     session.refresh(company)
 
+    status_label = company.registration_status or "updated"
     return {
         "ok": True,
         "company_id": company.company_id,
+        "business_category": company.business_category,
         "registration_status": company.registration_status,
         "is_active": company.is_active,
-        "message": f"Company '{company.company_id}' has been {body.status}.",
+        "message": f"Company '{company.company_id}' has been updated ({status_label}).",
     }
 
 

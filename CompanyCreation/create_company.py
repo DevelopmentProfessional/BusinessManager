@@ -86,6 +86,16 @@ def create_company():
         print("ERROR: Company Name is required.")
         sys.exit(1)
 
+    print("\nBusiness Category:")
+    print("  1) Salon / Beauty / Spa (salon_spa)")
+    print("  2) Consulting / Professional Services (consulting)")
+    print("  3) Retail / Store / Inventory (retail)")
+    print("  4) Healthcare / Wellness (healthcare)")
+    print("  5) General / Other (general)")
+    cat_choice = input("  Select business category [1-5, default: 1]: ").strip()
+    cat_map = {"1": "salon_spa", "2": "consulting", "3": "retail", "4": "healthcare", "5": "general"}
+    business_category = cat_map.get(cat_choice, "salon_spa")
+
     print("\nEnter Admin User Details:")
     admin_username = input("  Admin Username: ").strip()
     if not admin_username:
@@ -148,13 +158,14 @@ def create_company():
         now = datetime.utcnow()
 
         session.execute(text("""
-            INSERT INTO company (id, created_at, company_id, name, is_active)
-            VALUES (:id, :created_at, :company_id, :name, :is_active)
+            INSERT INTO company (id, created_at, company_id, name, business_category, is_active)
+            VALUES (:id, :created_at, :company_id, :name, :business_category, :is_active)
         """), {
             "id": company_uuid,
             "created_at": now,
             "company_id": company_id,
             "name": company_name,
+            "business_category": business_category,
             "is_active": True,
         })
 
@@ -194,7 +205,7 @@ def create_company():
             "company_id": company_id,
         })
 
-        scaffold_summary = seed_company_scaffold(session.connection(), company_id, user_uuid)
+        scaffold_summary = seed_company_scaffold(session.connection(), company_id, user_uuid, business_category)
 
         session.commit()
 

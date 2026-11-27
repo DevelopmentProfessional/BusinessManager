@@ -246,6 +246,11 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
     )
     monkeypatch.setattr(
         database,
+        "_ensure_service_task_automation_schema_if_needed",
+        lambda: calls.append("repair_service_task_automation"),
+    )
+    monkeypatch.setattr(
+        database,
         "_ensure_permissiontype_enum_values_if_needed",
         lambda: calls.append("repair_permissions"),
     )
@@ -306,6 +311,7 @@ def test_addon_columns_are_repaired_before_schema_fast_path(monkeypatch):
         "create_all",
         "repair_undo_action",
         "repair_addons",
+        "repair_service_task_automation",
         "repair_permissions",
         "repair_compensation",
         "seed_templates",
@@ -474,6 +480,47 @@ def test_database_calls_03200_appointment_backfill(monkeypatch):
     database._backfill_03200_past_appointments_if_needed()
 
     assert called == ["backfill"]
+
+
+def test_company_registration_migration_adds_business_category_column(monkeypatch):
+    statements = []
+
+    class Result:
+        def __init__(self, data=None):
+            self.data = data or []
+
+        def scalar(self):
+            return True
+
+        def fetchall(self):
+            return self.data
+
+    class Connection:
+        def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            statements.append(sql)
+            if "information_schema.tables" in sql:
+                return Result([True])
+            if "information_schema.columns" in sql:
+                return Result([("registration_status",), ("registration_notes",)])
+            return Result()
+
+    class Transaction:
+        def __enter__(self):
+            return Connection()
+
+        def __exit__(self, *_args):
+            return False
+
+    class Engine:
+        def begin(self):
+            return Transaction()
+
+    monkeypatch.setattr(database, "engine", Engine())
+
+    database._ensure_company_registration_columns_if_needed()
+
+    assert any("ALTER TABLE company ADD COLUMN business_category VARCHAR" in statement for statement in statements)
 
 
 

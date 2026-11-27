@@ -165,11 +165,11 @@ def _choose_supplier(
             )
         ).first()
         if supplier:
-            pack_size = max(1, int(inventory.units_per_purchase_unit or 1))
+            pack_size = max(1, int(getattr(inventory, "units_per_purchase_unit", 1) or 1))
             return (
                 supplier,
                 None,
-                inventory.purchase_unit or "unit",
+                getattr(inventory, "purchase_unit", "unit") or "unit",
                 pack_size,
                 float(inventory.cost or 0) * pack_size,
             )

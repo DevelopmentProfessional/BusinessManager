@@ -159,6 +159,7 @@ class Company(BaseModel, table=True):
     company_email: Optional[str] = Field(default=None)
     company_phone: Optional[str] = Field(default=None)
     company_address: Optional[str] = Field(default=None)
+    business_category: Optional[str] = Field(default=None)
     timezone: Optional[str] = Field(default=None)
     logo_data: Optional[bytes] = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
     tax_rate: float = Field(default=0.0)
@@ -1813,6 +1814,7 @@ class CompanyRead(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    business_category: Optional[str] = None
     timezone: Optional[str] = None
     tax_rate: float = 0.0
     is_active: bool
@@ -1827,6 +1829,7 @@ class CompanyCreate(SQLModel):
     company_email: Optional[str] = None
     company_phone: Optional[str] = None
     company_address: Optional[str] = None
+    business_category: Optional[str] = None
     timezone: Optional[str] = None
     tax_rate: float = 0.0
     is_active: bool = True
