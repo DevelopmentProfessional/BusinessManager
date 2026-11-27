@@ -92,7 +92,7 @@
 
   /* Search Boxes */
   --app-input-height: 2rem;
-  --app-input-font-size: 0.75rem;
+  --app-input-font-size: 0.875rem;
   --app-search-input-padding-x: 0.75rem;
 
   /* Floating Labels */
@@ -100,6 +100,7 @@
   --app-floating-label-background: var(--bs-body-bg);
 
   /* Dropups & Dropdowns */
+  --app-dropdown-font-size: 0.875rem;
   --app-dropdown-min-width: 11rem;
   --app-dropdown-border-radius: 0.75rem;
   --app-dropdown-item-height: 2rem;
@@ -1719,9 +1720,9 @@ table,
 .ui-control-sm {
   box-sizing: border-box;
   min-height: var(--app-input-height);
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   font-size: var(--app-input-font-size) !important;
-  line-height: 1.2;
+  line-height: 1.25;
   border-radius: var(--bs-border-radius-sm);
 }
 
@@ -1729,24 +1730,24 @@ table,
 .form-select.ui-control-sm {
   height: var(--app-input-height);
   min-height: var(--app-input-height);
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   font-size: var(--app-input-font-size) !important;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 textarea.form-control.ui-control-sm {
   padding: 0.25rem 0.5rem;
   font-size: var(--app-input-font-size) !important;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .ui-dropdown-trigger {
   box-sizing: border-box;
   height: var(--app-input-height) !important;
   min-height: var(--app-input-height) !important;
-  padding: 0.25rem 0.5rem !important;
-  font-size: var(--app-dropdown-font-size, 0.5rem) !important;
-  line-height: 1.2;
+  padding: 0.2rem 0.5rem !important;
+  font-size: var(--app-dropdown-font-size, var(--app-input-font-size, 0.875rem)) !important;
+  line-height: 1.25;
 }
 
 /* Dropdown_Custom owns the bordered trigger; sizing classes belong on that trigger, not its wrapper. */
