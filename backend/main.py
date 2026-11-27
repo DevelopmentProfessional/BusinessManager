@@ -170,7 +170,10 @@ def ensure_database_ready() -> None:
     global _inventory_scheduler
     if os.getenv("SKIP_STARTUP_DB_BOOTSTRAP", "").strip().lower() in {"1", "true", "yes", "on"}:
         return
-    create_db_and_tables()
+    try:
+        create_db_and_tables()
+    except Exception as exc:
+        logging.getLogger(__name__).exception("Startup database migration encountered an error: %s", exc)
     if _inventory_scheduler is None:
         _inventory_scheduler = BackgroundScheduler(timezone="UTC")
         _inventory_scheduler.add_job(

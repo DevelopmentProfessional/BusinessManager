@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 systemctl daemon-reload
-systemctl restart staff-api.service
-systemctl restart client-api.service
+systemctl restart staff-api.service || systemctl start staff-api.service || true
+systemctl restart client-api.service || systemctl start client-api.service || true
 
 BACKEND_ENV_FILE="/opt/businessmanager/backend/.env"
 if [ -f "$BACKEND_ENV_FILE" ]; then

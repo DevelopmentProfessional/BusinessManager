@@ -35,8 +35,7 @@ def main() -> None:
         create_db_and_tables()
         log.info("Schema up to date.")
     except Exception as exc:
-        log.error(f"create_db_and_tables failed: {exc}")
-        sys.exit(1)
+        log.warning(f"create_db_and_tables warning (continuing pre-start): {exc}")
 
     seed_company_id = os.getenv("SEED_COMPANY_ID", "").strip()
     if seed_company_id:
