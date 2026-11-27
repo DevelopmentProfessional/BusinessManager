@@ -86,24 +86,6 @@ export default function ThemedDatePicker({ mode, ...props }) {
         calendarClassName="app-themed-datepicker"
         popperClassName="app-themed-datepicker-popper"
         popperPlacement="top-start"
-        popperModifiers={[
-          {
-            name: "flip",
-            options: {
-              fallbackPlacements: ["bottom-start"],
-              padding: 8,
-            },
-          },
-          {
-            name: "preventOverflow",
-            options: {
-              boundary: "viewport",
-              rootBoundary: "viewport",
-              altAxis: true,
-              padding: 8,
-            },
-          },
-        ]}
         portalId="app-datepicker-portal"
         showIcon
         icon={mode === "time"

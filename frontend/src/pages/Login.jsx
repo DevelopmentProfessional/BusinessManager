@@ -25,6 +25,8 @@
  *   ─────────────────────────────────────────────────────────────
  *   2026-03-01 | Claude  | Added section comments and top-level documentation
  *   2026-11-15 | GitHub Copilot | Removed plaintext password persistence from remember-me cookies
+ *   2026-11-26 | GitHub Copilot | Replaced technical authentication errors with a user-facing sign-in message
+ *   2026-11-26 | GitHub Copilot | Kept password visibility toggle centered in the password field
  * ============================================================
  */
 
@@ -240,7 +242,9 @@ const Login = () => {
         throw new Error("Invalid response format");
       }
     } catch (error) {
-      if (error.name === "TypeError" && String(error.message || "").includes("fetch")) {
+      if (error?.response?.status === 401) {
+        setError("Unable to sign in. Please check your information and try again.");
+      } else if (error.name === "TypeError" && String(error.message || "").includes("fetch")) {
         setError(`Cannot connect to server: ${error.message || "network failure"}`);
       } else {
         setError(getDetailedApiErrorMessage(error, "Login failed"));
@@ -338,7 +342,7 @@ const Login = () => {
               <div className="form-floating mb-2 position-relative">
                 <input id="password" name="password" type={showPassword ? "text" : "password"} required className={`form-control ${validationErrors.password ? "is-invalid" : ""}`} placeholder="Password" value={formData.password} onChange={handleInputChange} style={{ paddingRight: "3rem" }} />
                 <label htmlFor="password">Password</label>
-                <button type="button" onClick={togglePasswordVisibility} className="btn btn-unstyled hover:text-gray-300 position-absolute text-gray-400 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
+                <button type="button" onClick={togglePasswordVisibility} className="btn btn-unstyled login-password-toggle hover:text-gray-300 position-absolute text-gray-400 transition-colors" style={{ right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
                   {showPassword ? <EyeSlashIcon className="ui-icon-5" /> : <EyeIcon className="ui-icon-5" />}
                 </button>
                 {validationErrors.password && <p className="mt-1 text-red-400 text-sm">{validationErrors.password}</p>}

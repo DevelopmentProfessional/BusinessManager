@@ -1855,18 +1855,18 @@ textarea.form-control.ui-control-sm {
 
 /* Global description textarea styling */
 .ui-description-textarea {
-  border: 0;
+  border: 0.0625rem solid var(--bs-border-color) !important;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE / Edge legacy */
   overscroll-behavior: contain;
   height: auto;
-  min-height: 9rem;
+  min-height: 8rem;
   resize: vertical;
 }
 
 .form-floating > .ui-description-textarea,
 .form-floating > .app-textarea-wrapper > .ui-description-textarea {
-  min-height: 10.5rem;
+  min-height: 9rem;
 }
 
 .ui-description-textarea::-webkit-scrollbar {
@@ -3548,6 +3548,7 @@ input[type="number"],
 textarea,
 textarea.form-control {
   border-radius: 0.75rem !important;
+  border: 0.0625rem solid var(--bs-border-color) !important;
 }
 
 .pill-textarea {
@@ -4871,7 +4872,7 @@ select.form-select {
   padding-top: 0 !important;
 }
 
-:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(.profile-accordion-header):not(.app-accordion-header):not(.app-color-picker-trigger):not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.app-sales-item-cart-button):not(:where(.app-nav-bottom-menu-panel, .app-nav-bottom-global-menu, footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
+:is(button, .btn, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):not(.profile-accordion-header):not(.app-accordion-header):not(.app-color-picker-trigger):not(.btn-app-nav):not(.app-nav-bottom-toggle):not(.app-sales-item-cart-button):not(.login-password-toggle):not(:where(.app-nav-bottom-menu-panel, .app-nav-bottom-global-menu, footer, [class*="footer"], [class*="Footer"], [aria-label="Actions"], .ui-page-shell > div:last-child:has(.btn)) *) {
   margin-top: 1rem !important;
   margin-bottom: 0.25rem !important;
 }
