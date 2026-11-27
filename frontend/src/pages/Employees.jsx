@@ -62,6 +62,7 @@ import useFetchOnce from "../services/useFetchOnce";
 import usePagePermission from "../services/usePagePermission";
 import { PlusIcon, XMarkIcon, UserGroupIcon, CheckCircleIcon, ChatBubbleLeftIcon, LockClosedIcon, Cog6ToothIcon, CurrencyDollarIcon, ClipboardDocumentListIcon, ShieldCheckIcon, PencilSquareIcon, TrashIcon, DocumentTextIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_AppRefresh from "./components/buttons/Button_AppRefresh";
 import Button_Icon from "./components/buttons/Button_Icon";
 import Filter_Menu from "./components/dropdowns/Filter_Menu";
 import useStore from "../services/useStore";
@@ -1050,7 +1051,10 @@ export default function Employees() {
       {/* Header - sticky on mobile */}
       <div className="app-page-header bg-body border-bottom d-flex flex-shrink-0 justify-content-between p-1" style={{ position: "sticky", top: 0, zIndex: 5 }}>
         <h1 className="app-page-title">Employees</h1>
-        <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+        <div className="ui-flex-center-gap-2">
+          <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+          <Button_AppRefresh />
+        </div>
       </div>
 
       {/* Error / Success Alerts */}

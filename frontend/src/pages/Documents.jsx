@@ -50,6 +50,7 @@ import { PlusIcon, DocumentIcon, XMarkIcon, MagnifyingGlassIcon, PencilIcon, Pen
 import useStore from "../services/useStore";
 import { showConfirm } from "../services/showConfirm";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_AppRefresh from "./components/buttons/Button_AppRefresh";
 import Footer_Actions from "./components/footers/Footer_Actions";
 import api, { documentsAPI, documentCategoriesAPI, documentStatusesAPI, templatesAPI, documentTagsAPI } from "../services/api";
 import Modal from "./components/modals/Modal";
@@ -758,7 +759,10 @@ export default function Documents() {
       {/* Header */}
       <div className="app-page-header align-items-center border-bottom d-flex flex-shrink-0 justify-content-between p-1">
         <h1 className="app-page-title">{showTemplates ? "Templates" : "Documents"}</h1>
-        {canReadDocuments && <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}
+        <div className="ui-flex-center-gap-2">
+          {canReadDocuments && <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />}
+          <Button_AppRefresh />
+        </div>
       </div>
 
       {/* Error Alert */}

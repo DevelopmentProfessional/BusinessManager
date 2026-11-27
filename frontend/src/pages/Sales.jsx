@@ -46,6 +46,7 @@ import usePagePermission from "../services/usePagePermission";
 import { ShoppingCartIcon, XMarkIcon, UserIcon, PlusIcon, MinusIcon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, FunnelIcon, UserCircleIcon, ArrowTrendingUpIcon, Cog6ToothIcon, DocumentTextIcon } from "../icons";
 import useStore from "../services/useStore";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_AppRefresh from "./components/buttons/Button_AppRefresh";
 import Gate_Permission from "./components/layout/Gate_Permission";
 import Filter_CatalogCheckboxes from "./components/dropdowns/Filter_CatalogCheckboxes";
 import { servicesAPI, clientsAPI, inventoryAPI, saleTransactionsAPI, settingsAPI, featuresAPI, scheduleAPI, clientCartAPI, employeeSalesCartAPI, clientOrdersAPI, mixAPI, bundleAPI, membershipsAPI, clientMembershipsAPI, discountRulesAPI, getDetailedApiErrorMessage } from "../services/api";
@@ -1800,6 +1801,7 @@ export default function Sales() {
           </div>
           <div className="ui-flex-center-gap-2">
             <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+            <Button_AppRefresh />
           </div>
         </div>
         {error && (

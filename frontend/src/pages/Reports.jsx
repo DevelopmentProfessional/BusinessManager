@@ -76,6 +76,7 @@ import useBranding from "../services/useBranding";
 import { getMobileEnvironment } from "../services/mobileEnvironment";
 import Chart_Report from "./components/panels/Chart_Report";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_AppRefresh from "./components/buttons/Button_AppRefresh";
 import Report_SelectorDropup from "./components/dropdowns/Report_SelectorDropup";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import { InputDate } from "./components/Inputs";
@@ -1191,6 +1192,7 @@ export default function Reports() {
             <Button_Toolbar icon={ArrowDownTrayIcon} label="PDF" onClick={handleExportPdf} className="btn-outline-secondary" />
             <Button_Toolbar icon={ArrowDownTrayIcon} label="CSV" onClick={handleExportCsv} className="btn-outline-secondary" />
             <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+            <Button_AppRefresh />
           </div>
         </div>
       )}

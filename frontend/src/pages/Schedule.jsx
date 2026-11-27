@@ -71,6 +71,7 @@ import useCalendarView from "../services/useCalendarView";
 import { scheduleAPI, settingsAPI, isudAPI, clientsAPI, clientCartAPI, servicesAPI, employeesAPI, leaveRequestsAPI } from "../services/api";
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon, FunnelIcon, Cog6ToothIcon, ClockIcon, CheckIcon } from "../icons";
 import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_AppRefresh from "./components/buttons/Button_AppRefresh";
 import Modal_Schedule_Appointment from "./components/modals/Modal_Schedule_Appointment";
 import Modal_Schedule_Settings from "./components/modals/Modal_Schedule_Settings";
 import Gate_Permission from "./components/layout/Gate_Permission";
@@ -1044,6 +1045,7 @@ export default function Schedule() {
               ) : null;
             })()}
             <Button_Toolbar icon={Cog6ToothIcon} label="Settings" onClick={() => setShowPageControls(true)} className="btn-outline-secondary" title="Page settings" />
+            <Button_AppRefresh />
           </div>
         </div>
 
