@@ -41,7 +41,20 @@ export default function Layout({ children }) {
   const unreadRequestInFlightRef = useRef(false);
   const location = useLocation();
   const { user, hasPermission, hasPageAccess, isOnline, setOnline } = useStore();
-  const { isTrainingMode, buttonTextSize } = useViewMode();
+  const { isTrainingMode, buttonTextSize, setNavMenuOpen } = useViewMode();
+
+  useEffect(() => {
+    setNavMenuOpen?.(expandedMenuOpen);
+    if (typeof document !== "undefined") {
+      document.body.classList.toggle("app-nav-menu-open", expandedMenuOpen);
+    }
+    return () => {
+      setNavMenuOpen?.(false);
+      if (typeof document !== "undefined") {
+        document.body.classList.remove("app-nav-menu-open");
+      }
+    };
+  }, [expandedMenuOpen, setNavMenuOpen]);
 
   // Restore any pending undo notification after page refresh
   useEffect(() => {

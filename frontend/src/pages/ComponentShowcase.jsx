@@ -101,6 +101,7 @@ import Modal_UserCreate from "./components/modals/Modal_UserCreate";
 import Modal_SettingsSchedule from "./components/modals/Modal_SettingsSchedule";
 import Modal_Signature from "./components/modals/Modal_Signature";
 import Modal_Settings from "./components/modals/Modal_Settings";
+import Accordion from "./components/accordions/Accordion";
 import Manager_DatabaseConnection from "./components/utils/Manager_DatabaseConnection";
 import Modal_SalesCart from "./components/modals/Modal_SalesCart";
 import Modal_SalesCheckout from "./components/modals/Modal_SalesCheckout";
@@ -1125,102 +1126,96 @@ export default function ComponentShowcase() {
         ═══════════════════════════════════════════════════════════════════ */}
         {isCardVisible("Profile: Settings Accordion (Modal_Settings.jsx)", "Panels") && (
           <ComponentCard title="Profile: Settings Accordion (Modal_Settings.jsx)" category="Panels" width="480px">
-            <div className="border rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
-              <div className="p-3 bg-body">
-                <Modal_Settings
-                  embedded={true}
-                  isMobile={false}
-                  row1PanelBottom={0}
-                  isDarkMode={isDarkMode}
-                  toggleDarkMode={toggleDarkMode}
-                  employeeColor="#3B82F6"
-                  pendingColor="#3B82F6"
-                  setPendingColor={noop}
-                  colorUpdating={false}
-                  handleColorChange={noop}
-                  FooterAlignIcon={Bars3BottomLeftIcon}
-                  cycleFooterAlign={noop}
-                  user={mockEmployee}
-                  setSignatureModalOpen={noop}
-                  isTrainingMode={isTrainingMode}
-                  toggleViewMode={toggleTrainingMode}
-                  buttonTextSize="medium"
-                  cycleButtonTextSize={noop}
-                  handleLogout={noop}
-                  currentDbEnvironment="production"
-                  dbLoading={false}
-                  dbMessage=""
-                  dbError=""
-                  handleSwitchEnvironment={noop}
-                  DB_ENVIRONMENTS={{ production: { name: "Production" }, test: { name: "Test" } }}
-                  environmentLastUpdated="Nov 12, 2026, 10:21 PM"
-                  appVersion="1.0.0"
-                  appBuildLabel="Nov 13, 2026, 10:51 AM"
-                  HelpIcon={() => null}
-                  onClose={noop}
-                  onSave={noop}
-                  showCloseButton={false}
-                  startupPage="schedule"
-                  setStartupPage={noop}
-                />
-              </div>
-              <div className="profile-accordion-header d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary">
-                <div className="d-flex align-items-center gap-2">
-                  <Cog6ToothIcon className="app-icon" />
-                  <span className="fw-semibold">Settings</span>
-                </div>
-                <ChevronUpIcon className="app-icon" />
-              </div>
-            </div>
+            <Accordion
+              variant="settings"
+              header="Settings"
+              icon={Cog6ToothIcon}
+              defaultOpen={true}
+              bodyPlacement="above"
+            >
+              <Modal_Settings
+                embedded={true}
+                isMobile={false}
+                row1PanelBottom={0}
+                isDarkMode={isDarkMode}
+                toggleDarkMode={toggleDarkMode}
+                employeeColor="#3B82F6"
+                pendingColor="#3B82F6"
+                setPendingColor={noop}
+                colorUpdating={false}
+                handleColorChange={noop}
+                FooterAlignIcon={Bars3BottomLeftIcon}
+                cycleFooterAlign={noop}
+                user={mockEmployee}
+                setSignatureModalOpen={noop}
+                isTrainingMode={isTrainingMode}
+                toggleViewMode={toggleTrainingMode}
+                buttonTextSize="medium"
+                cycleButtonTextSize={noop}
+                handleLogout={noop}
+                currentDbEnvironment="production"
+                dbLoading={false}
+                dbMessage=""
+                dbError=""
+                handleSwitchEnvironment={noop}
+                DB_ENVIRONMENTS={{ production: { name: "Production" }, test: { name: "Test" } }}
+                environmentLastUpdated="Nov 12, 2026, 10:21 PM"
+                appVersion="1.0.0"
+                appBuildLabel="Nov 13, 2026, 10:51 AM"
+                HelpIcon={() => null}
+                onClose={noop}
+                onSave={noop}
+                showCloseButton={false}
+                startupPage="schedule"
+                setStartupPage={noop}
+              />
+            </Accordion>
           </ComponentCard>
         )}
 
         {isCardVisible("Profile: Information Accordion", "Panels") && (
           <ComponentCard title="Profile: Information Accordion" category="Panels" width="480px">
-            <div className="border rounded overflow-hidden" style={{ background: "var(--bs-body-bg)" }}>
-              <div className="p-3 bg-body">
-                <div className="row g-2">
-                  <div className="col-sm-6">
-                    <div className="d-flex align-items-center gap-2 mb-1">
-                      <UserIcon className="app-icon text-muted" />
-                      <div className="fw-medium">{mockEmployee.first_name} {mockEmployee.last_name}</div>
-                    </div>
-                  </div>
-                  <div className="col-sm-6">
-                    <span className="badge bg-primary text-capitalize">{mockEmployee.role}</span>
-                  </div>
-                  <div className="col-sm-6">
-                    <div className="small text-muted">{mockEmployee.email}</div>
-                  </div>
-                  <div className="col-sm-6">
-                    <div className="small text-muted">{mockEmployee.phone}</div>
+            <Accordion
+              variant="settings"
+              header="Information"
+              icon={UserIcon}
+              defaultOpen={true}
+              bodyPlacement="above"
+            >
+              <div className="row g-2">
+                <div className="col-sm-6">
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <UserIcon className="app-icon text-muted" />
+                    <div className="fw-medium">{mockEmployee.first_name} {mockEmployee.last_name}</div>
                   </div>
                 </div>
-                <hr className="my-2" />
-                <h6 className="fw-semibold mb-2 small text-muted">Details</h6>
-                <div className="row g-2 small">
-                  <div className="col-sm-6">
-                    <span className="text-muted">Username:</span> <span className="fw-medium">{mockEmployee.username}</span>
-                  </div>
-                  <div className="col-sm-6">
-                    <span className="text-muted">Location:</span> <span className="fw-medium">{mockEmployee.location}</span>
-                  </div>
-                  <div className="col-sm-6">
-                    <span className="text-muted">Hire Date:</span> <span className="fw-medium">May 10, 2023</span>
-                  </div>
-                  <div className="col-sm-6">
-                    <span className="text-muted">Active:</span> <span className="fw-medium">{mockEmployee.is_active ? "Yes" : "No"}</span>
-                  </div>
+                <div className="col-sm-6">
+                  <span className="badge bg-primary text-capitalize">{mockEmployee.role}</span>
+                </div>
+                <div className="col-sm-6">
+                  <div className="small text-muted">{mockEmployee.email}</div>
+                </div>
+                <div className="col-sm-6">
+                  <div className="small text-muted">{mockEmployee.phone}</div>
                 </div>
               </div>
-              <div className="profile-accordion-header d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary">
-                <div className="d-flex align-items-center gap-2">
-                  <UserIcon className="app-icon" />
-                  <span className="fw-semibold">Information</span>
+              <hr className="my-2" />
+              <h6 className="fw-semibold mb-2 small text-muted">Details</h6>
+              <div className="row g-2 small">
+                <div className="col-sm-6">
+                  <span className="text-muted">Username:</span> <span className="fw-medium">{mockEmployee.username}</span>
                 </div>
-                <ChevronUpIcon className="app-icon" />
+                <div className="col-sm-6">
+                  <span className="text-muted">Location:</span> <span className="fw-medium">{mockEmployee.location}</span>
+                </div>
+                <div className="col-sm-6">
+                  <span className="text-muted">Hire Date:</span> <span className="fw-medium">May 10, 2023</span>
+                </div>
+                <div className="col-sm-6">
+                  <span className="text-muted">Active:</span> <span className="fw-medium">{mockEmployee.is_active ? "Yes" : "No"}</span>
+                </div>
               </div>
-            </div>
+            </Accordion>
           </ComponentCard>
         )}
 

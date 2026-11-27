@@ -60,6 +60,7 @@ import Modal from "./components/modals/Modal";
 import useBranding from "../services/useBranding";
 import { applyActiveColorTheme } from "../services/activeColorTheme";
 import Modal_Settings from "./components/modals/Modal_Settings";
+import { Accordion } from "./components/accordions";
 import Panel_General from "./components/panels/Panel_General";
 import Panel_WageHistory from "./components/panels/Panel_WageHistory";
 import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
@@ -1444,31 +1445,20 @@ const Profile = () => {
                   }}
                 />
 
-                <div className="profile-accordion rounded" style={{ background: "var(--bs-body-bg)" }}>
-                  <div
-                    ref={(el) => {
-                      meSectionHeaderRefs.current.wage = el;
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className="profile-accordion-header"
-                    data-active={meSectionOpen === "wage"}
-                    onClick={() => toggleMeSection("wage")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleMeSection("wage");
-                      }
-                    }}
-                  >
-                    <div className="ui-flex-center-gap-1">
-                      <CurrencyDollarIcon className="ui-icon-4" />
-                      <span className="fw-semibold">Wage</span>
-                    </div>
-                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "wage" ? "rotate(180deg)" : "none" }} />
-                  </div>
-                  {meSectionOpen === "wage" && <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />}
-                </div>
+                <Accordion
+                  variant="settings"
+                  header="Wage"
+                  icon={CurrencyDollarIcon}
+                  open={meSectionOpen === "wage"}
+                  onToggle={() => toggleMeSection("wage")}
+                  headerRef={(el) => {
+                    meSectionHeaderRefs.current.wage = el;
+                  }}
+                  bodyPlacement="above"
+                  bodyStyle={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}
+                >
+                  <Panel_WageHistory paySlips={paySlips} paySlipsLoading={paySlipsLoading} setSelectedSlip={setSelectedSlip} maxHeight={meSectionBodyMaxHeight} />
+                </Accordion>
 
                 <Panel_Profile_TimeOff
                   user={user}
@@ -1491,70 +1481,55 @@ const Profile = () => {
                   }}
                 />
 
-                <div className="profile-accordion rounded" style={{ background: "var(--bs-body-bg)" }}>
-                  <div
-                    ref={(el) => {
-                      meSectionHeaderRefs.current.settings = el;
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className="profile-accordion-header"
-                    data-active={meSectionOpen === "settings"}
-                    onClick={() => toggleMeSection("settings")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleMeSection("settings");
-                      }
-                    }}
-                  >
-                    <div className="ui-flex-center-gap-1">
-                      <CogIcon className="ui-icon-4" />
-                      <span className="fw-semibold">Settings</span>
-                    </div>
-                    <ChevronDownIcon className="ui-icon-4" style={{ transition: "transform 0.2s", transform: meSectionOpen === "settings" ? "rotate(180deg)" : "none" }} />
-                  </div>
-                  {meSectionOpen === "settings" && (
-                    <div className="profile-accordion-body" style={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}>
-                      <Modal_Settings
-                        embedded={true}
-                        isMobile={isMobile}
-                        row1PanelBottom={row1PanelBottom}
-                        isDarkMode={isDarkMode}
-                        toggleDarkMode={handleDarkModeToggle}
-                        employeeColor={employeeColor}
-                        pendingColor={pendingColor}
-                        setPendingColor={setPendingColor}
-                        colorUpdating={colorUpdating}
-                        handleColorChange={handleColorChange}
-                        FooterAlignIcon={FooterAlignIcon}
-                        cycleFooterAlign={cyclePersistedFooterAlign}
-                        user={user}
-                        setSignatureModalOpen={setSignatureModalOpen}
-                        isTrainingMode={isTrainingMode}
-                        toggleViewMode={toggleViewMode}
-                        buttonTextSize={buttonTextSize}
-                        cycleButtonTextSize={cyclePersistedButtonTextSize}
-                        handleLogout={handleLogout}
-                        currentDbEnvironment={currentDbEnvironment}
-                        dbLoading={dbLoading}
-                        dbMessage={dbMessage}
-                        dbError={dbError}
-                        handleSwitchEnvironment={handleSwitchEnvironment}
-                        DB_ENVIRONMENTS={DB_ENVIRONMENTS}
-                        environmentLastUpdated={environmentLastUpdated}
-                        appVersion={appVersion}
-                        appBuildLabel={appBuildLabel}
-                        HelpIcon={HelpIcon}
-                        onClose={() => setMeSectionOpen("")}
-                        onSave={() => setMeSectionOpen("")}
-                        showCloseButton={false}
-                        startupPage={user?.startup_page || "schedule"}
-                        setStartupPage={setPersistedStartupPage}
-                      />
-                    </div>
-                  )}
-                </div>
+                <Accordion
+                  variant="settings"
+                  header="Settings"
+                  icon={CogIcon}
+                  open={meSectionOpen === "settings"}
+                  onToggle={() => toggleMeSection("settings")}
+                  headerRef={(el) => {
+                    meSectionHeaderRefs.current.settings = el;
+                  }}
+                  bodyPlacement="above"
+                  bodyStyle={{ maxHeight: meSectionBodyMaxHeight, overflowY: "auto" }}
+                >
+                  <Modal_Settings
+                    embedded={true}
+                    isMobile={isMobile}
+                    row1PanelBottom={row1PanelBottom}
+                    isDarkMode={isDarkMode}
+                    toggleDarkMode={handleDarkModeToggle}
+                    employeeColor={employeeColor}
+                    pendingColor={pendingColor}
+                    setPendingColor={setPendingColor}
+                    colorUpdating={colorUpdating}
+                    handleColorChange={handleColorChange}
+                    FooterAlignIcon={FooterAlignIcon}
+                    cycleFooterAlign={cyclePersistedFooterAlign}
+                    user={user}
+                    setSignatureModalOpen={setSignatureModalOpen}
+                    isTrainingMode={isTrainingMode}
+                    toggleViewMode={toggleViewMode}
+                    buttonTextSize={buttonTextSize}
+                    cycleButtonTextSize={cyclePersistedButtonTextSize}
+                    handleLogout={handleLogout}
+                    currentDbEnvironment={currentDbEnvironment}
+                    dbLoading={dbLoading}
+                    dbMessage={dbMessage}
+                    dbError={dbError}
+                    handleSwitchEnvironment={handleSwitchEnvironment}
+                    DB_ENVIRONMENTS={DB_ENVIRONMENTS}
+                    environmentLastUpdated={environmentLastUpdated}
+                    appVersion={appVersion}
+                    appBuildLabel={appBuildLabel}
+                    HelpIcon={HelpIcon}
+                    onClose={() => setMeSectionOpen("")}
+                    onSave={() => setMeSectionOpen("")}
+                    showCloseButton={false}
+                    startupPage={user?.startup_page || "schedule"}
+                    setStartupPage={setPersistedStartupPage}
+                  />
+                </Accordion>
               </div>
             </div>
           </>

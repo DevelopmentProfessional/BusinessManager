@@ -409,7 +409,7 @@ export default function Reports() {
   const { user, loading, setLoading, error, setError, clearError, hasPageAccess } = useStore();
 
   const { branding } = useBranding();
-  const { isTrainingMode } = useViewMode();
+  const { isTrainingMode, navMenuOpen } = useViewMode();
 
   // ─── 3 STATE DECLARATIONS ────────────────────────────────────────────────
   // NOTE: permission guard is evaluated AFTER all hooks to comply with React's Rules of Hooks
@@ -1398,7 +1398,7 @@ export default function Reports() {
             )}
 
             {/* ── DATA TABLE TOGGLE + NAVIGATION ── */}
-            {!fullScreenMode && !reportMenuOpen && !savedFiltersMenuOpen && !eventTypeMenuOpen && typeof document !== "undefined" && createPortal(
+            {!fullScreenMode && !reportMenuOpen && !savedFiltersMenuOpen && !eventTypeMenuOpen && !navMenuOpen && typeof document !== "undefined" && createPortal(
               <div
                 className="align-items-center d-flex gap-2 justify-content-center reports-nav-floating"
                 style={{

@@ -1,5 +1,6 @@
 import React from "react";
-import { UserIcon, ChevronUpIcon } from "../../../icons";
+import { UserIcon } from "../../../icons";
+import { Accordion } from "../accordions";
 
 export default function Panel_Profile_Information({
   user,
@@ -13,31 +14,18 @@ export default function Panel_Profile_Information({
   if (!user) return null;
 
   return (
-    <div className="profile-accordion rounded" style={{ background: "var(--bs-body-bg)" }}>
-      <div
-        ref={headerRef}
-        role="button"
-        tabIndex={0}
-        className="profile-accordion-header d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary"
-        data-active={isOpen}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle?.();
-          }
-        }}
-        style={{ cursor: "pointer" }}
-      >
-        <div className="d-flex align-items-center gap-2">
-          <UserIcon className="app-icon" />
-          <span className="fw-semibold">Information</span>
-        </div>
-        <ChevronUpIcon className="app-icon" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-      </div>
-      {isOpen && (
-        <div className="profile-accordion-body p-3" style={{ maxHeight, overflowY: "auto" }}>
-          <div className="row g-2">
+    <Accordion
+      variant="settings"
+      header="Information"
+      icon={UserIcon}
+      open={isOpen}
+      onToggle={onToggle}
+      headerRef={headerRef}
+      bodyPlacement="above"
+      bodyStyle={{ maxHeight, overflowY: "auto" }}
+      bodyClassName="p-3"
+    >
+      <div className="row g-2">
             <div className="col-sm-6">
               <div className="d-flex align-items-center gap-2 mb-1">
                 <UserIcon className="app-icon text-muted" />
@@ -92,8 +80,6 @@ export default function Panel_Profile_Information({
               <div className="fw-medium">{user.is_active === false ? "No" : "Yes"}</div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+    </Accordion>
   );
 }

@@ -15,6 +15,7 @@ export default function Accordion({
   bodyPlacement = "above",
   bodyClassName = "",
   bodyStyle = {},
+  headerRef = null,
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const contentId = useId();
@@ -22,10 +23,12 @@ export default function Accordion({
 
   if (variant === "settings") {
     const isOpen = typeof open === "boolean" ? open : internalOpen;
+    const isAbove = bodyPlacement === "above";
+    const placementModifier = isAbove ? "profile-accordion-body--above" : "profile-accordion-body--below";
     const body = isOpen && (
       <div
         id={contentId}
-        className={`profile-accordion-body ${bodyClassName}`.trim()}
+        className={`profile-accordion-body ${placementModifier} ${bodyClassName}`.trim()}
         role="region"
         aria-labelledby={headerId}
         style={bodyStyle}
@@ -36,8 +39,9 @@ export default function Accordion({
 
     return (
       <div className={`app-accordion-settings ${className}`.trim()}>
-        {bodyPlacement === "above" && body}
+        {isAbove && body}
         <button
+          ref={headerRef}
           id={headerId}
           type="button"
           className="profile-accordion-header"
@@ -57,7 +61,7 @@ export default function Accordion({
           </div>
           <ChevronDownIcon className="flex-shrink-0 h-4 text-muted w-4" aria-hidden="true" style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }} />
         </button>
-        {bodyPlacement !== "above" && body}
+        {!isAbove && body}
       </div>
     );
   }

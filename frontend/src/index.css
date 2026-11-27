@@ -1313,6 +1313,7 @@ table,
   border-top: 0.0625rem solid var(--bs-border-color) !important;
   border-radius: var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) 0 0 !important;
   margin-bottom: calc(var(--app-accordion-header-height) * -0.5) !important;
+  margin-top: 0 !important;
   padding-top: 0.75rem !important;
   padding-left: 0.75rem !important;
   padding-right: 0.75rem !important;
@@ -1324,8 +1325,16 @@ table,
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  min-height: 100%;
+}
+
+.profile-accordion-body--below,
+.app-accordion-body--below {
+  border-radius: 0 0 var(--app-accordion-body-border-radius) var(--app-accordion-body-border-radius) !important;
+  margin-top: calc(var(--app-accordion-header-height) * -0.5) !important;
+  margin-bottom: 0 !important;
+  padding-top: calc(var(--app-accordion-header-height) * 0.5 + 0.75rem) !important;
+  padding-bottom: 0.75rem !important;
+  justify-content: flex-start !important;
 }
 
 .app-accordion-footer {
@@ -2745,14 +2754,8 @@ button:not(.btn-unstyled):not(.btn-close):not(.btn-tab):not(.btn-link) svg:not(.
   padding-bottom: calc(var(--app-btn-height) * 0.5 + 0.25rem) !important;
 }
 
-.profile-accordion > .profile-accordion-body {
-  margin-top: 0.5rem !important;
-  margin-bottom: 0 !important;
-  padding-bottom: 0.75rem !important;
-}
-
-.profile-accordion > .profile-wage-history.profile-accordion-body {
-  padding-bottom: 0 !important;
+body.app-nav-menu-open .reports-nav-floating {
+  display: none !important;
 }
 
 body.training-mode .btn.rounded-pill svg + span,

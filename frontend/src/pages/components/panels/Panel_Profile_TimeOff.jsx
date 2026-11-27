@@ -1,7 +1,8 @@
 import React from "react";
 import Badge_Status from "../badges/Badge_Status";
-import { ChevronUpIcon, PlusCircleIcon, CalendarDaysIcon } from "../../../icons";
+import { PlusCircleIcon, CalendarDaysIcon } from "../../../icons";
 import Button_InsuranceDocument from "../buttons/Button_InsuranceDocument";
+import { Accordion } from "../accordions";
 
 export default function Panel_Profile_TimeOff({
   user,
@@ -28,31 +29,18 @@ export default function Panel_Profile_TimeOff({
   const historyRequests = allRequests.filter((r) => r.status !== "pending");
 
   return (
-    <div className="profile-accordion rounded" style={{ background: "var(--bs-body-bg)" }}>
-      <div
-        ref={headerRef}
-        role="button"
-        tabIndex={0}
-        className="profile-accordion-header d-flex justify-content-between align-items-center p-2 border-top bg-body-tertiary"
-        data-active={isOpen}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle?.();
-          }
-        }}
-        style={{ cursor: "pointer" }}
-      >
-        <div className="d-flex align-items-center gap-2">
-          <CalendarDaysIcon className="app-icon" />
-          <span className="fw-semibold">Benefits</span>
-        </div>
-        <ChevronUpIcon className="app-icon" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-      </div>
-      {isOpen && (
-        <div className="profile-accordion-body p-3" style={{ maxHeight, overflowY: "auto" }}>
-          <div className="g-2 mb-3 row">
+    <Accordion
+      variant="settings"
+      header="Benefits"
+      icon={CalendarDaysIcon}
+      open={isOpen}
+      onToggle={onToggle}
+      headerRef={headerRef}
+      bodyPlacement="above"
+      bodyStyle={{ maxHeight, overflowY: "auto" }}
+      bodyClassName="p-3"
+    >
+      <div className="g-2 mb-3 row">
             <div className="col-sm-6">
               <div className="ui-small-muted">Salary</div>
               <div className="fw-medium">{user.salary != null ? `$${Number(user.salary).toLocaleString()}` : "Not set"}</div>
@@ -149,8 +137,6 @@ export default function Panel_Profile_TimeOff({
               </>
             )}
           </div>
-        </div>
-      )}
-    </div>
+    </Accordion>
   );
 }

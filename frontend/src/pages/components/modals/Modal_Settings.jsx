@@ -221,7 +221,7 @@ const Modal_Settings = ({
         <Button_Toolbar icon={ArrowLeftOnRectangleIcon} label="Exit" onClick={handleLogout} className="btn-outline-secondary settings-accordion-btn" title="Log out" />
       </div>
 
-      {(onSave || onClose) && <Footer_Settings onSave={onSave || onClose} onClose={onClose} showClose={showCloseButton} />}
+      {!embedded && (onSave || onClose) && <Footer_Settings onSave={onSave || onClose} onClose={onClose} showClose={showCloseButton} />}
     </div>
   );
 };

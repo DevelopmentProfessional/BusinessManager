@@ -25,10 +25,17 @@ const useViewMode = create(
       setButtonTextSize: (size) => {
         if (BUTTON_TEXT_SIZES.includes(size)) set({ buttonTextSize: size });
       },
+      navMenuOpen: false,
+      setNavMenuOpen: (bool) => set({ navMenuOpen: Boolean(bool) }),
     }),
     {
       name: "view-mode-storage",
       storage: localStorage,
+      partialize: (state) => ({
+        isTrainingMode: state.isTrainingMode,
+        buttonTextSize: state.buttonTextSize,
+        footerAlign: state.footerAlign,
+      }),
     }
   )
 );
