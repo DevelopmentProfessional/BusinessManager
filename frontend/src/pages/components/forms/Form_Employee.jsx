@@ -188,7 +188,7 @@ function getSalaryFieldMeta(payFrequency) {
 }
 
 // ─── 2 STATE ───────────────────────────────────────────────────────────────────
-export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
+export default function Form_Employee({ employee, initialName = "", onSubmit, onCancel, onDelete, employees: employeesProp = [], canDelete = false, selfEdit = false }) {
   const [activeTab, setActiveTab] = useState("details");
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -268,12 +268,17 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
 
   const { hasPermission } = useStore();
 
+  const initialParts = !employee && initialName ? initialName.trim().split(/\s+/) : [];
+  const initialFirst = initialParts[0] || "";
+  const initialLast = initialParts.slice(1).join(" ") || "";
+  const initialUsername = initialFirst ? `${initialFirst.toLowerCase()}${initialLast ? "." + initialLast.toLowerCase() : ""}` : "";
+
   const [formData, setFormData] = useState({
     // Details
-    username: "",
+    username: initialUsername,
     password: "",
-    first_name: "",
-    last_name: "",
+    first_name: initialFirst,
+    last_name: initialLast,
     email: "",
     phone: "",
     role: "EMPLOYEE",
@@ -301,6 +306,20 @@ export default function Form_Employee({ employee, onSubmit, onCancel, onDelete, 
   const salaryFieldMeta = getSalaryFieldMeta(formData.pay_frequency);
 
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!employee && initialName) {
+      const parts = initialName.trim().split(/\s+/);
+      const first = parts[0] || "";
+      const last = parts.slice(1).join(" ") || "";
+      setFormData((prev) => ({
+        ...prev,
+        first_name: first,
+        last_name: last,
+        username: prev.username || (first ? `${first.toLowerCase()}${last ? "." + last.toLowerCase() : ""}` : ""),
+      }));
+    }
+  }, [employee, initialName]);
+
   // Load available roles
   useEffect(() => {
     const loadRoles = async () => {

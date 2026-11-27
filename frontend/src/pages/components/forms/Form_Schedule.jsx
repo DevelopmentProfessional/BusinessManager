@@ -55,6 +55,9 @@ import { XMarkIcon, CheckIcon, TrashIcon, EnvelopeIcon, CurrencyDollarIcon } fro
 import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import Modal_Client_Create from "../modals/Modal_Client_Create";
+import Modal_Service_Form from "../modals/Modal_Service_Form";
+import Modal_Employee_Form from "../modals/Modal_Employee_Form";
 import { InputText, InputNumber, InputDate, InputTime, InputTextarea } from "../Inputs";
 
 // ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
@@ -220,6 +223,17 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
   const [linkedTasksLoading, setLinkedTasksLoading] = useState(false);
   const [linkedTasksLoaded, setLinkedTasksLoaded] = useState(false);
 
+  // Quick-create from search state
+  const [showClientCreateModal, setShowClientCreateModal] = useState(false);
+  const [clientSearchPrefill, setClientSearchPrefill] = useState("");
+  const [clientCreateError, setClientCreateError] = useState(null);
+
+  const [showServiceCreateModal, setShowServiceCreateModal] = useState(false);
+  const [serviceSearchPrefill, setServiceSearchPrefill] = useState("");
+
+  const [showEmployeeCreateModal, setShowEmployeeCreateModal] = useState(false);
+  const [employeeSearchPrefill, setEmployeeSearchPrefill] = useState("");
+
   // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
   // Load services and employees if not provided as props (clients loaded on-demand)
   useEffect(() => {
@@ -312,6 +326,96 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
       // silently degrade
     } finally {
       setLinkedTasksLoading(false);
+    }
+  };
+
+  // ── Quick-create from search handlers ──────────────────────────────────────
+  const handleCreateClientFromSearch = (searchTerm) => {
+    setClientSearchPrefill(searchTerm);
+    setClientCreateError(null);
+    setShowClientCreateModal(true);
+  };
+
+  const handleClientCreated = async (clientData) => {
+    try {
+      setClientCreateError(null);
+      const response = await isudAPI.clients.create(clientData);
+      const newClient = response?.data ?? response;
+      setClients((prev) => [...prev, newClient]);
+      setClientsLoaded(true);
+      if (clientMultiMode) {
+        setFormData((prev) => ({
+          ...prev,
+          client_ids: [...new Set([...(prev.client_ids || []), newClient.id])],
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          client_ids: [newClient.id],
+        }));
+      }
+      useStore.getState().addClient?.(newClient);
+      setShowClientCreateModal(false);
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Failed to create client";
+      setClientCreateError(String(detail));
+    }
+  };
+
+  const handleCreateServiceFromSearch = (searchTerm) => {
+    setServiceSearchPrefill(searchTerm);
+    setShowServiceCreateModal(true);
+  };
+
+  const handleServiceCreated = async (serviceData) => {
+    try {
+      const response = await isudAPI.services.create(serviceData);
+      const newService = response?.data ?? response;
+      setServices((prev) => [...prev, newService]);
+      setFormData((prev) => ({
+        ...prev,
+        service_id: newService.id,
+        duration_minutes: newService.duration_minutes ? String(newService.duration_minutes) : prev.duration_minutes,
+      }));
+      useStore.getState().addService?.(newService);
+      setShowServiceCreateModal(false);
+    } catch (err) {
+      console.error("Failed to create service:", err);
+      throw err;
+    }
+  };
+
+  const handleCreateEmployeeFromSearch = (searchTerm) => {
+    setEmployeeSearchPrefill(searchTerm);
+    setShowEmployeeCreateModal(true);
+  };
+
+  const handleEmployeeCreated = async (employeeData) => {
+    try {
+      const response = await isudAPI.employees.create(employeeData);
+      const newEmployee = response?.data ?? response;
+      const transformed = {
+        id: newEmployee.id,
+        first_name: newEmployee.first_name ?? newEmployee.firstName ?? "",
+        last_name: newEmployee.last_name ?? newEmployee.lastName ?? "",
+        role: newEmployee.role ?? "",
+      };
+      setEmployees((prev) => [...prev, transformed]);
+      if (employeeMultiMode) {
+        setFormData((prev) => ({
+          ...prev,
+          employee_ids: [...new Set([...(prev.employee_ids || []), transformed.id])],
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          employee_ids: [transformed.id],
+        }));
+      }
+      setShowEmployeeCreateModal(false);
+    } catch (err) {
+      console.error("Failed to create employee:", err);
+      throw err;
     }
   };
 
@@ -792,6 +896,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                       allowMultiModeToggle
                       isMultiModeActive={clientMultiMode}
                       onToggleMultiMode={toggleClientMultiMode}
+                      onCreateFromSearch={handleCreateClientFromSearch}
+                      createButtonTitle="Add client"
                       openUpward
                       closeOnSelect={!clientMultiMode}
                     />
@@ -821,6 +927,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         allowMultiModeToggle
                         isMultiModeActive={employeeMultiMode}
                         onToggleMultiMode={toggleEmployeeMultiMode}
+                        onCreateFromSearch={!isWriteOnly ? handleCreateEmployeeFromSearch : undefined}
+                        createButtonTitle="Add employee"
                         openUpward
                         closeOnSelect={!employeeMultiMode}
                       />
@@ -846,6 +954,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                       label="Service"
                       required
                       searchable={true}
+                      onCreateFromSearch={handleCreateServiceFromSearch}
+                      createButtonTitle="Add service"
                       openUpward
                       closeOnSelect
                     />
@@ -912,6 +1022,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         allowMultiModeToggle
                         isMultiModeActive={employeeMultiMode}
                         onToggleMultiMode={toggleEmployeeMultiMode}
+                        onCreateFromSearch={!isWriteOnly ? handleCreateEmployeeFromSearch : undefined}
+                        createButtonTitle="Add attendee"
                         openUpward
                         closeOnSelect={!employeeMultiMode}
                       />
@@ -983,6 +1095,8 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
                         allowMultiModeToggle
                         isMultiModeActive={employeeMultiMode}
                         onToggleMultiMode={toggleEmployeeMultiMode}
+                        onCreateFromSearch={!isWriteOnly ? handleCreateEmployeeFromSearch : undefined}
+                        createButtonTitle="Add employee"
                         openUpward
                         closeOnSelect={!employeeMultiMode}
                       />
@@ -1153,6 +1267,35 @@ export default function Form_Schedule({ appointment, onSubmit, onCancel, onDelet
           }
         />
       </div>
+
+      {showClientCreateModal && (
+        <Modal_Client_Create
+          isOpen={showClientCreateModal}
+          onClose={() => setShowClientCreateModal(false)}
+          onSubmit={handleClientCreated}
+          error={clientCreateError}
+          initialName={clientSearchPrefill}
+        />
+      )}
+
+      {showServiceCreateModal && (
+        <Modal_Service_Form
+          isOpen={showServiceCreateModal}
+          onClose={() => setShowServiceCreateModal(false)}
+          onSubmit={handleServiceCreated}
+          initialName={serviceSearchPrefill}
+        />
+      )}
+
+      {showEmployeeCreateModal && (
+        <Modal_Employee_Form
+          isOpen={showEmployeeCreateModal}
+          onClose={() => setShowEmployeeCreateModal(false)}
+          onSubmit={handleEmployeeCreated}
+          employees={employees}
+          initialName={employeeSearchPrefill}
+        />
+      )}
     </div>
   );
 }

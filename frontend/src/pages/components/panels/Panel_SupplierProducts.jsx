@@ -17,6 +17,7 @@ const errorMessage = (error, fallback) =>
 
 export default function Panel_SupplierProducts({ supplierId, settings = {} }) {
   const hasPermission = useStore((state) => state.hasPermission);
+  const openAddInventoryModal = useStore((state) => state.openAddInventoryModal);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -67,6 +68,13 @@ export default function Panel_SupplierProducts({ supplierId, settings = {} }) {
 
   const handleSelectInventory = (event) => {
     setFormData((previous) => ({ ...previous, inventory_id: event.target.value }));
+  };
+
+  const handleCreateInventoryFromSearch = (searchTerm) => {
+    openAddInventoryModal((newItem) => {
+      setInventoryItems((prev) => [...prev, newItem]);
+      setFormData((prev) => ({ ...prev, inventory_id: newItem.id }));
+    }, searchTerm);
   };
 
   const handleEdit = (product) => {
@@ -256,6 +264,9 @@ export default function Panel_SupplierProducts({ supplierId, settings = {} }) {
                 { value: "", label: "Select inventory item…" },
                 ...availableItems.map((item) => ({ value: item.id, label: item.name })),
               ]}
+              searchable
+              onCreateFromSearch={handleCreateInventoryFromSearch}
+              createButtonTitle="Add item"
             />
           </div>
           <div className="col-12">

@@ -10,12 +10,14 @@ export default function Modal_Service_Form({
   service,
   onSubmit,
   onBulkImport,
+  initialName = "",
 }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Service
           service={service}
+          initialName={initialName}
           onSubmit={onSubmit}
           onCancel={onClose}
           onBulkImport={!service ? onBulkImport : null}

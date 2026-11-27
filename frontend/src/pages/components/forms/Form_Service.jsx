@@ -45,6 +45,7 @@ import Footer_Actions from "../footers/Footer_Actions";
 import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serviceCategoriesAPI, servicesAPI } from "../../../services/api";
 import Widget_Camera from "../widgets/Widget_Camera";
 import Modal_BulkImport from "../modals/Modal_ImportBulk";
+import Modal_Employee_Form from "../modals/Modal_Employee_Form";
 import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import { InputText, InputNumber, InputTextarea, InputCheckbox } from "../Inputs";
 import Table from "../tables/Table";
@@ -436,6 +437,27 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
   };
 
   // ── Create-from-search handlers ──────────────────────────────────
+  const [showEmployeeCreateModal, setShowEmployeeCreateModal] = useState(false);
+  const [employeeSearchPrefill, setEmployeeSearchPrefill] = useState("");
+
+  const handleCreateEmployeeFromSearch = (searchTerm) => {
+    setEmployeeSearchPrefill(searchTerm);
+    setShowEmployeeCreateModal(true);
+  };
+
+  const handleEmployeeCreated = async (employeeData) => {
+    try {
+      const response = await employeesAPI.create(employeeData);
+      const newEmployee = response?.data ?? response;
+      setEmployees((prev) => [...prev, newEmployee]);
+      setNewEmployee({ user_id: newEmployee.id });
+      setShowEmployeeCreateModal(false);
+    } catch (err) {
+      console.error("Failed to create employee:", err);
+      throw err;
+    }
+  };
+
   const handleCreateInventoryFromSearch = (context) => (searchText) => {
     openAddInventoryModal((newItem) => {
       // Auto-select and add the created inventory to the appropriate context
@@ -771,6 +793,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                   onChange={(e) => updateServiceAddonRow(index, "linked_inventory_id", e.target.value)}
                                   options={[{ value: "", label: "None" }, ...serviceAddonResourceItems.map((inv) => ({ value: inv.id, label: inv.name }))]}
                                   placeholder="Linked resource"
+                                  searchable
+                                  onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
+                                  createButtonTitle="Add item"
                                   closeOnSelect
                                 />
                               </td>
@@ -781,6 +806,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                                   onChange={(e) => updateServiceAddonRow(index, "linked_product_id", e.target.value)}
                                   options={[{ value: "", label: "None" }, ...serviceAddonProductItems.map((item) => ({ value: item.id, label: item.name }))]}
                                   placeholder="Linked product"
+                                  searchable
+                                  onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
+                                  createButtonTitle="Add item"
                                   closeOnSelect
                                 />
                               </td>
@@ -1059,6 +1087,9 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
                       .map((employeeOption) => ({ value: employeeOption.id, label: `${employeeOption.first_name} ${employeeOption.last_name}` })),
                   ]}
                   placeholder="Select employee"
+                  searchable
+                  onCreateFromSearch={handleCreateEmployeeFromSearch}
+                  createButtonTitle="Add employee"
                   closeOnSelect
                 />
                 <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddEmployee}>
@@ -1295,6 +1326,16 @@ export default function Form_Service({ service, initialName = "", onSubmit, onCa
           />
         </div>
       </div>
+
+      {showEmployeeCreateModal && (
+        <Modal_Employee_Form
+          isOpen={showEmployeeCreateModal}
+          onClose={() => setShowEmployeeCreateModal(false)}
+          onSubmit={handleEmployeeCreated}
+          employees={employees}
+          initialName={employeeSearchPrefill}
+        />
+      )}
     </div>
   );
 }

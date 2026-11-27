@@ -52,11 +52,13 @@ import Dropdown_InventoryPurchaseUnit from "../dropdowns/Dropdown_InventoryPurch
 import { InputText, InputNumber, InputDate, InputTextarea, InputCheckbox } from "../Inputs";
 import cacheService from "../../../services/cacheService";
 import { servicesAPI, suppliersAPI, inventoryAPI, inventoryCategoriesAPI } from "../../../services/api";
+import useStore from "../../../services/useStore";
 import { useWordSafeLabel } from "../../../utils/wordSafeTruncate";
 import { sortItemsAlphabetically } from "../../../utils/displaySort";
 
 // ─── 1 STATE ───────────────────────────────────────────────────────────────────
 export default function Form_Item({ onSubmit, onCancel, item = null, initialName = "", initialSku = "", onSubmitWithExtras = null, showScanner = false, existingSkus = [], onBulkImport = null }) {
+  const { openAddServiceModal, openAddInventoryModal } = useStore();
   const [formData, setFormData] = useState({
     name: initialName || "",
     sku: initialSku || "",
@@ -302,6 +304,33 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
     } catch (error) {
       setNewSupplierError(String(error?.response?.data?.detail || error?.message || "Failed to add supplier"));
     }
+  };
+
+  const handleCreateSupplierFromSearch = (searchTerm) => {
+    setNewSupplierData({ name: searchTerm, email: "", phone: "", address: "" });
+    setNewSupplierError("");
+    setIsSupplierCreateOpen(true);
+  };
+
+  const handleCreateServiceFromSearch = (searchTerm) => {
+    openAddServiceModal((newService) => {
+      setAvailableServices((previous) => sortItemsAlphabetically([...previous, newService], ["name"]));
+      setFormData((previous) => ({ ...previous, service_id: newService.id }));
+    }, searchTerm);
+  };
+
+  const handleCreateBundleProductFromSearch = (searchTerm) => {
+    openAddInventoryModal((newItem) => {
+      setAllProducts((previous) => sortItemsAlphabetically([...previous, newItem], ["name"]));
+      setBundleNewProductId(newItem.id);
+    }, searchTerm);
+  };
+
+  const handleCreateMixProductFromSearch = (searchTerm) => {
+    openAddInventoryModal((newItem) => {
+      setAllProducts((previous) => sortItemsAlphabetically([...previous, newItem], ["name"]));
+      setMixNewProductId(newItem.id);
+    }, searchTerm);
   };
 
   const handleBarcodeDetected = (code) => {
@@ -768,6 +797,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   onChange={handleSupplierChange}
                   options={[{ value: "", label: "No supplier" }, ...availableSuppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))]}
                   placeholder="Select supplier"
+                  searchable
+                  onCreateFromSearch={handleCreateSupplierFromSearch}
+                  createButtonTitle="Add supplier"
                   closeOnSelect
                 />
                 <button
@@ -796,6 +828,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                 onChange={handleChange}
                 options={[{ value: "", label: "No linked service" }, ...availableServices.map((service) => ({ value: service.id, label: service.name }))]}
                 placeholder="Linked Services"
+                searchable
+                onCreateFromSearch={handleCreateServiceFromSearch}
+                createButtonTitle="Add service"
                 closeOnSelect
               />
             </div>
@@ -900,6 +935,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   onChange={(e) => setBundleNewProductId(e.target.value)}
                   options={[{ value: "", label: "Select…" }, ...allProducts.filter((p) => !bundleComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))).map((p) => ({ value: p.id, label: p.name }))]}
                   placeholder="Select product"
+                  searchable
+                  onCreateFromSearch={handleCreateBundleProductFromSearch}
+                  createButtonTitle="Add product"
                   closeOnSelect
                 />
                 <button
@@ -975,6 +1013,9 @@ export default function Form_Item({ onSubmit, onCancel, item = null, initialName
                   onChange={(e) => setMixNewProductId(e.target.value)}
                   options={[{ value: "", label: "Select…" }, ...allProducts.filter((p) => !mixComponents.some((c) => c.id === p.id) && (!productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))).map((p) => ({ value: p.id, label: p.name }))]}
                   placeholder="Select product"
+                  searchable
+                  onCreateFromSearch={handleCreateMixProductFromSearch}
+                  createButtonTitle="Add product"
                   closeOnSelect
                 />
                 <InputNumber min="1" style={{ width: 60 }} value={mixNewMax} onChange={(e) => setMixNewMax(e.target.value)} placeholder="Max" />

@@ -38,6 +38,7 @@ import Button_Toolbar from "../buttons/Button_Toolbar";
 import Footer_Actions from "../footers/Footer_Actions";
 import useViewMode from "../../../services/useViewMode";
 import { inventoryAPI, inventoryFeaturesAPI, inventoryCategoriesAPI, productRelationsAPI, bundleAPI, mixAPI, suppliersAPI } from "../../../services/api";
+import useStore from "../../../services/useStore";
 import { showConfirm } from "../../../services/showConfirm";
 import Modal from "./Modal";
 import cacheService from "../../../services/cacheService";
@@ -54,6 +55,7 @@ import ImagePreview from "../media/ImagePreview";
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode
 function ProductionRelationsPanel({ productId }) {
+  const openAddInventoryModal = useStore((state) => state.openAddInventoryModal);
   const [activeTab, setActiveTab] = useState("resources");
   const [resources, setResources] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -213,6 +215,14 @@ function ProductionRelationsPanel({ productId }) {
                   onChange={(e) => setNewResourceId(e.target.value)}
                   style={{ ...inputSm, flex: 1 }}
                   options={[{ value: "", label: "Select resource…" }, ...resourceItems.filter((i) => !resources.some((r) => r.resource_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
+                  searchable
+                  onCreateFromSearch={(searchTerm) =>
+                    openAddInventoryModal((newItem) => {
+                      setAllInventory((prev) => [...prev, newItem]);
+                      setNewResourceId(newItem.id);
+                    }, searchTerm)
+                  }
+                  createButtonTitle="Add resource"
                 />
                 <InputNumber min="0.01" step="0.01" value={newResourceQty} onChange={(e) => setNewResourceQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
                 <button type="button" className={`${btnPrimaryClass} d-flex align-items-center gap-2`} onClick={handleAddResource}>
@@ -266,6 +276,14 @@ function ProductionRelationsPanel({ productId }) {
                   onChange={(e) => setNewAssetId(e.target.value)}
                   style={{ ...inputSm, flex: "1 1 120px" }}
                   options={[{ value: "", label: "Select asset…" }, ...assetItems.filter((i) => !assets.some((a) => a.asset_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
+                  searchable
+                  onCreateFromSearch={(searchTerm) =>
+                    openAddInventoryModal((newItem) => {
+                      setAllInventory((prev) => [...prev, newItem]);
+                      setNewAssetId(newItem.id);
+                    }, searchTerm)
+                  }
+                  createButtonTitle="Add asset"
                 />
                 <InputNumber min="1" value={newAssetBatch} onChange={(e) => setNewAssetBatch(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Units/batch" title="Units produced per batch" />
                 <InputNumber min="0" value={newAssetDur} onChange={(e) => setNewAssetDur(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Min" title="Duration per batch in minutes" />
@@ -303,6 +321,7 @@ function ProductionRelationsPanel({ productId }) {
 // ─── Mix Setup Panel ─────────────────────────────────────────────────────────────
 // Shown only for MIX type items in inventory mode
 function MixSetupPanel({ mixId }) {
+  const openAddInventoryModal = useStore((state) => state.openAddInventoryModal);
   const [config, setConfig] = useState(null); // MixConfig record or null
   const [components, setComponents] = useState([]);
   const [allInventory, setAllInventory] = useState([]);
@@ -488,6 +507,14 @@ function MixSetupPanel({ mixId }) {
               onChange={(e) => setNewCompId(e.target.value)}
               style={{ ...s.input, flex: 1 }}
               options={[{ value: "", label: "Select product…" }, ...productItems.filter((i) => i.id !== mixId && !components.some((c) => c.component_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
+              searchable
+              onCreateFromSearch={(searchTerm) =>
+                openAddInventoryModal((newItem) => {
+                  setAllInventory((prev) => [...prev, newItem]);
+                  setNewCompId(newItem.id);
+                }, searchTerm)
+              }
+              createButtonTitle="Add product"
             />
             <InputNumber min="1" value={newMaxQty} onChange={(e) => setNewMaxQty(e.target.value)} style={{ ...s.input, width: 55 }} placeholder="max" title="Per-product max (leave blank for global default)" />
             <button type="button" className={mixBtnPrimary} onClick={handleAddComponent}>
@@ -518,6 +545,7 @@ function MixSetupPanel({ mixId }) {
 // ─── Bundle Components Panel ────────────────────────────────────────────────────
 // Shown only for BUNDLE type items in inventory mode
 function BundleComponentsPanel({ bundleId }) {
+  const openAddInventoryModal = useStore((state) => state.openAddInventoryModal);
   const [components, setComponents] = useState([]);
   const [allInventory, setAllInventory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -639,6 +667,14 @@ function BundleComponentsPanel({ bundleId }) {
               onChange={(e) => setNewComponentId(e.target.value)}
               style={{ ...inputSm, flex: 1 }}
               options={[{ value: "", label: "Select product…" }, ...productItems.filter((i) => i.id !== bundleId && !components.some((c) => c.component_id === i.id)).map((i) => ({ value: i.id, label: i.name }))]}
+              searchable
+              onCreateFromSearch={(searchTerm) =>
+                openAddInventoryModal((newItem) => {
+                  setAllInventory((prev) => [...prev, newItem]);
+                  setNewComponentId(newItem.id);
+                }, searchTerm)
+              }
+              createButtonTitle="Add product"
             />
             <InputNumber min="0.01" step="0.01" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputSm, width: 60 }} placeholder="Qty" />
             <button type="button" className={btnPrimaryClass} onClick={handleAdd}>
@@ -965,6 +1001,17 @@ export default function Modal_Detail_Item({
     setScanError("");
     setFormData((prev) => ({ ...prev, sku: scanned }));
     setIsScannerOpen(false);
+  };
+
+  const handleCreateSupplierFromSearch = async (searchTerm) => {
+    try {
+      const res = await suppliersAPI.create({ name: searchTerm });
+      const newSupplier = res?.data ?? res;
+      setAvailableSuppliers((prev) => [...prev, newSupplier]);
+      setFormData((prev) => ({ ...prev, supplier_id: String(newSupplier.id) }));
+    } catch (err) {
+      console.error("Failed to create supplier:", err);
+    }
   };
 
   // ─── 4 IMAGE MANAGEMENT HANDLERS ──────────────────────────────────────────
@@ -1651,6 +1698,9 @@ export default function Modal_Detail_Item({
                     onChange={handleChange}
                     style={equalFieldStyle}
                     options={[{ value: "", label: "— None —" }, ...availableSuppliers.map((s) => ({ value: String(s.id), label: s.name }))]}
+                    searchable
+                    onCreateFromSearch={handleCreateSupplierFromSearch}
+                    createButtonTitle="Add supplier"
                   />
                   <div className="form-floating" style={equalFieldStyle}>
                     <InputDate id="detail_date_of_sale" name="date_of_sale" value={formData.date_of_sale} onChange={handleChange} placeholder="Date of Sale" />

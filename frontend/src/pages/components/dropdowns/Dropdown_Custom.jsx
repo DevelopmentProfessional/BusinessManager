@@ -191,6 +191,7 @@ export default function Dropdown_Custom({
 
   // Filter options based on search term
   const filteredOptions = searchable && searchTerm ? sortedOptions.filter((option) => matchesWildcardText(searchTerm, option.label, option.value, option.searchText)) : sortedOptions;
+  const showInlineAdd = typeof onCreateFromSearch === "function" && Boolean(searchTerm.trim()) && filteredOptions.length === 0;
 
   useEffect(() => {
     if (!isOpen || !menuPosition || !menuRef.current) return;
@@ -340,6 +341,11 @@ export default function Dropdown_Custom({
                 if (event.key === "Escape") {
                   event.preventDefault();
                   setIsOpen(false);
+                } else if (event.key === "Enter" && showInlineAdd) {
+                  event.preventDefault();
+                  const term = searchTerm.trim();
+                  setIsOpen(false);
+                  onCreateFromSearch(term);
                 }
               }}
               className="form-control form-control-sm border-0 rounded-0 shadow-none"
@@ -348,36 +354,55 @@ export default function Dropdown_Custom({
             />
           </div>
 
-          {(multiSelect || showActionFooter || showClearButton || allowMultiModeToggle || typeof onCreateFromSearch === "function") && (
+          {(showInlineAdd || multiSelect || showActionFooter || showClearButton || allowMultiModeToggle || typeof onCreateFromSearch === "function") && (
             <div className="bg-gray-50 border-gray-200 border-top d-flex dark:bg-gray-800 dark:border-gray-600 gap-2 p-0">
-              {typeof onCreateFromSearch === "function" && (
+              {showInlineAdd ? (
                 <button
                   type="button"
                   onClick={() => {
-                    if (!searchTerm.trim()) return;
+                    const term = searchTerm.trim();
                     setIsOpen(false);
-                    onCreateFromSearch(searchTerm.trim());
+                    onCreateFromSearch(term);
                   }}
-                  className="align-items-center app-menu-action btn btn-outline-secondary btn-sm d-flex flex-grow-1 justify-content-center"
-                  title={createButtonTitle}
-                  aria-label={createButtonTitle}
-                  disabled={!searchTerm.trim()}
+                  className="align-items-center app-menu-action btn btn-primary btn-sm d-flex flex-grow-1 justify-content-center gap-1 w-100"
+                  title={`Add "${searchTerm.trim()}"`}
+                  aria-label={`Add "${searchTerm.trim()}"`}
                 >
                   <PlusIcon className="ui-icon-4" />
+                  <span>Add "{searchTerm.trim()}"</span>
                 </button>
-              )}
-              <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1">
-                OK
-              </button>
-              {showClearButton && (
-                <button type="button" onClick={handleClearMultiSelect} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
-                  Clear
-                </button>
-              )}
-              {allowMultiModeToggle && (
-                <button type="button" onClick={() => onToggleMultiMode?.()} className={`app-menu-action btn btn-sm flex-grow-1 ${isMultiModeActive ? "btn-primary" : "btn-outline-secondary"}`}>
-                  Multi
-                </button>
+              ) : (
+                <>
+                  {typeof onCreateFromSearch === "function" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!searchTerm.trim()) return;
+                        setIsOpen(false);
+                        onCreateFromSearch(searchTerm.trim());
+                      }}
+                      className="align-items-center app-menu-action btn btn-outline-secondary btn-sm d-flex flex-grow-1 justify-content-center"
+                      title={createButtonTitle}
+                      aria-label={createButtonTitle}
+                      disabled={!searchTerm.trim()}
+                    >
+                      <PlusIcon className="ui-icon-4" />
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setIsOpen(false)} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1">
+                    OK
+                  </button>
+                  {showClearButton && (
+                    <button type="button" onClick={handleClearMultiSelect} className="app-menu-action btn btn-outline-secondary btn-sm flex-grow-1" disabled={multiSelect ? selectedOptions.length === 0 : !value}>
+                      Clear
+                    </button>
+                  )}
+                  {allowMultiModeToggle && (
+                    <button type="button" onClick={() => onToggleMultiMode?.()} className={`app-menu-action btn btn-sm flex-grow-1 ${isMultiModeActive ? "btn-primary" : "btn-outline-secondary"}`}>
+                      Multi
+                    </button>
+                  )}
+                </>
               )}
             </div>
           )}

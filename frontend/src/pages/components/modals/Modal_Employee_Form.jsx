@@ -11,12 +11,14 @@ export default function Modal_Employee_Form({
   onSubmit,
   onManagePermissions,
   employees = [],
+  initialName = "",
 }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Employee
           employee={employee}
+          initialName={initialName}
           onSubmit={onSubmit}
           onCancel={onClose}
           onManagePermissions={onManagePermissions}

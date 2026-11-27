@@ -11,12 +11,14 @@ export default function Modal_Client_Create({
   error,
   onBulkImport,
   memberships = [],
+  initialName = "",
 }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} noPadding={true} fullScreen={true}>
       {isOpen && (
         <Form_Client
           client={null}
+          initialName={initialName}
           onSubmit={onSubmit}
           onCancel={onClose}
           error={error}
