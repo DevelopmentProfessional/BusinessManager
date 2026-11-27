@@ -54,9 +54,9 @@ export default function Accordion({
             onToggle?.(nextOpen);
           }}
         >
-          <div className="align-items-center d-flex flex-wrap gap-2 min-w-0">
+          <div className="align-items-center d-flex flex-nowrap gap-2 min-w-0">
             {Icon && <Icon className={`h-5 w-5 flex-shrink-0 ${iconClassName}`} />}
-            <span className="fw-semibold">{header}</span>
+            <span className="fw-semibold text-truncate">{header}</span>
             {titleExtra}
           </div>
           <ChevronDownIcon className="flex-shrink-0 h-4 text-muted w-4" aria-hidden="true" style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "none" }} />

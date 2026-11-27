@@ -8,13 +8,37 @@
  * ============================================================
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArchiveBoxIcon, ArrowTopRightOnSquareIcon, BellIcon, CalendarDaysIcon, ChatBubbleLeftRightIcon, ClipboardDocumentCheckIcon, DocumentPlusIcon, ShoppingCartIcon } from "../../../icons";
+import { useNavigate } from "react-router-dom";
+import {
+  ArchiveBoxIcon,
+  ArrowTopRightOnSquareIcon,
+  BellIcon,
+  CalendarDaysIcon,
+  ChatBubbleLeftRightIcon,
+  ClipboardDocumentCheckIcon,
+  DocumentPlusIcon,
+  ShoppingCartIcon,
+  XMarkIcon,
+} from "../../../icons";
 import useStore from "../../../services/useStore";
-import { chatAPI, clientOrdersAPI, inventoryAPI, notificationsAPI, purchaseOrdersAPI, supplierProductsAPI, suppliersAPI, tasksAPI } from "../../../services/api";
+import {
+  chatAPI,
+  clientOrdersAPI,
+  inventoryAPI,
+  notificationsAPI,
+  purchaseOrdersAPI,
+  supplierProductsAPI,
+  suppliersAPI,
+  tasksAPI,
+} from "../../../services/api";
 import { EmptyState, LoadingSpinner } from "../feedback";
 import Accordion from "../accordions/Accordion";
 import Modal from "./Modal";
+import Footer_Actions from "../footers/Footer_Actions";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import InputButton from "../Inputs/InputButton";
+import Badge from "../badges/Badge";
+import Badge_Status from "../badges/Badge_Status";
 
 const EMPTY_DATA = {
   tasks: [],
@@ -41,22 +65,20 @@ const formatDate = (value) => {
 
 const localActionPath = (value) => (typeof value === "string" && value.startsWith("/") && !value.startsWith("//") ? value : null);
 
-function SectionHeader({ icon: Icon, label, count }) {
-  return (
-    <span className="align-items-center d-flex gap-2">
-      <Icon className="app-icon flex-shrink-0" />
-      <span>{label}</span>
-      <span className="badge bg-secondary rounded-pill">{count}</span>
-    </span>
-  );
-}
-
 function ActionLink({ to, onClick, children }) {
+  const navigate = useNavigate();
   return (
-    <Link to={to} onClick={onClick} className="btn btn-primary btn-sm mt-2">
-      {children}
-      <ArrowTopRightOnSquareIcon className="app-icon ms-1" />
-    </Link>
+    <InputButton
+      type="button"
+      onClick={() => {
+        onClick?.();
+        navigate(to);
+      }}
+      className="btn btn-primary btn-sm w-100 mt-2 d-flex align-items-center justify-content-center gap-1"
+    >
+      <span>{children}</span>
+      <ArrowTopRightOnSquareIcon className="app-icon flex-shrink-0" />
+    </InputButton>
   );
 }
 
@@ -337,9 +359,17 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
       noPadding
       contentGravity="bottom"
       footer={
-        <button type="button" className="btn btn-primary" onClick={onClose}>
-          Done
-        </button>
+        <Footer_Actions
+          center={
+            <Button_Toolbar
+              icon={XMarkIcon}
+              label="Cancel"
+              onClick={onClose}
+              className="btn-outline-secondary"
+              title="Cancel"
+            />
+          }
+        />
       }
     >
       <div className="d-flex flex-column gap-2 p-2">
@@ -359,37 +389,50 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         {!loading && totalItems === 0 && errors.length === 0 && <EmptyState title="You’re all caught up" description="No pending tasks or new updates." />}
 
         {data.tasks.length > 0 && (
-          <Accordion header={<SectionHeader icon={ClipboardDocumentCheckIcon} label="My tasks" count={data.tasks.length} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={ClipboardDocumentCheckIcon}
+            iconClassName="app-icon"
+            header="My Tasks"
+            titleExtra={<Badge variant="gray" pill label={data.tasks.length} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {data.tasks.map((task) => {
                 const actionPath = localActionPath(task.action_path);
                 return (
-                  <Accordion key={task.id} header={<span>{task.title} <span className="badge bg-secondary ms-1 text-capitalize">{String(task.status || "pending").replaceAll("_", " ")}</span></span>}>
+                  <Accordion
+                    key={task.id}
+                    variant="settings"
+                    bodyPlacement="above"
+                    header={<span className="text-truncate">{task.title}</span>}
+                    titleExtra={<Badge_Status status={task.status || "pending"} pill />}
+                  >
                     <div className="small">
                       {task.description && <p className="mb-1">{task.description}</p>}
                       <div>Priority: <span className="text-capitalize">{task.priority || "normal"}</span></div>
                       {formatDate(task.due_date) && <div>Due: {formatDate(task.due_date)}</div>}
                       {actionPath && <ActionLink to={actionPath} onClick={onClose}>Open task</ActionLink>}
                       {taskActionErrors[task.id] && <div className="alert alert-danger mt-2 py-1" role="alert">{taskActionErrors[task.id]}</div>}
-                      <div className="d-flex gap-2 mt-2">
+                      <div className="d-flex flex-column gap-2 mt-2">
                         {task.status === "pending" && (
-                          <button
+                          <InputButton
                             type="button"
-                            className="btn btn-outline-primary btn-sm"
+                            className="btn btn-outline-primary btn-sm w-100"
                             disabled={updatingTaskIds.has(task.id)}
                             onClick={() => updateTaskStatus(task, "in_progress")}
                           >
                             Start
-                          </button>
+                          </InputButton>
                         )}
-                        <button
+                        <InputButton
                           type="button"
-                          className="btn btn-primary btn-sm"
+                          className="btn btn-primary btn-sm w-100"
                           disabled={updatingTaskIds.has(task.id)}
                           onClick={() => updateTaskStatus(task, "completed")}
                         >
                           {updatingTaskIds.has(task.id) ? "Saving..." : "Mark complete"}
-                        </button>
+                        </InputButton>
                       </div>
                     </div>
                   </Accordion>
@@ -400,10 +443,23 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         )}
 
         {upcomingAppointments.length > 0 && (
-          <Accordion header={<SectionHeader icon={CalendarDaysIcon} label="Upcoming calendar" count={upcomingAppointments.length} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={CalendarDaysIcon}
+            iconClassName="app-icon"
+            header="Upcoming Calendar"
+            titleExtra={<Badge variant="gray" pill label={upcomingAppointments.length} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {upcomingAppointments.map((appointment) => (
-                <Accordion key={appointment.id} header={<span>{appointment.title || appointment.appointment_type || "Scheduled event"} — {formatDate(appointment.appointment_date)}</span>}>
+                <Accordion
+                  key={appointment.id}
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">{appointment.title || appointment.appointment_type || "Scheduled event"}</span>}
+                  titleExtra={formatDate(appointment.appointment_date) ? <span className="text-muted text-nowrap flex-shrink-0 small">{formatDate(appointment.appointment_date)}</span> : null}
+                >
                   <div className="small">
                     {appointment.notes && <p className="mb-1">{appointment.notes}</p>}
                     <ActionLink to="/schedule" onClick={onClose}>Open calendar</ActionLink>
@@ -415,17 +471,22 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         )}
 
         {pendingOrders.length > 0 && (
-          <Accordion header={<SectionHeader icon={ShoppingCartIcon} label="Client orders" count={pendingOrders.length} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={ShoppingCartIcon}
+            iconClassName="app-icon"
+            header="Client Orders"
+            titleExtra={<Badge variant="gray" pill label={pendingOrders.length} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {pendingOrders.map((order) => (
                 <Accordion
                   key={order.id}
-                  header={
-                    <span>
-                      {order.client_name ? `${order.client_name} — ` : ""}Order #{String(order.id).slice(0, 8)}
-                      <span className="badge bg-danger ms-1 text-capitalize">{String(order.status || "").replaceAll("_", " ")}</span>
-                    </span>
-                  }
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">{order.client_name ? `${order.client_name} — ` : ""}Order #{String(order.id).slice(0, 8)}</span>}
+                  titleExtra={<Badge_Status status={order.status} pill />}
                 >
                   <div className="small">
                     <div>Total: ${Number(order.total || 0).toFixed(2)}</div>
@@ -440,20 +501,25 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         )}
 
         {lowStockBySupplier.totalCount > 0 && (
-          <Accordion header={<SectionHeader icon={ArchiveBoxIcon} label="Low stock" count={lowStockBySupplier.totalCount} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={ArchiveBoxIcon}
+            iconClassName="app-icon"
+            header="Low Stock"
+            titleExtra={<Badge variant="gray" pill label={lowStockBySupplier.totalCount} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {lowStockBySupplier.groups.map((group) => (
                 <Accordion
                   key={group.supplier.id}
-                  header={
-                    <span className="align-items-center d-flex flex-wrap gap-1">
-                      <span className="fw-medium">{group.supplier.name}</span>
-                      {group.isPreferred && (
-                        <span className="badge bg-success ms-1">Preferred Supplier</span>
-                      )}
-                      <span className="badge bg-secondary rounded-pill ms-1">
-                        {group.items.length} {group.items.length === 1 ? "item" : "items"}
-                      </span>
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">{group.supplier.name}</span>}
+                  titleExtra={
+                    <span className="align-items-center d-flex flex-nowrap gap-1 flex-shrink-0">
+                      {group.isPreferred && <Badge variant="green" pill label="Preferred Supplier" />}
+                      <Badge variant="gray" pill label={`${group.items.length} ${group.items.length === 1 ? "item" : "items"}`} />
                     </span>
                   }
                 >
@@ -473,35 +539,29 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
                             )}
                           </div>
                           {entry.isPreferred && (
-                            <span className="badge bg-outline-success border text-success" style={{ fontSize: "0.7rem" }}>
-                              Preferred
-                            </span>
+                            <Badge variant="green" pill label="Preferred" className="flex-shrink-0" />
                           )}
                         </div>
                       ))}
                     </div>
-                    <button
+                    <InputButton
                       type="button"
-                      className="btn btn-primary btn-sm mt-1"
+                      className="btn btn-primary btn-sm w-100 mt-2 d-flex align-items-center justify-content-center gap-1"
                       onClick={() => handleDraftPurchaseOrder(group)}
                     >
-                      Draft purchase order
-                      <ArrowTopRightOnSquareIcon className="app-icon ms-1" />
-                    </button>
+                      <span>Draft purchase order</span>
+                      <ArrowTopRightOnSquareIcon className="app-icon flex-shrink-0" />
+                    </InputButton>
                   </div>
                 </Accordion>
               ))}
 
               {lowStockBySupplier.unassigned.length > 0 && (
                 <Accordion
-                  header={
-                    <span className="align-items-center d-flex flex-wrap gap-1">
-                      <span>Unassigned / Other</span>
-                      <span className="badge bg-secondary rounded-pill ms-1">
-                        {lowStockBySupplier.unassigned.length}
-                      </span>
-                    </span>
-                  }
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">Unassigned / Other</span>}
+                  titleExtra={<Badge variant="gray" pill label={lowStockBySupplier.unassigned.length} className="flex-shrink-0" />}
                 >
                   <div className="small">
                     <div className="d-flex flex-column gap-1 mb-2">
@@ -525,10 +585,23 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         )}
 
         {data.purchaseOrders.length > 0 && (
-          <Accordion header={<SectionHeader icon={ClipboardDocumentCheckIcon} label="Draft purchase orders" count={data.purchaseOrders.length} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={DocumentPlusIcon}
+            iconClassName="app-icon"
+            header="Draft Purchase Orders"
+            titleExtra={<Badge variant="gray" pill label={data.purchaseOrders.length} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {data.purchaseOrders.map((order) => (
-                <Accordion key={order.id} header={<span>{order.po_number || "Purchase order"} <span className="badge bg-secondary ms-1 text-capitalize">{order.status || "draft"}</span></span>}>
+                <Accordion
+                  key={order.id}
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">{order.po_number || "Purchase order"}</span>}
+                  titleExtra={<Badge_Status status={order.status || "draft"} pill />}
+                >
                   <div className="small">
                     <div>Total: ${Number(order.total_amount || 0).toFixed(2)}</div>
                     {formatDate(order.expected_delivery_date) && <div>Expected: {formatDate(order.expected_delivery_date)}</div>}
@@ -541,10 +614,23 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         )}
 
         {changedRequests.length > 0 && (
-          <Accordion header={<SectionHeader icon={BellIcon} label="Request updates" count={changedRequests.length} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={BellIcon}
+            iconClassName="app-icon"
+            header="Request Updates"
+            titleExtra={<Badge variant="gray" pill label={changedRequests.length} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {changedRequests.map((request) => (
-                <Accordion key={`${request.kind}-${request.id}`} header={<span>{request.kind} <span className="badge bg-secondary ms-1 text-capitalize">{request.status}</span></span>}>
+                <Accordion
+                  key={`${request.kind}-${request.id}`}
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">{request.kind}</span>}
+                  titleExtra={<Badge_Status status={request.status} pill />}
+                >
                   <div className="small">
                     {request.notes && <p className="mb-1">{request.notes}</p>}
                     {formatDate(request.updated_at || request.created_at) && <div>Updated: {formatDate(request.updated_at || request.created_at)}</div>}
@@ -557,10 +643,23 @@ export default function Modal_Notifications({ isOpen, onClose, onCountChange }) 
         )}
 
         {chatThreads.length > 0 && (
-          <Accordion header={<SectionHeader icon={ChatBubbleLeftRightIcon} label="Unread chats" count={chatThreads.reduce((total, thread) => total + thread.count, 0)} />}>
+          <Accordion
+            variant="settings"
+            bodyPlacement="above"
+            icon={ChatBubbleLeftRightIcon}
+            iconClassName="app-icon"
+            header="Unread Chats"
+            titleExtra={<Badge variant="red" pill label={chatThreads.reduce((total, thread) => total + thread.count, 0)} className="flex-shrink-0" />}
+          >
             <div className="d-flex flex-column gap-2">
               {chatThreads.map((thread) => (
-                <Accordion key={thread.senderId} header={<span>{thread.senderName} <span className="badge bg-danger ms-1">{thread.count}</span></span>}>
+                <Accordion
+                  key={thread.senderId}
+                  variant="settings"
+                  bodyPlacement="above"
+                  header={<span className="text-truncate">{thread.senderName}</span>}
+                  titleExtra={<Badge variant="red" pill label={thread.count} className="flex-shrink-0" />}
+                >
                   <div className="small">
                     {thread.count} unread {thread.count === 1 ? "message" : "messages"}.
                     <ActionLink to="/employees" onClick={onClose}>Open messages</ActionLink>
