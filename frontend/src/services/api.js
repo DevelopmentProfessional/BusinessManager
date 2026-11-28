@@ -326,9 +326,8 @@ export const inventoryAPI = {
     return api.delete(`/isud/inventory/images/${imageId}`);
   },
   getImageFileUrl: (imageId) => {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
     const base = `${api.defaults.baseURL}/isud/inventory/images/${imageId}/file`;
-    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+    return base;
   },
   getLocations: () => api.get("/isud/inventory/locations"),
   bulkImport: (products) => {

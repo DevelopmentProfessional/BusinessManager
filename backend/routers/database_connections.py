@@ -22,6 +22,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
+import os
+from cryptography.fernet import Fernet
 
 from backend.database import get_session
 from backend.models import (
@@ -34,6 +36,16 @@ from backend.models import (
 from backend.routers.auth import get_current_user
 
 router = APIRouter(prefix="/database-connections", tags=["database-connections"])
+
+
+def _encrypt_password(password: str) -> str:
+    key = (os.getenv("PAYMENT_DATA_ENCRYPTION_KEY") or "").strip()
+    if not key:
+        raise HTTPException(status_code=503, detail="Database credential encryption is not configured")
+    try:
+        return Fernet(key.encode()).encrypt(password.encode()).decode()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Database credential encryption is not configured") from exc
 
 
 # ─── 1 READ ROUTES ─────────────────────────────────────────────────────────────
@@ -59,7 +71,7 @@ def get_visible_connections(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get database connections visible to users (for user profile selection)"""
+    """Get non-sensitive metadata for connections visible to users."""
     statement = select(DatabaseConnection).where(
         DatabaseConnection.visible_to_users == True,
         DatabaseConnection.is_active == True
@@ -107,7 +119,9 @@ def create_connection(
         )
     
     # Create new connection
-    new_connection = DatabaseConnection(**connection_data.model_dump())
+    connection_values = connection_data.model_dump()
+    connection_values["password"] = _encrypt_password(connection_values["password"])
+    new_connection = DatabaseConnection(**connection_values)
     session.add(new_connection)
     session.commit()
     session.refresh(new_connection)
@@ -138,6 +152,8 @@ def update_connection(
     
     # Update fields
     update_data = connection_data.model_dump(exclude_unset=True)
+    if "password" in update_data and update_data["password"]:
+        update_data["password"] = _encrypt_password(update_data["password"])
     for key, value in update_data.items():
         setattr(connection, key, value)
     

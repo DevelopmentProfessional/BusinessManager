@@ -201,17 +201,16 @@ def _get_company_stripe_settings(company_id: str | None, session: Session) -> di
 
 
 def _resolve_checkout_base_url(request: Request) -> str:
-    origin = (request.headers.get("origin") or "").strip()
-    if origin:
-        return origin.rstrip("/")
-
-    referer = (request.headers.get("referer") or "").strip()
-    if referer:
-        parsed = urlparse(referer)
-        if parsed.scheme and parsed.netloc:
-            return f"{parsed.scheme}://{parsed.netloc}"
-
-    return os.getenv("CLIENT_PORTAL_URL", "https://clients.vadpivi.com").rstrip("/")
+    configured = os.getenv("CLIENT_PORTAL_URL", "https://clients.vadpivi.com").rstrip("/")
+    allowed = {
+        configured,
+        "https://clients.vadpivi.com",
+        "https://app.vadpivi.com",
+        "http://localhost:5174",
+        "http://localhost:5175",
+    }
+    origin = (request.headers.get("origin") or "").strip().rstrip("/")
+    return origin if origin in allowed else configured
 
 
 def _create_checkout_session_for_order(
@@ -305,6 +304,25 @@ def _construct_stripe_event(payload: bytes, stripe_signature: str | None, sessio
             continue
 
     raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+
+
+def _validate_webhook_order_binding(order: ClientOrder, event_type: str, payload_obj: dict) -> None:
+    metadata = payload_obj.get("metadata") or {}
+    if str(metadata.get("company_id") or "") != str(order.company_id or ""):
+        raise HTTPException(status_code=400, detail="Webhook tenant mismatch.")
+
+    expected_cents = int(round(float(order.total or 0) * 100))
+    if event_type == "checkout.session.completed":
+        received_cents = payload_obj.get("amount_total")
+        payment_intent_id = payload_obj.get("payment_intent")
+    else:
+        received_cents = payload_obj.get("amount_received")
+        payment_intent_id = payload_obj.get("id")
+
+    if received_cents is None or int(received_cents) != expected_cents:
+        raise HTTPException(status_code=400, detail="Webhook amount mismatch.")
+    if order.stripe_payment_intent_id and payment_intent_id and str(order.stripe_payment_intent_id) != str(payment_intent_id):
+        raise HTTPException(status_code=400, detail="Webhook payment mismatch.")
 
 
 def _deduct_inventory_for_order(order: ClientOrder, session: Session) -> None:
@@ -566,8 +584,9 @@ def checkout(
                     session.add(order)
                     session.commit()
                     session.refresh(order)
-            except stripe.StripeError as exc:
-                raise HTTPException(status_code=502, detail=f"Stripe checkout creation failed: {str(exc)}")
+            except stripe.StripeError:
+                logger.exception("Stripe checkout creation failed for client %s", current_client.id)
+                raise HTTPException(status_code=502, detail="Stripe checkout creation failed.")
 
     return {
         "order_id": str(order.id),
@@ -637,8 +656,9 @@ def pay_order(
                 session.commit()
                 session.refresh(order)
             return _order_to_read(order, checkout_url=checkout_url, checkout_session_id=checkout_session_id)
-        except stripe.StripeError as exc:
-            raise HTTPException(status_code=502, detail=f"Stripe checkout creation failed: {str(exc)}")
+        except stripe.StripeError:
+            logger.exception("Stripe checkout creation failed for order %s", order.id)
+            raise HTTPException(status_code=502, detail="Stripe checkout creation failed.")
 
     raise HTTPException(
         status_code=status.HTTP_402_PAYMENT_REQUIRED,
@@ -767,6 +787,7 @@ async def stripe_webhook(
         return {"received": True}
 
     if event["type"] in {"payment_intent.succeeded", "checkout.session.completed"}:
+        _validate_webhook_order_binding(order, event["type"], payload_obj)
         payment_intent_id = payload_obj.get("payment_intent") if event["type"] == "checkout.session.completed" else payload_obj.get("id")
         order.status = "ordered"
         order.paid_at = order.paid_at or _utcnow()

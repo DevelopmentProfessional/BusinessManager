@@ -1,10 +1,17 @@
 const pgp = require('pg-promise')();
 
 // Connection to Render Database
-const renderDb = pgp('postgresql://lavish_beauty_db_user:1haMVuAaGaJN3kWTKJrRNY211mSAAnw3@dpg-d2qsadmr433s73eqpd40-a.oregon-postgres.render.com/lavish_beauty_db');
+const renderDbUrl = process.env.RENDER_DATABASE_URL;
 
 // Connection to EC2 Database
-const ec2Db = pgp('postgresql://postgres:database-1-instance-1@localhost:5432/postgres?sslmode=disable');
+const ec2DbUrl = process.env.EC2_DATABASE_URL;
+
+if (!renderDbUrl || !ec2DbUrl) {
+    throw new Error('RENDER_DATABASE_URL and EC2_DATABASE_URL must be configured.');
+}
+
+const renderDb = pgp(renderDbUrl);
+const ec2Db = pgp(ec2DbUrl);
 
 async function migrateData() {
     try {

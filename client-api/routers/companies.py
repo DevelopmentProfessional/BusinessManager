@@ -11,6 +11,7 @@ AppSettings is used only for optional portal theming fields.
 """
 
 from typing import List, Optional
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response, RedirectResponse
 from sqlmodel import Session, select, SQLModel
@@ -22,6 +23,14 @@ from models import AppSettings, Company
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 limiter = Limiter(key_func=get_remote_address)
+
+
+def _published_company_ids() -> set[str]:
+    return {
+        value.strip()
+        for value in os.getenv("PUBLIC_PORTAL_COMPANY_IDS", "").split(",")
+        if value.strip()
+    }
 
 class CompanyListItem(SQLModel):
     company_id: str
@@ -62,9 +71,9 @@ def list_companies(
     Returns all active companies for the company selection screen.
     Pulls both name and logo from the Company table.
     """
-    companies = session.exec(
-        select(Company).where(Company.is_active == True)
-    ).all()
+    published_ids = _published_company_ids()
+    companies = session.exec(select(Company).where(Company.is_active == True)).all()
+    companies = [company for company in companies if company.company_id in published_ids]
 
     result = [
         CompanyListItem(
@@ -88,7 +97,7 @@ def get_branding(
     company = session.exec(
         select(Company).where(Company.company_id == company_id)
     ).first()
-    if not company:
+    if not company or company.company_id not in _published_company_ids():
         raise HTTPException(status_code=404, detail="Company not found.")
 
     settings = session.exec(

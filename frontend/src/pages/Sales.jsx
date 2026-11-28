@@ -62,7 +62,7 @@ import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
 import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
 import Dropup_Menu from "./components/dropdowns/Dropup_Menu";
 import { InputDate, InputText } from "./components/Inputs";
-import { getDisplayImageUrl } from "./components/utils/Utils_Image";
+import { useAuthenticatedImageSrc } from "./components/utils/Utils_Image";
 import useViewMode from "../services/useViewMode";
 import { sortItemsAlphabetically } from "../utils/displaySort";
 
@@ -94,7 +94,8 @@ const getDefaultServiceItems = (service) => {
 // Unified Product/Service Card Component
 const ItemCard = ({ item, itemType, onSelect, inCart, cartQuantity, onIncrement, onDecrement, onAddToCart, canWrite = false, cardViewMode = "full" }) => {
   const isService = itemType === "service";
-  const imageUrl = getDisplayImageUrl(item);
+  const image = item?.images?.find((candidate) => candidate.is_primary) || item?.images?.[0] || (item?.image_url ? item : null);
+  const imageUrl = useAuthenticatedImageSrc(image);
   const hasImage = !!imageUrl;
   const isCompact = cardViewMode === "compact" || (cardViewMode === "mixed" && !hasImage);
 

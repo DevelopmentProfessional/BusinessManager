@@ -46,8 +46,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import text
 from sqlmodel import Session
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 import uvicorn
 
 try:
@@ -83,54 +81,7 @@ class _SuppressHealthFilter(logging.Filter):
 logging.getLogger("uvicorn.access").addFilter(_SuppressHealthFilter())
 
 
-# ─── 3 CORS MIDDLEWARE ─────────────────────────────────────────────────────────
-class AggressiveCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        # Handle preflight requests FIRST
-        if request.method == "OPTIONS":
-            # Echo origin and requested headers/methods to satisfy strict CORS policies
-            origin = request.headers.get("Origin", "*")
-            request_headers = request.headers.get("Access-Control-Request-Headers", "*")
-            request_method = request.headers.get("Access-Control-Request-Method", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-            # If origin header is present, prefer echoing it over '*'
-            allow_origin = origin if origin else "*"
-
-            response = Response(
-                status_code=200,
-                headers={
-                    "Access-Control-Allow-Origin": allow_origin,
-                    "Access-Control-Allow-Methods": request_method or "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-                    "Access-Control-Allow-Headers": request_headers or "*",
-                    "Access-Control-Allow-Credentials": "true",
-                    "Access-Control-Max-Age": "86400",
-                    "Vary": "Origin"
-                }
-            )
-            return response
-        
-        # Process the request and ALWAYS set CORS headers, even on exceptions
-        origin = request.headers.get("Origin", "*")
-        req_headers = request.headers.get("Access-Control-Request-Headers")
-        try:
-            response = await call_next(request)
-        except Exception as exc:
-            # Build a 500 response with details, preserving CORS so browsers show the real error
-            import json, traceback
-            detail = str(exc)
-            traceback.print_exc()
-            body = json.dumps({"detail": detail})
-            response = Response(body, status_code=500, media_type="application/json")
-        
-        response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = req_headers or "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Expose-Headers"] = "*"
-        response.headers["Vary"] = "Origin"
-        return response
-
-
-# ─── 4 APP INITIALIZATION ──────────────────────────────────────────────────────
+# ─── 3 APP INITIALIZATION ──────────────────────────────────────────────────────
 def _extend_allowed_origins_from_env(allowed_origins: list[str]) -> list[str]:
     env_origins = os.getenv("ALLOWED_ORIGINS", "")
     if not env_origins:
@@ -240,25 +191,17 @@ print(f"CORS ALLOWED ORIGINS: {allowed_origins}")
 # Includes: production vadpivi domains + LAN/private hosts (with or without explicit port).
 allowed_origin_regex = (
     r"^https://([a-zA-Z0-9-]+\.)?vadpivi\.com$"
-    r"|^https?://(?:"
-    r"192\.168\.\d{1,3}\.\d{1,3}"
-    r"|10\.\d{1,3}\.\d{1,3}\.\d{1,3}"
-    r"|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
-    r")(?:\:\d+)?$"
+    r"|^https?://localhost(?::\d+)?$"
 )
 
-# Add aggressive CORS middleware first
-app.add_middleware(AggressiveCORSMiddleware)
-
-# Add standard CORS middleware as backup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,  # Use explicit origins to avoid '*' with credentials
+    allow_origins=allowed_origins,
     allow_origin_regex=allowed_origin_regex,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    expose_headers=["Content-Disposition"],
 )
 
 # ─── 6 ROUTER REGISTRATION ─────────────────────────────────────────────────────
@@ -305,8 +248,10 @@ def redirect_pending_orders_count(request: Request):
 import shutil
 import uuid as _uuid
 import urllib.request
+import secrets
 from uuid import UUID
 from typing import Optional
+from urllib.parse import urlparse
 from fastapi import Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
 
@@ -334,6 +279,14 @@ def _resolve_document_path(file_path: str, upload_dir: str) -> str:
     if os.path.exists(fallback):
         return fallback
     return file_path
+
+
+def _require_document_access(doc: Document, current_user: User, session, write: bool = False) -> None:
+    if current_user.company_id and doc.company_id != current_user.company_id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if current_user.role.value in {"admin", "manager"} or doc.owner_id == current_user.id:
+        return
+    raise HTTPException(status_code=403, detail="You are not authorized to access this document")
 
 
 @app.post("/api/v1/documents/upload", tags=["documents"])
@@ -403,6 +356,7 @@ async def _serve_document_file(
     document_id: UUID,
     download: bool,
     session,
+    current_user: User,
 ):
     """Shared helper: serve a document file inline or as attachment.
 
@@ -414,6 +368,7 @@ async def _serve_document_file(
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    _require_document_access(doc, current_user, session)
 
     disposition = "attachment" if download else "inline"
 
@@ -466,9 +421,10 @@ async def _serve_document_file(
 async def document_serve_file(
     document_id: UUID,
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Serve the document file inline for in-browser viewing."""
-    return await _serve_document_file(document_id, download=False, session=session)
+    return await _serve_document_file(document_id, download=False, session=session, current_user=current_user)
 
 
 @app.get("/api/v1/documents/{document_id}/download", tags=["documents"])
@@ -476,20 +432,23 @@ async def document_download(
     document_id: UUID,
     download: bool = Query(True, description="Force download"),
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Download the document file as an attachment."""
-    return await _serve_document_file(document_id, download=download, session=session)
+    return await _serve_document_file(document_id, download=download, session=session, current_user=current_user)
 
 
 @app.get("/api/v1/documents/{document_id}/content", tags=["documents"])
 async def document_get_content(
     document_id: UUID,
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Read document file as text for in-browser editing."""
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    _require_document_access(doc, current_user, session)
 
     raw_bytes = None
     path = _resolve_document_path(doc.file_path, _UPLOAD_DIR)
@@ -528,11 +487,13 @@ async def document_save_content(
     document_id: UUID,
     body: dict,
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Save edited document content back to disk and database."""
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    _require_document_access(doc, current_user, session, write=True)
     content = body.get("content")
     if content is None:
         raise HTTPException(status_code=400, detail="Content is required")
@@ -581,11 +542,13 @@ async def document_save_binary(
     file: UploadFile = File(...),
     content_type: Optional[str] = Form(None),
     session=Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """Save binary file content back to an existing document record (DOCX, XLSX, etc.)."""
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    _require_document_access(doc, current_user, session, write=True)
 
     contents = await file.read()
     file_size = len(contents)
@@ -635,6 +598,7 @@ async def document_sign(
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    _require_document_access(doc, current_user, session, write=True)
 
     if not current_user.signature_data:
         raise HTTPException(
@@ -676,6 +640,7 @@ async def document_onlyoffice_config(
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    _require_document_access(doc, current_user, session, write=True)
 
     base_url = str(request.base_url).rstrip("/")
     file_url = f"{base_url}/api/v1/documents/{document_id}/file"
@@ -722,6 +687,10 @@ async def document_onlyoffice_callback(
     session=Depends(get_session),
 ):
     """OnlyOffice callback to persist edited content."""
+    callback_secret = os.getenv("ONLYOFFICE_CALLBACK_SECRET", "").strip()
+    supplied_secret = request.headers.get("X-OnlyOffice-Secret", "")
+    if not callback_secret or not secrets.compare_digest(supplied_secret, callback_secret):
+        raise HTTPException(status_code=401, detail="Invalid OnlyOffice callback credentials")
     payload = await request.json()
     status = payload.get("status")
 
@@ -737,9 +706,19 @@ async def document_onlyoffice_callback(
     if not doc:
         return {"error": 1}
 
+    parsed_url = urlparse(file_url)
+    allowed_hosts = {
+        host.strip().lower()
+        for host in os.getenv("ONLYOFFICE_ALLOWED_HOSTS", "").split(",")
+        if host.strip()
+    }
+    if parsed_url.scheme != "https" or not parsed_url.hostname or parsed_url.hostname.lower() not in allowed_hosts:
+        return {"error": 1}
     try:
-        with urllib.request.urlopen(file_url) as response:
-            data = response.read()
+        with urllib.request.urlopen(file_url, timeout=15) as response:
+            data = response.read(10 * 1024 * 1024 + 1)
+            if len(data) > 10 * 1024 * 1024:
+                return {"error": 1}
     except Exception:
         return {"error": 1}
 

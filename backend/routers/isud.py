@@ -68,7 +68,7 @@ import stripe
 from ..database import get_session
 from ..email_delivery import EmailDeliveryError, send_email
 from ..models import *
-from .auth import get_current_user, get_current_company_id, get_user_permissions_list, has_page_permission
+from .auth import SECRET_KEY, get_current_user, get_current_company_id, get_user_permissions_list, has_page_permission
 from ..inventory_costing import (
     add_inventory_cost_layer,
     consume_inventory_fifo,
@@ -484,17 +484,16 @@ def _get_company_stripe_settings(session: Session, company_id: str | None) -> di
 
 
 def _resolve_stripe_checkout_base_url(request: Request) -> str:
-    origin = (request.headers.get("origin") or "").strip()
-    if origin:
-        return origin.rstrip("/")
-
-    referer = (request.headers.get("referer") or "").strip()
-    if referer:
-        parsed = urlparse(referer)
-        if parsed.scheme and parsed.netloc:
-            return f"{parsed.scheme}://{parsed.netloc}"
-
-    return os.getenv("CLIENT_PORTAL_URL", "https://clients.vadpivi.com").rstrip("/")
+    configured = os.getenv("APP_WEB_URL", "https://app.vadpivi.com").rstrip("/")
+    allowed = {
+        configured,
+        "https://app.vadpivi.com",
+        "https://vadpivi.com",
+        "http://localhost:5173",
+        "http://localhost:5174",
+    }
+    origin = (request.headers.get("origin") or "").strip().rstrip("/")
+    return origin if origin in allowed else configured
 
 
 def _create_sale_checkout_session(record: SQLModel, request: Request, session: Session) -> tuple[str, str | None]:
@@ -1063,7 +1062,14 @@ def get_model_class(table_name: str) -> Type[SQLModel]:
             status_code=404, 
             detail=f"Table '{table_name}' not found. Available tables: {list(mapping.keys())}"
         )
-    return mapping[table_name]
+    model_class = mapping[table_name]
+    normalized_name = table_name.lower()
+    if normalized_name not in SYSTEM_TABLES and not hasattr(model_class, "company_id"):
+        raise HTTPException(
+            status_code=403,
+            detail="This resource requires a dedicated, explicitly authorized workflow.",
+        )
+    return model_class
 
 
 def _sync_client_memberships(
@@ -2952,26 +2958,22 @@ async def delete_inventory_image(
 async def serve_inventory_image_file(
     image_id: UUID,
     request: Request,
-    token: Optional[str] = None,
     session: Session = Depends(get_session),
 ):
     """Serve an inventory image.
 
     Reads bytes from the database (image_data column) so images persist across
     redeployments. Falls back to disk (file_path) for legacy pre-migration records.
-    Accepts auth via Authorization: Bearer header OR ?token=<jwt> query param.
+    Requires an Authorization: Bearer header; browser consumers fetch the bytes
+    and render them through an in-memory blob URL.
     """
-    raw_token = token
-    if not raw_token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            raw_token = auth_header[7:]
+    auth_header = request.headers.get("Authorization", "")
+    raw_token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
     if not raw_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    _secret = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
     try:
-        claims = pyjwt.decode(raw_token, _secret, algorithms=["HS256"])
+        claims = pyjwt.decode(raw_token, SECRET_KEY, algorithms=["HS256"])
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 

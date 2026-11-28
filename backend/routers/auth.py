@@ -39,7 +39,7 @@
 # ============================================================
 
 # ─── [1] IMPORTS ───────────────────────────────────────────────────────────────
-from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
@@ -49,6 +49,7 @@ from typing import List, Optional
 from uuid import UUID
 import jwt
 import os
+import secrets
 import uuid as uuid_mod
 import bcrypt
 from backend.database import get_session
@@ -65,7 +66,9 @@ router = APIRouter()
 security = HTTPBearer()
 
 # JWT Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+if len(SECRET_KEY) < 32:
+    raise RuntimeError("SECRET_KEY must be configured with at least 32 characters.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours (was 30 min — too short for a working session)
 REMEMBER_ME_EXPIRE_DAYS = 30
@@ -110,11 +113,12 @@ def parse_permission_type(value: Optional[str]) -> PermissionType:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
     to_encode = data.copy()
+    issued_at = datetime.utcnow()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"iat": issued_at, "exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -178,12 +182,24 @@ def get_current_user(
                 detail="User account is locked",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+
         else:
             # Unlock account if lock period has expired
             user.is_locked = False
             user.failed_login_attempts = 0
             user.locked_until = None
             session.commit()
+
+    issued_at = payload.get("iat")
+    if issued_at is None or (
+        user.updated_at
+        and datetime.utcfromtimestamp(float(issued_at)) < user.updated_at.replace(tzinfo=None)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session has been invalidated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     return user
 
@@ -281,10 +297,21 @@ def require_employee_permission_admin(current_user: User, session: Session) -> N
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Employee permission administration required")
 
 # ─── [4] LOGIN / TOKEN ENDPOINTS ──────────────────────────────────────────────
-@router.get("/initialize")
 @router.post("/initialize")
-def initialize_admin(session: Session = Depends(get_session)):
+def initialize_admin(
+    x_bootstrap_token: Optional[str] = Header(default=None),
+    session: Session = Depends(get_session),
+):
     """Initialize admin user if none exists"""
+    configured_token = os.getenv("ADMIN_BOOTSTRAP_TOKEN", "").strip()
+    configured_password = os.getenv("ADMIN_BOOTSTRAP_PASSWORD", "")
+    if (
+        not configured_token
+        or not configured_password
+        or not x_bootstrap_token
+        or not secrets.compare_digest(x_bootstrap_token, configured_token)
+    ):
+        raise HTTPException(status_code=404, detail="Not found")
     # Check if any admin user exists
     admin_user = session.exec(select(User).where(User.role == UserRole.ADMIN)).first()
     
@@ -292,7 +319,7 @@ def initialize_admin(session: Session = Depends(get_session)):
         return {"message": "Admin user already exists", "username": admin_user.username}
     
     # Create admin user
-    password = "admin123"
+    password = configured_password
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     
     admin_user = User(
@@ -311,8 +338,7 @@ def initialize_admin(session: Session = Depends(get_session)):
     return {
         "message": "Admin user created successfully",
         "username": "admin",
-        "password": "admin123",
-        "note": "Please change this password after first login"
+        "note": "Change the bootstrap password after first login and remove the bootstrap environment variables."
     }
 
 @router.post("/login", response_model=LoginResponse)

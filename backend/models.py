@@ -2062,7 +2062,6 @@ class DatabaseConnectionRead(SQLModel):
     port: int
     database_name: str
     username: str
-    password: str  # In production, consider masking this
     ssl_mode: str
     is_active: bool
     visible_to_users: bool

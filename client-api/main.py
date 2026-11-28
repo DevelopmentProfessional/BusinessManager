@@ -128,7 +128,6 @@ def health():
                 "status": "degraded",
                 "service": "client-api",
                 "database": "error",
-                "detail": str(exc),
             },
         )
 
@@ -145,7 +144,6 @@ def health_db():
                 "status": "degraded",
                 "service": "client-api",
                 "database": "error",
-                "detail": str(exc),
             },
         )
 

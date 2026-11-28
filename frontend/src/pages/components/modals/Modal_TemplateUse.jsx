@@ -33,6 +33,22 @@ const TYPE_BADGE_COLOR = {
   custom: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
+const sanitizeTemplateHtml = (html) => {
+  if (!html || typeof window === "undefined") return "";
+  const doc = new DOMParser().parseFromString(String(html), "text/html");
+  doc.querySelectorAll("script, iframe, object, embed, link, meta, style, form, input, button").forEach((node) => node.remove());
+  doc.querySelectorAll("*").forEach((element) => {
+    Array.from(element.attributes).forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim();
+      if (name.startsWith("on") || name === "srcdoc" || (["href", "src", "action"].includes(name) && /^(javascript|data|vbscript):/i.test(value))) {
+        element.removeAttribute(attribute.name);
+      }
+    });
+  });
+  return doc.body.innerHTML;
+};
+
 const usesCatalogueVariables = (template) => (
   template?.template_type === "catalogue"
   || template?.content?.includes("{{#catalogue.items}}")
@@ -56,7 +72,7 @@ const createPrintableDocument = (html, title) => `<!DOCTYPE html><html><head>
       body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
-</head><body>${html}</body></html>`;
+</head><body>${sanitizeTemplateHtml(html)}</body></html>`;
 
 const createContactEntry = (type, record) => {
   const name = record?.name
@@ -488,10 +504,10 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         const pageBreak = index === 0 ? "" : ' style="break-before:page;page-break-before:always;"';
         return `<div${pageBreak}>${renderTemplate(selected.content, buildVars(record))}</div>`;
       }).join("");
-      setRenderedHtml(normalizeImageAlignment(rendered));
+      setRenderedHtml(sanitizeTemplateHtml(normalizeImageAlignment(rendered)));
       return;
     }
-    setRenderedHtml(normalizeImageAlignment(renderTemplate(selected.content, buildVars())));
+    setRenderedHtml(sanitizeTemplateHtml(normalizeImageAlignment(renderTemplate(selected.content, buildVars()))));
   }, [selected, buildVars, normalizeImageAlignment, selectedEntities, catalogueItems, isMultiEntitySelection]);
 
   const pdfFileName = useMemo(() => {
@@ -1127,7 +1143,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         }
       >
         {/* Hidden iframe used solely for native window.print() */}
-        <iframe ref={printIframeRef} srcDoc={iframeContent} style={{ display: "none" }} title="Print frame" />
+        <iframe ref={printIframeRef} srcDoc={iframeContent} sandbox="allow-same-origin" style={{ display: "none" }} title="Print frame" />
 
         <div
           className="bg-white border-bottom dark:bg-gray-800 mb-2 py-2"
@@ -1190,7 +1206,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
             <div
               className="template-rendered-content"
               style={{ fontSize: "13px", lineHeight: "1.6", color: "inherit", overflow: "visible" }}
-              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizeTemplateHtml(renderedHtml) }}
             />
           ) : (
             <div className="flex items-center justify-center text-gray-400 text-sm py-4">
@@ -1233,6 +1249,7 @@ export default function Modal_TemplateUse({ page, entity, currentUser, settings,
         >
           <iframe
             srcDoc={iframeContent}
+            sandbox="allow-same-origin"
             title="Preview of the selected template output"
             className="border-0 w-100"
             style={{ minHeight: "70vh", background: "#fff" }}

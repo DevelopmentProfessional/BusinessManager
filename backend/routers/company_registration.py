@@ -244,8 +244,8 @@ def send_pending_registration_email(
 def require_company_creation_auth(
     credentials: HTTPBasicCredentials = Depends(basic_auth),
 ):
-    expected_username = os.getenv("COMPANY_CREATION_ADMIN_USERNAME", "admin")
-    expected_password = os.getenv("COMPANY_CREATION_ADMIN_PASSWORD", "admin123")
+    expected_username = os.getenv("COMPANY_CREATION_ADMIN_USERNAME", "")
+    expected_password = os.getenv("COMPANY_CREATION_ADMIN_PASSWORD", "")
 
     username_ok = secrets.compare_digest(credentials.username, expected_username)
     password_ok = secrets.compare_digest(credentials.password, expected_password)

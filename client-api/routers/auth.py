@@ -43,7 +43,10 @@ limiter = Limiter(key_func=get_remote_address)
 RESET_TOKEN_EXPIRY_MINUTES = int(os.getenv("CLIENT_RESET_TOKEN_EXPIRY_MINUTES", "30"))
 # Token echo is intended only for local development. Production deployments must
 # deliver reset tokens through a verified out-of-band channel.
-EXPOSE_RESET_TOKEN = os.getenv("CLIENT_EXPOSE_RESET_TOKEN", "false").lower() == "true"
+EXPOSE_RESET_TOKEN = (
+    os.getenv("CLIENT_EXPOSE_RESET_TOKEN", "false").lower() == "true"
+    and os.getenv("ENVIRONMENT", "production").lower() not in {"production", "prod"}
+)
 logger = logging.getLogger(__name__)
 
 
@@ -155,29 +158,19 @@ def login(
     ).first()
 
     if not client:
-        any_company_match = session.exec(
-            select(Client).where(Client.email == body.email)
-        ).first()
-
-        if any_company_match:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Account exists, but not for company '{body.company_id}'.",
-            )
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"No client account found for email '{body.email}'.",
+            detail="Invalid email, company, or password.",
         )
 
     if not client.password_hash:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account password is not configured. Please contact support.",
+            detail="Invalid email, company, or password.",
         )
 
     if not auth_utils.verify_password(body.password, client.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email, company, or password.")
 
     client.last_login = datetime.now(timezone.utc)
     try:

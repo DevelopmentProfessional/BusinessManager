@@ -2,14 +2,21 @@
 set -e
 
 BACKEND_ENV_FILE="/opt/businessmanager/backend/.env"
+SECURITY_ENV_FILE="/opt/businessmanager/backend/.security.env"
 
-if [ ! -f "$BACKEND_ENV_FILE" ] || ! grep -Eq '^PAYMENT_DATA_ENCRYPTION_KEY=[^[:space:]]+$' "$BACKEND_ENV_FILE"; then
-    echo "ERROR: Configure a persistent PAYMENT_DATA_ENCRYPTION_KEY in $BACKEND_ENV_FILE before starting the API."
+if { [ ! -f "$BACKEND_ENV_FILE" ] || ! grep -Eq '^PAYMENT_DATA_ENCRYPTION_KEY=[^[:space:]]+$' "$BACKEND_ENV_FILE"; } \
+    && { [ ! -f "$SECURITY_ENV_FILE" ] || ! grep -Eq '^PAYMENT_DATA_ENCRYPTION_KEY=[^[:space:]]+$' "$SECURITY_ENV_FILE"; }; then
+    echo "ERROR: Configure a persistent PAYMENT_DATA_ENCRYPTION_KEY in $BACKEND_ENV_FILE or $SECURITY_ENV_FILE before starting the API."
     echo "Generate one with: python3.11 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
     exit 1
 fi
 
 chmod 600 "$BACKEND_ENV_FILE"
+
+if ! id -u businessmanager >/dev/null 2>&1; then
+    useradd --system --home-dir /opt/businessmanager --shell /usr/sbin/nologin businessmanager
+fi
+install -d -o businessmanager -g businessmanager -m 750 /opt/businessmanager/backend/uploads
 
 # Staff API systemd service
 cat > /etc/systemd/system/staff-api.service << 'EOF'
@@ -18,12 +25,19 @@ Description=BusinessManager Staff API
 After=network.target docker.service
 
 [Service]
-User=root
+User=businessmanager
+Group=businessmanager
 WorkingDirectory=/opt/businessmanager
 EnvironmentFile=/opt/businessmanager/backend/.env
+EnvironmentFile=-/opt/businessmanager/backend/.security.env
 ExecStart=/usr/bin/python3.11 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/businessmanager/backend/uploads
 
 [Install]
 WantedBy=multi-user.target
@@ -36,12 +50,18 @@ Description=BusinessManager Client API
 After=network.target docker.service
 
 [Service]
-User=root
+User=businessmanager
+Group=businessmanager
 WorkingDirectory=/opt/businessmanager/client-api
 EnvironmentFile=/opt/businessmanager/client-api/.env
+EnvironmentFile=-/opt/businessmanager/client-api/.security.env
 ExecStart=/usr/bin/python3.11 -m uvicorn main:app --host 127.0.0.1 --port 8001
 Restart=always
 RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target
@@ -77,10 +97,6 @@ map $http_origin $cors_allow_origin {
     default "";
     ~^https://([a-zA-Z0-9-]+\.)?vadpivi\.com$ $http_origin;
     ~^https?://localhost(:\d+)?$ $http_origin;
-    ~^https?://127\.0\.0\.1(:\d+)?$ $http_origin;
-    ~^https?://192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$ $http_origin;
-    ~^https?://10\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$ $http_origin;
-    ~^https?://172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$ $http_origin;
 }
 
 # Upstream servers
@@ -100,12 +116,10 @@ server {
 
     # Staff API routes
     location /api/v1/ {
-        add_header Access-Control-Allow-Origin $cors_allow_origin always;
-
         if ($request_method = OPTIONS) {
             add_header Access-Control-Allow-Origin $cors_allow_origin always;
             add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+            add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept" always;
             add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 86400 always;
             add_header Vary "Origin" always;
@@ -127,12 +141,10 @@ server {
 
     # Client API routes
     location /api/client/ {
-        add_header Access-Control-Allow-Origin $cors_allow_origin always;
-
         if ($request_method = OPTIONS) {
             add_header Access-Control-Allow-Origin $cors_allow_origin always;
             add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
-            add_header Access-Control-Allow-Headers "$http_access_control_request_headers" always;
+            add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept" always;
             add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 86400 always;
             add_header Vary "Origin" always;

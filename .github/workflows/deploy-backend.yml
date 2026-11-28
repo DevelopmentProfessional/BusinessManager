@@ -54,6 +54,37 @@ jobs:
             -x '*/__pycache__/*'
           aws s3 cp deploy.zip s3://${{ env.DEPLOY_BUCKET }}/${{ env.DEPLOY_KEY }}
 
+      - name: Publish runtime configuration to AWS Systems Manager
+        env:
+          PARAMETER_PREFIX: /businessmanager/production
+          ADMIN_BOOTSTRAP_TOKEN: ${{ secrets.ADMIN_BOOTSTRAP_TOKEN }}
+          ADMIN_BOOTSTRAP_PASSWORD: ${{ secrets.ADMIN_BOOTSTRAP_PASSWORD }}
+          ONLYOFFICE_CALLBACK_SECRET: ${{ secrets.ONLYOFFICE_CALLBACK_SECRET }}
+          ONLYOFFICE_ALLOWED_HOSTS: ${{ vars.ONLYOFFICE_ALLOWED_HOSTS }}
+          PUBLIC_PORTAL_COMPANY_IDS: ${{ vars.PUBLIC_PORTAL_COMPANY_IDS }}
+          PAYMENT_DATA_ENCRYPTION_KEY: ${{ secrets.PAYMENT_DATA_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          for name in \
+            ADMIN_BOOTSTRAP_TOKEN \
+            ADMIN_BOOTSTRAP_PASSWORD \
+            ONLYOFFICE_CALLBACK_SECRET \
+            ONLYOFFICE_ALLOWED_HOSTS \
+            PUBLIC_PORTAL_COMPANY_IDS \
+            PAYMENT_DATA_ENCRYPTION_KEY; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "Missing GitHub secret or variable: $name" >&2
+              exit 1
+            fi
+            aws ssm put-parameter \
+              --name "$PARAMETER_PREFIX/$name" \
+              --type SecureString \
+              --value "$value" \
+              --overwrite \
+              --region "${{ env.AWS_REGION }}"
+          done
+
       - name: Trigger CodeDeploy deployment
         id: create_deployment
         run: |

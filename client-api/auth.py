@@ -51,6 +51,7 @@ def create_access_token(client_id: str, email: str, company_id: str) -> str:
         "email":      email,
         "company_id": company_id,
         "role":       "client",          # CRITICAL — internal staff have different roles
+        "iat":        datetime.now(timezone.utc),
         "exp":        expire,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -93,5 +94,13 @@ def get_current_client(
     client = session.get(Client, client_id)
     if not client:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Client not found.")
+    if not client.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Client account is inactive.")
+    issued_at = payload.get("iat")
+    if issued_at is None or (
+        client.updated_at
+        and datetime.fromtimestamp(float(issued_at), tz=timezone.utc) < client.updated_at.replace(tzinfo=timezone.utc)
+    ):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been invalidated.")
 
     return client

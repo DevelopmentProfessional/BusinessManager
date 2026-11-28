@@ -42,7 +42,7 @@ import useStore from "../../../services/useStore";
 import { showConfirm } from "../../../services/showConfirm";
 import Modal from "./Modal";
 import cacheService from "../../../services/cacheService";
-import { getImageSrc } from "../utils/Utils_Image";
+import { useAuthenticatedImageSrc } from "../utils/Utils_Image";
 import Scanner_Barcode from "../widgets/Scanner_Barcode";
 import Widget_Camera from "../widgets/Widget_Camera";
 import FeatureSection from "../panels/Panel_Features";
@@ -51,6 +51,10 @@ import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
 import Dropdown_InventoryPurchaseUnit from "../dropdowns/Dropdown_InventoryPurchaseUnit";
 import { InputText, InputNumber, InputDate, InputTextarea, InputCheckbox } from "../Inputs";
 import ImagePreview from "../media/ImagePreview";
+
+const AuthenticatedImagePreview = ({ image, ...props }) => (
+  <ImagePreview src={useAuthenticatedImageSrc(image)} {...props} />
+);
 
 // ─── Production Relations Panel ────────────────────────────────────────────────
 // Shown only for PRODUCT type items in inventory mode
@@ -780,7 +784,7 @@ export default function Modal_Detail_Item({
   const isMix = upperType === "MIX";
   const hasImages = images.length > 0;
   const currentImage = hasImages ? images[currentImageIndex] : null;
-  const displayImage = currentImage ? getImageSrc(currentImage) : null;
+  const displayImage = useAuthenticatedImageSrc(currentImage);
   const inCart = cartQuantity > 0;
   const isSalesMode = mode === "sales";
   const equalFieldStyle = { flex: "1 1 0", minWidth: 0 };
@@ -1393,7 +1397,7 @@ export default function Modal_Detail_Item({
                       {images.map((img, idx) => (
                         <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
                           <button type="button" onClick={() => setCurrentImageIndex(idx)} className="border-0 p-0" style={{ width: "44px", height: "44px" }} aria-label={`Select image ${idx + 1}`}>
-                            <ImagePreview src={getImageSrc(img)} alt="" fallback={<CubeIcon style={{ width: 14, height: 14 }} />} />
+                            <AuthenticatedImagePreview image={img} alt="" fallback={<CubeIcon style={{ width: 14, height: 14 }} />} />
                           </button>
                           {/* Delete button — top right */}
                           <button

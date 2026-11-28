@@ -14,6 +14,7 @@ Rate limit: 60 requests / minute per IP
 """
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
@@ -43,6 +44,16 @@ from models import (
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 limiter = Limiter(key_func=get_remote_address)
+
+
+def _require_published_company(company_id: str) -> None:
+    published_ids = {
+        value.strip()
+        for value in os.getenv("PUBLIC_PORTAL_COMPANY_IDS", "").split(",")
+        if value.strip()
+    }
+    if company_id not in published_ids:
+        raise HTTPException(status_code=404, detail="Company catalog not found.")
 logger = logging.getLogger(__name__)
 
 # DAY_MAP: Python weekday() index → AppSettings field name
@@ -105,6 +116,7 @@ def list_products(
     - `search`     — Full-text search on name
     - `min_price` / `max_price`
     """
+    _require_published_company(company_id)
     stmt = select(Inventory).where(
         Inventory.company_id == company_id,
         func.lower(Inventory.type) == "product",
@@ -143,6 +155,7 @@ def get_product(
     company_id: str = Query(...),
     session: Session = Depends(get_session),
 ):
+    _require_published_company(company_id)
     item = session.exec(
         select(Inventory).where(
             Inventory.id == product_id,
@@ -176,6 +189,7 @@ def list_services(
     search: Optional[str] = Query(None),
     session: Session = Depends(get_session),
 ):
+    _require_published_company(company_id)
     stmt = select(Service).where(Service.company_id == company_id)
     if category:
         stmt = stmt.where(Service.category == category)
@@ -206,6 +220,7 @@ def get_service(
     company_id: str = Query(...),
     session: Session = Depends(get_session),
 ):
+    _require_published_company(company_id)
     svc = session.exec(
         select(Service).where(
             Service.id == service_id,
@@ -242,6 +257,7 @@ def get_availability(
     date_to: Optional[datetime] = Query(None, description="End of search window (ISO 8601)"),
     session: Session = Depends(get_session),
 ):
+    _require_published_company(company_id)
     """
     Returns available 30-minute slots over the next 30 days (default window).
 
