@@ -4,6 +4,18 @@ set -e
 BACKEND_ENV_FILE="/opt/businessmanager/backend/.env"
 SECURITY_ENV_FILE="/opt/businessmanager/backend/.security.env"
 
+if [ ! -f "$BACKEND_ENV_FILE" ]; then
+    echo "ERROR: Missing $BACKEND_ENV_FILE; create the backend environment file before running setup."
+    exit 1
+fi
+
+if ! grep -Eq '^SECRET_KEY=[^[:space:]]{32,}$' "$BACKEND_ENV_FILE"; then
+    secret_key=$(/usr/bin/python3.11 -c "import secrets; print(secrets.token_urlsafe(48))")
+    printf '\nSECRET_KEY=%s\n' "$secret_key" >> "$BACKEND_ENV_FILE"
+    chmod 600 "$BACKEND_ENV_FILE"
+    echo "Generated and persisted the staff API signing key."
+fi
+
 if { [ ! -f "$BACKEND_ENV_FILE" ] || ! grep -Eq '^PAYMENT_DATA_ENCRYPTION_KEY=[^[:space:]]+$' "$BACKEND_ENV_FILE"; } \
     && { [ ! -f "$SECURITY_ENV_FILE" ] || ! grep -Eq '^PAYMENT_DATA_ENCRYPTION_KEY=[^[:space:]]+$' "$SECURITY_ENV_FILE"; }; then
     echo "ERROR: Configure a persistent PAYMENT_DATA_ENCRYPTION_KEY in $BACKEND_ENV_FILE or $SECURITY_ENV_FILE before starting the API."
