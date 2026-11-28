@@ -1,0 +1,129 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+      - Document-Management
+    paths:
+      - "backend/**"
+      - "client-api/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "appspec.yml"
+      - "scripts/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  AWS_REGION: us-east-1
+  DEPLOY_BUCKET: businessmanager-deployments-890749832422
+  DEPLOY_KEY: codedeploy/deploy-${{ github.sha }}.zip
+  CODEDEPLOY_APP_NAME: BusinessManager
+  CODEDEPLOY_GROUP_NAME: BusinessManagerDG
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create and upload deployment bundle to S3
+        run: |
+          zip -r deploy.zip . \
+            -x '*.git*' \
+            -x '*/node_modules/*' \
+            -x 'frontend/dist/*' \
+            -x 'client-portal/dist/*' \
+            -x 'CompanyCreation/dist/*' \
+            -x 'backend/uploads/*' \
+            -x '*.pyc' \
+            -x '*/__pycache__/*'
+          aws s3 cp deploy.zip s3://${{ env.DEPLOY_BUCKET }}/${{ env.DEPLOY_KEY }}
+
+      - name: Publish runtime configuration to AWS Systems Manager
+        env:
+          PARAMETER_PREFIX: /businessmanager/production
+          ADMIN_BOOTSTRAP_TOKEN: ${{ secrets.ADMIN_BOOTSTRAP_TOKEN }}
+          ADMIN_BOOTSTRAP_PASSWORD: ${{ secrets.ADMIN_BOOTSTRAP_PASSWORD }}
+          ONLYOFFICE_CALLBACK_SECRET: ${{ secrets.ONLYOFFICE_CALLBACK_SECRET }}
+          ONLYOFFICE_ALLOWED_HOSTS: ${{ vars.ONLYOFFICE_ALLOWED_HOSTS }}
+          PUBLIC_PORTAL_COMPANY_IDS: ${{ vars.PUBLIC_PORTAL_COMPANY_IDS }}
+          PAYMENT_DATA_ENCRYPTION_KEY: ${{ secrets.PAYMENT_DATA_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          for name in \
+            ADMIN_BOOTSTRAP_TOKEN \
+            ADMIN_BOOTSTRAP_PASSWORD \
+            ONLYOFFICE_CALLBACK_SECRET \
+            ONLYOFFICE_ALLOWED_HOSTS \
+            PUBLIC_PORTAL_COMPANY_IDS \
+            PAYMENT_DATA_ENCRYPTION_KEY; do
+            value="${!name}"
+            if [ -z "$value" ]; then
+              echo "Missing GitHub secret or variable: $name" >&2
+              exit 1
+            fi
+            aws ssm put-parameter \
+              --name "$PARAMETER_PREFIX/$name" \
+              --type SecureString \
+              --value "$value" \
+              --overwrite \
+              --region "${{ env.AWS_REGION }}"
+          done
+
+      - name: Trigger CodeDeploy deployment
+        id: create_deployment
+        run: |
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+            --application-name "${{ env.CODEDEPLOY_APP_NAME }}" \
+            --deployment-group-name "${{ env.CODEDEPLOY_GROUP_NAME }}" \
+            --s3-location bucket=${{ env.DEPLOY_BUCKET }},key=${{ env.DEPLOY_KEY }},bundleType=zip \
+            --deployment-config-name CodeDeployDefault.AllAtOnce \
+            --description "Deploy ${{ github.sha }} by ${{ github.actor }}" \
+            --query deploymentId \
+            --output text)
+
+          echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for deployment to complete
+        run: |
+          aws deploy wait deployment-successful --deployment-id "${{ steps.create_deployment.outputs.deployment_id }}"
+
+      - name: Show CodeDeploy failure details
+        if: failure() && steps.create_deployment.outputs.deployment_id != ''
+        continue-on-error: true
+        env:
+          DEPLOYMENT_ID: ${{ steps.create_deployment.outputs.deployment_id }}
+        run: |
+          aws deploy get-deployment \
+            --deployment-id "$DEPLOYMENT_ID" \
+            --query 'deploymentInfo.{status:status,errorInformation:errorInformation,overview:deploymentOverview}' \
+            --output json
+
+          INSTANCE_IDS=$(aws deploy list-deployment-instances \
+            --deployment-id "$DEPLOYMENT_ID" \
+            --query 'instancesList[]' \
+            --output text)
+
+          for INSTANCE_ID in $INSTANCE_IDS; do
+            echo "CodeDeploy lifecycle details for $INSTANCE_ID"
+            aws deploy get-deployment-instance \
+              --deployment-id "$DEPLOYMENT_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query 'instanceSummary.{status:status,lifecycleEvents:lifecycleEvents[].{name:lifecycleEventName,status:status,errorCode:diagnostics.errorCode,message:diagnostics.message,scriptName:diagnostics.scriptName,logTail:diagnostics.logTail}}' \
+              --output json
+          done

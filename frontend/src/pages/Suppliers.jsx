@@ -1,360 +1,797 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import useStore from '../store/useStore';
-import { usePermissionRefresh } from '../hooks/usePermissionRefresh';
-import { suppliersAPI } from '../services/api';
-import Modal from '../components/Modal';
-import MobileTable from '../components/MobileTable';
-import MobileAddButton from '../components/MobileAddButton';
-import PermissionGate from '../components/PermissionGate';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
+import PageLayout from "./components/layout/Page_Layout";
+import PageTableFooter from "./components/footers/Page_TableFooter";
+import PageTableHeader from "./components/tables/Page_TableHeader";
+import PageTableRow from "./components/tables/Page_TableRow";
+import Footer_Actions from "./components/footers/Footer_Actions";
+import { InputNumber, InputText, InputTextarea } from "./components/Inputs";
+import Button_Toolbar from "./components/buttons/Button_Toolbar";
+import Button_Icon from "./components/buttons/Button_Icon";
+import Dropdown_Custom from "./components/dropdowns/Dropdown_Custom";
+import Toggle_MultiSelectIcon from "./components/buttons/Toggle_MultiSelectIcon";
+import Gate_Permission from "./components/layout/Gate_Permission";
+import Modal from "./components/modals/Modal";
+import Modal_Procurement from "./components/modals/Modal_Procurement";
+import Modal_TemplateUse from "./components/modals/Modal_TemplateUse";
+import Modal_Suppliers_Settings from "./components/modals/Modal_Suppliers_Settings";
+import Modal_Bulk_Import_Sheet from "./components/modals/Modal_ImportSheet";
+import Panel_SupplierProducts from "./components/panels/Panel_SupplierProducts";
+import { EmptyState, LoadingSpinner } from "./components/feedback";
+import Badge from "./components/badges/Badge";
+import usePagePermission from "../services/usePagePermission";
+import useStore from "../services/useStore";
+import { getTextSizeStyle, usePageTableSettings } from "../services/useTableSettings";
+import { settingsAPI, suppliersAPI } from "../services/api";
+import { showConfirm } from "../services/showConfirm";
+import { sortItemsAlphabetically } from "../utils/displaySort";
+import {
+  CheckIcon,
+  Cog6ToothIcon,
+  DocumentPlusIcon,
+  DocumentTextIcon,
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  PlusIcon,
+  TrashIcon,
+  XMarkIcon,
+} from "../icons";
+
+const supplierErrorMessage = (error, fallback) =>
+  String(error?.response?.data?.detail || error?.message || fallback);
 
 export default function Suppliers() {
-  const { 
-    loading, setLoading, error, setError, clearError,
-    isModalOpen, modalContent, openModal, closeModal, hasPermission
-  } = useStore();
-
-  // Use the permission refresh hook
-  usePermissionRefresh();
-
-  // Check permissions at page level
-  if (!hasPermission('suppliers', 'read') && 
-      !hasPermission('suppliers', 'write') && 
-      !hasPermission('suppliers', 'delete') && 
-      !hasPermission('suppliers', 'admin')) {
-    return <Navigate to="/profile" replace />;
-  }
-
+  const { user } = useStore();
+  const canManageAutomation = String(user?.role || "").toLowerCase() === "admin";
+  const { settings: pageSettings, savePageSettings } = usePageTableSettings("suppliers");
+  const [pendingSettings, setPendingSettings] = useState(pageSettings);
   const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState([]);
+  const [multiSaving, setMultiSaving] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
+  const [supplierFormOpen, setSupplierFormOpen] = useState(false);
+  const [savingSupplier, setSavingSupplier] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showPageControls, setShowPageControls] = useState(false);
+  const [procurementSupplier, setProcurementSupplier] = useState(null);
+  const [procurementView, setProcurementView] = useState("orders");
+  const [initialPoLineItems, setInitialPoLineItems] = useState(null);
+  const [communicationSupplier, setCommunicationSupplier] = useState(null);
+  const [templateSuppliers, setTemplateSuppliers] = useState([]);
+  const [appSettings, setAppSettings] = useState({});
+  const [automationSettings, setAutomationSettings] = useState({
+    inventory_po_generation_mode: "scheduled",
+    inventory_po_frequency: "monthly",
+  });
+  const [automationSettingsLoading, setAutomationSettingsLoading] = useState(false);
+  const [automationSettingsLoaded, setAutomationSettingsLoaded] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+  const [emailPolicyError, setEmailPolicyError] = useState("");
+  const [emailPolicyLoading, setEmailPolicyLoading] = useState(false);
+  const [emailPolicyLoaded, setEmailPolicyLoaded] = useState(false);
+  const [sortColumn, setSortColumn] = useState("name");
+  const [sortAsc, setSortAsc] = useState(true);
+
   const location = useLocation();
-  const navigate = useNavigate();
+
+  usePagePermission("suppliers");
 
   useEffect(() => {
-    loadSuppliers();
-  }, []);
+    if (showPageControls) setPendingSettings(pageSettings);
+  }, [showPageControls, pageSettings]);
 
-  // Auto-open create modal when navigated with ?new=1 and then clean the URL
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('new') === '1') {
-      setEditingSupplier(null);
-      openModal('supplier-form');
-      params.delete('new');
-      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
-    }
-  }, [location.search]);
+    if (!showPageControls) return undefined;
+    let active = true;
+    setEmailPolicyError("");
+    setEmailPolicyLoading(true);
+    setEmailPolicyLoaded(false);
+    settingsAPI.getSettings()
+      .then((response) => {
+        if (!active) return;
+        const settings = response?.data ?? response ?? {};
+        setPendingSettings((previous) => ({
+          ...previous,
+          requireVerifiedEmailBeforeSend: settings.require_supplier_email_verification_before_send ?? false,
+        }));
+        setEmailPolicyLoaded(true);
+      })
+      .catch((error) => {
+        if (active) {
+          setEmailPolicyLoaded(false);
+          setEmailPolicyError(supplierErrorMessage(error, "Unable to load supplier email policy."));
+        }
+      })
+      .finally(() => {
+        if (active) setEmailPolicyLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showPageControls]);
 
-  const loadSuppliers = async () => {
+  useEffect(() => {
+    if (!showPageControls || !canManageAutomation) return undefined;
+
+    let active = true;
+    const loadAutomationSettings = async () => {
+      setAutomationSettingsLoading(true);
+      setAutomationSettingsLoaded(false);
+      setSettingsError("");
+      try {
+        const response = await settingsAPI.getScheduleSettings();
+        const settings = response?.data ?? response ?? {};
+        if (!active) return;
+        setAutomationSettings({
+          inventory_po_generation_mode: settings.inventory_po_generation_mode || "scheduled",
+          inventory_po_frequency: settings.inventory_po_frequency || "monthly",
+        });
+        setAutomationSettingsLoaded(true);
+      } catch (error) {
+        if (active) setSettingsError(supplierErrorMessage(error, "Failed to load purchase-order automation settings."));
+      } finally {
+        if (active) setAutomationSettingsLoading(false);
+      }
+    };
+
+    loadAutomationSettings();
+    return () => {
+      active = false;
+    };
+  }, [showPageControls, canManageAutomation]);
+
+  const loadSuppliers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await suppliersAPI.getAll();
-      setSuppliers(response.data);
-      clearError();
-    } catch (err) {
-      setError('Failed to load suppliers');
-      console.error(err);
+      const data = response?.data ?? response;
+      if (!Array.isArray(data)) throw new Error("Invalid supplier data received from the server.");
+      const sorted = sortItemsAlphabetically(data, ["name", "email"]);
+      setSuppliers(sorted);
+      setSelectedSupplierIds((current) => current.filter((id) => sorted.some((supplier) => supplier.id === id)));
+      setPageError("");
+    } catch (error) {
+      setPageError(supplierErrorMessage(error, "Failed to load suppliers."));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleCreateSupplier = () => {
-    if (!hasPermission('suppliers', 'write')) {
-      setError('You do not have permission to create suppliers');
-      return;
-    }
-    setEditingSupplier(null);
-    openModal('supplier-form');
-  };
+  useEffect(() => {
+    loadSuppliers();
+  }, [loadSuppliers]);
 
-  const handleEditSupplier = (supplier) => {
-    if (!hasPermission('suppliers', 'write')) {
-      setError('You do not have permission to edit suppliers');
-      return;
-    }
-    setEditingSupplier(supplier);
-    openModal('supplier-form');
-  };
+  useEffect(() => {
+    if (pageSettings.showHiddenSuppliers !== false) return;
+    const visibleIds = new Set(suppliers.filter((supplier) => !supplier.is_hidden).map((supplier) => supplier.id));
+    setSelectedSupplierIds((current) => current.filter((id) => visibleIds.has(id)));
+  }, [pageSettings.showHiddenSuppliers, suppliers]);
 
-  const handleDeleteSupplier = async (supplierId) => {
-    if (!hasPermission('suppliers', 'delete')) {
-      setError('You do not have permission to delete suppliers');
-      return;
-    }
-    
-    if (!window.confirm('Are you sure you want to delete this supplier?')) return;
+  const selectionMode = selectedSupplierIds.length > 0;
+  const selectedSupplier = selectedSupplierIds.length === 1
+    ? suppliers.find((supplier) => supplier.id === selectedSupplierIds[0]) || null
+    : null;
 
-    try {
-      await suppliersAPI.delete(supplierId);
-      setSuppliers(suppliers.filter(s => s.id !== supplierId));
-      clearError();
-    } catch (err) {
-      setError('Failed to delete supplier');
-      console.error(err);
-    }
-  };
+  const visibleSuppliers = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    const filtered = suppliers.filter((supplier) => {
+      if (pageSettings.showHiddenSuppliers === false && supplier.is_hidden) return false;
+      return !query || [supplier.name, supplier.email, supplier.phone, supplier.address]
+        .some((value) => String(value || "").toLowerCase().includes(query));
+    });
+    return [...filtered].sort((a, b) => {
+      const left = String(a[sortColumn] || "").toLowerCase();
+      const right = String(b[sortColumn] || "").toLowerCase();
+      return (left.localeCompare(right) || String(a.name || "").localeCompare(String(b.name || ""))) * (sortAsc ? 1 : -1);
+    });
+  }, [pageSettings.showHiddenSuppliers, searchTerm, sortColumn, sortAsc, suppliers]);
 
-  const handleSubmitSupplier = async (supplierData) => {
-    try {
-      if (editingSupplier) {
-        const response = await suppliersAPI.update(editingSupplier.id, supplierData);
-        setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? response.data : s));
-      } else {
-        const response = await suppliersAPI.create(supplierData);
-        setSuppliers([...suppliers, response.data]);
-      }
-      closeModal();
-      clearError();
-    } catch (err) {
-      setError('Failed to save supplier');
-      console.error(err);
-    }
-  };
+  const selectedSuppliers = suppliers.filter((supplier) => selectedSupplierIds.includes(supplier.id));
+  const allSelectedHidden = selectedSuppliers.length > 0 && selectedSuppliers.every((supplier) => supplier.is_hidden);
+  const allVisibleSelected = visibleSuppliers.length > 0 && visibleSuppliers.every((supplier) => selectedSupplierIds.includes(supplier.id));
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+  const toggleSupplierSelection = (id) =>
+    setSelectedSupplierIds((current) =>
+      current.includes(id) ? current.filter((selectedId) => selectedId !== id) : [...current, id]
     );
-  }
+
+  const handleSelectAllSuppliers = () => {
+    setSelectedSupplierIds(
+      allVisibleSelected ? [] : visibleSuppliers.map((supplier) => supplier.id)
+    );
+  };
+
+  const clearSupplierSelection = () => setSelectedSupplierIds([]);
+
+  const handleSort = (column) => {
+    if (sortColumn === column) setSortAsc((current) => !current);
+    else {
+      setSortColumn(column);
+      setSortAsc(true);
+    }
+  };
+
+  const openSupplierForm = (supplier = null) => {
+    setEditingSupplier(supplier);
+    setFormError("");
+    setSupplierFormOpen(true);
+  };
+
+  const closeSupplierForm = () => {
+    if (savingSupplier) return;
+    setSupplierFormOpen(false);
+    setEditingSupplier(null);
+    setFormError("");
+  };
+
+  const handleSaveSupplier = async (formData) => {
+    setSavingSupplier(true);
+    setFormError("");
+    try {
+      const response = editingSupplier
+        ? await suppliersAPI.update(editingSupplier.id, formData)
+        : await suppliersAPI.create(formData);
+      const savedSupplier = response?.data ?? response;
+      if (!savedSupplier?.id) throw new Error("The supplier was saved without an ID.");
+      setSuppliers((previous) =>
+        sortItemsAlphabetically(
+          editingSupplier
+            ? previous.map((supplier) => (supplier.id === editingSupplier.id ? savedSupplier : supplier))
+            : [...previous, savedSupplier],
+          ["name", "email"]
+        )
+      );
+      setSelectedSupplierIds([savedSupplier.id]);
+      setSupplierFormOpen(false);
+      setEditingSupplier(null);
+    } catch (error) {
+      setFormError(supplierErrorMessage(error, "Failed to save supplier."));
+    } finally {
+      setSavingSupplier(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedSupplierIds.length === 0) return;
+    if (!(await showConfirm(`Delete ${selectedSupplierIds.length} selected supplier${selectedSupplierIds.length === 1 ? "" : "s"}?`))) return;
+    setMultiSaving(true);
+    try {
+      await Promise.all(selectedSupplierIds.map((id) => suppliersAPI.delete(id)));
+      setSuppliers((previous) => previous.filter((supplier) => !selectedSupplierIds.includes(supplier.id)));
+      clearSupplierSelection();
+      setPageError("");
+    } catch (error) {
+      const message = supplierErrorMessage(error, "Failed to delete selected suppliers.");
+      await loadSuppliers();
+      setPageError(message);
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleSetSelectedHidden = async () => {
+    if (selectedSuppliers.length === 0) return;
+    const isHidden = !allSelectedHidden;
+    setMultiSaving(true);
+    try {
+      await Promise.all(
+        selectedSuppliers.map((supplier) => suppliersAPI.update(supplier.id, { is_hidden: isHidden }))
+      );
+      setSuppliers((previous) =>
+        previous.map((supplier) =>
+          selectedSupplierIds.includes(supplier.id) ? { ...supplier, is_hidden: isHidden } : supplier
+        )
+      );
+      clearSupplierSelection();
+      setPageError("");
+    } catch (error) {
+      const message = supplierErrorMessage(error, `Failed to ${isHidden ? "hide" : "show"} selected suppliers.`);
+      await loadSuppliers();
+      setPageError(message);
+    } finally {
+      setMultiSaving(false);
+    }
+  };
+
+  const handleOpenCommunication = async (supplier) => {
+    try {
+      const response = await settingsAPI.getSettings();
+      setAppSettings(response?.data ?? response ?? {});
+      setPageError("");
+      setCommunicationSupplier(supplier);
+    } catch (error) {
+      setPageError(supplierErrorMessage(error, "Unable to load company settings for the supplier email."));
+    }
+  };
+
+  const openProcurement = (supplier, initialCreate = false, lineItems = null) => {
+    setProcurementView(initialCreate ? "create" : "orders");
+    setInitialPoLineItems(lineItems);
+    setProcurementSupplier(supplier);
+  };
+
+  useEffect(() => {
+    if (location.state?.draftPoSupplierId && suppliers.length > 0) {
+      const target = suppliers.find((s) => String(s.id) === String(location.state.draftPoSupplierId));
+      if (target) {
+        setProcurementSupplier(target);
+        setProcurementView("create");
+        setInitialPoLineItems(location.state.initialLineItems || null);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, suppliers]);
+
+  const handleBulkImportSuppliers = async (records) => {
+    const result = await suppliersAPI.bulkImport(records);
+    await loadSuppliers();
+    setShowBulkImport(false);
+    setPageError("");
+    return result;
+  };
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <PermissionGate page="suppliers" permission="write">
-            <button
-              type="button"
-              onClick={handleCreateSupplier}
-              className="btn-primary flex items-center"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Supplier
-            </button>
-          </PermissionGate>
-        </div>
+    <PageLayout
+      title="Suppliers"
+      error={pageError}
+      contentGravity="bottom"
+      headerRight={
+        <Button_Toolbar
+          icon={Cog6ToothIcon}
+          label="Settings"
+          onClick={() => setShowPageControls(true)}
+          className="btn-outline-secondary"
+          title="Supplier page settings"
+        />
+      }
+    >
+      <div className="app-page-scroll-surface bg-white d-flex dark:bg-gray-900 flex-column-reverse flex-grow-1 min-h-0 no-scrollbar overflow-auto">
+        {loading ? (
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center">
+            <LoadingSpinner label="Loading suppliers" size="lg" />
+          </div>
+        ) : pageSettings.showSupplierTable === false ? (
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+            <EmptyState
+              title="Supplier table is hidden"
+              description="Use Supplier Page Settings to show the supplier list."
+            />
+          </div>
+        ) : visibleSuppliers.length === 0 ? (
+          <div className="align-items-center d-flex flex-grow-1 justify-content-center p-3">
+            <EmptyState
+              title={suppliers.length === 0 ? "No suppliers found" : "No matching suppliers"}
+              description={
+                suppliers.length === 0
+                  ? "Add your first supplier to get started."
+                  : !pageSettings.showHiddenSuppliers && suppliers.every((supplier) => supplier.is_hidden)
+                    ? "Enable Show hidden suppliers in page settings to restore a supplier."
+                    : "Try a different search."
+              }
+            />
+          </div>
+        ) : (
+          <table className="app-main-page-table mb-0 table table-borderless table-hover w-100" style={getTextSizeStyle(pageSettings.textSize)}>
+            <colgroup>
+              <col className="app-col-select" />
+              <col className="app-col-flex" />
+              {pageSettings.showAddress !== false && <col className="app-col-action-120" />}
+              <col className="app-col-action-80" />
+            </colgroup>
+            <tbody>
+              {visibleSuppliers.map((supplier) => (
+                <PageTableRow
+                  key={supplier.id}
+                  className={`app-supplier-table-row ${selectedSupplierIds.includes(supplier.id) ? "bg-gray-100 dark:bg-gray-800" : ""}`}
+                  name={
+                    <Gate_Permission
+                      page="suppliers"
+                      permission="write"
+                      fallback={<div className={`fw-medium text-wrap-word ${supplier.is_hidden ? "fst-italic" : ""}`}>{supplier.name}</div>}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => !selectionMode && openSupplierForm(supplier)}
+                        disabled={selectionMode}
+                        className={`border-0 btn btn-link dark:text-gray-100 fw-medium p-0 shadow-none text-decoration-none text-gray-900 text-start text-wrap-word ${supplier.is_hidden ? "fst-italic" : ""}`}
+                      >
+                        {supplier.name}
+                      </button>
+                    </Gate_Permission>
+                  }
+                  colSpan={pageSettings.showAddress !== false ? 4 : 3}
+                >
+                  <td className="app-col-select app-select-icon-cell" onClick={(event) => event.stopPropagation()}>
+                    <Toggle_MultiSelectIcon
+                      selected={selectedSupplierIds.includes(supplier.id)}
+                      onToggle={() => toggleSupplierSelection(supplier.id)}
+                      title={`Select ${supplier.name}`}
+                    />
+                  </td>
+                  <td className="main-page-table-data">
+                    {(pageSettings.showPhone !== false && supplier.phone) || (pageSettings.showEmail !== false && supplier.email) ? (
+                      <div className="d-flex flex-wrap align-items-center gap-1">
+                        {pageSettings.showPhone !== false && supplier.phone && (
+                          <Badge variant="gray" pill label={`Phone: ${supplier.phone}`} className="text-break text-wrap-word" />
+                        )}
+                        {pageSettings.showEmail !== false && supplier.email && (
+                          <Badge variant="gray" pill label={`Email: ${supplier.email}`} className="text-break text-wrap-word" />
+                        )}
+                      </div>
+                    ) : null}
+                  </td>
+                  {pageSettings.showAddress !== false && (
+                    <td className="main-page-table-data text-break text-wrap-word" title={supplier.address || ""}>
+                      {supplier.address || "—"}
+                    </td>
+                  )}
+                  <td className="main-page-table-data text-center" onClick={(event) => event.stopPropagation()}>
+                    <div className="align-items-center d-flex gap-1 justify-content-center">
+                      <Gate_Permission page="suppliers" permission="write">
+                        <Button_Icon
+                          icon={DocumentTextIcon}
+                          label={`View products and purchase orders for ${supplier.name}`}
+                          variant="ghost"
+                          onClick={() => openProcurement(supplier)}
+                        />
+                        <Button_Icon
+                          icon={EnvelopeIcon}
+                          label={`Prepare email to ${supplier.name}`}
+                          variant="ghost"
+                          onClick={() => handleOpenCommunication(supplier)}
+                        />
+                      </Gate_Permission>
+                    </div>
+                  </td>
+                </PageTableRow>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+      {pageSettings.showSupplierTable !== false && <PageTableHeader
+        columns={[
+          {
+            label: <Toggle_MultiSelectIcon selected={allVisibleSelected} onToggle={handleSelectAllSuppliers} title="Select all visible suppliers" />,
+            className: "app-col-select p-0 text-center",
+          },
+          { label: "Supplier", className: "app-col-flex", sortKey: "name" },
+          ...(pageSettings.showAddress !== false ? [{ label: "Address", className: "app-col-action-120", sortKey: "address" }] : []),
+          { label: "Actions", className: "app-col-action-80 text-center" },
+        ]}
+        sortColumn={sortColumn}
+        sortAsc={sortAsc}
+        onSort={handleSort}
+      />}
+
+      <PageTableFooter
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        searchPlaceholder="Search suppliers..."
+        addButton={
+          <Gate_Permission page="suppliers" permission="write">
+            <Button_Toolbar icon={PlusIcon} label="Add" onClick={() => openSupplierForm()} className="btn-app-primary" title="Add supplier" />
+          </Gate_Permission>
+        }
+      >
+        <div className="align-items-center d-flex flex-wrap gap-1 w-100">
+          {selectedSupplierIds.length > 0 ? (
+            <>
+              <span className="ui-small-muted">
+                {selectedSupplierIds.length} selected supplier{selectedSupplierIds.length === 1 ? "" : "s"}
+              </span>
+              <Button_Toolbar
+                icon={DocumentTextIcon}
+                label="Use template"
+                onClick={() => setTemplateSuppliers(selectedSuppliers)}
+                className="btn-app-secondary"
+                title="Generate one combined document using templates available to Suppliers"
+              />
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={allSelectedHidden ? EyeIcon : EyeSlashIcon}
+                  label={allSelectedHidden ? "Show" : "Hide"}
+                  onClick={handleSetSelectedHidden}
+                  disabled={multiSaving}
+                  className="btn-app-secondary"
+                  title={`${allSelectedHidden ? "Show" : "Hide"} selected suppliers`}
+                />
+              </Gate_Permission>
+              <Gate_Permission
+                page="suppliers"
+                permission="delete"
+                hide={false}
+                fallback={<Button_Toolbar icon={TrashIcon} label="Delete" onClick={handleDeleteSelected} disabled title="Deletion requires suppliers:delete permission and an online connection" className="btn-app-danger" />}
+              >
+                <Button_Toolbar
+                  icon={TrashIcon}
+                  label="Delete"
+                  onClick={handleDeleteSelected}
+                  disabled={multiSaving}
+                  className="btn-app-danger"
+                  title={`Delete ${selectedSupplierIds.length} selected supplier${selectedSupplierIds.length === 1 ? "" : "s"}`}
+                />
+              </Gate_Permission>
+              {selectedSupplier && !selectedSupplier.is_hidden && (
+                <Gate_Permission page="suppliers" permission="write">
+                  <Button_Toolbar
+                    icon={DocumentPlusIcon}
+                    label="Orders"
+                    onClick={() => openProcurement(selectedSupplier, true)}
+                    disabled={pageSettings.showPurchaseOrderForm === false}
+                    className="btn-app-secondary"
+                    title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : `Create a purchase order for ${selectedSupplier.name}`}
+                  />
+                </Gate_Permission>
+              )}
+              <Button_Toolbar
+                icon={XMarkIcon}
+                label="Clear"
+                onClick={clearSupplierSelection}
+                className="btn-outline-secondary"
+                title="Clear supplier selection"
+              />
+            </>
+          ) : (
+            <>
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={PlusIcon}
+                  label="Bulk"
+                  onClick={() => setShowBulkImport(true)}
+                  className="btn-app-secondary"
+                  title="Bulk add suppliers"
+                />
+              </Gate_Permission>
+              <Gate_Permission page="suppliers" permission="write">
+                <Button_Toolbar
+                  icon={DocumentPlusIcon}
+                  label="Orders"
+                  onClick={() => selectedSupplier && openProcurement(selectedSupplier, true)}
+                  disabled={!selectedSupplier || pageSettings.showPurchaseOrderForm === false}
+                  className="btn-app-secondary"
+                  title={pageSettings.showPurchaseOrderForm === false ? "Purchase-order form is hidden in supplier page settings" : "Select a supplier first"}
+                />
+              </Gate_Permission>
+            </>
+          )}
         </div>
+      </PageTableFooter>
+
+      <Modal
+        isOpen={supplierFormOpen}
+        onClose={closeSupplierForm}
+        title={editingSupplier ? "Edit Supplier" : "Add Supplier"}
+        footer={
+          <Footer_Actions
+            start={
+              <Button_Toolbar
+                icon={CheckIcon}
+                label={savingSupplier ? "Saving" : "Save"}
+                type="submit"
+                form="supplier-form"
+                disabled={savingSupplier}
+                className="btn-outline-secondary"
+                title="Save supplier"
+              />
+            }
+            center={
+              <button
+                type="button"
+                className="btn btn-bulk-circle btn-outline-secondary btn-sm p-0"
+                onClick={closeSupplierForm}
+                disabled={savingSupplier}
+                title="Cancel"
+                aria-label="Cancel"
+              >
+                <XMarkIcon style={{ width: 14, height: 14 }} />
+              </button>
+            }
+          />
+        }
+      >
+        <SupplierForm
+          key={editingSupplier?.id || "new"}
+          supplier={editingSupplier}
+          settings={pageSettings}
+          error={formError}
+          onSubmit={handleSaveSupplier}
+        />
+      </Modal>
+
+      {procurementSupplier && (
+        <Modal_Procurement
+          isOpen
+          onClose={() => {
+            setProcurementSupplier(null);
+            setInitialPoLineItems(null);
+          }}
+          supplier={procurementSupplier}
+          supplierName={procurementSupplier.name}
+          supplierId={procurementSupplier.id}
+          settings={pageSettings}
+          appSettings={appSettings}
+          view={procurementView}
+          onViewChange={setProcurementView}
+          embedded={false}
+          onPOCreated={loadSuppliers}
+          initialLineItems={initialPoLineItems}
+        />
       )}
 
-      {/* Mobile view */}
-      <div className="mt-6 md:hidden">
-        <MobileTable
-          data={suppliers}
-          columns={[
-            { key: 'name', title: 'Name' },
-            { key: 'email', title: 'Email' },
-            { key: 'phone', title: 'Phone' },
-          ]}
-          onEdit={(item) => handleEditSupplier(item)}
-          onDelete={(item) => handleDeleteSupplier(item.id)}
-          editPermission={{ page: 'suppliers', permission: 'write' }}
-          deletePermission={{ page: 'suppliers', permission: 'delete' }}
-          emptyMessage="No suppliers found"
+      {communicationSupplier && (
+        <Modal_TemplateUse
+          page="suppliers"
+          entity={communicationSupplier}
+          currentUser={user}
+          settings={appSettings}
+          onClose={() => setCommunicationSupplier(null)}
         />
-        <PermissionGate page="suppliers" permission="write">
-          <MobileAddButton onClick={handleCreateSupplier} label="Add" />
-        </PermissionGate>
-      </div>
+      )}
+      {templateSuppliers.length > 0 && (
+        <Modal_TemplateUse
+          page="suppliers"
+          entity={templateSuppliers[0]}
+          selectedEntities={templateSuppliers}
+          currentUser={user}
+          settings={appSettings}
+          onClose={() => setTemplateSuppliers([])}
+        />
+      )}
 
-      {/* Desktop table */}
-      <div className="mt-8 flow-root hidden md:block">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Phone
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {suppliers.map((supplier) => (
-                    <tr key={supplier.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {supplier.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {supplier.email || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {supplier.phone || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {supplier.address || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                        <PermissionGate page="suppliers" permission="delete">
-                          <button
-                            onClick={() => handleDeleteSupplier(supplier.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                        <PermissionGate page="suppliers" permission="write">
-                          <button
-                            onClick={() => handleEditSupplier(supplier)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            title="Edit"
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                          </button>
-                        </PermissionGate>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {suppliers.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">No suppliers found. Add your first supplier to get started.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <Modal_Suppliers_Settings
+        isOpen={showPageControls}
+        onClose={() => setShowPageControls(false)}
+        onSave={async () => {
+          if (emailPolicyLoading || !emailPolicyLoaded) return false;
+          try {
+            await settingsAPI.updateSettings({
+              require_supplier_email_verification_before_send: pendingSettings.requireVerifiedEmailBeforeSend === true,
+            });
+            await savePageSettings("suppliers", pendingSettings);
+            if (canManageAutomation && automationSettingsLoaded) {
+              await settingsAPI.updateScheduleSettings(automationSettings);
+            }
+            setEmailPolicyError("");
+            setSettingsError("");
+            return true;
+          } catch (error) {
+            setSettingsError(supplierErrorMessage(error, "Failed to save supplier settings."));
+            return false;
+          }
+        }}
+        pendingSettings={pendingSettings}
+        setPendingSettings={setPendingSettings}
+        automationSettings={automationSettings}
+        setAutomationSettings={setAutomationSettings}
+        canManageAutomation={canManageAutomation}
+        automationSettingsLoading={automationSettingsLoading}
+        automationSettingsLoaded={automationSettingsLoaded}
+        settingsError={emailPolicyError || settingsError}
+        emailPolicyLoading={emailPolicyLoading}
+        emailPolicyLoaded={emailPolicyLoaded}
+      />
 
-      {/* Modal for Supplier Form */}
-      <Modal isOpen={isModalOpen && modalContent === 'supplier-form'} onClose={closeModal}>
-        {isModalOpen && modalContent === 'supplier-form' && (
-          <SupplierForm
-            supplier={editingSupplier}
-            onSubmit={handleSubmitSupplier}
-            onCancel={closeModal}
-          />
-        )}
-      </Modal>
-    </div>
+      <Modal_Bulk_Import_Sheet
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImport={handleBulkImportSuppliers}
+        title="Bulk Add Suppliers"
+        entityLabel="supplier"
+        fieldOptions={[
+          { value: "name", label: "Name (required)" },
+          { value: "contact_person", label: "Contact Person" },
+          { value: "email", label: "Email" },
+          { value: "phone", label: "Phone" },
+          { value: "address", label: "Address" },
+          { value: "shipping_rate_type", label: "Shipping Rate Type (fixed/percentage)" },
+          { value: "shipping_rate", label: "Shipping Rate" },
+        ]}
+        defaultFieldSequence={["name", "contact_person", "email", "phone", "address", "shipping_rate_type", "shipping_rate"]}
+        buildRecord={(data) => {
+          const errors = [];
+          if (!data.name?.trim()) errors.push("Name is required.");
+          const rateType = String(data.shipping_rate_type || "").trim().toLowerCase();
+          const validRateType = rateType === "percentage" ? "percentage" : "fixed";
+          const rate = parseFloat(data.shipping_rate) || 0;
+          return {
+            record: errors.length
+              ? null
+              : {
+                  name: data.name.trim(),
+                  contact_person: data.contact_person?.trim() || null,
+                  email: data.email?.trim() || null,
+                  phone: data.phone?.trim() || null,
+                  address: data.address?.trim() || null,
+                  shipping_rate_type: validRateType,
+                  shipping_rate: rate >= 0 ? rate : 0,
+                  is_hidden: false,
+                },
+            errors,
+          };
+        }}
+      />
+    </PageLayout>
   );
 }
 
-// Simple Supplier Form Component
-function SupplierForm({ supplier, onSubmit, onCancel }) {
+function SupplierForm({ supplier, settings, error, onSubmit }) {
   const [formData, setFormData] = useState({
-    name: supplier?.name || '',
-    email: supplier?.email || '',
-    phone: supplier?.phone || '',
-    address: supplier?.address || '',
+    name: supplier?.name || "",
+    email: supplier?.email || "",
+    phone: supplier?.phone || "",
+    address: supplier?.address || "",
+    shipping_rate_type: supplier?.shipping_rate_type || "fixed",
+    shipping_rate: supplier?.shipping_rate ?? 0,
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    onSubmit({ ...formData, shipping_rate: Number(formData.shipping_rate) || 0 });
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">
-        {supplier ? 'Edit Supplier' : 'Add Supplier'}
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Name *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
+    <form id="supplier-form" onSubmit={handleSubmit} className="d-flex flex-column gap-2 p-1">
+      {error && <div className="alert alert-danger py-1 small" role="alert">{error}</div>}
+      <div className="form-floating ui-form-floating-mb2">
+        <InputText id="supplier-name" name="name" value={formData.name} onChange={handleChange} required placeholder="Supplier name" />
+        <label htmlFor="supplier-name">Name *</label>
+      </div>
+      <div className="form-floating ui-form-floating-mb2">
+        <InputText type="email" id="supplier-email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" />
+        <label htmlFor="supplier-email">Email</label>
+      </div>
+      <div className="form-floating ui-form-floating-mb2">
+        <InputText id="supplier-phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" />
+        <label htmlFor="supplier-phone">Phone</label>
+      </div>
+      <div className="form-floating ui-form-floating-mb2">
+        <InputTextarea id="supplier-address" name="address" value={formData.address} onChange={handleChange} className="min-h-[80px]" placeholder="Address" />
+        <label htmlFor="supplier-address">Address</label>
+      </div>
+      <div className="fw-semibold small">Shipping</div>
+      <Dropdown_Custom
+        id="supplier-shipping-rate-type"
+        floatingLabel="Shipping calculation"
+        value={formData.shipping_rate_type}
+        onChange={(event) => setFormData((previous) => ({ ...previous, shipping_rate_type: event.target.value }))}
+        options={[
+          { value: "fixed", label: "Fixed amount" },
+          { value: "percentage", label: "Percentage of order subtotal" },
+        ]}
+      />
+      <div className="form-floating ui-form-floating-mb2">
+        <InputNumber
+          id="supplier-shipping-rate"
+          name="shipping_rate"
+          min="0"
+          step="0.01"
+          value={formData.shipping_rate}
+          onChange={handleChange}
+          placeholder={formData.shipping_rate_type === "percentage" ? "Shipping percentage" : "Shipping amount"}
+        />
+        <label htmlFor="supplier-shipping-rate">
+          {formData.shipping_rate_type === "percentage" ? "Shipping (%)" : "Shipping amount"}
+        </label>
+      </div>
+      {supplier?.id ? (
+        <Panel_SupplierProducts supplierId={supplier.id} settings={settings} />
+      ) : (
+        <div className="border mt-2 p-2 rounded small text-muted">
+          Save the supplier first to link its inventory products.
         </div>
-        
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-            Address
-          </label>
-          <textarea
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </div>
-        
-        <div className="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            {supplier ? 'Update' : 'Create'}
-          </button>
-        </div>
-      </form>
-    </div>
+      )}
+    </form>
   );
 }

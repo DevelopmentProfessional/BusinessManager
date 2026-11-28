@@ -1,0 +1,1341 @@
+/*
+ * ============================================================
+ * FILE: Form_Service.jsx
+ *
+ * PURPOSE:
+ *   Multi-tab create/edit form for a service record. The Details tab
+ *   captures core fields (name, category, price, duration, image).
+ *   When editing, additional tabs allow managing linked resources, assets,
+ *   employees, locations, and appointment-triggered task automation.
+ *
+ * FUNCTIONAL PARTS:
+ *   [1] Constants          — TABS array
+ *   [2] State              — form fields; task rules; lookup data (inventory, employees);
+ *                            relationship lists (resources, assets, employees,
+ *                            locations); linked included items; image state
+ *   [3] Effects            — populate form on edit; load inventory and employee
+ *                            lookups; load service relations when service.id exists
+ *   [4] Derived Data       — filtered inventory sets (locationItems, resourceItems,
+ *                            assetItems); linked-ID sets; name resolver helpers
+ *   [5] Handlers: Core     — handleChange, handlePhotoCapture, handleSubmit
+ *   [6] Handlers: Relations — add/remove/update for resources, assets, employees,
+ *                            and locations; shared error-wrapping utility
+ *   [7] Render: Header     — title ("Add Service" / "Edit Service")
+ *   [8] Render: Details Tab — image preview/capture panel, core fields form
+ *   [9] Render: Relation Tabs — Resources, Assets, Employees, Locations tabs
+ *                              (each with scrollable list + sticky add row)
+ *  [10] Render: Footer     — tab navigation bar (edit mode only), Cancel, and Save action buttons
+ *
+ * CHANGE LOG — all modifications to this file must be recorded here:
+ *   Format : YYYY-MM-DD | Author | Description
+ *   ─────────────────────────────────────────────────────────────
+ *   2026-03-01 | Claude  | Added section comments and top-level documentation
+ *   2026-06-13 | GitHub Copilot | Added initialName support for global create-from-search service modal
+ *   2026-07-31 | GitHub Copilot | Added editable service add-ons (name, price delta, default quantity)
+ *   2026-09-11 | GitHub Copilot | Removed unused lookup/context state tied to lint cleanup
+ *   2026-11-24 | GitHub Copilot | Replaced add-on details with linked included items
+ *   2026-11-26 | GitHub Copilot | Added appointment task automation rules
+ * ============================================================
+ */
+
+import React, { useState, useEffect } from "react";
+import { XMarkIcon, CheckIcon, PlusIcon, SparklesIcon, ArrowUpTrayIcon } from "../../../icons";
+import Button_Toolbar from "../buttons/Button_Toolbar";
+import Footer_Actions from "../footers/Footer_Actions";
+import { inventoryAPI, employeesAPI, serviceRelationsAPI, serviceRecipeAPI, serviceCategoriesAPI, servicesAPI } from "../../../services/api";
+import Widget_Camera from "../widgets/Widget_Camera";
+import Modal_BulkImport from "../modals/Modal_ImportBulk";
+import Modal_Employee_Form from "../modals/Modal_Employee_Form";
+import Dropdown_Custom from "../dropdowns/Dropdown_Custom";
+import { InputText, InputNumber, InputTextarea, InputCheckbox } from "../Inputs";
+import Table from "../tables/Table";
+import useStore from "../../../services/useStore";
+
+// ─── 1 CONSTANTS ───────────────────────────────────────────────────────────────
+const TABS = ["details", "resources", "assets", "employees", "locations", "tasks"];
+
+const createTaskRuleId = () => globalThis.crypto?.randomUUID?.() || `task-rule-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const parseTaskAutomationRules = (value) => {
+  if (!value) return [];
+  const parsed = typeof value === "string" ? JSON.parse(value) : value;
+  if (!Array.isArray(parsed)) throw new Error("Task automation data must be a list.");
+  return parsed.map((rule, index) => ({
+    id: String(rule?.id || `task-rule-${index + 1}`),
+    title: String(rule?.title || ""),
+    description: String(rule?.description || ""),
+    priority: ["low", "medium", "high"].includes(rule?.priority) ? rule.priority : "medium",
+    timing: ["before", "during", "after"].includes(rule?.timing) ? rule.timing : "during",
+    offset_minutes: Math.max(0, Number.parseInt(rule?.offset_minutes ?? 0, 10) || 0),
+    assignment_policy: rule?.assignment_policy === "specific_employee" ? "specific_employee" : "appointment_employee",
+    assigned_to_id: rule?.assigned_to_id || "",
+  }));
+};
+
+// ─── 2 STATE ───────────────────────────────────────────────────────────────────
+export default function Form_Service({ service, initialName = "", onSubmit, onCancel, onBulkImport = null }) {
+  const { openAddInventoryModal } = useStore();
+
+  const [activeTab, setActiveTab] = useState("details");
+
+  // ── Basic form fields ────────────────────────────────────────────
+  const [formData, setFormData] = useState({
+    name: initialName || "",
+    description: "",
+    category: "",
+    price: "",
+    duration_minutes: "60",
+    image_url: "",
+  });
+  const [serviceAddons, setServiceAddons] = useState([]);
+  const [taskAutomationRules, setTaskAutomationRules] = useState([]);
+  const [taskAutomationSaving, setTaskAutomationSaving] = useState(false);
+
+  // ── Lookup data ──────────────────────────────────────────────────
+  const [inventory, setInventory] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
+  // ── Relationship state ───────────────────────────────────────────
+  const [resources, setResources] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [svcEmployees, setSvcEmployees] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [relLoading, setRelLoading] = useState(false);
+
+  // ── Image state ──────────────────────────────────────────────────
+  const [addImageMode, setAddImageMode] = useState(null); // null | 'url' | 'camera'
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [pendingPhotoUrl, setPendingPhotoUrl] = useState(null);
+
+  // ── Recipe state ─────────────────────────────────────────────────
+  const [recipe, setRecipe] = useState(null); // null = not loaded or doesn't exist yet
+
+  // ── "Add" row state ──────────────────────────────────────────────
+  const [newResource, setNewResource] = useState({ inventory_id: "", quantity: "1", consumption_rate_pct: "" });
+  const [newAsset, setNewAsset] = useState({ inventory_id: "" });
+  const [newEmployee, setNewEmployee] = useState({ user_id: "" });
+  const [newLocation, setNewLocation] = useState({ inventory_id: "" });
+  const [tabError, setTabError] = useState("");
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+
+  // ─── 3 EFFECTS ───────────────────────────────────────────────────────────────
+  // Populate form when editing
+  useEffect(() => {
+    if (service) {
+      let parsedAddons = [];
+      try {
+        const raw = service.addons_json;
+        const decoded = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (Array.isArray(decoded)) {
+          parsedAddons = decoded.map((addon, index) => ({
+            id: addon?.id || `addon-${index + 1}`,
+            name: String(addon?.name || ""),
+            price_delta: Number(addon?.price_delta || 0),
+            default_quantity: Math.max(0, parseInt(addon?.default_quantity ?? 0, 10) || 0),
+            linked_inventory_id: addon?.linked_inventory_id || "",
+            linked_product_id: addon?.linked_product_id || "",
+            consume_quantity_per_unit: Math.max(0, Number(addon?.consume_quantity_per_unit || 0)),
+            is_billable: addon?.is_billable !== false,
+            consume_inventory: Boolean(addon?.consume_inventory),
+          }));
+        }
+      } catch {
+        parsedAddons = [];
+      }
+      setFormData({
+        name: service.name || "",
+        description: service.description || "",
+        category: service.category || "",
+        price: service.price?.toString() || "",
+        duration_minutes: service.duration_minutes?.toString() || "60",
+        image_url: service.image_url || "",
+      });
+      setServiceAddons(parsedAddons);
+      try {
+        setTaskAutomationRules(parseTaskAutomationRules(service.task_automation_json));
+        setTabError("");
+      } catch (error) {
+        setTaskAutomationRules([]);
+        setTabError(error.message || "Unable to load service task automation.");
+      }
+    } else {
+      setServiceAddons([]);
+      setTaskAutomationRules([]);
+    }
+  }, [service]);
+
+  useEffect(() => {
+    if (!service && initialName) {
+      setFormData((prev) => ({ ...prev, name: initialName }));
+    }
+  }, [service, initialName]);
+
+  // Load lookups once
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [invRes, empRes] = await Promise.all([inventoryAPI.getAll(), employeesAPI.getAll()]);
+        if (!cancelled) {
+          setInventory(invRes?.data ?? invRes ?? []);
+          setEmployees(empRes?.data ?? empRes ?? []);
+        }
+        try {
+          const catRes = await serviceCategoriesAPI.list();
+          if (!cancelled) setCategoryOptions(catRes?.data ?? []);
+        } catch {
+          // Category suggestions are optional
+        }
+      } catch (err) {
+        console.error("Form_Service: failed to load lookups", err);
+      } finally {
+        // no-op
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load relations when service id is available
+  useEffect(() => {
+    if (!service?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      setRelLoading(true);
+      try {
+        const [resRes, assRes, empRes, locRes, recRes] = await Promise.all([serviceRelationsAPI.getResources(service.id), serviceRelationsAPI.getAssets(service.id), serviceRelationsAPI.getEmployees(service.id), serviceRelationsAPI.getLocations(service.id), serviceRecipeAPI.get(service.id)]);
+        if (!cancelled) {
+          setResources(resRes?.data ?? resRes ?? []);
+          setAssets(assRes?.data ?? assRes ?? []);
+          setSvcEmployees(empRes?.data ?? empRes ?? []);
+          setLocations(locRes?.data ?? locRes ?? []);
+          const recipeList = recRes?.data ?? recRes ?? [];
+          setRecipe(Array.isArray(recipeList) && recipeList.length > 0 ? recipeList[0] : null);
+        }
+      } catch (err) {
+        console.error("Form_Service: failed to load relations", err);
+      } finally {
+        if (!cancelled) setRelLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [service?.id]);
+
+  // ── Derived data ─────────────────────────────────────────────────
+  const locationItems = inventory.filter((i) => i.type === "location");
+  const resourceItems = inventory.filter((i) => ["resource", "product", "item"].includes(i.type));
+  const serviceAddonResourceItems = inventory.filter((i) => String(i.type || "").toLowerCase() === "resource");
+  const serviceAddonProductItems = inventory.filter((i) => ["product", "item"].includes(String(i.type || "").toLowerCase()));
+  const assetItems = inventory.filter((i) => i.type === "asset");
+
+  const linkedResourceIds = new Set(resources.map((r) => r.inventory_id));
+  const linkedAssetIds = new Set(assets.map((a) => a.inventory_id));
+  const linkedEmployeeIds = new Set(svcEmployees.map((e) => e.user_id));
+  const linkedLocationIds = new Set(locations.map((l) => l.inventory_id));
+
+  const inventoryName = (id) => inventory.find((i) => String(i.id) === String(id))?.name ?? "—";
+  const getServiceAddonResourceId = (addon) =>
+    serviceAddonResourceItems.some((item) => String(item.id) === String(addon.linked_inventory_id)) ? addon.linked_inventory_id : "";
+  const getServiceAddonProductId = (addon) =>
+    addon.linked_product_id ||
+    (serviceAddonProductItems.some((item) => String(item.id) === String(addon.linked_inventory_id)) ? addon.linked_inventory_id : "");
+  const employeeName = (id) => {
+    const e = employees.find((e) => e.id === id);
+    return e ? `${e.first_name} ${e.last_name}` : "—";
+  };
+  const employeeColor = (id) => employees.find((e) => e.id === id)?.color ?? "#6b7280";
+
+  // ── Handlers ─────────────────────────────────────────────────────
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoCapture = (blob) => {
+    setIsCameraOpen(false);
+    setAddImageMode(null);
+    if (pendingPhotoUrl) URL.revokeObjectURL(pendingPhotoUrl);
+    setPendingPhoto(blob);
+    const url = URL.createObjectURL(blob);
+    setPendingPhotoUrl(url);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const cleanedAddons = serviceAddons
+      .map((addon, index) => {
+        const linkedInventoryId = getServiceAddonResourceId(addon);
+        const linkedProductId = getServiceAddonProductId(addon);
+        const linkedNames = [
+          linkedInventoryId ? inventoryName(linkedInventoryId) : "",
+          linkedProductId ? inventoryName(linkedProductId) : "",
+        ].filter((name) => name && name !== "—");
+        const fallbackName = [
+          linkedInventoryId ? "Linked resource" : "",
+          linkedProductId ? "Linked product" : "",
+        ].filter(Boolean).join(" + ");
+
+        return {
+          id: addon.id || `addon-${index + 1}`,
+          name: linkedNames.join(" + ") || String(addon.name || "").trim() || fallbackName,
+          price_delta: Number(addon.price_delta || 0),
+          default_quantity: Math.max(0, parseInt(addon.default_quantity ?? 0, 10) || 0),
+          linked_inventory_id: linkedInventoryId || null,
+          linked_product_id: linkedProductId || null,
+          consume_quantity_per_unit: Math.max(0, Number(addon.consume_quantity_per_unit || 0)),
+          is_billable: addon.is_billable !== false,
+          consume_inventory: Boolean(addon.consume_inventory),
+        };
+      })
+      .filter((addon) => addon.name.length > 0);
+
+    const cleanedTaskRules = taskAutomationRules.map((rule) => ({
+      ...rule,
+      title: String(rule.title || "").trim(),
+      description: String(rule.description || "").trim(),
+      offset_minutes: Math.max(0, Number.parseInt(rule.offset_minutes ?? 0, 10) || 0),
+      assigned_to_id: rule.assignment_policy === "specific_employee" ? rule.assigned_to_id || null : null,
+    }));
+
+    const submitData = {
+      ...formData,
+      price: parseFloat(formData.price),
+      duration_minutes: parseInt(formData.duration_minutes),
+      addons_json: cleanedAddons.length > 0 ? JSON.stringify(cleanedAddons) : null,
+      task_automation_json: JSON.stringify(cleanedTaskRules),
+    };
+    if (!submitData.image_url) delete submitData.image_url;
+    if (!submitData.category) delete submitData.category;
+    onSubmit(submitData, pendingPhoto || null);
+  };
+
+  const wrap = async (fn) => {
+    setTabError("");
+    try {
+      await fn();
+    } catch (err) {
+      setTabError(err?.response?.data?.detail || err?.message || "Operation failed");
+    }
+  };
+
+  const addServiceAddonRow = () => {
+    setServiceAddons((prev) => [...prev, { id: `addon-${Date.now()}`, name: "", price_delta: 0, default_quantity: 0, linked_inventory_id: "", linked_product_id: "", consume_quantity_per_unit: 0, is_billable: true, consume_inventory: false }]);
+  };
+
+  const updateServiceAddonRow = (index, field, value) => {
+    setServiceAddons((prev) =>
+      prev.map((addon, rowIndex) => {
+        if (rowIndex !== index) return addon;
+        if (field === "price_delta") return { ...addon, price_delta: Number(value || 0) };
+        if (field === "default_quantity") return { ...addon, default_quantity: Math.max(0, parseInt(value || 0, 10) || 0) };
+        if (field === "consume_quantity_per_unit") return { ...addon, consume_quantity_per_unit: Math.max(0, Number(value || 0)) };
+        if (field === "is_billable") return { ...addon, is_billable: Boolean(value) };
+        if (field === "consume_inventory") return { ...addon, consume_inventory: Boolean(value) };
+        if (field === "linked_inventory_id" || field === "linked_product_id") {
+          const linkedInventoryId = field === "linked_inventory_id" ? value : getServiceAddonResourceId(addon);
+          const linkedProductId = field === "linked_product_id" ? value : getServiceAddonProductId(addon);
+          const hasLinkedItem = Boolean(linkedInventoryId || linkedProductId);
+          const linkedNames = [
+            linkedInventoryId ? inventoryName(linkedInventoryId) : "",
+            linkedProductId ? inventoryName(linkedProductId) : "",
+          ].filter((name) => name && name !== "—");
+          const previousLinkedNames = [
+            getServiceAddonResourceId(addon) ? inventoryName(getServiceAddonResourceId(addon)) : "",
+            getServiceAddonProductId(addon) ? inventoryName(getServiceAddonProductId(addon)) : "",
+          ].filter((name) => name && name !== "—");
+          return {
+            ...addon,
+            linked_inventory_id: linkedInventoryId,
+            linked_product_id: linkedProductId,
+            name: linkedNames.join(" + ") || (addon.name === previousLinkedNames.join(" + ") ? "" : addon.name),
+            default_quantity: hasLinkedItem ? Math.max(1, Number(addon.default_quantity || 0)) : addon.default_quantity,
+            consume_inventory: hasLinkedItem,
+            consume_quantity_per_unit: hasLinkedItem ? Math.max(1, Number(addon.consume_quantity_per_unit || 0)) : addon.consume_quantity_per_unit,
+          };
+        }
+        return { ...addon, [field]: value };
+      })
+    );
+  };
+
+  const removeServiceAddonRow = (index) => {
+    setServiceAddons((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
+  };
+
+  const addTaskAutomationRule = () => {
+    setTaskAutomationRules((prev) => [
+      ...prev,
+      {
+        id: createTaskRuleId(),
+        title: "",
+        description: "",
+        priority: "medium",
+        timing: "before",
+        offset_minutes: 0,
+        assignment_policy: "appointment_employee",
+        assigned_to_id: "",
+      },
+    ]);
+  };
+
+  const updateTaskAutomationRule = (index, field, value) => {
+    setTaskAutomationRules((prev) => prev.map((rule, rowIndex) => {
+      if (rowIndex !== index) return rule;
+      const updated = { ...rule, [field]: value };
+      if (field === "assignment_policy" && value === "appointment_employee") {
+        updated.assigned_to_id = "";
+      }
+      return updated;
+    }));
+  };
+
+  const removeTaskAutomationRule = (index) => {
+    setTaskAutomationRules((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
+  };
+
+  const handleSaveTaskAutomation = async () => {
+    const invalidRuleIndex = taskAutomationRules.findIndex(
+      (rule) => !String(rule.title || "").trim()
+        || (rule.assignment_policy === "specific_employee" && !rule.assigned_to_id)
+    );
+    if (invalidRuleIndex >= 0) {
+      setTabError(
+        taskAutomationRules[invalidRuleIndex].assignment_policy === "specific_employee"
+          && !taskAutomationRules[invalidRuleIndex].assigned_to_id
+          ? `Select an employee for task rule ${invalidRuleIndex + 1}.`
+          : `Enter a title for task rule ${invalidRuleIndex + 1}.`
+      );
+      return;
+    }
+
+    setTaskAutomationSaving(true);
+    setTabError("");
+    try {
+      const cleanedRules = taskAutomationRules.map((rule) => ({
+        ...rule,
+        title: String(rule.title).trim(),
+        description: String(rule.description || "").trim(),
+        offset_minutes: Math.max(0, Number.parseInt(rule.offset_minutes ?? 0, 10) || 0),
+        assigned_to_id: rule.assignment_policy === "specific_employee" ? rule.assigned_to_id : null,
+      }));
+      await servicesAPI.update(service.id, {
+        task_automation_json: JSON.stringify(cleanedRules),
+      });
+      setTaskAutomationRules(cleanedRules);
+    } catch (error) {
+      setTabError(error?.response?.data?.detail || error?.message || "Unable to save task automation.");
+    } finally {
+      setTaskAutomationSaving(false);
+    }
+  };
+
+  // ── Create-from-search handlers ──────────────────────────────────
+  const [showEmployeeCreateModal, setShowEmployeeCreateModal] = useState(false);
+  const [employeeSearchPrefill, setEmployeeSearchPrefill] = useState("");
+
+  const handleCreateEmployeeFromSearch = (searchTerm) => {
+    setEmployeeSearchPrefill(searchTerm);
+    setShowEmployeeCreateModal(true);
+  };
+
+  const handleEmployeeCreated = async (employeeData) => {
+    try {
+      const response = await employeesAPI.create(employeeData);
+      const newEmployee = response?.data ?? response;
+      setEmployees((prev) => [...prev, newEmployee]);
+      setNewEmployee({ user_id: newEmployee.id });
+      setShowEmployeeCreateModal(false);
+    } catch (err) {
+      console.error("Failed to create employee:", err);
+      throw err;
+    }
+  };
+
+  const handleCreateInventoryFromSearch = (context) => (searchText) => {
+    openAddInventoryModal((newItem) => {
+      // Auto-select and add the created inventory to the appropriate context
+      if (context === "resource") {
+        setNewResource((prev) => ({ ...prev, inventory_id: newItem.id }));
+        // Re-fetch inventory to get fresh data
+        inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
+      } else if (context === "asset") {
+        setNewAsset((prev) => ({ ...prev, inventory_id: newItem.id }));
+        inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
+      } else if (context === "location") {
+        setNewLocation((prev) => ({ ...prev, inventory_id: newItem.id }));
+        inventoryAPI.getAll().then((res) => setInventory(res?.data ?? res ?? []));
+      }
+    }, searchText);
+  };
+
+  const handleAddResource = () =>
+    wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding resources.");
+        return;
+      }
+      if (!newResource.inventory_id) {
+        setTabError("Select an item first");
+        return;
+      }
+      const itemExists = inventory.some((i) => i.id === newResource.inventory_id);
+      if (!itemExists) {
+        setTabError("Selected item does not exist or was removed.");
+        return;
+      }
+      const rate = newResource.consumption_rate_pct !== "" ? parseFloat(newResource.consumption_rate_pct) : null;
+      const res = await serviceRelationsAPI.addResource(service.id, newResource.inventory_id, parseFloat(newResource.quantity) || 1, rate);
+      const data = res?.data ?? res;
+      setResources((prev) => [...prev, data]);
+      setNewResource({ inventory_id: "", quantity: "1", consumption_rate_pct: "" });
+    });
+  const handleRemoveResource = (id) =>
+    wrap(async () => {
+      await serviceRelationsAPI.removeResource(id);
+      setResources((prev) => prev.filter((r) => r.id !== id));
+    });
+  const handleUpdateResourceQty = async (id, quantity) => {
+    try {
+      await serviceRelationsAPI.updateResource(id, parseFloat(quantity) || 1);
+      setResources((prev) => prev.map((r) => (r.id === id ? { ...r, quantity: parseFloat(quantity) || 1 } : r)));
+    } catch (err) {
+      console.error("Failed to update quantity", err);
+    }
+  };
+  const handleUpdateResourceRate = async (id, rate) => {
+    try {
+      const val = rate !== "" ? parseFloat(rate) : null;
+      await serviceRelationsAPI.updateResourceRate(id, val);
+      setResources((prev) => prev.map((r) => (r.id === id ? { ...r, consumption_rate_pct: val } : r)));
+    } catch (err) {
+      console.error("Failed to update consumption rate", err);
+    }
+  };
+
+  // ── Recipe handlers ───────────────────────────────────────────────
+  const handleRecipeToggle = async (isProduced) => {
+    if (!service?.id) return;
+    try {
+      if (!recipe) {
+        const res = await serviceRecipeAPI.create({ service_id: service.id, is_produced: isProduced, batch_size: 1 });
+        setRecipe(res.data);
+      } else {
+        const res = await serviceRecipeAPI.update(recipe.id, { is_produced: isProduced });
+        setRecipe(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to update recipe toggle", err);
+    }
+  };
+
+  const handleRecipeField = async (field, value) => {
+    if (!service?.id) return;
+    try {
+      const parsed = field === "batch_size" ? parseInt(value) || 1 : parseFloat(value) || null;
+      if (!recipe) {
+        const res = await serviceRecipeAPI.create({ service_id: service.id, is_produced: false, batch_size: 1, [field]: parsed });
+        setRecipe(res.data);
+      } else {
+        const res = await serviceRecipeAPI.update(recipe.id, { [field]: parsed });
+        setRecipe(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to update recipe field", err);
+    }
+  };
+
+  const handleUpdateAssetDuration = async (id, durationMinutes) => {
+    try {
+      const val = durationMinutes !== "" ? parseFloat(durationMinutes) : null;
+      await serviceRelationsAPI.updateAssetDuration(id, val);
+      setAssets((prev) => prev.map((a) => (a.id === id ? { ...a, asset_duration_minutes: val } : a)));
+    } catch (err) {
+      console.error("Failed to update asset duration", err);
+    }
+  };
+
+  const handleAddAsset = () =>
+    wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding assets.");
+        return;
+      }
+      if (!newAsset.inventory_id) {
+        setTabError("Select an asset first");
+        return;
+      }
+      const res = await serviceRelationsAPI.addAsset(service.id, newAsset.inventory_id);
+      const data = res?.data ?? res;
+      setAssets((prev) => [...prev, data]);
+      setNewAsset({ inventory_id: "" });
+    });
+  const handleRemoveAsset = (id) =>
+    wrap(async () => {
+      await serviceRelationsAPI.removeAsset(id);
+      setAssets((prev) => prev.filter((a) => a.id !== id));
+    });
+
+  const handleAddEmployee = () =>
+    wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding employees.");
+        return;
+      }
+      if (!newEmployee.user_id) {
+        setTabError("Select an employee first");
+        return;
+      }
+      const res = await serviceRelationsAPI.addEmployee(service.id, newEmployee.user_id);
+      const data = res?.data ?? res;
+      setSvcEmployees((prev) => [...prev, data]);
+      setNewEmployee({ user_id: "" });
+    });
+  const handleRemoveEmployee = (id) =>
+    wrap(async () => {
+      await serviceRelationsAPI.removeEmployee(id);
+      setSvcEmployees((prev) => prev.filter((e) => e.id !== id));
+    });
+
+  const handleAddLocation = () =>
+    wrap(async () => {
+      if (!service?.id) {
+        setTabError("Save the service first before adding locations.");
+        return;
+      }
+      if (!newLocation.inventory_id) {
+        setTabError("Select a location first");
+        return;
+      }
+      const res = await serviceRelationsAPI.addLocation(service.id, newLocation.inventory_id);
+      const data = res?.data ?? res;
+      setLocations((prev) => [...prev, data]);
+      setNewLocation({ inventory_id: "" });
+    });
+  const handleRemoveLocation = (id) =>
+    wrap(async () => {
+      await serviceRelationsAPI.removeLocation(id);
+      setLocations((prev) => prev.filter((l) => l.id !== id));
+    });
+
+  // ── Layout: flex column filling the modal body ───────────────────
+  return (
+    <div className="ui-page-shell">
+      {/* Header */}
+      <div className="app-modal-header align-items-center bg-white border-bottom border-gray-200 d-flex dark:bg-gray-900 dark:border-gray-700 flex-shrink-0 justify-content-between p-0">
+        <h6 className="app-modal-title ui-heading-strong">{service ? "Edit Service" : "Add Service"}</h6>
+        {!service && onBulkImport && (
+          <button type="button" title="Bulk Import" onClick={() => setIsBulkImportOpen(true)} className="btn btn-sm dark:text-gray-400 p-1 text-gray-500" style={{ lineHeight: 1 }}>
+            <ArrowUpTrayIcon style={{ width: 18, height: 18 }} />
+          </button>
+        )}
+      </div>
+
+      {isBulkImportOpen && (
+        <Modal_BulkImport
+          isOpen={isBulkImportOpen}
+          onClose={() => setIsBulkImportOpen(false)}
+          entityLabel="Services"
+          onImport={async (rows) => {
+            await onBulkImport(rows.map((r) => r.name));
+            setIsBulkImportOpen(false);
+          }}
+        />
+      )}
+
+      {/* Camera modal */}
+      {isCameraOpen && <Widget_Camera onCapture={handlePhotoCapture} onClose={() => setIsCameraOpen(false)} />}
+
+      {/* ── Scrollable Tab Content Body ── */}
+      <div className="bg-white dark:bg-gray-900 dark:text-gray-100 flex-grow-1 min-h-0 no-scrollbar overflow-auto p-2 pt-3 text-gray-900">
+        {/* Tab error */}
+        {tabError && <div className="alert alert-danger flex-shrink-0 mb-2 mx-1 px-2 py-1 small">{tabError}</div>}
+
+        {/* ── Details ── */}
+        {activeTab === "details" && (
+          <div>
+            <form id="service-details-form" onSubmit={handleSubmit}>
+              {/* Top Section: Image (left) + Core fields (right) */}
+              <div className="d-flex gap-3 mb-2" style={{ minHeight: "180px" }}>
+                  {/* Image area */}
+                  <div className="flex-shrink-0" style={{ width: "45%" }}>
+                    {/* Preview */}
+                    <div className="ui-pos-rel" style={{ borderRadius: "8px", overflow: "hidden", background: "var(--bs-secondary-bg)", width: "100%", aspectRatio: "1" }}>
+                      {pendingPhotoUrl ? (
+                        <img src={pendingPhotoUrl} alt="Captured" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      ) : formData.image_url ? (
+                        <img
+                          src={formData.image_url}
+                          alt={formData.name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", color: "#adb5bd", position: "absolute", top: 0, left: 0 }}>
+                          <SparklesIcon className="h-16 w-16" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Camera button */}
+                    <div className="align-items-center d-flex gap-1 mt-1">
+                      {addImageMode === null && (
+                        <button type="button" onClick={() => setAddImageMode("camera")} className="align-items-center btn btn-outline-secondary d-flex flex-shrink-0 justify-content-center" title="Add photo">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" />
+                            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5m0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    {/* Camera/URL panel */}
+                    {addImageMode !== null && (
+                      <div className="bg-light border dark:bg-gray-800 dark:border-gray-700 mt-1 p-0 rounded">
+                        <div className="align-items-center d-flex gap-2 mb-2">
+                          <div className="btn-group btn-group-sm">
+                            <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "camera" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("camera")}>
+                              Camera
+                            </button>
+                            <button type="button" className={`btn ui-btn-compact-tight ${addImageMode === "url" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setAddImageMode("url")}>
+                              URL
+                            </button>
+                          </div>
+                          <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-link btn-sm ui-btn-compact-link ms-auto p-0">
+                            ✕
+                          </button>
+                        </div>
+                        {addImageMode === "camera" && (
+                          <button type="button" onClick={() => setIsCameraOpen(true)} className="align-items-center btn btn-outline-primary btn-sm d-flex gap-1 ui-btn-compact-icon">
+                            {pendingPhotoUrl ? "Retake" : "Cam"}
+                          </button>
+                        )}
+                        {addImageMode === "url" && (
+                          <div className="d-flex gap-1">
+                            <InputText type="url" name="image_url" value={formData.image_url} onChange={handleChange} onKeyDown={(e) => e.key === "Enter" && setAddImageMode(null)} placeholder="https://..." className="form-control ui-control-sm" style={{ fontSize: "0.8rem" }} />
+                            <button type="button" onClick={() => setAddImageMode(null)} className="btn btn-primary btn-sm flex-shrink-0">
+                              OK
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Core fields on the right */}
+                  <div className="d-flex flex-column flex-grow-1 gap-2">
+                    <div className="form-floating">
+                      <InputText id="name" name="name" required value={formData.name} onChange={handleChange} placeholder="Service Name" />
+                      <label htmlFor="name">Name *</label>
+                    </div>
+                    <div className="form-floating">
+                      <InputText id="category" name="category" value={formData.category} onChange={handleChange} placeholder="Category" list="service-category-options" />
+                      <datalist id="service-category-options">
+                        {categoryOptions.map((cat) => (
+                          <option key={cat.id} value={cat.name} />
+                        ))}
+                      </datalist>
+                      <label htmlFor="category">Category</label>
+                    </div>
+                    <div className="form-floating">
+                      <InputNumber id="price" name="price" required min="0" step="0.01" value={formData.price} onChange={handleChange} placeholder="0.00" />
+                      <label htmlFor="price">Price *</label>
+                    </div>
+                    <div className="form-floating">
+                      <InputNumber id="duration_minutes" name="duration_minutes" required min="1" value={formData.duration_minutes} onChange={handleChange} placeholder="60" />
+                      <label htmlFor="duration_minutes">Duration (min) *</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description at the bottom */}
+                <div className="form-floating ui-form-floating-mb2">
+                  <InputTextarea id="description" name="description" rows={6} value={formData.description} onChange={handleChange} className="ui-description-textarea" placeholder="Description" />
+                  <label htmlFor="description">Description</label>
+                </div>
+
+                <div className="border mb-3 rounded" style={{ fontSize: "0.85rem" }}>
+                  <div className="align-items-center bg-light border-bottom d-flex dark:bg-gray-800 justify-content-between px-1 py-0 rounded-top">
+                    <span className="dark:text-gray-200 fw-semibold text-gray-800">Included Items</span>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={addServiceAddonRow}>
+                      <PlusIcon style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                  <div className="p-1">
+                    {serviceAddons.length === 0 ? (
+                      <div className="fst-italic small text-muted">Link the products or resources included with this service.</div>
+                    ) : (
+                      <Table className="table-sm">
+                        <thead>
+                          <tr>
+                            <th style={{ minWidth: 88, width: 88 }}>Default Qty</th>
+                            <th style={{ minWidth: 170, width: 170 }}>Linked Resource</th>
+                            <th style={{ minWidth: 170, width: 170 }}>Linked Product</th>
+                            <th style={{ minWidth: 52, width: 52 }} />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {serviceAddons.map((addon, index) => (
+                            <tr key={addon.id || index} className="align-middle">
+                              <td style={{ minWidth: 88 }}>
+                                <InputNumber min="0" step="1" className="form-control ui-control-sm" value={addon.default_quantity} onChange={(e) => updateServiceAddonRow(index, "default_quantity", e.target.value)} />
+                              </td>
+                              <td style={{ minWidth: 170 }}>
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  value={getServiceAddonResourceId(addon)}
+                                  onChange={(e) => updateServiceAddonRow(index, "linked_inventory_id", e.target.value)}
+                                  options={[{ value: "", label: "None" }, ...serviceAddonResourceItems.map((inv) => ({ value: inv.id, label: inv.name }))]}
+                                  placeholder="Linked resource"
+                                  searchable
+                                  onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
+                                  createButtonTitle="Add item"
+                                  closeOnSelect
+                                />
+                              </td>
+                              <td style={{ minWidth: 170 }}>
+                                <Dropdown_Custom
+                                  className="ui-control-sm"
+                                  value={getServiceAddonProductId(addon)}
+                                  onChange={(e) => updateServiceAddonRow(index, "linked_product_id", e.target.value)}
+                                  options={[{ value: "", label: "None" }, ...serviceAddonProductItems.map((item) => ({ value: item.id, label: item.name }))]}
+                                  placeholder="Linked product"
+                                  searchable
+                                  onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
+                                  createButtonTitle="Add item"
+                                  closeOnSelect
+                                />
+                              </td>
+                              <td style={{ minWidth: 52 }}>
+                                <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => removeServiceAddonRow(index)}>
+                                  <XMarkIcon style={{ width: 16, height: 16 }} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    )}
+                  </div>
+                </div>
+              </form>
+
+              {/* ── Recipe Section (edit mode only) ── */}
+              {service?.id && (
+                <div className="border mb-3 rounded" style={{ fontSize: "0.85rem" }}>
+                  {/* Toggle header */}
+                  <div className="align-items-center bg-light border-bottom d-flex dark:bg-gray-800 justify-content-between px-1 py-0 rounded-top">
+                    <span className="dark:text-gray-200 fw-semibold text-gray-800">Recipe / Production</span>
+                    <div className="form-check form-switch mb-0">
+                      <InputCheckbox id="recipe-toggle" checked={recipe?.is_produced ?? false} onChange={(e) => handleRecipeToggle(e.target.checked)} />
+                      <label className="form-check-label small text-muted" htmlFor="recipe-toggle">
+                        {recipe?.is_produced ? "Manufactured" : "Purchased / Delivered"}
+                      </label>
+                    </div>
+                  </div>
+
+                  {recipe?.is_produced && (
+                    <div className="pb-1 pt-0 px-1">
+                      {/* Batch fields */}
+                      <div className="d-flex gap-2 mb-3">
+                        <div className="flex-grow-1">
+                          <label className="form-label mb-1 small text-muted">Batch Size (units)</label>
+                          <InputNumber min="1" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_size ?? 1} onBlur={(e) => handleRecipeField("batch_size", e.target.value)} />
+                        </div>
+                        <div className="flex-grow-1">
+                          <label className="form-label mb-1 small text-muted">Batch Duration (min)</label>
+                          <InputNumber min="0" step="1" className="form-control ui-control-sm" defaultValue={recipe?.batch_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleRecipeField("batch_duration_minutes", e.target.value)} />
+                        </div>
+                      </div>
+
+                      {/* Resources consumed */}
+                      <div className="mb-2">
+                        <div className="fw-semibold mb-1 small text-muted">Resources consumed per batch</div>
+                        {resources.length === 0 ? (
+                          <div className="fst-italic small text-muted">No resources linked — add them in the Resources tab.</div>
+                        ) : (
+                          <table className="mb-0 table table-sm" style={{ fontSize: "0.8rem" }}>
+                            <thead>
+                              <tr>
+                                <th>Resource</th>
+                                <th style={{ width: 80 }}>Qty / batch</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {resources.map((r) => (
+                                <tr key={r.id} className="align-middle">
+                                  <td className="text-truncate" style={{ maxWidth: 160 }}>
+                                    {inventoryName(r.inventory_id)}
+                                  </td>
+                                  <td>
+                                    <InputNumber min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+
+                      {/* Assets used */}
+                      <div>
+                        <div className="fw-semibold mb-1 small text-muted">Assets used per batch</div>
+                        {assets.length === 0 ? (
+                          <div className="fst-italic small text-muted">No assets linked — add them in the Assets tab.</div>
+                        ) : (
+                          <table className="mb-0 table table-sm" style={{ fontSize: "0.8rem" }}>
+                            <thead>
+                              <tr>
+                                <th>Asset</th>
+                                <th style={{ width: 96 }}>Duration (min)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {assets.map((a) => (
+                                <tr key={a.id} className="align-middle">
+                                  <td className="text-truncate" style={{ maxWidth: 160 }}>
+                                    {inventoryName(a.inventory_id)}
+                                  </td>
+                                  <td>
+                                    <InputNumber min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} placeholder="—" onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} style={{ width: 80 }} />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+        )}
+
+        {/* ── Resources ── */}
+        {activeTab === "resources" && service && (
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
+              {relLoading ? (
+                <div className="py-1 text-center">
+                  <div className="spinner-border spinner-border-sm" />
+                </div>
+              ) : resources.length === 0 ? (
+                <div className="fst-italic py-0 small text-muted">No resources linked yet.</div>
+              ) : (
+                <table className="mb-0 table table-sm">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 52 }}></th>
+                      <th>Item</th>
+                      <th style={{ width: 80 }}>Qty</th>
+                      <th style={{ width: 88 }}>Rate %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resources.map((r) => (
+                      <tr key={r.id} className="align-middle">
+                        <td>
+                          <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => handleRemoveResource(r.id)}>
+                            <XMarkIcon style={{ width: 18, height: 18 }} />
+                          </button>
+                        </td>
+                        <td className="text-truncate" style={{ maxWidth: 140 }}>
+                          {inventoryName(r.inventory_id)}
+                        </td>
+                        <td>
+                          <InputNumber min="0" step="0.01" className="form-control ui-control-sm" defaultValue={r.quantity} onBlur={(e) => handleUpdateResourceQty(r.id, e.target.value)} style={{ width: 72 }} />
+                        </td>
+                        <td>
+                          <InputNumber min="0" max="100" step="0.1" className="form-control ui-control-sm" defaultValue={r.consumption_rate_pct ?? ""} onBlur={(e) => handleUpdateResourceRate(r.id, e.target.value)} placeholder="—" style={{ width: 72 }} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
+              <div className="ui-flex-center-gap-2">
+                <Dropdown_Custom
+                  name="inventory_id"
+                  value={newResource.inventory_id}
+                  onChange={(e) => setNewResource((prev) => ({ ...prev, inventory_id: e.target.value }))}
+                  options={resourceItems.filter((i) => !linkedResourceIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
+                  placeholder="Select item"
+                  searchable
+                  onCreateFromSearch={handleCreateInventoryFromSearch("resource")}
+                  createButtonTitle="Add item"
+                  className="flex-grow-1"
+                />
+                <InputNumber min="0.01" step="0.01" className="form-control ui-control-sm" style={{ width: 64 }} value={newResource.quantity} onChange={(e) => setNewResource((prev) => ({ ...prev, quantity: e.target.value }))} placeholder="Qty" />
+                <InputNumber min="0" max="100" step="0.1" className="form-control ui-control-sm" style={{ width: 72 }} value={newResource.consumption_rate_pct} onChange={(e) => setNewResource((prev) => ({ ...prev, consumption_rate_pct: e.target.value }))} placeholder="Rate %" />
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddResource}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Assets ── */}
+        {activeTab === "assets" && service && (
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
+              {relLoading ? (
+                <div className="py-1 text-center">
+                  <div className="spinner-border spinner-border-sm" />
+                </div>
+              ) : assets.length === 0 ? (
+                <div className="fst-italic py-0 small text-muted">No assets linked yet.</div>
+              ) : (
+                <table className="mb-0 table table-sm">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 52 }}></th>
+                      <th>Asset</th>
+                      <th style={{ width: 96 }}>Duration (min)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assets.map((a) => (
+                      <tr key={a.id} className="align-middle">
+                        <td>
+                          <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center" onClick={() => handleRemoveAsset(a.id)}>
+                            <XMarkIcon style={{ width: 18, height: 18 }} />
+                          </button>
+                        </td>
+                        <td className="text-truncate" style={{ maxWidth: 140 }}>
+                          {inventoryName(a.inventory_id)}
+                        </td>
+                        <td>
+                          <InputNumber min="0" step="1" className="form-control ui-control-sm" defaultValue={a.asset_duration_minutes ?? ""} onBlur={(e) => handleUpdateAssetDuration(a.id, e.target.value)} placeholder="—" style={{ width: 80 }} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
+              <div className="ui-flex-center-gap-2">
+                <Dropdown_Custom
+                  name="inventory_id"
+                  value={newAsset.inventory_id}
+                  onChange={(e) => setNewAsset((prev) => ({ ...prev, inventory_id: e.target.value }))}
+                  options={assetItems.filter((i) => !linkedAssetIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
+                  placeholder="Select asset"
+                  searchable
+                  onCreateFromSearch={handleCreateInventoryFromSearch("asset")}
+                  createButtonTitle="Add asset"
+                  className="flex-grow-1"
+                />
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddAsset}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Employees ── */}
+        {activeTab === "employees" && service && (
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
+              {relLoading ? (
+                <div className="py-1 text-center">
+                  <div className="spinner-border spinner-border-sm" />
+                </div>
+              ) : svcEmployees.length === 0 ? (
+                <div className="fst-italic py-0 small text-muted">No employees linked yet.</div>
+              ) : (
+                <ul className="list-group list-group-flush mb-0">
+                  {svcEmployees.map((se) => (
+                    <li key={se.id} className="align-items-center d-flex gap-2 list-group-item px-0">
+                      <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex flex-shrink-0 justify-content-center" onClick={() => handleRemoveEmployee(se.id)}>
+                        <XMarkIcon style={{ width: 18, height: 18 }} />
+                      </button>
+                      <span className="flex-shrink-0 rounded-circle" style={{ width: 10, height: 10, backgroundColor: employeeColor(se.user_id), display: "inline-block" }} />
+                      <span className="text-truncate">{employeeName(se.user_id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
+              <div className="ui-flex-center-gap-2">
+                <Dropdown_Custom
+                  className="flex-grow-1 ui-control-sm"
+                  value={newEmployee.user_id}
+                  onChange={(e) => setNewEmployee({ user_id: e.target.value })}
+                  options={[
+                    { value: "", label: "— Select employee —" },
+                    ...employees
+                      .filter((employeeOption) => employeeOption.is_active && !linkedEmployeeIds.has(employeeOption.id))
+                      .map((employeeOption) => ({ value: employeeOption.id, label: `${employeeOption.first_name} ${employeeOption.last_name}` })),
+                  ]}
+                  placeholder="Select employee"
+                  searchable
+                  onCreateFromSearch={handleCreateEmployeeFromSearch}
+                  createButtonTitle="Add employee"
+                  closeOnSelect
+                />
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddEmployee}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Locations ── */}
+        {activeTab === "locations" && service && (
+          <div className="d-flex flex-column gap-2">
+            {/* List */}
+            <div>
+              {relLoading ? (
+                <div className="py-1 text-center">
+                  <div className="spinner-border spinner-border-sm" />
+                </div>
+              ) : locations.length === 0 ? (
+                <div className="fst-italic py-0 small text-muted">No locations linked yet.</div>
+              ) : (
+                <ul className="list-group list-group-flush mb-0">
+                  {locations.map((loc) => (
+                    <li key={loc.id} className="align-items-center d-flex gap-2 list-group-item px-0">
+                      <button type="button" className="align-items-center btn btn-outline-danger btn-sm d-flex flex-shrink-0 justify-content-center" onClick={() => handleRemoveLocation(loc.id)}>
+                        <XMarkIcon style={{ width: 18, height: 18 }} />
+                      </button>
+                      <span className="text-truncate">{inventoryName(loc.inventory_id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {/* Add row */}
+            <div className="border-gray-200 border-top dark:border-gray-700 pt-2">
+              <div className="ui-flex-center-gap-2">
+                <Dropdown_Custom
+                  name="inventory_id"
+                  value={newLocation.inventory_id}
+                  onChange={(e) => setNewLocation((prev) => ({ ...prev, inventory_id: e.target.value }))}
+                  options={locationItems.filter((i) => !linkedLocationIds.has(i.id)).map((i) => ({ value: i.id, label: i.name }))}
+                  placeholder="Select location"
+                  searchable
+                  onCreateFromSearch={handleCreateInventoryFromSearch("location")}
+                  createButtonTitle="Add location"
+                  className="flex-grow-1"
+                />
+                <button type="button" className="align-items-center btn btn-primary btn-sm d-flex justify-content-center" onClick={handleAddLocation}>
+                  <PlusIcon style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "tasks" && service && (
+          <div className="d-flex flex-column gap-2">
+            <div className="align-items-center d-flex justify-content-between">
+              <div>
+                <h6 className="mb-1">Appointment task automation</h6>
+                <p className="mb-0 small text-muted">
+                  Rules create tasks when an appointment is booked. Pending tasks follow reschedules and are cancelled with the appointment.
+                </p>
+              </div>
+              <button type="button" className="btn btn-primary btn-sm flex-shrink-0 ms-2" onClick={addTaskAutomationRule}>
+                <PlusIcon style={{ width: 16, height: 16 }} /> Add rule
+              </button>
+            </div>
+
+            {taskAutomationRules.length === 0 ? (
+              <div className="border rounded p-3 small text-muted">
+                No automatic tasks configured. Add a rule for preparation, appointment work, or follow-up.
+              </div>
+            ) : taskAutomationRules.map((rule, index) => {
+              const rulePrefix = `service-task-rule-${rule.id}`;
+              return (
+                <div key={rule.id} className="border rounded p-2">
+                  <div className="align-items-center d-flex justify-content-between mb-2">
+                    <strong className="small">Task rule {index + 1}</strong>
+                    <button
+                      type="button"
+                      className="align-items-center btn btn-outline-danger btn-sm d-flex justify-content-center"
+                      aria-label={`Remove task rule ${index + 1}`}
+                      onClick={() => removeTaskAutomationRule(index)}
+                    >
+                      <XMarkIcon style={{ width: 16, height: 16 }} />
+                    </button>
+                  </div>
+                  <div className="row g-2">
+                    <div className="col-12 form-floating">
+                      <InputText
+                        id={`${rulePrefix}-title`}
+                        value={rule.title}
+                        onChange={(event) => updateTaskAutomationRule(index, "title", event.target.value)}
+                        placeholder="Task title"
+                        maxLength={200}
+                      />
+                      <label htmlFor={`${rulePrefix}-title`}>Task title *</label>
+                    </div>
+                    <div className="col-12 form-floating">
+                      <InputTextarea
+                        id={`${rulePrefix}-description`}
+                        rows={2}
+                        value={rule.description}
+                        onChange={(event) => updateTaskAutomationRule(index, "description", event.target.value)}
+                        placeholder="Task instructions"
+                        maxLength={4000}
+                      />
+                      <label htmlFor={`${rulePrefix}-description`}>Task instructions</label>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-timing`}>When</label>
+                      <select
+                        id={`${rulePrefix}-timing`}
+                        className="form-select ui-control-sm"
+                        value={rule.timing}
+                        onChange={(event) => updateTaskAutomationRule(index, "timing", event.target.value)}
+                      >
+                        <option value="before">Before appointment</option>
+                        <option value="during">At appointment time</option>
+                        <option value="after">After appointment</option>
+                      </select>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-offset`}>Offset (minutes)</label>
+                      <InputNumber
+                        id={`${rulePrefix}-offset`}
+                        min="0"
+                        max="525600"
+                        step="1"
+                        className="form-control ui-control-sm"
+                        value={rule.offset_minutes}
+                        disabled={rule.timing === "during"}
+                        onChange={(event) => updateTaskAutomationRule(index, "offset_minutes", event.target.value)}
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-priority`}>Priority</label>
+                      <select
+                        id={`${rulePrefix}-priority`}
+                        className="form-select ui-control-sm"
+                        value={rule.priority}
+                        onChange={(event) => updateTaskAutomationRule(index, "priority", event.target.value)}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small mb-1" htmlFor={`${rulePrefix}-assignment`}>Assign task to</label>
+                      <select
+                        id={`${rulePrefix}-assignment`}
+                        className="form-select ui-control-sm"
+                        value={rule.assignment_policy}
+                        onChange={(event) => updateTaskAutomationRule(index, "assignment_policy", event.target.value)}
+                      >
+                        <option value="appointment_employee">Appointment employee</option>
+                        <option value="specific_employee">Specific employee</option>
+                      </select>
+                    </div>
+                    {rule.assignment_policy === "specific_employee" && (
+                      <div className="col-12">
+                        <Dropdown_Custom
+                          className="ui-control-sm"
+                          value={rule.assigned_to_id}
+                          onChange={(event) => updateTaskAutomationRule(index, "assigned_to_id", event.target.value)}
+                          options={[
+                            { value: "", label: "— Select employee —" },
+                            ...employees
+                              .filter((employee) => employee.is_active)
+                              .map((employee) => ({
+                                value: employee.id,
+                                label: `${employee.first_name} ${employee.last_name}`,
+                              })),
+                          ]}
+                          placeholder="Select employee"
+                          closeOnSelect
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Footer (sticky, always visible) ──────────────────────── */}
+      <div className="app-form-footer app-standard-footer bg-white border-gray-200 border-top dark:bg-gray-900 dark:border-gray-700 flex-shrink-0">
+        {/* Row 1: Tab navigation — only when editing */}
+        {service && (
+          <div className="d-flex flex-nowrap gap-1 overflow-auto pb-1 pt-0 px-0">
+            {TABS.map((tab) => {
+              const count = tab === "resources" ? resources.length : tab === "assets" ? assets.length : tab === "employees" ? svcEmployees.length : tab === "locations" ? locations.length : 0;
+              const label = tab === "tasks" ? "Task automation" : tab.charAt(0).toUpperCase() + tab.slice(1);
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`btn btn-sm flex-shrink-0 ${activeTab === tab ? "btn-primary" : "btn-outline-secondary"}`}
+                  style={{ fontSize: "0.72rem", lineHeight: 1.1 }}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setTabError("");
+                  }}
+                >
+                  {label}
+                  {count > 0 && (
+                    <span className={`badge ms-1 ${activeTab === tab ? "bg-white text-primary" : "bg-secondary"}`} style={{ fontSize: "0.6rem" }}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Row 2: Actions */}
+        <div className="app-footer-padding app-standard-footer">
+          <Footer_Actions
+            start={activeTab === "details"
+              ? <Button_Toolbar icon={CheckIcon} label={service ? "Save" : "Add"} type="submit" form="service-details-form" className="btn-outline-secondary" title={service ? "Save service" : "Create service"} />
+              : activeTab === "tasks"
+                ? <button type="button" className="align-items-center btn btn-outline-secondary d-flex gap-1" disabled={taskAutomationSaving} onClick={handleSaveTaskAutomation}>
+                    <CheckIcon style={{ width: 16, height: 16 }} />
+                    {taskAutomationSaving ? "Saving..." : "Save task rules"}
+                  </button>
+                : null}
+            center={<Button_Toolbar icon={XMarkIcon} label="Cancel" onClick={onCancel} className="btn-outline-secondary" title="Cancel" />}
+          />
+        </div>
+      </div>
+
+      {showEmployeeCreateModal && (
+        <Modal_Employee_Form
+          isOpen={showEmployeeCreateModal}
+          onClose={() => setShowEmployeeCreateModal(false)}
+          onSubmit={handleEmployeeCreated}
+          employees={employees}
+          initialName={employeeSearchPrefill}
+        />
+      )}
+    </div>
+  );
+}

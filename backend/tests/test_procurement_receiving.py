@@ -1,0 +1,333 @@
+from types import SimpleNamespace
+from uuid import uuid4
+
+import pytest
+from fastapi import HTTPException
+
+from backend.models import UserRole
+from backend.routers import financial, isud
+
+
+class Result:
+    def __init__(self, value):
+        self.value = value
+
+    def first(self):
+        return self.value
+
+    def all(self):
+        return self.value
+
+
+class Session:
+    def __init__(self, results):
+        self.results = iter(results)
+        self.added = []
+        self.committed = False
+        self.rolled_back = False
+
+    def exec(self, _statement):
+        return Result(next(self.results))
+
+    def add(self, value):
+        self.added.append(value)
+
+    def commit(self):
+        self.committed = True
+
+    def rollback(self):
+        self.rolled_back = True
+
+    def refresh(self, _value):
+        return None
+
+
+def _receiving_setup(quantity_ordered=10):
+    company_id = "company-1"
+    po = SimpleNamespace(
+        id=uuid4(),
+        company_id=company_id,
+        status="sent",
+        actual_delivery_date=None,
+        total_amount=25.0,
+        import_tax=0.0,
+        shipping_cost=0.0,
+        po_number="PO-1",
+        supplier_id=uuid4(),
+        order_date=None,
+        expected_delivery_date=None,
+        notes=None,
+        created_at=None,
+    )
+    line = SimpleNamespace(
+        id=uuid4(),
+        po_id=po.id,
+        inventory_id=uuid4(),
+        supplier_product_id=uuid4(),
+        quantity_ordered=quantity_ordered,
+        quantity_received=0,
+        unit_price=2.5,
+        line_total=quantity_ordered * 2.5,
+        units_per_purchase_unit=6,
+        purchase_unit="case",
+        notes=None,
+    )
+    inventory = SimpleNamespace(id=line.inventory_id, quantity=10, updated_at=None)
+    user = SimpleNamespace(role=UserRole.ADMIN, company_id=company_id)
+    return po, line, inventory, user
+
+
+def test_receive_purchase_order_adds_converted_stock_and_actual_cost_layer():
+    po, line, inventory, user = _receiving_setup()
+    session = Session([po, [line], inventory, [line]])
+
+    result = financial.receive_purchase_order(
+        po.id,
+        {"items": [{"line_id": str(line.id), "quantity": 2, "unit_price": 3.0}]},
+        session,
+        user,
+    )
+
+    cost_layers = [row for row in session.added if row.__class__.__name__ == "InventoryCostLayer"]
+    assert inventory.quantity == 22
+    assert line.quantity_received == 2
+    assert po.status == "partially_received"
+    assert len(cost_layers) == 1
+    assert cost_layers[0].quantity_received == 12
+    assert cost_layers[0].unit_cost == pytest.approx(0.5)
+    assert result["status"] == "partially_received"
+    assert session.committed
+
+
+def test_completing_purchase_order_updates_inventory_and_marks_order_received():
+    po, line, inventory, user = _receiving_setup()
+    session = Session([po, [line], inventory, [line]])
+
+    result = financial.receive_purchase_order(
+        po.id,
+        {"items": [{"line_id": str(line.id), "quantity": line.quantity_ordered}]},
+        session,
+        user,
+    )
+
+    assert inventory.quantity == 70
+    assert line.quantity_received == line.quantity_ordered
+    assert po.status == "received"
+    assert result["status"] == "received"
+    assert session.committed
+
+
+def test_receive_purchase_order_rejects_receipt_above_remaining_quantity():
+    po, line, inventory, user = _receiving_setup(quantity_ordered=1)
+    session = Session([po, [line]])
+
+    with pytest.raises(HTTPException) as exc_info:
+        financial.receive_purchase_order(
+            po.id,
+            {"items": [{"line_id": str(line.id), "quantity": 2}]},
+            session,
+            user,
+        )
+
+    assert exc_info.value.status_code == 400
+    assert session.rolled_back
+    assert not session.committed
+    assert inventory.quantity == 10
+
+
+def test_inventory_write_all_permission_can_receive_purchase_orders(monkeypatch):
+    monkeypatch.setattr(
+        financial,
+        "get_user_permissions_list",
+        lambda _user, _session: ["inventory:write_all"],
+    )
+
+    financial._require_procurement_permission(
+        SimpleNamespace(role=None),
+        None,
+        ("inventory",),
+        "write",
+    )
+
+
+def test_inventory_creation_links_preferred_supplier_catalog_product():
+    supplier_id = uuid4()
+    inventory = SimpleNamespace(id=uuid4(), supplier_id=supplier_id)
+    supplier = SimpleNamespace(company_id="company-1")
+
+    class LinkSession:
+        def __init__(self):
+            self.results = iter([Result(None), Result([])])
+            self.added = []
+
+        def get(self, _model, _record_id):
+            return supplier
+
+        def exec(self, _statement):
+            return next(self.results)
+
+        def add(self, value):
+            self.added.append(value)
+
+    session = LinkSession()
+
+    isud._save_inventory_supplier_product(
+        session,
+        inventory,
+        {"supplier_id": str(supplier_id)},
+        "company-1",
+    )
+
+    assert len(session.added) == 1
+    product = session.added[0]
+    assert product.supplier_id == supplier_id
+    assert product.inventory_id == inventory.id
+    assert product.is_preferred
+
+
+@pytest.mark.parametrize(
+    ("shipping_rate_type", "shipping_rate", "expected_shipping"),
+    [
+        ("fixed", 3.0, 3.0),
+        ("percentage", 10.0, 4.0),
+    ],
+)
+def test_create_purchase_order_snapshots_supplier_shipping_and_category_tax(
+    monkeypatch,
+    shipping_rate_type,
+    shipping_rate,
+    expected_shipping,
+):
+    supplier_id = uuid4()
+    inventory_id = uuid4()
+    supplier = SimpleNamespace(
+        company_id="company-1",
+        shipping_rate_type=shipping_rate_type,
+        shipping_rate=shipping_rate,
+    )
+    inventory = SimpleNamespace(
+        id=inventory_id,
+        company_id="company-1",
+        type="product",
+        category="Hair care",
+        cost=5.0,
+        purchase_unit="case",
+        units_per_purchase_unit=4,
+    )
+    category = SimpleNamespace(item_type="product", name="Hair care", import_tax_rate=10.0)
+    supplier_product = SimpleNamespace(id=uuid4())
+
+    class CreateSession:
+        def __init__(self):
+            self.added = []
+            self.committed = False
+
+        def get(self, model, _record_id):
+            if model is financial.Supplier:
+                return supplier
+            if model is financial.Inventory:
+                return inventory
+            return None
+
+        def exec(self, _statement):
+            return Result([category])
+
+        def add(self, value):
+            self.added.append(value)
+
+        def flush(self):
+            return None
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            raise AssertionError("Unexpected rollback")
+
+        def refresh(self, _value):
+            return None
+
+    session = CreateSession()
+    current_user = SimpleNamespace(id=uuid4(), company_id="company-1")
+    monkeypatch.setattr(financial, "_require_procurement_permission", lambda *_args: None)
+    monkeypatch.setattr(
+        financial,
+        "_supplier_product_for_item",
+        lambda *_args: supplier_product,
+    )
+
+    result = financial.create_purchase_order(
+        {
+            "supplier_id": str(supplier_id),
+            "items": [{"inventory_id": str(inventory_id), "quantity": 2}],
+        },
+        session,
+        current_user,
+    )
+
+    assert result["shipping_rate_type"] == shipping_rate_type
+    assert result["shipping_rate"] == pytest.approx(shipping_rate)
+    assert result["import_tax"] == pytest.approx(4.0)
+    assert result["shipping_cost"] == pytest.approx(expected_shipping)
+    assert result["total_amount"] == pytest.approx(44.0 + expected_shipping)
+    line = next(row for row in session.added if isinstance(row, financial.ProcurementOrderLine))
+    assert line.unit_price == pytest.approx(20.0)
+    assert line.purchase_unit == "case"
+    assert line.units_per_purchase_unit == 4
+    assert session.committed
+
+
+def test_unlink_supplier_product_preserves_purchase_order_lines_and_preferred_supplier():
+    company_id = "company-1"
+    supplier_id = uuid4()
+    inventory_id = uuid4()
+    supplier_product = SimpleNamespace(
+        id=uuid4(),
+        supplier_id=supplier_id,
+        inventory_id=inventory_id,
+        company_id=company_id,
+    )
+    preferred_product = SimpleNamespace(supplier_id=uuid4())
+    inventory = SimpleNamespace(
+        id=inventory_id,
+        company_id=company_id,
+        supplier_id=supplier_id,
+    )
+    purchase_order_line = SimpleNamespace(supplier_product_id=supplier_product.id)
+
+    class DeleteSession:
+        def __init__(self):
+            self.results = iter([supplier_product, preferred_product, [purchase_order_line]])
+            self.added = []
+            self.deleted = []
+            self.committed = False
+
+        def exec(self, _statement):
+            return Result(next(self.results))
+
+        def get(self, model, _record_id):
+            assert model is financial.Inventory
+            return inventory
+
+        def add(self, value):
+            self.added.append(value)
+
+        def delete(self, value):
+            self.deleted.append(value)
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            raise AssertionError("Unexpected rollback")
+
+    session = DeleteSession()
+    current_user = SimpleNamespace(role=UserRole.ADMIN, company_id=company_id)
+
+    result = financial.delete_supplier_product(supplier_product.id, session, current_user)
+
+    assert result["message"] == "Supplier product unlinked successfully"
+    assert purchase_order_line.supplier_product_id is None
+    assert inventory.supplier_id == preferred_product.supplier_id
+    assert session.deleted == [supplier_product]
+    assert session.committed
